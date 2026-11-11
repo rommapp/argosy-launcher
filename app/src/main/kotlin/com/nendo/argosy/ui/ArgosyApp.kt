@@ -128,6 +128,7 @@ import com.nendo.argosy.ui.theme.gripReserveBottomInset
 import androidx.compose.ui.graphics.Color
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.flowWithLifecycle
+import androidx.lifecycle.repeatOnLifecycle
 import androidx.lifecycle.compose.LifecycleEventEffect
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.StateFlow
@@ -263,7 +264,7 @@ fun ArgosyApp(
         }
         if (uri.scheme == "argosy") {
             when (uri.host) {
-                "game" -> {
+                com.nendo.argosy.ArgosyHomeIntent.GAME_DEEP_LINK_HOST -> {
                     val gameId = uri.lastPathSegment?.toLongOrNull()
                     if (gameId != null && awaitNavGraph()) {
                         navController.navigate(Screen.GameDetail.createRoute(gameId)) {
@@ -324,6 +325,14 @@ fun ArgosyApp(
     }
     val currentHandleDeepLink by rememberUpdatedState(handleDeepLink)
     val inputLifecycle = androidx.lifecycle.compose.LocalLifecycleOwner.current.lifecycle
+    val runningGamesUi by viewModel.runningGamesUi.collectAsState()
+    val runningBreath = com.nendo.argosy.ui.common.rememberRunningBreath(active = runningGamesUi.isAnyRunning)
+    val openRunningGames: () -> Unit = remember(navigateFromDrawer) { { navigateFromDrawer(Screen.Running.route) } }
+    LaunchedEffect(inputLifecycle) {
+        inputLifecycle.repeatOnLifecycle(androidx.lifecycle.Lifecycle.State.STARTED) {
+            viewModel.watchRunningGames()
+        }
+    }
     LaunchedEffect(dsm, inputLifecycle) {
         val manager = dsm ?: return@LaunchedEffect
         manager.pendingDeepLink.flowWithLifecycle(inputLifecycle).filterNotNull().collect { uri ->
@@ -1109,7 +1118,10 @@ fun ArgosyApp(
                 battery = uiState.showStatusBattery,
                 network = uiState.showStatusNetwork
             ),
-        com.nendo.argosy.ui.components.friends.LocalUserAvatarState provides localAvatarInfo
+        com.nendo.argosy.ui.components.friends.LocalUserAvatarState provides localAvatarInfo,
+        com.nendo.argosy.ui.common.LocalRunningGames provides runningGamesUi,
+        com.nendo.argosy.ui.common.LocalRunningBreath provides runningBreath,
+        com.nendo.argosy.ui.common.LocalOpenRunningGames provides openRunningGames
     ) {
         if (uiState.isLoading) {
             AppSplashScreen(statusRes = uiState.startupStatusRes)
@@ -1351,7 +1363,7 @@ fun ArgosyApp(
             if (!notificationsOnPresentation) {
                 NotificationHost(
                     manager = viewModel.notificationManager,
-                    modifier = Modifier.align(Alignment.BottomCenter),
+                    modifier = Modifier.align(Alignment.BottomEnd),
                     mutedKeys = mutedNotificationKeys
                 )
             }

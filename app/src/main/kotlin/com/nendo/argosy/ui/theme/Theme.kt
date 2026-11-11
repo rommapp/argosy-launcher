@@ -325,6 +325,34 @@ fun ALauncherTheme(
 }
 
 /**
+ * Re-provides the launcher theme with the dark set whatever the user's theme mode. Accent,
+ * surface tint, fonts and UI scale still follow the user's settings.
+ */
+@Composable
+fun ArgosyDarkTheme(
+    viewModel: ThemeViewModel = hiltViewModel(),
+    isSecondaryDisplay: Boolean = false,
+    content: @Composable () -> Unit
+) {
+    val themeState by viewModel.themeState.collectAsState()
+    val darkState = remember(themeState) { themeState.copy(themeMode = ThemeMode.DARK) }
+    val palette = rememberArgosyPalette(darkState)
+    val typography = MaterialTheme.typography
+
+    ProvideArgosyThemeLocals(
+        themeState = darkState,
+        palette = palette,
+        isSecondaryDisplay = isSecondaryDisplay
+    ) {
+        MaterialTheme(
+            colorScheme = argosyColorScheme(palette),
+            typography = typography,
+            content = content
+        )
+    }
+}
+
+/**
  * Provides the launcher's CompositionLocals (LocalUiScale, LocalLauncherTheme,
  * LocalBoxArtStyle, LocalFooterStyle). Both [ALauncherTheme] and the
  * secondary-display theme call into this -- without it, cover-art style

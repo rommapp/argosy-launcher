@@ -38,7 +38,12 @@ data class AppPreferences(
     val preLaunchRecapsEnabled: Boolean = true,
     val monthlyRecapEnabled: Boolean = true,
     val lastMonthlyRecapShown: YearMonth? = null,
-    val preLaunchRecapBaseline: Instant? = null
+    val preLaunchRecapBaseline: Instant? = null,
+    val notificationsEnabled: Boolean = true,
+    val notifyDownloadsFinished: Boolean = true,
+    val notifyBattery: Boolean = true,
+    val notifyCharging: Boolean = true,
+    val notifyControllers: Boolean = true
 )
 
 @Singleton
@@ -72,6 +77,11 @@ class AppPreferencesRepository @Inject constructor(
         val MONTHLY_RECAP_ENABLED = booleanPreferencesKey("monthly_recap_enabled")
         val LAST_MONTHLY_RECAP_SHOWN = stringPreferencesKey("last_monthly_recap_shown")
         val PRE_LAUNCH_RECAP_BASELINE = stringPreferencesKey("pre_launch_recap_baseline")
+        val NOTIFICATIONS_ENABLED = booleanPreferencesKey("notifications_enabled")
+        val NOTIFY_DOWNLOADS_FINISHED = booleanPreferencesKey("notify_downloads_finished")
+        val NOTIFY_BATTERY = booleanPreferencesKey("notify_battery")
+        val NOTIFY_CHARGING = booleanPreferencesKey("notify_charging")
+        val NOTIFY_CONTROLLERS = booleanPreferencesKey("notify_controllers")
     }
 
     val preferences: Flow<AppPreferences> = dataStore.data.map { prefs ->
@@ -117,7 +127,12 @@ class AppPreferencesRepository @Inject constructor(
             lastMonthlyRecapShown = prefs[Keys.LAST_MONTHLY_RECAP_SHOWN]
                 ?.let { runCatching { YearMonth.parse(it) }.getOrNull() },
             preLaunchRecapBaseline = prefs[Keys.PRE_LAUNCH_RECAP_BASELINE]
-                ?.let { runCatching { Instant.parse(it) }.getOrNull() }
+                ?.let { runCatching { Instant.parse(it) }.getOrNull() },
+            notificationsEnabled = prefs[Keys.NOTIFICATIONS_ENABLED] ?: true,
+            notifyDownloadsFinished = prefs[Keys.NOTIFY_DOWNLOADS_FINISHED] ?: true,
+            notifyBattery = prefs[Keys.NOTIFY_BATTERY] ?: true,
+            notifyCharging = prefs[Keys.NOTIFY_CHARGING] ?: true,
+            notifyControllers = prefs[Keys.NOTIFY_CONTROLLERS] ?: true
         )
     }.flowOn(Dispatchers.Default)
 
@@ -285,6 +300,26 @@ class AppPreferencesRepository @Inject constructor(
 
     suspend fun setMonthlyRecapEnabled(enabled: Boolean) {
         dataStore.edit { it[Keys.MONTHLY_RECAP_ENABLED] = enabled }
+    }
+
+    suspend fun setNotificationsEnabled(enabled: Boolean) {
+        dataStore.edit { it[Keys.NOTIFICATIONS_ENABLED] = enabled }
+    }
+
+    suspend fun setNotifyDownloadsFinished(enabled: Boolean) {
+        dataStore.edit { it[Keys.NOTIFY_DOWNLOADS_FINISHED] = enabled }
+    }
+
+    suspend fun setNotifyBattery(enabled: Boolean) {
+        dataStore.edit { it[Keys.NOTIFY_BATTERY] = enabled }
+    }
+
+    suspend fun setNotifyCharging(enabled: Boolean) {
+        dataStore.edit { it[Keys.NOTIFY_CHARGING] = enabled }
+    }
+
+    suspend fun setNotifyControllers(enabled: Boolean) {
+        dataStore.edit { it[Keys.NOTIFY_CONTROLLERS] = enabled }
     }
 
     suspend fun setLastMonthlyRecapShown(month: YearMonth) {

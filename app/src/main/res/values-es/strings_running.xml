@@ -7,6 +7,7 @@
     <string name="running_row_screen">Pantalla %1$d</string>
     <string name="running_menu_switch_to">Cambiar a</string>
     <string name="running_menu_close">Cerrar</string>
+    <string name="running_menu_move_to_display">Mover a la pantalla %1$d</string>
     <string name="running_hint_close">Cerrar</string>
     <string name="running_hint_close_all">Cerrar todo</string>
     <string name="running_confirm_close_title">¿Cerrar %1$s?</string>
@@ -16,6 +17,7 @@
     <string name="running_confirm_close_all_message">Se detendrán todas las apps de esta lista. Se perderá el progreso no guardado de cualquier juego.</string>
     <string name="running_confirm_close_all_confirm">Cerrar todo</string>
     <string name="running_notice_switch_failed">No se pudo cambiar a %1$s</string>
+    <string name="running_notice_move_failed">No se pudo mover %1$s</string>
     <string name="running_card_time_hours_minutes">%1$dh %2$dm</string>
     <string name="running_card_time_minutes_seconds">%1$dm %2$ds</string>
     <string name="running_card_time_seconds">%1$ds</string>
@@ -27,4 +29,5 @@
     <string name="running_friends_two">%1$s y %2$s están jugando a esto</string>
     <string name="running_friends_three">%1$s, %2$s y %3$s están jugando a esto</string>
     <string name="running_friends_many">%1$s, %2$s, %3$s y otros están jugando a esto</string>
+    <string name="running_notice_game_stopped">Juego detenido</string>
 </resources>

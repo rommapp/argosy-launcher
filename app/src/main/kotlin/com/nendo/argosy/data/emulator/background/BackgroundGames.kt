@@ -21,6 +21,9 @@ import com.nendo.argosy.util.RootShell
 import com.nendo.argosy.util.SafeCoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.SharedFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import javax.inject.Inject
@@ -30,7 +33,8 @@ import javax.inject.Singleton
  * An app with a task on screen or in the background. [game] is set when the app is an emulator
  * still holding the game a session of ours ended in. [runStartedAtMillis] is when the process
  * holding it started, the start of the run its play time is counted from; [hardcore] is true
- * only for a built-in game running under RetroAchievements hardcore rules.
+ * only for a built-in game running under RetroAchievements hardcore rules. [platformSlug] is set
+ * for a game slot, whose pool weight it decides.
  */
 data class RunningApp(
     val taskId: Int,
@@ -40,7 +44,8 @@ data class RunningApp(
     val game: BackgroundGame?,
     val runStartedAtMillis: Long?,
     val hardcore: Boolean,
-    val slotIndex: Int?
+    val slotIndex: Int?,
+    val platformSlug: String? = null
 )
 
 /**
@@ -60,6 +65,9 @@ class BackgroundGames @Inject constructor(
 ) {
     private val scope = SafeCoroutineScope(Dispatchers.IO, "BackgroundGames")
     private var started = false
+
+    private val _recorded = MutableSharedFlow<Unit>(extraBufferCapacity = 1)
+    val recorded: SharedFlow<Unit> = _recorded.asSharedFlow()
 
     val isSupported: Boolean get() = keepAlivePolicy.isSupported
 
@@ -100,6 +108,7 @@ class BackgroundGames @Inject constructor(
             )
         )
         Logger.debug(TAG, "kept ${session.emulatorPackage} pid=$pid for gameId=${session.gameId}")
+        _recorded.tryEmit(Unit)
     }
 
     /**
@@ -150,7 +159,8 @@ class BackgroundGames @Inject constructor(
                 rssKb = residentKb(slot.pid),
                 startedAtMillis = slot.startedAtMillis,
                 hardcore = slot.hardcore,
-                slotIndex = slot.slotIndex
+                slotIndex = slot.slotIndex,
+                platformSlug = slot.platformSlug
             )
         }
 
@@ -195,7 +205,8 @@ class BackgroundGames @Inject constructor(
         rssKb: Long?,
         startedAtMillis: Long,
         hardcore: Boolean,
-        slotIndex: Int
+        slotIndex: Int,
+        platformSlug: String? = null
     ) = RunningApp(
         taskId = taskId,
         packageName = EmulatorRegistry.BUILTIN_PACKAGE,
@@ -210,7 +221,8 @@ class BackgroundGames @Inject constructor(
         ),
         runStartedAtMillis = startedAtMillis,
         hardcore = hardcore,
-        slotIndex = slotIndex
+        slotIndex = slotIndex,
+        platformSlug = platformSlug
     )
 
     private fun residentKb(pid: Int): Long? = runCatching {
@@ -258,7 +270,7 @@ class BackgroundGames @Inject constructor(
     suspend fun bringToFront(taskId: Int): Boolean = withContext(Dispatchers.IO) {
         val activityManager = application.getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager
         val own = ownTask(activityManager, taskId)
-        if (own != null && startWithoutTransition(own)) return@withContext true
+        if (own != null && startWithoutTransition(own, taskId)) return@withContext true
         if (own == null && RootShell.isAvailable) return@withContext moveWithTransitionsOff(activityManager, taskId)
         moveTaskToFront(activityManager, taskId)
     }
@@ -272,16 +284,14 @@ class BackgroundGames @Inject constructor(
     }
 
     private fun moveWithTransitionsOff(activityManager: ActivityManager, taskId: Int): Boolean {
-        val previous = RootShell.run(application, "settings get global $TRANSITION_SCALE")
-            ?.takeIf { it.succeeded }?.output?.lastOrNull()?.trim()?.toFloatOrNull()
-        if (previous == null || previous == 0f || transitionScaleRestore.exists()) {
-            return moveTaskToFront(activityManager, taskId)
-        }
-        transitionScaleRestore.writeText(previous.toString())
-        if (RootShell.run(application, "settings put global $TRANSITION_SCALE 0")?.succeeded != true) {
-            transitionScaleRestore.delete()
-            return moveTaskToFront(activityManager, taskId)
-        }
+        val result = RootShell.run(
+            application,
+            "settings get global $TRANSITION_SCALE && settings put global $TRANSITION_SCALE 0"
+        )
+        if (result?.succeeded != true) return moveTaskToFront(activityManager, taskId)
+        val previous = result.output.firstOrNull()?.trim()?.toFloatOrNull() ?: DEFAULT_TRANSITION_SCALE
+        if (previous == 0f) return moveTaskToFront(activityManager, taskId)
+        if (!transitionScaleRestore.exists()) transitionScaleRestore.writeText(previous.toString())
         val moved = moveTaskToFront(activityManager, taskId)
         scope.launch {
             delay(TRANSITION_RESTORE_DELAY_MS)
@@ -302,13 +312,13 @@ class BackgroundGames @Inject constructor(
     private fun ownTask(activityManager: ActivityManager, taskId: Int): ActivityManager.AppTask? =
         activityManager.appTasks.firstOrNull { task -> runCatching { task.taskInfo.taskId }.getOrNull() == taskId }
 
-    private fun startWithoutTransition(task: ActivityManager.AppTask): Boolean = try {
+    private fun startWithoutTransition(task: ActivityManager.AppTask, taskId: Int): Boolean = try {
         val root = Intent(task.taskInfo.baseIntent)
             .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_NO_ANIMATION)
         application.startActivity(root)
         true
     } catch (e: RuntimeException) {
-        Logger.warn(TAG, "task ${runCatching { task.taskInfo.taskId }.getOrNull()} would not restart in place", e)
+        Logger.warn(TAG, "task $taskId would not restart in place", e)
         false
     }
 
@@ -361,6 +371,7 @@ class BackgroundGames @Inject constructor(
         const val TRANSITION_SCALE = "transition_animation_scale"
         const val TRANSITION_RESTORE_FILE = "transition_scale_restore"
         const val TRANSITION_RESTORE_DELAY_MS = 1_000L
+        const val DEFAULT_TRANSITION_SCALE = 1f
         const val VM_RSS = "VmRSS:"
         const val PS_MARKER = "--argosy-ps--"
     }

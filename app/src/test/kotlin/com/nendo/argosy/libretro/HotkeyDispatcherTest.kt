@@ -1,7 +1,11 @@
 package com.nendo.argosy.libretro
 
+import com.nendo.argosy.R
+import com.nendo.argosy.core.notification.NotificationText
 import com.nendo.argosy.data.local.entity.HotkeyAction
 import com.nendo.argosy.libretro.ui.NetplayMenuRole
+import com.nendo.argosy.ui.notification.InGameNotice
+import com.nendo.argosy.ui.notification.NotificationSeverity
 import com.swordfish.libretrodroid.GLRetroView
 import io.mockk.every
 import io.mockk.mockk
@@ -17,7 +21,7 @@ class HotkeyDispatcherTest {
         hardcore: Boolean = false,
         serializable: Boolean = true,
         quickLoadSucceeds: Boolean = true,
-        toastSink: MutableList<String> = mutableListOf(),
+        noticeSink: MutableList<InGameNotice> = mutableListOf(),
         saveStateManager: SaveStateManager = mockk(relaxed = true),
         retroView: GLRetroView = mockk(relaxed = true),
         sunSteps: MutableList<Int> = mutableListOf(),
@@ -32,7 +36,7 @@ class HotkeyDispatcherTest {
             videoSettings = mockk(relaxed = true),
             hotkeyManager = mockk(relaxed = true),
             getRetroView = { retroView },
-            showToast = { toastSink.add(it) },
+            showNotice = { noticeSink.add(it) },
             isHardcoreMode = { hardcore },
             canSerialize = { serializable },
             isNetplayInSession = { netplayInSession },
@@ -54,6 +58,12 @@ class HotkeyDispatcherTest {
             onQuit = {}
         )
     }
+
+    private fun notice(severity: NotificationSeverity, title: Int, body: Int? = null) = InGameNotice(
+        severity = severity,
+        title = NotificationText.Res(title),
+        body = body?.let { NotificationText.Res(it) }
+    )
 
     @Test
     fun sunHotkeysStepTheLevelUpAndDown() {
@@ -82,78 +92,123 @@ class HotkeyDispatcherTest {
 
     @Test
     fun quickSave_offline_performs_save() {
-        val toasts = mutableListOf<String>()
+        val notices = mutableListOf<InGameNotice>()
         val saveStateManager: SaveStateManager = mockk(relaxed = true)
         every { saveStateManager.performQuickSave(any(), any()) } returns true
-        val dispatcher = build(false, null, toastSink = toasts, saveStateManager = saveStateManager)
+        val dispatcher = build(false, null, noticeSink = notices, saveStateManager = saveStateManager)
         dispatcher.dispatch(config(HotkeyAction.QUICK_SAVE))
         verify(exactly = 1) { saveStateManager.performQuickSave(any(), any()) }
-        assertEquals(listOf("State saved"), toasts)
+        assertEquals(
+            listOf(notice(NotificationSeverity.SUCCESS, R.string.ingame_hotkey_quicksave_success_title)),
+            notices
+        )
     }
 
     @Test
     fun quickSave_host_in_session_performs_save() {
-        val toasts = mutableListOf<String>()
+        val notices = mutableListOf<InGameNotice>()
         val saveStateManager: SaveStateManager = mockk(relaxed = true)
         every { saveStateManager.performQuickSave(any(), any()) } returns true
-        val dispatcher = build(true, NetplayMenuRole.Host, toastSink = toasts, saveStateManager = saveStateManager)
+        val dispatcher = build(true, NetplayMenuRole.Host, noticeSink = notices, saveStateManager = saveStateManager)
         dispatcher.dispatch(config(HotkeyAction.QUICK_SAVE))
         verify(exactly = 1) { saveStateManager.performQuickSave(any(), any()) }
-        assertEquals(listOf("State saved"), toasts)
+        assertEquals(
+            listOf(notice(NotificationSeverity.SUCCESS, R.string.ingame_hotkey_quicksave_success_title)),
+            notices
+        )
     }
 
     @Test
     fun quickSave_guest_in_session_blocked() {
-        val toasts = mutableListOf<String>()
+        val notices = mutableListOf<InGameNotice>()
         val saveStateManager: SaveStateManager = mockk(relaxed = true)
-        val dispatcher = build(true, NetplayMenuRole.Guest, toastSink = toasts, saveStateManager = saveStateManager)
+        val dispatcher = build(true, NetplayMenuRole.Guest, noticeSink = notices, saveStateManager = saveStateManager)
         dispatcher.dispatch(config(HotkeyAction.QUICK_SAVE))
         verify(exactly = 0) { saveStateManager.performQuickSave(any(), any()) }
-        assertEquals(listOf("Save states disabled during netplay"), toasts)
+        assertEquals(
+            listOf(
+                notice(
+                    NotificationSeverity.WARNING,
+                    R.string.ingame_hotkey_quicksave_netplay_title,
+                    R.string.ingame_hotkey_quicksave_netplay_body
+                )
+            ),
+            notices
+        )
     }
 
     @Test
     fun quickLoad_host_in_session_blocked() {
-        val toasts = mutableListOf<String>()
+        val notices = mutableListOf<InGameNotice>()
         val saveStateManager: SaveStateManager = mockk(relaxed = true)
-        val dispatcher = build(true, NetplayMenuRole.Host, toastSink = toasts, saveStateManager = saveStateManager)
+        val dispatcher = build(true, NetplayMenuRole.Host, noticeSink = notices, saveStateManager = saveStateManager)
         dispatcher.dispatch(config(HotkeyAction.QUICK_LOAD))
         verify(exactly = 0) { saveStateManager.performQuickLoad(any()) }
-        assertEquals(listOf("Save states disabled during netplay"), toasts)
+        assertEquals(
+            listOf(
+                notice(
+                    NotificationSeverity.WARNING,
+                    R.string.ingame_hotkey_quickload_netplay_title,
+                    R.string.ingame_hotkey_quickload_netplay_body
+                )
+            ),
+            notices
+        )
     }
 
     @Test
     fun quickLoad_guest_in_session_blocked() {
-        val toasts = mutableListOf<String>()
+        val notices = mutableListOf<InGameNotice>()
         val saveStateManager: SaveStateManager = mockk(relaxed = true)
-        val dispatcher = build(true, NetplayMenuRole.Guest, toastSink = toasts, saveStateManager = saveStateManager)
+        val dispatcher = build(true, NetplayMenuRole.Guest, noticeSink = notices, saveStateManager = saveStateManager)
         dispatcher.dispatch(config(HotkeyAction.QUICK_LOAD))
         verify(exactly = 0) { saveStateManager.performQuickLoad(any()) }
-        assertEquals(listOf("Save states disabled during netplay"), toasts)
+        assertEquals(
+            listOf(
+                notice(
+                    NotificationSeverity.WARNING,
+                    R.string.ingame_hotkey_quickload_netplay_title,
+                    R.string.ingame_hotkey_quickload_netplay_body
+                )
+            ),
+            notices
+        )
     }
 
     @Test
     fun quickLoad_core_rejection_reports_failure() {
-        val toasts = mutableListOf<String>()
+        val notices = mutableListOf<InGameNotice>()
         val dispatcher = build(
             netplayInSession = false,
             netplayRole = null,
             quickLoadSucceeds = false,
-            toastSink = toasts
+            noticeSink = notices
         )
 
         dispatcher.dispatch(config(HotkeyAction.QUICK_LOAD))
 
-        assertEquals(listOf("Failed to load state"), toasts)
+        assertEquals(
+            listOf(notice(NotificationSeverity.ERROR, R.string.ingame_hotkey_quickload_failure_title)),
+            notices
+        )
     }
 
     @Test
     fun quickSave_hardcore_blocks_even_for_host() {
-        val toasts = mutableListOf<String>()
+        val notices = mutableListOf<InGameNotice>()
         val saveStateManager: SaveStateManager = mockk(relaxed = true)
-        val dispatcher = build(true, NetplayMenuRole.Host, hardcore = true, toastSink = toasts, saveStateManager = saveStateManager)
+        val dispatcher = build(true, NetplayMenuRole.Host, hardcore = true, noticeSink = notices, saveStateManager = saveStateManager)
         dispatcher.dispatch(config(HotkeyAction.QUICK_SAVE))
         verify(exactly = 0) { saveStateManager.performQuickSave(any(), any()) }
-        assertEquals(listOf("Save states disabled in Hardcore mode"), toasts)
+        assertEquals(
+            listOf(
+                notice(
+                    NotificationSeverity.WARNING,
+                    R.string.ingame_hotkey_quicksave_hardcore_title,
+                    R.string.ingame_hotkey_quicksave_hardcore_body
+                )
+            ),
+            notices
+        )
     }
 }

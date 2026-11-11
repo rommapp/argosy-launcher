@@ -213,22 +213,38 @@ private fun GameShowcaseContent(
       }) {
         val gutter = maxWidth * GUTTER_SHARE
         Box(Modifier.fillMaxSize().frostedBackdropSource(backdrop).background(theme.surfaceBase)) {
-            (detail.backdropUrl ?: detail.artUrl)?.let { background ->
-                val isScreenshot = detail.backdropIsScreenshotOrArt && background == detail.backdropUrl
-                val backdropImage = rememberShowcaseBackdrop(
-                    background,
-                    durations.backdropCrossfadeMs,
-                    stackedScreenshot = isScreenshot
-                )
+            val running = detail.gameId?.let { com.nendo.argosy.ui.common.LocalRunningGames.current.markFor(it) }
+            val runningFrame = com.nendo.argosy.ui.common.rememberTaskSnapshotRequest(
+                running?.snapshotPath,
+                running?.snapshotTakenAtMillis ?: 0L
+            )
+            if (runningFrame != null) {
                 AsyncImage(
-                    model = backdropImage.request,
+                    model = runningFrame,
                     contentDescription = null,
                     contentScale = ContentScale.Crop,
-                    onSuccess = backdropImage.onSuccess,
                     modifier = Modifier
                         .fillMaxSize()
                         .then(if (backgroundBlurRadius > 0.dp) Modifier.blur(backgroundBlurRadius) else Modifier)
                 )
+            } else {
+                (detail.backdropUrl ?: detail.artUrl)?.let { background ->
+                    val isScreenshot = detail.backdropIsScreenshotOrArt && background == detail.backdropUrl
+                    val backdropImage = rememberShowcaseBackdrop(
+                        background,
+                        durations.backdropCrossfadeMs,
+                        stackedScreenshot = isScreenshot
+                    )
+                    AsyncImage(
+                        model = backdropImage.request,
+                        contentDescription = null,
+                        contentScale = ContentScale.Crop,
+                        onSuccess = backdropImage.onSuccess,
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .then(if (backgroundBlurRadius > 0.dp) Modifier.blur(backgroundBlurRadius) else Modifier)
+                    )
+                }
             }
             ShowcaseScrim(style = style, color = theme.surfaceBase)
             if (style.layout == PresentationLayout.CINEMATIC && style.scrim == PresentationScrim.GRADIENT) {
@@ -445,7 +461,26 @@ private fun CinematicShowcase(
             },
         interactiveCover = true,
         coverLayer = coverLayer,
-        textLayer = textLayer
+        textLayer = textLayer,
+        showsRunning = true
+    )
+}
+
+private val SHOWCASE_RUNNING_LABELS = com.nendo.argosy.ui.components.RunningLineLabels(
+    running = R.string.dual_showcase_running,
+    runningIn = R.string.dual_showcase_running_in,
+    saving = R.string.dual_showcase_saving,
+    runningWithTime = R.string.dual_showcase_running_with_time
+)
+
+@Composable
+private fun ShowcaseRunningLine(detail: CompanionDetail) {
+    val running = detail.gameId?.let { com.nendo.argosy.ui.common.LocalRunningGames.current.markFor(it) } ?: return
+    com.nendo.argosy.ui.components.RunningSubLine(
+        running = running,
+        labels = SHOWCASE_RUNNING_LABELS,
+        style = MaterialTheme.typography.titleMedium,
+        timeColor = LocalArgosyTheme.current.textDim
     )
 }
 
@@ -458,7 +493,8 @@ internal fun GameHero(
     metadataModifier: Modifier = Modifier,
     interactiveCover: Boolean = false,
     coverLayer: Modifier = Modifier,
-    textLayer: Modifier = Modifier
+    textLayer: Modifier = Modifier,
+    showsRunning: Boolean = false
 ) {
     val textDirection = LocalLayoutDirection.current
     CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Ltr) {
@@ -484,7 +520,7 @@ internal fun GameHero(
             val metadata: @Composable (Modifier) -> Unit = { containerModifier ->
                 Box(containerModifier) {
                     CompositionLocalProvider(LocalLayoutDirection provides textDirection) {
-                        GameHeroMetadata(detail, style, metadataModifier, textLayer)
+                        GameHeroMetadata(detail, style, metadataModifier, textLayer, showsRunning)
                     }
                 }
             }
@@ -512,7 +548,8 @@ private fun GameHeroMetadata(
     detail: CompanionDetail,
     style: PresentationStyle,
     modifier: Modifier,
-    textLayer: Modifier
+    textLayer: Modifier,
+    showsRunning: Boolean
 ) {
     val theme = LocalArgosyTheme.current
     val friends = detail.stats?.friends.orEmpty().takeIf { style.shows(PresentationStat.FRIENDS) }.orEmpty()
@@ -539,6 +576,7 @@ private fun GameHeroMetadata(
                 developer?.let {
                     Text(text = it, style = MaterialTheme.typography.titleMedium, color = theme.textDim)
                 }
+                if (showsRunning) ShowcaseRunningLine(detail)
             }
             val friendsAfterRatings = friends.isNotEmpty() && rows.any { it.first == RailGroup.RATINGS }
             rows.forEachIndexed { index, row ->
@@ -607,6 +645,7 @@ private fun JournalShowcase(
                 )
             }
         }
+        ShowcaseRunningLine(detail)
         if (factRow.isNotEmpty()) {
             ShowcaseRailRow(factRow, textStyle = MaterialTheme.typography.titleSmall, textColor = theme.textDim)
         }

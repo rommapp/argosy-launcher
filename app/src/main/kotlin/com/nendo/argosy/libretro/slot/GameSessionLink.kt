@@ -1,8 +1,10 @@
 package com.nendo.argosy.libretro.slot
 
+import com.nendo.argosy.core.notification.ResolvedNotice
 import com.nendo.argosy.data.emulator.EmulatorRegistry
 import com.nendo.argosy.data.emulator.LaunchOrigin
 import com.nendo.argosy.data.emulator.PlaySessionTracker
+import com.nendo.argosy.ui.screens.running.ResumeOverlay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.map
@@ -43,13 +45,21 @@ interface GameSessionLink {
      */
     fun endSessionIfOwned(gameId: Long, skipSaveSync: Boolean)
 
+    /**
+     * Opens Argosy's Resume overlay over [displayId] in the main process. [onClosed] runs once:
+     * with false at once when the overlay cannot open, with true when it closes.
+     */
+    fun showResumeOverlay(displayId: Int, onClosed: (shown: Boolean) -> Unit)
+
     fun release()
 }
 
 class LocalGameSessionLink(
     private val tracker: PlaySessionTracker,
     scope: CoroutineScope,
-    private val onGuideKey: (pressed: Boolean) -> Unit
+    private val onGuideKey: (pressed: Boolean) -> Unit,
+    private val onNotice: (ResolvedNotice) -> Unit,
+    private val resumeOverlay: () -> ResumeOverlay
 ) : GameSessionLink {
 
     override val sessionStart: StateFlow<Instant?> =
@@ -73,12 +83,12 @@ class LocalGameSessionLink(
     override fun hasActiveSession(): Boolean = tracker.activeSession.value != null
 
     override fun onResumed() {
-        GuideKeyRouter.claim(this, onGuideKey)
+        ResumedGameRouter.claim(this, onGuideKey, onNotice)
         tracker.onBuiltInGameResumed()
     }
 
     override fun onPaused() {
-        GuideKeyRouter.release(this)
+        ResumedGameRouter.release(this)
         tracker.onBuiltInGamePaused()
     }
 
@@ -91,7 +101,11 @@ class LocalGameSessionLink(
     override fun endSessionIfOwned(gameId: Long, skipSaveSync: Boolean) =
         endBuiltInSessionIfOwned(tracker, gameId, skipSaveSync)
 
-    override fun release() = GuideKeyRouter.release(this)
+    override fun showResumeOverlay(displayId: Int, onClosed: (shown: Boolean) -> Unit) {
+        if (!resumeOverlay().show(displayId) { onClosed(true) }) onClosed(false)
+    }
+
+    override fun release() = ResumedGameRouter.release(this)
 }
 
 internal suspend fun cacheSessionForQuit(tracker: PlaySessionTracker) {

@@ -72,7 +72,7 @@ class ArtworkDelegateTest {
                 any(),
                 NotificationText.Res(R.string.gamedetail_notice_artwork_failed),
                 NotificationType.ERROR,
-                any(), any(), any(), any(), any(), any()
+                any(), any(), any(), any(), any(), any(), any()
             )
         }
     }
@@ -86,7 +86,7 @@ class ArtworkDelegateTest {
 
         coVerify { imageCacheManager.applyArtOverrideFromFile(7L, ArtSlot.BACKGROUND, "/storage/emulated/0/Pictures/bg.png") }
         coVerify(exactly = 0) { imageCacheManager.applyArtOverride(any(), any(), any()) }
-        verify(exactly = 0) { notificationManager.show(any(), any(), any(), any(), any(), any(), any(), any(), any()) }
+        verify(exactly = 0) { notificationManager.show(any(), any(), any(), any(), any(), any(), any(), any(), any(), any()) }
     }
 
     @Test

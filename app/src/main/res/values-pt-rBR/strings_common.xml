@@ -1089,5 +1089,17 @@
     <string name="ui_quick_settings_orientation_landscape">Paisagem</string>
     <string name="ui_quick_settings_orientation_portrait">Retrato</string>
     <string name="ui_volume_meter_unknown_location">%1$s dos jogos estão em um local desconhecido</string>
+    <string name="ui_game_card_running">Em execução</string>
+    <string name="ui_game_card_saving">Salvando</string>
+    <string name="ui_running_duration_hours_minutes">%1$dh %2$dm</string>
+    <string name="ui_running_duration_minutes">%1$dm</string>
+    <string name="ui_status_bar_running_desc">Jogos em execução</string>
+    <string name="ui_quick_menu_row_running">Em execução</string>
+    <string name="ui_quick_menu_row_running_in">Em execução no %1$s</string>
+    <string name="ui_quick_menu_row_saving">Salvando</string>
+    <string name="ui_quick_menu_random_action_resume_game">Retomar</string>
+    <string name="gamelist_row_running">Em execução</string>
+    <string name="gamelist_row_running_in">Em execução no %1$s</string>
+    <string name="gamelist_row_saving">Salvando</string>
 
 </resources>

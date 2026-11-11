@@ -7,6 +7,7 @@
     <string name="running_row_screen">Экран %1$d</string>
     <string name="running_menu_switch_to">Перейти</string>
     <string name="running_menu_close">Закрыть</string>
+    <string name="running_menu_move_to_display">Перенести на дисплей %1$d</string>
     <string name="running_hint_close">Закрыть</string>
     <string name="running_hint_close_all">Закрыть все</string>
     <string name="running_confirm_close_title">Закрыть %1$s?</string>
@@ -16,6 +17,7 @@
     <string name="running_confirm_close_all_message">Все приложения из этого списка будут остановлены. Несохранённый прогресс в любой игре будет потерян.</string>
     <string name="running_confirm_close_all_confirm">Закрыть все</string>
     <string name="running_notice_switch_failed">Не удалось перейти к %1$s</string>
+    <string name="running_notice_move_failed">Не удалось перенести %1$s</string>
     <string name="running_card_time_hours_minutes">%1$dh %2$dm</string>
     <string name="running_card_time_minutes_seconds">%1$dm %2$ds</string>
     <string name="running_card_time_seconds">%1$ds</string>
@@ -27,4 +29,5 @@
     <string name="running_friends_two">%1$s и %2$s играют в это</string>
     <string name="running_friends_three">%1$s, %2$s и %3$s играют в это</string>
     <string name="running_friends_many">%1$s, %2$s, %3$s и другие играют в это</string>
+    <string name="running_notice_game_stopped">Игра остановлена</string>
 </resources>

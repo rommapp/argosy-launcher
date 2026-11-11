@@ -510,7 +510,7 @@ class CrossEmulatorSaveMigratorTest {
     }
 
     private fun noNotice() =
-        verify(exactly = 0) { notifications.show(any(), any(), any(), any(), any(), any(), any(), any(), any()) }
+        verify(exactly = 0) { notifications.show(any(), any(), any(), any(), any(), any(), any(), any(), any(), any()) }
 
     private fun legacyPlacement(result: SaveSyncOrchestrator.DiskCheck) {
         coEvery { orchestrator.reconcileDisk(any(), any(), any(), any(), any(), any(), any()) } returns result
@@ -568,7 +568,7 @@ class CrossEmulatorSaveMigratorTest {
             CrossEmulatorSaveMigrator.Outcome.Refused(CrossEmulatorSaveMigrator.Refusal.IO),
             migrator.migrateBeforeLaunch(GAME_ID)
         )
-        verify(exactly = 1) { notifications.show(any(), any(), any(), any(), any(), any(), any(), any(), any()) }
+        verify(exactly = 1) { notifications.show(any(), any(), any(), any(), any(), any(), any(), any(), any(), any()) }
     }
 
     @Test
@@ -682,7 +682,7 @@ class CrossEmulatorSaveMigratorTest {
         assertEquals(CrossEmulatorSaveMigrator.Outcome.Untouched, migrator.migrateBeforeLaunch(GAME_ID))
         coVerify(exactly = 0) { sigil.localRoute(any(), any()) }
         coVerify(exactly = 0) { sigil.probe(any(), any()) }
-        verify(exactly = 0) { notifications.show(any(), any(), any(), any(), any(), any(), any(), any(), any()) }
+        verify(exactly = 0) { notifications.show(any(), any(), any(), any(), any(), any(), any(), any(), any(), any()) }
     }
 
     @Test

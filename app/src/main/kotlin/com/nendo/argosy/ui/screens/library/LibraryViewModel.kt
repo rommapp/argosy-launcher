@@ -284,6 +284,8 @@ data class LibraryUiState(
     val showQuickMenu: Boolean = false,
     val quickMenuFocusIndex: Int = 0,
     val quickMenuHasSiblingGroup: Boolean = false,
+    val quickMenuRunning: com.nendo.argosy.ui.common.RunningGameUi? = null,
+    val quickMenuMoveTargets: List<com.nendo.argosy.ui.screens.running.RunningMoveTarget> = emptyList(),
     val isCustomGridHome: Boolean = false,
     val gridDensity: GridDensity = GridDensity.NORMAL,
     val libraryLayout: LibraryLayout = LibraryLayout.GRID,
@@ -500,7 +502,8 @@ class LibraryViewModel @Inject constructor(
     private val showcaseSource: com.nendo.argosy.ui.common.PresentationShowcaseSource,
     private val reorderPlatforms: com.nendo.argosy.domain.usecase.platform.ReorderPlatformsUseCase,
     private val quickNavigation: com.nendo.argosy.data.preferences.QuickNavigationSource,
-    private val launchProgressTracker: com.nendo.argosy.data.emulator.LaunchProgressTracker
+    private val launchProgressTracker: com.nendo.argosy.data.emulator.LaunchProgressTracker,
+    val runningGameMenu: com.nendo.argosy.ui.screens.running.RunningGameMenu
 ) : ViewModel() {
 
     val siblingChoiceState = siblingChoice.state
@@ -1978,9 +1981,17 @@ class LibraryViewModel @Inject constructor(
         val gameId = _uiState.value.focusedGame?.id ?: return
         quickMenuOpenJob = viewModelScope.launch {
             val hasChoice = siblingChoice.hasChoice(gameId)
+            val running = runningGameMenu.markFor(gameId)
+            val moveTargets = runningGameMenu.moveTargets(running)
             if (_uiState.value.focusedGame?.id != gameId) return@launch
             _uiState.update {
-                it.copy(showQuickMenu = true, quickMenuFocusIndex = 0, quickMenuHasSiblingGroup = hasChoice)
+                it.copy(
+                    showQuickMenu = true,
+                    quickMenuFocusIndex = 0,
+                    quickMenuHasSiblingGroup = hasChoice,
+                    quickMenuRunning = running,
+                    quickMenuMoveTargets = moveTargets
+                )
             }
             soundManager.play(SoundType.OPEN_MODAL)
         }
@@ -1988,7 +1999,25 @@ class LibraryViewModel @Inject constructor(
 
     private fun quickMenuRows(state: LibraryUiState): List<LibraryQuickMenuRow> {
         val game = state.focusedGame ?: return emptyList()
-        return libraryQuickMenuRows(game, state.isCustomGridHome, state.quickMenuHasSiblingGroup)
+        return libraryQuickMenuRows(
+            game,
+            state.isCustomGridHome,
+            state.quickMenuHasSiblingGroup,
+            isRunning = state.quickMenuRunning != null,
+            moveTargetCount = state.quickMenuMoveTargets.size
+        )
+    }
+
+    fun requestCloseRunningGame() {
+        val state = _uiState.value
+        runningGameMenu.requestClose(state.quickMenuRunning, state.focusedGame?.title)
+    }
+
+    fun moveRunningGame(target: com.nendo.argosy.ui.screens.running.RunningMoveTarget) {
+        val state = _uiState.value
+        val running = state.quickMenuRunning ?: return
+        val title = state.focusedGame?.title ?: return
+        runningGameMenu.moveTo(viewModelScope, running, target, title)
     }
 
     fun moveQuickMenuFocus(delta: Int) {
@@ -2003,9 +2032,16 @@ class LibraryViewModel @Inject constructor(
     fun confirmQuickMenuSelection(onGameSelect: (Long) -> Unit): InputResult {
         val state = _uiState.value
         val game = state.focusedGame ?: return InputResult.HANDLED
-        val row = quickMenuRows(state).getOrNull(state.quickMenuFocusIndex) ?: return InputResult.HANDLED
+        val rows = quickMenuRows(state)
+        val row = rows.getOrNull(state.quickMenuFocusIndex) ?: return InputResult.HANDLED
 
         return when (row) {
+            LibraryQuickMenuRow.MOVE_TO_DISPLAY -> {
+                val target = state.quickMenuMoveTargets.getOrNull(rows.moveTargetIndexAt(state.quickMenuFocusIndex))
+                target?.let(::moveRunningGame)
+                toggleQuickMenu()
+                InputResult.HANDLED
+            }
             LibraryQuickMenuRow.PRIMARY -> {
                 when {
                     game.needsInstall -> installApk(game.id)
@@ -2062,6 +2098,11 @@ class LibraryViewModel @Inject constructor(
             }
             LibraryQuickMenuRow.HIDE -> {
                 if (game.isHidden) unhideGame(game.id) else hideGame(game.id)
+                toggleQuickMenu()
+                InputResult.HANDLED
+            }
+            LibraryQuickMenuRow.CLOSE_GAME -> {
+                requestCloseRunningGame()
                 toggleQuickMenu()
                 InputResult.HANDLED
             }

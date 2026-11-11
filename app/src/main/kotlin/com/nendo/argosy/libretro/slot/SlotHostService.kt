@@ -15,6 +15,7 @@ import com.nendo.argosy.data.emulator.LaunchOrigin
 import com.nendo.argosy.data.emulator.PlaySessionTracker
 import com.nendo.argosy.data.emulator.background.TaskSnapshots
 import com.nendo.argosy.libretro.slot.SlotProtocol.optionalLong
+import com.nendo.argosy.ui.screens.running.ResumeOverlay
 import com.nendo.argosy.util.Logger
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.CoroutineScope
@@ -34,6 +35,7 @@ class SlotHostService : Service() {
 
     @Inject lateinit var tracker: PlaySessionTracker
     @Inject lateinit var registry: SlotRegistry
+    @Inject lateinit var resumeOverlay: ResumeOverlay
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
     private val messenger = Messenger(Handler(Looper.getMainLooper()) { message -> receive(message) })
@@ -67,13 +69,17 @@ class SlotHostService : Service() {
                 startSession(data)
             }
             SlotProtocol.RESUMED -> {
-                GuideKeyRouter.claim(guideOwner(slotIndex)) { pressed ->
-                    send(slotIndex, SlotProtocol.GUIDE_KEY, bundleOf(SlotProtocol.KEY_PRESSED to pressed))
-                }
+                ResumedGameRouter.claim(
+                    owner = resumedOwner(slotIndex),
+                    onGuideKey = { pressed ->
+                        send(slotIndex, SlotProtocol.GUIDE_KEY, bundleOf(SlotProtocol.KEY_PRESSED to pressed))
+                    },
+                    onNotice = { notice -> send(slotIndex, SlotProtocol.NOTICE, notice.toBundle()) }
+                )
                 if (owns(slotIndex)) tracker.onBuiltInGameResumed()
             }
             SlotProtocol.PAUSED -> {
-                GuideKeyRouter.release(guideOwner(slotIndex))
+                ResumedGameRouter.release(resumedOwner(slotIndex))
                 if (owns(slotIndex)) tracker.onBuiltInGamePaused()
             }
             SlotProtocol.UPDATE_HARDCORE -> {
@@ -98,6 +104,7 @@ class SlotHostService : Service() {
                 registry.slots.value[slotIndex]?.let { forgetFrame(it.taskId) }
                 registry.remove(slotIndex)
             }
+            SlotProtocol.SHOW_RESUME -> showResume(slotIndex, data.getInt(SlotProtocol.KEY_DISPLAY_ID))
             else -> return false
         }
         return true
@@ -130,7 +137,8 @@ class SlotHostService : Service() {
             Logger.warn(TAG, "slot ${slot.slotIndex} process ${slot.pid} died holding game ${slot.gameId}")
             if (registry.slots.value[slot.slotIndex]?.pid == slot.pid) {
                 registry.remove(slot.slotIndex)
-                GuideKeyRouter.release(guideOwner(slot.slotIndex))
+                ResumedGameRouter.release(resumedOwner(slot.slotIndex))
+                registry.reportDied(slot)
             }
             endBuiltInSessionIfOwned(tracker, slot.gameId, skipSaveSync = false)
             removeTask(slot.taskId)
@@ -138,7 +146,14 @@ class SlotHostService : Service() {
         }
     }
 
-    private fun guideOwner(slotIndex: Int): String = "slot:$slotIndex"
+    private fun showResume(slotIndex: Int, displayId: Int) {
+        val shown = resumeOverlay.show(displayId) {
+            send(slotIndex, SlotProtocol.RESUME_CLOSED, bundleOf(SlotProtocol.KEY_SHOWN to true))
+        }
+        if (!shown) send(slotIndex, SlotProtocol.RESUME_CLOSED, bundleOf(SlotProtocol.KEY_SHOWN to false))
+    }
+
+    private fun resumedOwner(slotIndex: Int): String = "slot:$slotIndex"
 
     private fun forgetFrame(taskId: Int) {
         val context = applicationContext

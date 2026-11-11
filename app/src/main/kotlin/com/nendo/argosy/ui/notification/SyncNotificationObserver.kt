@@ -2,6 +2,7 @@ package com.nendo.argosy.core.notification
 
 import android.content.Context
 import com.nendo.argosy.R
+import com.nendo.argosy.data.emulator.PlaySessionTracker
 import com.nendo.argosy.data.repository.SaveSyncRepository
 import com.nendo.argosy.data.sync.SyncDirection
 import com.nendo.argosy.data.sync.SyncOperation
@@ -26,7 +27,8 @@ private const val BATCH_WINDOW_MS = 3_000L
 class SyncNotificationObserver @Inject constructor(
     @ApplicationContext private val context: Context,
     private val saveSyncRepository: SaveSyncRepository,
-    private val notificationManager: NotificationManager
+    private val notificationManager: NotificationManager,
+    private val playSessionTracker: PlaySessionTracker
 ) {
     private var previousState: SyncQueueState? = null
     private var isInitialLoad = true
@@ -121,7 +123,8 @@ class SyncNotificationObserver @Inject constructor(
                 imagePath = op.coverPath,
                 duration = NotificationDuration.MEDIUM,
                 key = "sync-${op.gameId}",
-                immediate = true
+                immediate = true,
+                category = categoryFor(op.gameId)
             )
             return
         }
@@ -169,9 +172,17 @@ class SyncNotificationObserver @Inject constructor(
             imagePath = operation.coverPath,
             duration = NotificationDuration.MEDIUM,
             key = "sync-${operation.gameId}",
-            immediate = true
+            immediate = true,
+            category = categoryFor(operation.gameId)
         )
     }
+
+    private fun categoryFor(gameId: Long): NotificationCategory =
+        if (playSessionTracker.activeSession.value?.gameId == gameId) {
+            NotificationCategory.SAVE
+        } else {
+            NotificationCategory.GENERAL
+        }
 
     private fun SyncQueueState.toNotificationState(): List<Pair<Long, SyncStatus>> {
         return operations.map { it.gameId to it.status }

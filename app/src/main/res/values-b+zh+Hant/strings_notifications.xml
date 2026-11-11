@@ -33,8 +33,8 @@
     <string name="notif_storage_hardreset_failed">重設失敗－%1$s</string>
     <string name="notif_storage_hardreset_failed_default_detail">請再試一次</string>
 
-    <string name="notif_social_friend_started_playing">開始遊玩%1$s</string>
-    <string name="notif_social_friend_online">目前已上線</string>
+    <string name="notif_social_presence_playing_title">正在遊玩</string>
+    <string name="notif_social_presence_online_title">線上</string>
 
     <string name="notif_settings_cache_validate_title">正在驗證圖片快取</string>
     <string name="notif_settings_cache_validate_starting">開始中&#8230;</string>
@@ -192,4 +192,22 @@
 
     <string name="notif_new_display_title">偵測到新顯示器</string>
     <string name="notif_new_display_action">設定顯示器</string>
+    <string name="notif_battery_low_title">電量 %1$d%%</string>
+    <string name="notif_battery_critical_title">電量 %1$d%%</string>
+    <string name="notif_battery_critical_saved">遊戲已儲存</string>
+    <string name="notif_battery_charging_title">充電中，%1$d%%</string>
+    <string name="notif_battery_charging_full_in_hours_minutes">%1$dh %2$dm 後充飽</string>
+    <string name="notif_battery_charging_full_in_minutes">%1$dm 後充飽</string>
+    <string name="notif_battery_unplugged_title">使用電池，%1$d%%</string>
+    <string name="notif_battery_unplugged_left_hours_minutes">剩餘 %1$dh %2$dm</string>
+    <string name="notif_battery_unplugged_left_minutes">剩餘 %1$dm</string>
+    <string name="notif_controller_connected_title">已連線</string>
+    <string name="notif_controller_disconnected_title">已中斷連線</string>
+    <plurals name="notif_controller_burst_connected_title">
+        <item quantity="other">%1$d 個已連線</item>
+    </plurals>
+    <plurals name="notif_controller_burst_disconnected_title">
+        <item quantity="other">%1$d 個已中斷</item>
+    </plurals>
+    <string name="notif_controller_battery_low_title">控制器電量低</string>
 </resources>

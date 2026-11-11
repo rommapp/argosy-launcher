@@ -26,6 +26,8 @@
     <string name="collections_options_rename">Renommer la collection</string>
     <string name="collections_options_delete">Supprimer la collection</string>
     <string name="collections_options_remove_game">Retirer \"%1$s\"</string>
+    <string name="collections_options_move_to_display">Déplacer vers l\'écran %1$d</string>
+    <string name="collections_options_close_game">Fermer le jeu</string>
     <string name="collections_options_remove_game_fallback">Jeu</string>
 
     <string name="collections_delete_dialog_title">Supprimer la collection</string>

@@ -187,16 +187,18 @@
     <!-- Accepting button on that prompt. -->
     <string name="ingame_return_confirm">Return</string>
 
-    <!-- Heading of the pop-up for an achievement earned under the strict RetroAchievements
-         mode. Rendered in caps in English. -->
-    <string name="ingame_achievement_hardcore_heading">HARDCORE UNLOCKED</string>
-    <!-- Heading of the pop-up for an achievement earned normally. Rendered in caps in
-         English. -->
-    <string name="ingame_achievement_heading">ACHIEVEMENT UNLOCKED</string>
-    <!-- Third line of that pop-up, saying what the achievement was worth. -->
-    <plurals name="ingame_achievement_points">
-        <item quantity="one">+%d point</item>
-        <item quantity="other">+%d points</item>
+    <!-- Title of the in-game notice for an achievement earned under the strict
+         RetroAchievements mode. %d is the points it was worth; "pts" abbreviates points. The
+         achievement's own name is the line below. Keep within 16 characters. -->
+    <plurals name="ingame_achievement_notice_hardcore_title">
+        <item quantity="one">Hardcore, %d pt</item>
+        <item quantity="other">Hardcore, %d pts</item>
+    </plurals>
+    <!-- Title of the same notice for an achievement earned normally. "Unlocked" is a
+         past participle: the achievement was just earned. Keep within 16 characters. -->
+    <plurals name="ingame_achievement_notice_unlocked_title">
+        <item quantity="one">Unlocked, %d pt</item>
+        <item quantity="other">Unlocked, %d pts</item>
     </plurals>
 
     <!-- Heading of the banner shown when the game signs in to the achievement service.
@@ -214,6 +216,104 @@
     <!-- Tail of that banner's second line. %1$d is how many achievements this game has
          already given up, %2$d how many it holds in total. -->
     <string name="ingame_raconnect_earned">%1$d/%2$d earned</string>
+
+    <!-- In-game notices from the quick-save hotkey. "Save states" is a noun: the save-state
+         feature. "off" means unavailable right now. Titles stay within 16 characters, second
+         lines within 17. -->
+    <string name="ingame_hotkey_quicksave_netplay_title">Save states off</string>
+    <!-- Second line: the reason is an online session in progress. -->
+    <string name="ingame_hotkey_quicksave_netplay_body">During netplay</string>
+    <string name="ingame_hotkey_quicksave_hardcore_title">Save states off</string>
+    <!-- Second line: the reason is the strict RetroAchievements mode. -->
+    <string name="ingame_hotkey_quicksave_hardcore_body">Hardcore mode</string>
+    <string name="ingame_hotkey_quicksave_unsupported_title">No save states</string>
+    <!-- Second line: the running emulator core cannot make save states. -->
+    <string name="ingame_hotkey_quicksave_unsupported_body">Not on this core</string>
+    <!-- "State" is a save state, not a completion status. -->
+    <string name="ingame_hotkey_quicksave_success_title">State saved</string>
+    <string name="ingame_hotkey_quicksave_failure_title">State not saved</string>
+
+    <!-- In-game notices from the quick-load hotkey. Same terms and limits as the quick-save
+         notices above. -->
+    <string name="ingame_hotkey_quickload_netplay_title">Save states off</string>
+    <string name="ingame_hotkey_quickload_netplay_body">During netplay</string>
+    <string name="ingame_hotkey_quickload_hardcore_title">Save states off</string>
+    <string name="ingame_hotkey_quickload_hardcore_body">Hardcore mode</string>
+    <string name="ingame_hotkey_quickload_unsupported_title">No save states</string>
+    <string name="ingame_hotkey_quickload_unsupported_body">Not on this core</string>
+    <!-- "State" is a save state, not a completion status. -->
+    <string name="ingame_hotkey_quickload_success_title">State loaded</string>
+    <string name="ingame_hotkey_quickload_failure_title">State not loaded</string>
+
+    <!-- In-game notice when the rewind hotkey is refused in the strict RetroAchievements
+         mode. Keep within 16 characters; the second line within 17. -->
+    <string name="ingame_hotkey_rewind_hardcore_title">Rewind off</string>
+    <string name="ingame_hotkey_rewind_hardcore_body">Hardcore mode</string>
+    <!-- In-game notice when the reset hotkey is refused during an online session. "Reset" is
+         a noun: restarting the game. -->
+    <string name="ingame_hotkey_reset_netplay_title">Reset off</string>
+    <string name="ingame_hotkey_reset_netplay_body">During netplay</string>
+    <!-- In-game notice after the reset hotkey restarts the game. Statement: the game was
+         reset. -->
+    <string name="ingame_hotkey_reset_success_title">Game reset</string>
+
+    <!-- Netplay notices shown over the game. Titles stay within 16 characters, second lines
+         within 17. A friend's name, when shown, is the second line. -->
+    <!-- Title when a friend joins the session the player hosts and no ping is known yet. -->
+    <string name="ingame_netplay_notice_joined_title">Friend joined</string>
+    <!-- Title when a friend joins and the round-trip time is known. %1$d is milliseconds. -->
+    <string name="ingame_netplay_notice_joined_ping_title">Joined, %1$d ms</string>
+    <!-- Second line standing in for a friend whose name is not known. -->
+    <string name="ingame_netplay_notice_peer_fallback">Friend</string>
+    <!-- Title when the connection quality changes. %1$d is the ping in milliseconds; the
+         second line is the quality rating. -->
+    <string name="ingame_netplay_notice_quality_title">Ping %1$d ms</string>
+    <!-- Title when the friend leaves the session the player hosts. -->
+    <string name="ingame_netplay_notice_left_title">Friend left</string>
+    <!-- Title and second line when a session cannot be opened because netplay is not
+         available right now. -->
+    <string name="ingame_netplay_notice_open_unavailable_title">Netplay error</string>
+    <string name="ingame_netplay_notice_open_unavailable_body">Not available</string>
+    <!-- Title and second line when a session cannot be opened because the game and core
+         could not be identified for matching. -->
+    <string name="ingame_netplay_notice_open_hash_title">Netplay error</string>
+    <string name="ingame_netplay_notice_open_hash_body">Game check failed</string>
+    <!-- Title once the player's session is open. The second line names who may join. -->
+    <string name="ingame_netplay_notice_opened_title">Session open</string>
+    <string name="ingame_netplay_notice_opened_open_body">Open to friends</string>
+    <!-- Adjective: only friends the player approves may join. -->
+    <string name="ingame_netplay_notice_opened_private_body">Private</string>
+    <!-- Only the invited friend may join. -->
+    <string name="ingame_netplay_notice_opened_invite_body">Invite only</string>
+    <!-- Title and second line when the server refused to open the session. -->
+    <string name="ingame_netplay_notice_open_failed_title">Netplay failed</string>
+    <string name="ingame_netplay_notice_open_failed_body">Session not open</string>
+    <!-- Title and second line when the friend picker cannot open because netplay is not
+         available right now. -->
+    <string name="ingame_netplay_notice_invite_unavailable_title">Netplay error</string>
+    <string name="ingame_netplay_notice_invite_unavailable_body">Not available</string>
+    <!-- Title after inviting a friend into a session already open. The friend's name is the
+         second line. "Invite" is a noun. -->
+    <string name="ingame_netplay_notice_invite_sent_title">Invite sent</string>
+    <string name="ingame_netplay_notice_invite_failed_title">Invite failed</string>
+    <!-- Title and second line when a session for an invite cannot be opened because the game
+         and core could not be identified for matching. -->
+    <string name="ingame_netplay_notice_invite_hash_title">Netplay error</string>
+    <string name="ingame_netplay_notice_invite_hash_body">Game check failed</string>
+    <!-- Title after opening a session for a friend and inviting them. The friend's name is the
+         second line. -->
+    <string name="ingame_netplay_notice_open_invite_sent_title">Invite sent</string>
+    <!-- Title and second line when the session opened but the invite did not go through. -->
+    <string name="ingame_netplay_notice_open_invite_failed_title">Invite failed</string>
+    <string name="ingame_netplay_notice_open_invite_failed_body">Session is open</string>
+    <!-- Title and second line when the server refused to open a session for an invite. -->
+    <string name="ingame_netplay_notice_invite_open_failed_title">Netplay failed</string>
+    <string name="ingame_netplay_notice_invite_open_failed_body">Session not open</string>
+    <!-- Title after an invite-only session is opened to every friend. -->
+    <string name="ingame_netplay_notice_reservation_cleared_title">Open to friends</string>
+    <!-- Title and second line when that change fails and the session stays invite-only. -->
+    <string name="ingame_netplay_notice_reservation_failed_title">Change failed</string>
+    <string name="ingame_netplay_notice_reservation_failed_body">Still invite-only</string>
 
     <!-- Drawn under the clock on the run timer panel while the run is held. Adjective
          describing the run. Rendered in caps in English. -->
@@ -1338,4 +1438,56 @@
     <string name="ingame_touch_generic_shoulder_r" translatable="false">R</string>
     <string name="ingame_touch_generic_sys_select">Select</string>
     <string name="ingame_touch_generic_sys_start">Start</string>
+
+    <!-- Controller cards inside a built-in game (InGameControllerNotices). Titles fit 16
+         characters and Argosy-written bodies 17; a controller's own name goes in the body as the
+         system reports it. "Player" is a seat in the game, numbered from 1. -->
+
+    <!-- A controller connected and has no player seat yet; its first button press gives it one.
+         Instruction, short imperative. -->
+    <string name="ingame_controller_join_prompt_title">Press to join</string>
+    <!-- A controller took a player seat. %1$d is the player number. -->
+    <string name="ingame_controller_joined_title">Player %1$d joined</string>
+    <!-- A controller disconnected while the game kept running. Past participle. -->
+    <string name="ingame_controller_disconnected_title">Disconnected</string>
+    <!-- Several controllers took player seats at once. %1$d is how many. -->
+    <plurals name="ingame_controller_burst_joined_title">
+        <item quantity="one">%1$d player joined</item>
+        <item quantity="other">%1$d players joined</item>
+    </plurals>
+    <!-- Several controllers connected at once and some still have no seat. %1$d is how many
+         connected. -->
+    <plurals name="ingame_controller_burst_connected_title">
+        <item quantity="one">%1$d connected</item>
+        <item quantity="other">%1$d connected</item>
+    </plurals>
+    <!-- Body under that title. %1$d is how many of those controllers have no seat yet. -->
+    <plurals name="ingame_controller_burst_waiting_body">
+        <item quantity="one">%1$d waiting to join</item>
+        <item quantity="other">%1$d waiting to join</item>
+    </plurals>
+    <!-- Several controllers disconnected at once. %1$d is how many. -->
+    <plurals name="ingame_controller_burst_disconnected_title">
+        <item quantity="one">%1$d disconnected</item>
+        <item quantity="other">%1$d disconnected</item>
+    </plurals>
+    <!-- Body naming two player seats. %1$d and %2$d are player numbers. -->
+    <string name="ingame_controller_players_two">Players %1$d and %2$d</string>
+    <!-- Body naming three player seats. %1$d, %2$d and %3$d are player numbers. -->
+    <string name="ingame_controller_players_three">Players %1$d, %2$d and %3$d</string>
+    <!-- The controller playing a seat disconnected, so the game is paused until a controller
+         plays that seat again. "Paused" is the game's state. -->
+    <string name="ingame_controller_paused_title">Game paused</string>
+    <!-- Body under that title. Short imperative: connect the controller again. -->
+    <string name="ingame_controller_paused_body">Reconnect to play</string>
+    <!-- Offer to the controller just pressed to play the empty seat. %1$d is the player number. -->
+    <string name="ingame_controller_offer_title">Take Player %1$d?</string>
+    <!-- Body under that offer. %1$s is the confirm button, drawn as its glyph. -->
+    <string name="ingame_controller_offer_body">Press %1$s to join</string>
+    <!-- A wireless controller's own battery is low. "Pad" is short for game controller. -->
+    <string name="ingame_controller_battery_low_title">Pad battery low</string>
+    <!-- Corner badge naming a player seat. %1$d is the player number; P stands for Player. -->
+    <string name="ingame_controller_badge_player">P%1$d</string>
+    <!-- Corner badge counting the controllers a card covers. -->
+    <string name="ingame_controller_badge_count" translatable="false">%1$d</string>
 </resources>

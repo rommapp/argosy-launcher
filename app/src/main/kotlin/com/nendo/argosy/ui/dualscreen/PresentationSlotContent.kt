@@ -51,6 +51,7 @@ import coil.compose.AsyncImage
 import com.nendo.argosy.ui.ScreenDimmerPreferences
 import com.nendo.argosy.ui.toScreenDimmerPreferences
 import com.nendo.argosy.ui.common.rememberFileImageModel
+import com.nendo.argosy.ui.common.toRunningGamesUi
 import com.nendo.argosy.ui.components.FooterBarWithState
 import com.nendo.argosy.ui.components.FooterHintItem
 import com.nendo.argosy.ui.components.LocalFrostedBackdrop
@@ -161,7 +162,7 @@ private fun PresentationSlotBody(
             com.nendo.argosy.core.notification.NotificationHost(
                 manager = manager.notificationManager,
                 modifier = Modifier
-                    .align(Alignment.BottomCenter)
+                    .align(Alignment.BottomEnd)
                     .padding(bottom = hintsHeight),
                 mutedKeys = mutedKeys
             )
@@ -202,13 +203,22 @@ private fun PresentationSlotScene(
                     ?: com.nendo.argosy.domain.model.PresentationStyle()
                 val backgroundBlur = com.nendo.argosy.DualScreenManagerHolder.instance
                     ?.presentationBackgroundBlur?.collectAsState()?.value ?: 0
-                CompanionDetailScreen(
-                    detail = slot.detail,
-                    style = style,
-                    backgroundBlur = backgroundBlur,
-                    bottomInset = hintsHeight,
-                    modifier = Modifier.fillMaxSize()
-                )
+                val runningSnapshot = com.nendo.argosy.DualScreenManagerHolder.instance
+                    ?.runningGames?.state?.collectAsState()?.value
+                val running = remember(runningSnapshot) {
+                    runningSnapshot?.toRunningGamesUi() ?: com.nendo.argosy.ui.common.RunningGamesUi()
+                }
+                androidx.compose.runtime.CompositionLocalProvider(
+                    com.nendo.argosy.ui.common.LocalRunningGames provides running
+                ) {
+                    CompanionDetailScreen(
+                        detail = slot.detail,
+                        style = style,
+                        backgroundBlur = backgroundBlur,
+                        bottomInset = hintsHeight,
+                        modifier = Modifier.fillMaxSize()
+                    )
+                }
             }
             is PresentationSlot.PlatformShowcase -> PlatformShowcaseContent(slot)
             is PresentationSlot.SaveGame -> SaveGameSlot(slot, bottomInset = hintsHeight)

@@ -1,57 +1,38 @@
 package com.nendo.argosy.core.notification
 
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.core.spring
-import androidx.compose.animation.core.tween
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.scaleIn
-import androidx.compose.animation.scaleOut
-import androidx.compose.animation.slideInHorizontally
-import androidx.compose.animation.slideOutHorizontally
-import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.compositeOver
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.unit.dp
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LocalLifecycleOwner
+import androidx.lifecycle.compose.currentStateAsState
 import coil.compose.AsyncImage
-import com.nendo.argosy.R
 import com.nendo.argosy.ui.components.PlatformIconAssets
-import com.nendo.argosy.ui.primitives.ArgosyProgressBar
+import com.nendo.argosy.ui.notification.NotificationCard
+import com.nendo.argosy.ui.notification.NotificationSeverity
 import com.nendo.argosy.ui.theme.Dimens
-import com.nendo.argosy.ui.theme.LocalLauncherTheme
 import kotlinx.coroutines.delay
-
-private val PERSISTENT_BAR_HEIGHT = 52.dp  // Static: matches specific UI design spec
-private val FOOTER_CLEARANCE = 56.dp  // Static: matches specific UI design spec
 
 @Composable
 fun NotificationText.resolve(): String = when (this) {
@@ -66,24 +47,29 @@ fun NotificationText.resolve(context: android.content.Context): String = when (t
     is NotificationText.Plural -> context.resources.getQuantityString(id, count, *args.toTypedArray())
 }
 
-private fun NotificationProgress.displayText(): String = "$current / $total"
-
-/**
- * [mutedKeys] hides notifications a screen is already showing better than a toast can. Muting is
- * a render decision, so the notification is still held and reappears the moment that screen is
- * left, and a screen cannot mute anything it is not displaying.
- */
 @Composable
 fun NotificationHost(
     manager: NotificationManager,
     modifier: Modifier = Modifier,
     mutedKeys: Set<String> = emptySet()
 ) {
+    val lifecycleState by LocalLifecycleOwner.current.lifecycle.currentStateAsState()
+    val started = lifecycleState.isAtLeast(Lifecycle.State.STARTED)
+    DisposableEffect(manager, started) {
+        if (started) manager.onSurfaceStarted()
+        onDispose { if (started) manager.onSurfaceStopped() }
+    }
+
     val notifications by manager.notifications.collectAsState()
     val persistentAll by manager.persistentNotifications.collectAsState()
-    val visiblePersistent = persistentAll.filterNot { it.key in mutedKeys }
+    val noticePreferences by manager.preferences.collectAsState()
+    val visiblePersistent = if (started && noticePreferences.enabled) {
+        persistentAll.filterNot { it.key in mutedKeys }
+    } else {
+        emptyList()
+    }
     val persistent = visiblePersistent.lastOrNull()
-    val current = notifications.firstOrNull { it.key == null || it.key !in mutedKeys }
+    val current = if (started) notifications.firstOrNull { it.key == null || it.key !in mutedKeys } else null
 
     LaunchedEffect(current?.id) {
         current?.let { notification ->
@@ -92,42 +78,28 @@ fun NotificationHost(
         }
     }
 
-    Box(modifier = modifier.fillMaxSize()) {
-        AnimatedVisibility(
-            visible = current != null,
-            enter = slideInHorizontally(initialOffsetX = { it }) +
-                    fadeIn(animationSpec = tween(200)) +
-                    scaleIn(
-                        initialScale = 0.92f,
-                        animationSpec = spring(dampingRatio = 0.7f, stiffness = 400f)
-                    ),
-            exit = slideOutHorizontally(targetOffsetX = { it / 3 }) +
-                   fadeOut(animationSpec = tween(150)) +
-                   scaleOut(targetScale = 0.95f),
-            modifier = Modifier
-                .align(Alignment.BottomEnd)
-                .padding(end = Dimens.spacingMd)
-                .padding(bottom = if (persistent != null) PERSISTENT_BAR_HEIGHT + FOOTER_CLEARANCE + Dimens.spacingSm else FOOTER_CLEARANCE)
-        ) {
-            current?.let { notification ->
-                NotificationBar(notification = notification)
-            }
-        }
+    val shownTransient = rememberLatest(current)
+    val shownPersistent = rememberLatest(persistent)
 
-        AnimatedVisibility(
-            visible = persistent != null,
-            enter = slideInHorizontally(initialOffsetX = { it }) +
-                    fadeIn(animationSpec = tween(200)),
-            exit = slideOutHorizontally(targetOffsetX = { it / 3 }) +
-                   fadeOut(animationSpec = tween(150)),
+    Box(modifier = modifier.fillMaxSize()) {
+        Column(
             modifier = Modifier
                 .align(Alignment.BottomEnd)
-                .padding(end = Dimens.spacingMd, bottom = FOOTER_CLEARANCE)
+                .padding(end = Dimens.spacingMd, bottom = Dimens.footerHeight + Dimens.spacingXs),
+            horizontalAlignment = Alignment.End,
+            verticalArrangement = Arrangement.spacedBy(Dimens.spacingSm)
         ) {
-            persistent?.let { notification ->
-                PersistentNotificationBar(
+            shownTransient?.let { notification ->
+                TransientNotificationCard(
                     notification = notification,
-                    alsoRunning = visiblePersistent.size - 1
+                    visible = current != null
+                )
+            }
+            shownPersistent?.let { notification ->
+                PersistentNotificationCard(
+                    notification = notification,
+                    alsoRunning = visiblePersistent.size - 1,
+                    visible = persistent != null
                 )
             }
         }
@@ -135,201 +107,97 @@ fun NotificationHost(
 }
 
 @Composable
-private fun NotificationBar(
+private fun <T : Any> rememberLatest(value: T?): T? {
+    val latest = remember { mutableStateOf(value) }
+    SideEffect {
+        if (value != null) latest.value = value
+    }
+    return value ?: latest.value
+}
+
+@Composable
+private fun rememberPlatformIconUri(platformSlug: String?): String? {
+    val context = LocalContext.current
+    return remember(platformSlug) {
+        platformSlug?.let { slug -> PlatformIconAssets.resolveAssetUri(context, slug) }
+    }
+}
+
+@Composable
+private fun TransientNotificationCard(
     notification: Notification,
-    modifier: Modifier = Modifier
+    visible: Boolean
 ) {
-    val typeColors = notificationColors(notification.type)
-    val accent = notification.accentColor?.let { Color(it) }
-    val colors = if (accent != null) NotificationColors(icon = accent, tint = accent) else typeColors
-    val baseColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.92f)
-    val backgroundColor = colors.tint.copy(alpha = 0.15f).compositeOver(baseColor)
-    val textColor = MaterialTheme.colorScheme.onSurface
-    val isError = notification.type == NotificationType.ERROR
-
-    Row(
-        modifier = modifier
-            .widthIn(max = if (isError) Dimens.modalWidth + Dimens.spacingSm + Dimens.borderMedium else Dimens.modalWidth - Dimens.headerHeight + Dimens.spacingSm)
-            .clip(RoundedCornerShape(Dimens.spacingSm + Dimens.borderMedium))
-            .background(backgroundColor)
-            .padding(Dimens.spacingSm),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        val platformIconUri = notification.platformSlug?.let { slug ->
-            val context = LocalContext.current
-            remember(slug) { PlatformIconAssets.resolveAssetUri(context, slug) }
-        }
-
-        when {
-            notification.imagePath != null -> AsyncImage(
-                model = notification.imagePath,
+    val platformIconUri = rememberPlatformIconUri(notification.platformSlug)
+    val imagePath = notification.imagePath
+    val icon: (@Composable (Color) -> Unit)? = when {
+        imagePath != null -> { _ ->
+            AsyncImage(
+                model = imagePath,
                 contentDescription = null,
                 contentScale = ContentScale.Crop,
                 modifier = Modifier
-                    .size(Dimens.iconLg)
-                    .clip(RoundedCornerShape(Dimens.spacingSm - Dimens.borderMedium))
+                    .size(Dimens.avatarMd)
+                    .clip(RoundedCornerShape(Dimens.radiusSm))
             )
-            platformIconUri != null -> AsyncImage(
+        }
+        platformIconUri != null -> { _ ->
+            AsyncImage(
                 model = platformIconUri,
                 contentDescription = null,
                 contentScale = ContentScale.Fit,
                 modifier = Modifier.size(Dimens.iconMd)
             )
-            else -> Icon(
-                painter = painterResource(R.drawable.ic_helm),
-                contentDescription = null,
-                tint = colors.icon,
-                modifier = Modifier.size(Dimens.iconMd)
-            )
         }
-
-        Spacer(modifier = Modifier.width(Dimens.spacingSm))
-
-        Column(modifier = Modifier.weight(1f)) {
-            val isError = notification.type == NotificationType.ERROR
-            Text(
-                text = notification.title.resolve(),
-                style = MaterialTheme.typography.bodyMedium,
-                fontWeight = FontWeight.Medium,
-                color = textColor,
-                maxLines = if (isError) 2 else 1,
-                overflow = TextOverflow.Ellipsis
-            )
-            notification.subtitle?.let { subtitle ->
-                Text(
-                    text = subtitle.resolve(),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = textColor.copy(alpha = 0.7f),
-                    maxLines = if (isError) 3 else 1,
-                    overflow = TextOverflow.Ellipsis
-                )
-            }
-        }
+        else -> null
     }
+
+    NotificationCard(
+        visible = visible,
+        severity = notification.type.severity(),
+        title = notification.title.resolve(),
+        body = notification.subtitle?.resolve(),
+        accentOverride = notification.accentColor?.let { Color(it) },
+        icon = icon
+    )
 }
 
 @Composable
-private fun PersistentNotificationBar(
+private fun PersistentNotificationCard(
     notification: Notification,
     alsoRunning: Int,
-    modifier: Modifier = Modifier
+    visible: Boolean
 ) {
-    val baseColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.92f)
-    val accentColor = MaterialTheme.colorScheme.secondary
-    val backgroundColor = accentColor.copy(alpha = 0.10f).compositeOver(baseColor)
-    val textColor = MaterialTheme.colorScheme.onSurface
+    val platformIconUri = rememberPlatformIconUri(notification.platformSlug)
 
-    Column(
-        modifier = modifier
-            .widthIn(max = Dimens.modalWidth - Dimens.headerHeight + Dimens.spacingSm)
-            .clip(RoundedCornerShape(Dimens.spacingSm + Dimens.borderMedium))
-            .background(backgroundColor)
-    ) {
-        Row(
-            modifier = Modifier.padding(Dimens.spacingSm),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            val platformIconUri = notification.platformSlug?.let { slug ->
-                val context = LocalContext.current
-                remember(slug) { PlatformIconAssets.resolveAssetUri(context, slug) }
-            }
-
-            if (platformIconUri != null) {
-                Box(contentAlignment = Alignment.Center) {
-                    CircularProgressIndicator(
-                        modifier = Modifier.size(Dimens.iconLg),
-                        color = accentColor,
-                        strokeWidth = Dimens.borderMedium
-                    )
-                    AsyncImage(
-                        model = platformIconUri,
-                        contentDescription = null,
-                        contentScale = ContentScale.Fit,
-                        modifier = Modifier.size(Dimens.iconSm)
-                    )
-                }
-            } else {
-                CircularProgressIndicator(
-                    modifier = Modifier.size(Dimens.iconSm + Dimens.borderMedium),
-                    color = accentColor,
-                    strokeWidth = Dimens.borderMedium
-                )
-            }
-
-            Spacer(modifier = Modifier.width(Dimens.spacingSm))
-
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = notification.title.resolve(),
-                    style = MaterialTheme.typography.bodySmall,
-                    fontWeight = FontWeight.Medium,
-                    color = textColor,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
-                )
-                notification.subtitle?.let { subtitle ->
-                    Text(
-                        text = subtitle.resolve(),
-                        style = MaterialTheme.typography.labelSmall,
-                        color = textColor.copy(alpha = 0.7f),
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
-                    )
-                }
-            }
-
-            notification.progress?.let { progress ->
-                Text(
-                    text = progress.displayText(),
-                    style = MaterialTheme.typography.labelSmall,
-                    color = accentColor
-                )
-            }
-
-            if (alsoRunning > 0) {
-                Spacer(modifier = Modifier.width(Dimens.spacingSm))
-                Text(
-                    text = pluralStringResource(
-                        R.plurals.notification_persistent_also_running,
-                        alsoRunning,
-                        alsoRunning
-                    ),
-                    style = MaterialTheme.typography.labelSmall,
-                    color = textColor.copy(alpha = 0.7f)
+    NotificationCard(
+        visible = visible,
+        severity = NotificationSeverity.PROGRESS,
+        title = notification.title.resolve(),
+        body = notification.subtitle?.resolve(),
+        badge = if (alsoRunning > 0) "+$alsoRunning" else null,
+        progress = notification.progress?.fraction,
+        icon = { accent ->
+            CircularProgressIndicator(
+                modifier = Modifier.size(Dimens.iconLg),
+                color = accent,
+                strokeWidth = Dimens.borderMedium
+            )
+            platformIconUri?.let { uri ->
+                AsyncImage(
+                    model = uri,
+                    contentDescription = null,
+                    contentScale = ContentScale.Fit,
+                    modifier = Modifier.size(Dimens.iconSm)
                 )
             }
         }
-
-        notification.progress?.let { progress ->
-            ArgosyProgressBar(progress = progress.fraction, tint = accentColor)
-        }
-    }
+    )
 }
 
-private data class NotificationColors(
-    val icon: Color,
-    val tint: Color
-)
-
-@Composable
-private fun notificationColors(type: NotificationType): NotificationColors {
-    val semantic = LocalLauncherTheme.current.semanticColors
-    return when (type) {
-        NotificationType.SUCCESS -> NotificationColors(
-            icon = semantic.success,
-            tint = semantic.success
-        )
-        NotificationType.INFO -> NotificationColors(
-            icon = MaterialTheme.colorScheme.primary,
-            tint = MaterialTheme.colorScheme.primary
-        )
-        NotificationType.WARNING -> NotificationColors(
-            icon = semantic.warning,
-            tint = semantic.warning
-        )
-        NotificationType.ERROR -> NotificationColors(
-            icon = MaterialTheme.colorScheme.error,
-            tint = MaterialTheme.colorScheme.error
-        )
-    }
+internal fun NotificationType.severity(): NotificationSeverity = when (this) {
+    NotificationType.SUCCESS -> NotificationSeverity.SUCCESS
+    NotificationType.INFO -> NotificationSeverity.INFO
+    NotificationType.WARNING -> NotificationSeverity.WARNING
+    NotificationType.ERROR -> NotificationSeverity.ERROR
 }

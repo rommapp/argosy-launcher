@@ -71,6 +71,7 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
+import com.nendo.argosy.ui.common.toRunningGamesUi
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onEach
@@ -141,7 +142,9 @@ class GameDetailViewModel @Inject constructor(
     private val gameThemeAudio: com.nendo.argosy.ui.audio.GameThemeAudioCoordinator,
     private val siblingChoice: com.nendo.argosy.ui.screens.common.SiblingChoiceDelegate,
     private val steamInstallReports: com.nendo.argosy.data.launcher.SteamInstallReports,
-    private val appsRepository: com.nendo.argosy.data.repository.AppsRepository
+    private val appsRepository: com.nendo.argosy.data.repository.AppsRepository,
+    private val runningGames: com.nendo.argosy.data.emulator.background.RunningGames,
+    val runningGameMenu: com.nendo.argosy.ui.screens.running.RunningGameMenu
 ) : ViewModel() {
 
     val siblingChoiceState = siblingChoice.state
@@ -251,6 +254,15 @@ class GameDetailViewModel @Inject constructor(
 
     init {
         modalResetSignal.signal.onEach { resetAllModals() }.launchIn(viewModelScope)
+
+        viewModelScope.launch {
+            kotlinx.coroutines.flow.combine(
+                runningGames.state,
+                _uiState.map { it.game?.id }.distinctUntilChanged()
+            ) { snapshot, gameId ->
+                gameId?.let { snapshot.toRunningGamesUi().markFor(it) }
+            }.distinctUntilChanged().collect { mark -> applyRunningMark(mark) }
+        }
 
         viewModelScope.launch {
             _uiState.map { state -> state.game?.toCompanionDetail(state.friendsActivity) }
@@ -1170,6 +1182,7 @@ class GameDetailViewModel @Inject constructor(
         lastActionTime = now
 
         val state = _uiState.value
+        if (state.running?.isClosing == true) return
         when (state.downloadStatus) {
             GameDownloadStatus.NO_FILE -> notificationManager.showError(
                 NotificationText.Res(R.string.gamedetail_notice_no_file)
@@ -2230,8 +2243,9 @@ class GameDetailViewModel @Inject constructor(
 
     fun executeMenuAction() {
         val state = menuLayoutState()
-        when (menuLayout.itemAtFocusIndex(_uiState.value.menuFocusIndex, state)) {
+        when (val item = menuLayout.itemAtFocusIndex(_uiState.value.menuFocusIndex, state)) {
             MenuItem.Play -> primaryAction()
+            is MenuItem.MoveToDisplay -> moveRunningGame(item.slot)
             MenuItem.Saves -> syncSavesNow()
             MenuItem.Favorite -> toggleFavorite()
             MenuItem.Privacy -> togglePrivacy()
@@ -2244,8 +2258,46 @@ class GameDetailViewModel @Inject constructor(
             MenuItem.Reviews -> showReviewList()
             MenuItem.Achievements -> showAchievementList()
             MenuItem.RelatedGames -> {}
+            MenuItem.CloseGame -> requestCloseRunningGame()
             null -> {}
         }
+    }
+
+    private var moveTargetsJob: kotlinx.coroutines.Job? = null
+
+    private fun applyRunningMark(mark: com.nendo.argosy.ui.common.RunningGameUi?) {
+        _uiState.update { state ->
+            val next = state.copy(
+                running = mark,
+                runningMoveTargets = if (mark == null) emptyList() else state.runningMoveTargets
+            )
+            val maxIndex = menuLayout.maxFocusIndex(next.menuLayoutState)
+            if (next.menuFocusIndex > maxIndex) next.copy(menuFocusIndex = maxIndex) else next
+        }
+        moveTargetsJob?.cancel()
+        if (mark == null) return
+        moveTargetsJob = viewModelScope.launch {
+            val targets = runningGameMenu.moveTargets(mark)
+            _uiState.update { state ->
+                if (state.running?.taskId != mark.taskId) return@update state
+                val next = state.copy(runningMoveTargets = targets)
+                val maxIndex = menuLayout.maxFocusIndex(next.menuLayoutState)
+                if (next.menuFocusIndex > maxIndex) next.copy(menuFocusIndex = maxIndex) else next
+            }
+        }
+    }
+
+    fun requestCloseRunningGame() {
+        val state = _uiState.value
+        runningGameMenu.requestClose(state.running, state.game?.title)
+    }
+
+    fun moveRunningGame(slot: Int) {
+        val state = _uiState.value
+        val running = state.running ?: return
+        val target = state.runningMoveTargets.getOrNull(slot) ?: return
+        val title = state.game?.title ?: return
+        runningGameMenu.moveTo(viewModelScope, running, target, title)
     }
 
     private fun loadRelatedGames(game: com.nendo.argosy.data.local.entity.GameEntity) {

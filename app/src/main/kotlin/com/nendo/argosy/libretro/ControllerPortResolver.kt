@@ -6,6 +6,7 @@ import com.nendo.argosy.core.input.controllerIdOf
 import com.nendo.argosy.core.input.isPhysicalGamepad
 import com.nendo.argosy.data.local.entity.ControllerOrderEntity
 import com.swordfish.libretrodroid.PortResolver
+import java.util.concurrent.CopyOnWriteArrayList
 
 /**
  * Seats each pad on its session seat, its settings-assigned port, or the port its first input
@@ -16,11 +17,23 @@ import com.swordfish.libretrodroid.PortResolver
 class ControllerPortResolver : PortResolver {
     private var controllerOrder: Map<String, Int> = emptyMap()
     private val claimedPorts = mutableMapOf<String, Int>()
+    private val seatTakers = mutableMapOf<Int, String>()
     private var sessionSeats: Map<String, Int> = emptyMap()
     private var launchPadId: String? = null
     private var docked = false
+    private val portClaimedListeners = CopyOnWriteArrayList<(controllerId: String, port: Int) -> Unit>()
 
-    var onPortClaimed: ((controllerId: String, port: Int) -> Unit)? = null
+    /**
+     * Runs [listener] on the input path each time a pad takes a seat, with the seat it holds. A
+     * listener must return at once and hand any further work off.
+     */
+    fun addPortClaimedListener(listener: (controllerId: String, port: Int) -> Unit) {
+        portClaimedListeners += listener
+    }
+
+    fun removePortClaimedListener(listener: (controllerId: String, port: Int) -> Unit) {
+        portClaimedListeners -= listener
+    }
 
     fun setControllerOrder(orders: List<ControllerOrderEntity>) {
         controllerOrder = orders.associate { it.controllerId to it.port }
@@ -31,6 +44,7 @@ class ControllerPortResolver : PortResolver {
     fun clearControllerOrder() {
         controllerOrder = emptyMap()
         claimedPorts.clear()
+        seatTakers.clear()
         reseatLaunchPad()
     }
 
@@ -46,20 +60,41 @@ class ControllerPortResolver : PortResolver {
 
     /**
      * Drops the claims of disconnected pads, and of built-in pads once no external pad remains.
-     * Settings assignments are kept.
+     * Settings assignments are kept. Returns the seats the disconnected pads held before the
+     * release, by controller id.
      */
-    fun releaseDisconnected(connectedControllerIds: Set<String>) {
+    fun releaseDisconnected(connectedControllerIds: Set<String>): Map<String, Int> {
+        val released = (sessionSeats.keys + claimedPorts.keys)
+            .filter { it !in connectedControllerIds }
+            .mapNotNull { id -> seatOf(id)?.let { id to it } }
+            .toMap()
         claimedPorts.keys.retainAll(connectedControllerIds)
+        seatTakers.values.retainAll(connectedControllerIds)
         val pads = connectedGamepads()
         if (pads.none { !ControllerDetector.isBuiltInPad(it) }) {
             pads.filter { ControllerDetector.isBuiltInPad(it) }
                 .forEach { claimedPorts.remove(controllerIdOf(it)) }
         }
         reseatLaunchPad()
+        return released
+    }
+
+    /**
+     * Seats this pad on [port] for the rest of the session, ahead of a settings assignment that
+     * names another pad for it. Settings assignments themselves are kept.
+     */
+    fun takeSeat(controllerId: String, port: Int) {
+        claimedPorts.entries.removeAll { it.value == port && it.key != controllerId }
+        seatTakers.entries.removeAll { it.value == controllerId }
+        claimedPorts[controllerId] = port
+        seatTakers[port] = controllerId
+        reseatLaunchPad()
+        notifyClaimed(controllerId, seatOf(controllerId) ?: port)
     }
 
     fun playerOneControllerId(): String? =
         sessionSeats.entries.firstOrNull { it.value == 0 }?.key
+            ?: seatTakers[0]
             ?: controllerOrder.entries.firstOrNull { it.value == 0 }?.key
             ?: claimedPorts.entries.firstOrNull { it.value == 0 }?.key
 
@@ -83,8 +118,14 @@ class ControllerPortResolver : PortResolver {
 
     fun hasCustomOrder(): Boolean = controllerOrder.isNotEmpty()
 
-    private fun seatOf(controllerId: String): Int? =
-        sessionSeats[controllerId] ?: controllerOrder[controllerId] ?: claimedPorts[controllerId]
+    /**
+     * The seat this pad holds right now, by controller id. A settings assignment whose seat another
+     * pad has taken for the session does not count.
+     */
+    fun seatOf(controllerId: String): Int? =
+        sessionSeats[controllerId]
+            ?: controllerOrder[controllerId]?.takeIf { port -> seatTakers[port].let { it == null || it == controllerId } }
+            ?: claimedPorts[controllerId]
 
     private fun claimPort(controllerId: String, lowestPort: Int) {
         val taken = controllerOrder.values.toSet() + claimedPorts.values.toSet() + sessionSeats.values.toSet()
@@ -92,7 +133,11 @@ class ControllerPortResolver : PortResolver {
         while (port in taken) port++
         claimedPorts[controllerId] = port
         reseatLaunchPad()
-        onPortClaimed?.invoke(controllerId, seatOf(controllerId) ?: port)
+        notifyClaimed(controllerId, seatOf(controllerId) ?: port)
+    }
+
+    private fun notifyClaimed(controllerId: String, port: Int) {
+        portClaimedListeners.forEach { it(controllerId, port) }
     }
 
     private fun reseatLaunchPad() {

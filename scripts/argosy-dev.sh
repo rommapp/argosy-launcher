@@ -18,7 +18,7 @@ set -euo pipefail
 
 PKG="com.nendo.argosy.debug"
 APK="app/build/outputs/apk/debug/app-debug.apk"
-ACTIVITY="$PKG/com.nendo.argosy.ArgosyActivity"
+HOME_ACTIVITY="$PKG/com.nendo.argosy.MainActivity"
 
 resolve_serial() {
   if [ -n "${ARGOSY_DEVICE:-}" ]; then
@@ -66,7 +66,7 @@ main() {
       "${adb[@]}" install -r "$APK" ;;
     launch)
       "${adb[@]}" shell input keyevent 224 >/dev/null 2>&1 || true
-      "${adb[@]}" shell am start -n "$ACTIVITY" >/dev/null 2>&1
+      "${adb[@]}" shell am start -a android.intent.action.MAIN -c android.intent.category.HOME -n "$HOME_ACTIVITY" >/dev/null 2>&1
       echo "launched $PKG" ;;
     logs)
       if [ "${1:-}" = "-c" ]; then "${adb[@]}" logcat -c 2>/dev/null; shift; fi

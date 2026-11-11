@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.BoxScope
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -86,6 +87,7 @@ import com.nendo.argosy.data.preferences.BoxArtBorderStyle
 import com.nendo.argosy.data.preferences.BoxArtInnerEffect
 import com.nendo.argosy.data.preferences.NewBadgePlacement
 import com.nendo.argosy.data.preferences.SystemIconPosition
+import com.nendo.argosy.ui.common.LocalRunningGames
 import com.nendo.argosy.ui.common.rememberFileImageModel
 import com.nendo.argosy.ui.screens.home.GameDownloadIndicator
 import com.nendo.argosy.ui.screens.home.HomeGameUi
@@ -112,9 +114,12 @@ fun GameCard(
     scaleOverride: Float? = null,
     alphaOverride: Float? = null,
     saturationOverride: Float? = null,
-    useBoxArt: Boolean = false
+    useBoxArt: Boolean = false,
+    showRunningMark: Boolean = true
 ) {
     val boxArtStyle = LocalBoxArtStyle.current
+    val runningGame = if (showRunningMark) LocalRunningGames.current.markFor(game.id) else null
+    val runningMark = runningGame?.takeUnless { downloadIndicator.isShown }
     val resolvedArt = com.nendo.argosy.ui.common.rememberResolvedArt(game.id)
     val resolvedCoverPath = resolvedArt?.coverPath ?: game.coverPath
     val effectiveCoverPath = (coverPathOverride ?: resolvedCoverPath).orEmpty()
@@ -340,7 +345,14 @@ fun GameCard(
             }
         }
 
+        val tabAtBottom = boxArtStyle.platformIndicatorStyle == com.nendo.argosy.data.preferences.PlatformIndicatorStyle.TAB &&
+            (boxArtStyle.systemIconPosition == SystemIconPosition.BOTTOM_LEFT ||
+             boxArtStyle.systemIconPosition == SystemIconPosition.BOTTOM_RIGHT)
+        val isRunning = runningGame != null
+        val showsDownloadedBadge = game.isDownloaded && showDownloadedIndicator && !isRunning
+
         if (spineActive) {
+            val spineAtBottom = boxArtStyle.systemIconPosition.spineEdge(boxArtStyle.aspectRatio) == SpineEdge.BOTTOM
             PlatformSpinePlacement(
                 platformDisplayName = game.platformSlug,
                 platformSlug = game.platformSlug,
@@ -349,10 +361,24 @@ fun GameCard(
             ) { _ ->
                 Box(modifier = Modifier.fillMaxSize()) {
                     coverBody()
+                    Spacer(
+                        modifier = Modifier
+                            .matchParentSize()
+                            .runningLine(
+                                mark = runningMark,
+                                placement = RunningLinePlacement(
+                                    atTop = spineAtBottom,
+                                    frameInset = 0.dp,
+                                    cornerRadius = boxArtStyle.cornerRadiusDp
+                                ),
+                                holdAtPeak = isFocused
+                            )
+                    )
                     if (showStatusOverlays) {
                         StatusIndicators(
                             isFavorite = game.isFavorite,
-                            isDownloaded = game.isDownloaded && showDownloadedIndicator
+                            isDownloaded = showsDownloadedBadge,
+                            clearsRunningLine = runningMark != null && !spineAtBottom
                         )
                     }
                 }
@@ -368,6 +394,22 @@ fun GameCard(
                 gradientBorderProgress = gradientBorderProgress,
                 geometry = geometry,
                 sweepOffset = sweepOffset
+            )
+        }
+
+        if (!spineActive) {
+            Spacer(
+                modifier = Modifier
+                    .matchParentSize()
+                    .runningLine(
+                        mark = runningMark,
+                        placement = RunningLinePlacement(
+                            atTop = tabAtBottom,
+                            frameInset = if (drawsAs3d) 0.dp else boxArtStyle.borderThicknessDp,
+                            cornerRadius = boxArtStyle.cornerRadiusDp
+                        ),
+                        holdAtPeak = isFocused
+                    )
             )
         }
 
@@ -391,13 +433,11 @@ fun GameCard(
         }
 
         if (!spineActive && showStatusOverlays) {
-            val tabAtBottom = boxArtStyle.platformIndicatorStyle == com.nendo.argosy.data.preferences.PlatformIndicatorStyle.TAB &&
-                (boxArtStyle.systemIconPosition == SystemIconPosition.BOTTOM_LEFT ||
-                 boxArtStyle.systemIconPosition == SystemIconPosition.BOTTOM_RIGHT)
             StatusIndicators(
                 isFavorite = game.isFavorite,
-                isDownloaded = game.isDownloaded && showDownloadedIndicator,
-                tabAtBottom = tabAtBottom
+                isDownloaded = showsDownloadedBadge,
+                tabAtBottom = tabAtBottom,
+                clearsRunningLine = runningMark != null
             )
         }
     }
@@ -493,18 +533,24 @@ private fun StubCover(gameTitle: String, useSolidStub: Boolean) {
 private fun BoxScope.StatusIndicators(
     isFavorite: Boolean,
     isDownloaded: Boolean,
-    tabAtBottom: Boolean = false
+    tabAtBottom: Boolean = false,
+    clearsRunningLine: Boolean = false
 ) {
     if (!isFavorite && !isDownloaded) return
 
+    val edgePadding = if (clearsRunningLine) {
+        Dimens.spacingXs + ComponentDefaults.RunningLine.heightDp.dp + ComponentDefaults.RunningLine.badgeGapDp.dp
+    } else {
+        Dimens.spacingXs
+    }
     Row(
         modifier = Modifier
             .align(if (tabAtBottom) Alignment.TopCenter else Alignment.BottomCenter)
             .fillMaxWidth()
             .padding(horizontal = Dimens.spacingSm)
             .then(
-                if (tabAtBottom) Modifier.padding(top = Dimens.spacingXs)
-                else Modifier.padding(bottom = Dimens.spacingXs)
+                if (tabAtBottom) Modifier.padding(top = edgePadding)
+                else Modifier.padding(bottom = edgePadding)
             ),
         horizontalArrangement = Arrangement.SpaceBetween
     ) {
@@ -599,7 +645,8 @@ fun GameCardWithNewBadge(
     showDownloadedIndicator: Boolean = true,
     interactionModifier: Modifier = Modifier
 ) {
-    val showNewBadge = game.isNew && !downloadIndicator.isActive &&
+    val isRunning = LocalRunningGames.current.isRunning(game.id)
+    val showNewBadge = game.isNew && !downloadIndicator.isActive && !isRunning &&
         newBadgePlacement != NewBadgePlacement.HIDDEN
     val badgeWidthDp = ComponentDefaults.Carousel.newBadgeWidthDp.dp
     val badgeHeightDp = ComponentDefaults.Carousel.newBadgeHeightDp.dp

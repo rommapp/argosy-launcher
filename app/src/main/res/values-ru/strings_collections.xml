@@ -28,6 +28,8 @@
     <string name="collections_options_rename">Переименовать коллекцию</string>
     <string name="collections_options_delete">Удалить коллекцию</string>
     <string name="collections_options_remove_game">Убрать \"%1$s\"</string>
+    <string name="collections_options_move_to_display">Перенести на дисплей %1$d</string>
+    <string name="collections_options_close_game">Закрыть игру</string>
     <string name="collections_options_remove_game_fallback">Игра</string>
 
     <string name="collections_delete_dialog_title">Удалить коллекцию</string>

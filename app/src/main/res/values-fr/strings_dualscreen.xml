@@ -494,6 +494,10 @@
     <string name="dual_detail_option_write_review">Écrire un avis</string>
     <string name="dual_showcase_progress_main">%1$s sur %2$s d\'histoire principale</string>
     <string name="dual_showcase_played">%1$s de jeu</string>
+    <string name="dual_showcase_running">En cours</string>
+    <string name="dual_showcase_running_in">En cours dans %1$s</string>
+    <string name="dual_showcase_saving">Sauvegarde en cours</string>
+    <string name="dual_showcase_running_with_time">En cours depuis %1$s</string>
     <string name="dual_showcase_journey_header">Votre progression</string>
     <string name="dual_showcase_journey_main">Histoire principale %1$s</string>
     <string name="dual_showcase_completionist">Complétionniste %1$s</string>

@@ -206,4 +206,10 @@
     <string name="library_showcase_play_time_hours">%1$d ч</string>
     <string name="library_showcase_play_time_minutes">%1$d мин</string>
     <string name="library_apps_launch_failed">Не удалось открыть приложение</string>
+    <string name="library_quickmenu_resume_game">Продолжить</string>
+    <string name="library_quickmenu_close_game">Закрыть игру</string>
+    <string name="library_quickmenu_move_to_display">Перенести на дисплей %1$d</string>
+    <string name="library_search_result_running">Запущена</string>
+    <string name="library_search_result_running_in">Запущена в %1$s</string>
+    <string name="library_search_result_saving">Сохранение</string>
 </resources>

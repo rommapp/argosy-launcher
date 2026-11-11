@@ -485,6 +485,10 @@
     <string name="dual_detail_option_write_review">समीक्षा लिखें</string>
     <string name="dual_showcase_progress_main">मुख्य कहानी के %2$s में से %1$s</string>
     <string name="dual_showcase_played">%1$s खेला</string>
+    <string name="dual_showcase_running">चल रहा है</string>
+    <string name="dual_showcase_running_in">%1$s में चल रहा है</string>
+    <string name="dual_showcase_saving">सेव हो रहा है</string>
+    <string name="dual_showcase_running_with_time">%1$s से चल रहा है</string>
     <string name="dual_showcase_journey_header">आपकी यात्रा</string>
     <string name="dual_showcase_journey_main">मुख्य कहानी %1$s</string>
     <string name="dual_showcase_completionist">कंप्लीशनिस्ट %1$s</string>

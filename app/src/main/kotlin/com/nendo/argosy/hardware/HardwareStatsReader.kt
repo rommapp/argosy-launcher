@@ -73,11 +73,7 @@ class HardwareStatsReader @Inject constructor(
             batteryTempC = battery?.getIntExtra(BatteryManager.EXTRA_TEMPERATURE, Int.MIN_VALUE)
                 ?.takeIf { it != Int.MIN_VALUE }
                 ?.let { it / 10f },
-            batteryLevel = battery?.let { intent ->
-                val level = intent.getIntExtra(BatteryManager.EXTRA_LEVEL, -1)
-                val scale = intent.getIntExtra(BatteryManager.EXTRA_SCALE, -1)
-                if (level >= 0 && scale > 0) level * 100 / scale else null
-            }
+            batteryLevel = battery?.toBatterySample()?.level
         )
     }
 

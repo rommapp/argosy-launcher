@@ -196,4 +196,10 @@
     <string name="library_showcase_play_time_hours">%1$d h</string>
     <string name="library_showcase_play_time_minutes">%1$d min</string>
     <string name="library_apps_launch_failed">Impossible d’ouvrir l’application</string>
+    <string name="library_quickmenu_resume_game">Reprendre</string>
+    <string name="library_quickmenu_close_game">Fermer le jeu</string>
+    <string name="library_quickmenu_move_to_display">Déplacer vers l\'écran %1$d</string>
+    <string name="library_search_result_running">En cours</string>
+    <string name="library_search_result_running_in">En cours dans %1$s</string>
+    <string name="library_search_result_saving">Sauvegarde en cours</string>
 </resources>

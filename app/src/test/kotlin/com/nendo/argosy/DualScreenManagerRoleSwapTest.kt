@@ -1054,6 +1054,8 @@ class DualScreenManagerRoleSwapTest {
             if (arrives) onMoved(displayId)
             return true
         }
+
+        override suspend fun moveTask(taskId: Int, displayId: Int): Boolean = arrives
     }
 
     private fun thorWithLayout(

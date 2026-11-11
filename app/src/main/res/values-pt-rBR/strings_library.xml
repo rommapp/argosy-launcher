@@ -195,4 +195,10 @@
     <string name="library_showcase_fact_play_time">Tempo de jogo</string>
     <string name="library_showcase_play_time_minutes">%1$dm</string>
     <string name="library_showcase_play_time_hours">%1$dh</string>
+    <string name="library_quickmenu_resume_game">Retomar</string>
+    <string name="library_quickmenu_close_game">Fechar jogo</string>
+    <string name="library_quickmenu_move_to_display">Mover para a tela %1$d</string>
+    <string name="library_search_result_running">Em execução</string>
+    <string name="library_search_result_running_in">Em execução no %1$s</string>
+    <string name="library_search_result_saving">Salvando</string>
 </resources>

@@ -467,6 +467,10 @@
     <string name="dual_detail_option_write_review">Написать отзыв</string>
     <string name="dual_showcase_progress_main">%1$s из %2$s основного сюжета</string>
     <string name="dual_showcase_played">Сыграно %1$s</string>
+    <string name="dual_showcase_running">Запущена</string>
+    <string name="dual_showcase_running_in">Запущена в %1$s</string>
+    <string name="dual_showcase_saving">Сохранение</string>
+    <string name="dual_showcase_running_with_time">В игре %1$s</string>
     <string name="dual_showcase_journey_header">Ваш прогресс</string>
     <string name="dual_showcase_journey_main">Основной сюжет %1$s</string>
     <string name="dual_showcase_completionist">Полное прохождение %1$s</string>

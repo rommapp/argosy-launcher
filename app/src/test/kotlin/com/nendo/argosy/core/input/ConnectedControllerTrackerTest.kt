@@ -10,7 +10,10 @@ import io.mockk.mockkObject
 import io.mockk.mockkStatic
 import io.mockk.unmockkObject
 import io.mockk.unmockkStatic
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.toList
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withTimeout
 import org.junit.After
@@ -32,6 +35,7 @@ class ConnectedControllerTrackerTest {
         mockkObject(ControllerDetector)
         every { ControllerDetector.detectFromDevice(xboxPad) } returns detected(xboxPad, DetectedLayout.XBOX)
         every { ControllerDetector.detectFromDevice(nintendoPad) } returns detected(nintendoPad, DetectedLayout.NINTENDO)
+        every { ControllerDetector.isBuiltInPad(any()) } returns false
         connected(xboxPad, nintendoPad)
     }
 
@@ -65,6 +69,28 @@ class ConnectedControllerTrackerTest {
 
         assertEquals(xboxPad.id, tracker.activeController.value?.deviceId)
         awaitLayout(tracker, DetectedLayout.XBOX)
+    }
+
+    @Test
+    fun `a pad removed after the first read is reported with its name and present pads are not`() = runBlocking {
+        val tracker = ConnectedControllerTracker(context)
+        val events = mutableListOf<ControllerEvent>()
+        val collector = launch(Dispatchers.Unconfined) { tracker.controllerEvents.toList(events) }
+
+        connected(xboxPad)
+        tracker.refresh()
+        collector.cancel()
+
+        assertEquals(
+            listOf(
+                ControllerEvent(
+                    ControllerChange.DISCONNECTED,
+                    ConnectedPad(controllerIdOf(nintendoPad), "Pad nintendo", builtIn = false)
+                )
+            ),
+            events
+        )
+        assertEquals(setOf(controllerIdOf(xboxPad)), tracker.connectedControllerIds.value)
     }
 
     private suspend fun awaitLayout(tracker: ConnectedControllerTracker, layout: DetectedLayout) {

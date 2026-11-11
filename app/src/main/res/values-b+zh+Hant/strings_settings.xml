@@ -374,6 +374,17 @@
     <string name="settings_interface_pre_launch_recaps_subtitle">啟動一週未玩的 RetroAchievements 遊戲前，顯示上次停在哪裡</string>
     <string name="settings_interface_monthly_recap_title">每月回顧</string>
     <string name="settings_interface_monthly_recap_subtitle">每月初在主頁顯示上個月的遊玩總結</string>
+    <string name="settings_interface_section_notifications">通知</string>
+    <string name="settings_interface_notifications_title">通知</string>
+    <string name="settings_interface_notifications_subtitle">在啟動器中和遊戲上方顯示 Argosy 通知。電量通知仍會顯示</string>
+    <string name="settings_interface_notify_downloads_finished_title">下載完成</string>
+    <string name="settings_interface_notify_downloads_finished_subtitle">下載完成時顯示通知</string>
+    <string name="settings_interface_notify_battery_title">電量</string>
+    <string name="settings_interface_notify_battery_subtitle" formatted="false">在 15% 和 5% 時提醒。內建遊戲在 5% 時仍會存檔</string>
+    <string name="settings_interface_notify_charging_title">充電</string>
+    <string name="settings_interface_notify_charging_subtitle">遊戲中插上或拔下充電器時顯示通知</string>
+    <string name="settings_interface_notify_controllers_title">控制器</string>
+    <string name="settings_interface_notify_controllers_subtitle">控制器連接、中斷或電量不足時顯示通知</string>
 
     <string name="settings_home_screen_background_title">背景</string>
     <string name="settings_home_screen_background_subtitle">遊戲美術圖或背景圖案</string>

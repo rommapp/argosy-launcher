@@ -157,9 +157,17 @@ object AccountScopedPreferenceKeys {
         "pre_launch_recap_baseline"
     )
 
+    private val NOTIFICATIONS = setOf(
+        "notifications_enabled",
+        "notify_downloads_finished",
+        "notify_battery",
+        "notify_charging",
+        "notify_controllers"
+    )
+
     val PER_ACCOUNT: Set<String> =
         RETROACHIEVEMENTS + SYNC_WATERMARKS_AND_FILTERS + REGION_PRIORITY + DOWNLOAD_CATEGORIES +
-            SOCIAL + QUAYPASS + INTERFACE + RECAPS
+            SOCIAL + QUAYPASS + INTERFACE + RECAPS + NOTIFICATIONS
 
     fun isPerAccount(key: Preferences.Key<*>): Boolean = key.name in PER_ACCOUNT
 }

@@ -91,6 +91,23 @@ internal sealed class InterfaceItem(
     data object StatusNetwork : InterfaceItem("statusNetwork", SECTION_STATUS_BAR)
     data object PreLaunchRecaps : InterfaceItem("preLaunchRecaps", SECTION_RECAPS)
     data object MonthlyRecap : InterfaceItem("monthlyRecap", SECTION_RECAPS)
+    data object Notifications : InterfaceItem("notifications", SECTION_NOTIFICATIONS)
+    data object NotifyDownloadsFinished : InterfaceItem(
+        key = "notifyDownloadsFinished",
+        section = SECTION_NOTIFICATIONS,
+        visibleWhen = { it.display.notificationsEnabled }
+    )
+    data object NotifyBattery : InterfaceItem("notifyBattery", SECTION_NOTIFICATIONS)
+    data object NotifyCharging : InterfaceItem(
+        key = "notifyCharging",
+        section = SECTION_NOTIFICATIONS,
+        visibleWhen = { it.display.notificationsEnabled }
+    )
+    data object NotifyControllers : InterfaceItem(
+        key = "notifyControllers",
+        section = SECTION_NOTIFICATIONS,
+        visibleWhen = { it.display.notificationsEnabled }
+    )
 
     companion object {
         /**
@@ -110,7 +127,9 @@ internal sealed class InterfaceItem(
                 Header("statusBarHeader", SECTION_STATUS_BAR, R.string.settings_interface_section_status_bar),
                 StatusClock, StatusBattery, StatusNetwork,
                 Header("recapsHeader", SECTION_RECAPS, R.string.settings_interface_section_recaps),
-                PreLaunchRecaps, MonthlyRecap
+                PreLaunchRecaps, MonthlyRecap,
+                Header("notificationsHeader", SECTION_NOTIFICATIONS, R.string.settings_interface_section_notifications),
+                Notifications, NotifyDownloadsFinished, NotifyBattery, NotifyCharging, NotifyControllers
             )
     }
 }
@@ -119,12 +138,14 @@ private const val SECTION_GENERAL = "general"
 private const val SECTION_SCREENS = "screens"
 private const val SECTION_STATUS_BAR = "statusBar"
 private const val SECTION_RECAPS = "recaps"
+private const val SECTION_NOTIFICATIONS = "notifications"
 
 private fun interfaceSectionTitleRes(section: String): Int? = when (section) {
     SECTION_GENERAL -> R.string.settings_interface_section_general
     SECTION_SCREENS -> R.string.settings_interface_section_screens
     SECTION_STATUS_BAR -> R.string.settings_interface_section_status_bar
     SECTION_RECAPS -> R.string.settings_interface_section_recaps
+    SECTION_NOTIFICATIONS -> R.string.settings_interface_section_notifications
     else -> null
 }
 
@@ -354,6 +375,46 @@ fun InterfaceSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
                     isEnabled = display.monthlyRecap,
                     isFocused = isFocused(item),
                     onToggle = { viewModel.setMonthlyRecap(it) }
+                )
+
+                InterfaceItem.Notifications -> SwitchPreference(
+                    title = stringResource(R.string.settings_interface_notifications_title),
+                    subtitle = stringResource(R.string.settings_interface_notifications_subtitle),
+                    isEnabled = display.notificationsEnabled,
+                    isFocused = isFocused(item),
+                    onToggle = { viewModel.setNotificationsEnabled(it) }
+                )
+
+                InterfaceItem.NotifyDownloadsFinished -> SwitchPreference(
+                    title = stringResource(R.string.settings_interface_notify_downloads_finished_title),
+                    subtitle = stringResource(R.string.settings_interface_notify_downloads_finished_subtitle),
+                    isEnabled = display.notifyDownloadsFinished,
+                    isFocused = isFocused(item),
+                    onToggle = { viewModel.setNotifyDownloadsFinished(it) }
+                )
+
+                InterfaceItem.NotifyBattery -> SwitchPreference(
+                    title = stringResource(R.string.settings_interface_notify_battery_title),
+                    subtitle = stringResource(R.string.settings_interface_notify_battery_subtitle),
+                    isEnabled = display.notifyBattery,
+                    isFocused = isFocused(item),
+                    onToggle = { viewModel.setNotifyBattery(it) }
+                )
+
+                InterfaceItem.NotifyCharging -> SwitchPreference(
+                    title = stringResource(R.string.settings_interface_notify_charging_title),
+                    subtitle = stringResource(R.string.settings_interface_notify_charging_subtitle),
+                    isEnabled = display.notifyCharging,
+                    isFocused = isFocused(item),
+                    onToggle = { viewModel.setNotifyCharging(it) }
+                )
+
+                InterfaceItem.NotifyControllers -> SwitchPreference(
+                    title = stringResource(R.string.settings_interface_notify_controllers_title),
+                    subtitle = stringResource(R.string.settings_interface_notify_controllers_subtitle),
+                    isEnabled = display.notifyControllers,
+                    isFocused = isFocused(item),
+                    onToggle = { viewModel.setNotifyControllers(it) }
                 )
 
                 InterfaceItem.ControllerGrip -> NavigationPreference(

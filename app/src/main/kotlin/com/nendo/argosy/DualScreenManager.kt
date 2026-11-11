@@ -56,6 +56,7 @@ import kotlinx.coroutines.withContext
 import kotlinx.coroutines.yield
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.distinctUntilChanged
@@ -144,6 +145,7 @@ class DualScreenManager(
         com.nendo.argosy.ui.screens.media.delegates.MediaSeriesDelegate? = null,
     internal val mediaSiblingsDelegate:
         com.nendo.argosy.ui.screens.media.delegates.MediaSiblingsDelegate? = null,
+    internal val runningGames: com.nendo.argosy.data.emulator.background.RunningGames? = null,
     initialRolesSwapped: Boolean = false,
     private val gameWindowMover: com.nendo.argosy.hardware.GameWindowMover =
         com.nendo.argosy.hardware.ThorGameWindowMover(context),
@@ -1627,6 +1629,30 @@ class DualScreenManager(
             capable && host != null && gameActive &&
                 liveMoveTarget(gameDisplay, swapped, !swapped) != null
         }.stateIn(activityIndependentScope, kotlinx.coroutines.flow.SharingStarted.Eagerly, false)
+
+    /**
+     * Whether this device can carry a task to another display without relaunching it.
+     */
+    val taskMoveAvailable: StateFlow<Boolean> = _taskMoveCapable.asStateFlow()
+
+    /**
+     * The display a role swap would carry the running built-in game to right now; null when
+     * [liveSwapAvailable] is false.
+     */
+    fun liveMoveTargetDisplayId(): Int? {
+        if (!liveSwapAvailable.value) return null
+        val swapped = _isRolesSwapped.value
+        return liveMoveTarget(emulatorDisplayId, swapped, !swapped)
+    }
+
+    /**
+     * Carries background task [taskId] to [displayId] as it is, for when it next comes forward.
+     * False when the device has no task mover or the move was refused.
+     */
+    suspend fun moveTaskToDisplay(taskId: Int, displayId: Int): Boolean {
+        if (!_taskMoveCapable.value) return false
+        return gameWindowMover.moveTask(taskId, displayId)
+    }
 
     private fun probeTaskMover() {
         if (_taskMoveCapable.value) return

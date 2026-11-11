@@ -13,11 +13,11 @@ import android.net.wifi.WifiManager
 import android.os.Build
 import android.view.InputDevice
 import androidx.core.content.ContextCompat
+import com.nendo.argosy.core.input.controllerBatteryPercent
 import com.nendo.argosy.util.RootShell
 import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
 import javax.inject.Singleton
-import kotlin.math.roundToInt
 
 data class RadioStatus(
     val wifiEnabled: Boolean = false,
@@ -90,7 +90,7 @@ class RadioController @Inject constructor(
                     name = name,
                     connected = isDeviceConnected(device) ?: (input != null),
                     kind = kindOf(device, input),
-                    batteryPercent = input?.let(::batteryPercent)
+                    batteryPercent = input?.let(::controllerBatteryPercent)
                 )
             }.sortedWith(compareByDescending<PairedBluetoothDevice> { it.connected }.thenBy { it.name.lowercase() })
         } catch (_: SecurityException) {
@@ -148,18 +148,8 @@ class RadioController @Inject constructor(
     private fun InputDevice.isGamepad(): Boolean =
         supportsSource(InputDevice.SOURCE_GAMEPAD) || supportsSource(InputDevice.SOURCE_JOYSTICK)
 
-    private fun batteryPercent(input: InputDevice): Int? {
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S) return null
-        val battery = input.batteryState
-        if (!battery.isPresent) return null
-        val capacity = battery.capacity
-        if (capacity.isNaN() || capacity < 0f) return null
-        return (capacity * PERCENT).roundToInt().coerceIn(0, PERCENT.toInt())
-    }
-
     private companion object {
         const val PERIPHERAL_MINOR_MASK = 0x3C
         val GAME_PERIPHERAL_MINORS = setOf(0x04, 0x08)
-        const val PERCENT = 100f
     }
 }

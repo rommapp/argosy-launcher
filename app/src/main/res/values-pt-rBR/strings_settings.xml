@@ -358,6 +358,17 @@
     <string name="settings_interface_monthly_recap_title">Resumo Mensal</string>
     <!-- Second line of that row. -->
     <string name="settings_interface_monthly_recap_subtitle">No início de cada mês, mostrar um resumo do mês anterior na Tela Inicial</string>
+    <string name="settings_interface_section_notifications">Notificações</string>
+    <string name="settings_interface_notifications_title">Notificações</string>
+    <string name="settings_interface_notifications_subtitle">Mostrar avisos do Argosy no launcher e sobre os jogos. Avisos de bateria continuam aparecendo</string>
+    <string name="settings_interface_notify_downloads_finished_title">Downloads concluídos</string>
+    <string name="settings_interface_notify_downloads_finished_subtitle">Mostrar um aviso quando um download terminar</string>
+    <string name="settings_interface_notify_battery_title">Bateria</string>
+    <string name="settings_interface_notify_battery_subtitle" formatted="false">Avisa em 15% e 5%. Os jogos integrados salvam em 5% mesmo assim</string>
+    <string name="settings_interface_notify_charging_title">Carregamento</string>
+    <string name="settings_interface_notify_charging_subtitle">Mostrar um aviso ao conectar ou desconectar o carregador durante o jogo</string>
+    <string name="settings_interface_notify_controllers_title">Controles</string>
+    <string name="settings_interface_notify_controllers_subtitle">Mostrar um aviso quando um controle se conecta, se desconecta ou fica com pouca bateria</string>
     <!-- Row opening the settings for handhelds with a clip-on grip. Noun phrase. -->
     <string name="settings_interface_controller_grip_title">Empunhadura do controle</string>
     <!-- Second line of that row. -->

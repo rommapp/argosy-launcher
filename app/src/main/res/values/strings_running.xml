@@ -25,6 +25,9 @@
     <string name="running_menu_switch_to">Switch To</string>
     <!-- Context menu entry that stops the app. Verb: to close an app. -->
     <string name="running_menu_close">Close</string>
+    <!-- Context menu entry that carries the app to another display, on a device with more than
+         one. %1$d is the number drawn on that display. Verb: to move. -->
+    <string name="running_menu_move_to_display">Move to Display %1$d</string>
 
     <!-- Footer hint for the button that stops the focused app. Verb: to close an app. -->
     <string name="running_hint_close">Close</string>
@@ -47,6 +50,9 @@
 
     <!-- Error shown when the system refuses to bring an app forward. %1$s is the app name. -->
     <string name="running_notice_switch_failed">Could not switch to %1$s</string>
+    <!-- Error shown when the system refuses to carry an app to another display. %1$s is the game
+         title or app name. -->
+    <string name="running_notice_move_failed">Could not move %1$s</string>
 
     <!-- Play time of a game since it was started, shown beside a clock icon on its card. Hours
          and minutes, h and m being the unit abbreviations. -->
@@ -78,4 +84,8 @@
     <string name="running_friends_three">%1$s, %2$s and %3$s are playing this</string>
     <!-- Same line for four or more friends: three named, the rest summarised. -->
     <string name="running_friends_many">%1$s, %2$s, %3$s and others are playing this</string>
+
+    <!-- Warning notice title when a game left running in the background stopped on its own. The
+         game title is shown under it. -->
+    <string name="running_notice_game_stopped">Game stopped</string>
 </resources>

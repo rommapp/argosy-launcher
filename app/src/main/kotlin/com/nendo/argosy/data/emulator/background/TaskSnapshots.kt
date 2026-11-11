@@ -39,6 +39,8 @@ class TaskSnapshots @Inject constructor(
             val screen = system[taskId]?.let { ScreenSnapshot(it.absolutePath, it.lastModified()) }
             val own = gameFrameFile(application, taskId).takeIf { it.canRead() }
             when {
+                own != null && screen != null && screen.takenAtMillis > own.lastModified() ->
+                    taskId to TaskSnapshot(screen.path, screen.takenAtMillis, screen)
                 own != null -> taskId to TaskSnapshot(own.absolutePath, own.lastModified(), screen)
                 screen != null -> taskId to TaskSnapshot(screen.path, screen.takenAtMillis, screen)
                 else -> null

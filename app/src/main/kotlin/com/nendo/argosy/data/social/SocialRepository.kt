@@ -26,9 +26,8 @@ import com.nendo.argosy.data.storage.StorageAttributionRepository
 import com.nendo.argosy.data.storage.StorageCategory
 import com.nendo.argosy.data.sync.SocialSyncCoordinator
 import com.nendo.argosy.core.event.AchievementUpdateBus
-import androidx.lifecycle.Lifecycle
-import androidx.lifecycle.ProcessLifecycleOwner
 import com.nendo.argosy.R
+import com.nendo.argosy.core.notification.NotificationCategory
 import com.nendo.argosy.core.notification.NotificationDuration
 import com.nendo.argosy.core.notification.NotificationManager
 import com.nendo.argosy.core.notification.NotificationText
@@ -1591,48 +1590,31 @@ class SocialRepository @Inject constructor(
 
             val avatarColorInt = parseAvatarColorInt(friend.avatarColor)
 
-            val title: String?
-            val subtitle: String?
-
             when {
                 startedPlayingNewGame && prefs.socialNotifyFriendPlaying -> {
-                    title = friend.displayName
-                    subtitle = context.getString(R.string.notif_social_friend_started_playing, newGame?.title)
                     val coverPath = newGame?.coverThumb?.let { saveTempCover(it, friend.id) }
                     notificationManager.show(
-                        title = NotificationText.Raw(title),
-                        subtitle = NotificationText.Raw(subtitle),
+                        title = NotificationText.Res(R.string.notif_social_presence_playing_title),
+                        subtitle = NotificationText.Raw(friend.displayName),
                         imagePath = coverPath,
                         type = NotificationType.INFO,
                         duration = NotificationDuration.SHORT,
                         key = "presence_${friend.id}",
-                        accentColor = avatarColorInt
+                        accentColor = avatarColorInt,
+                        category = NotificationCategory.SOCIAL
                     )
                 }
                 wasOfflineOrAway && isNowOnline && !startedPlayingNewGame && !suppressOnlineNotice &&
                     prefs.socialNotifyFriendOnline -> {
-                    title = friend.displayName
-                    subtitle = context.getString(R.string.notif_social_friend_online)
                     notificationManager.show(
-                        title = NotificationText.Raw(title),
-                        subtitle = NotificationText.Raw(subtitle),
+                        title = NotificationText.Res(R.string.notif_social_presence_online_title),
+                        subtitle = NotificationText.Raw(friend.displayName),
                         type = NotificationType.INFO,
                         duration = NotificationDuration.SHORT,
                         key = "presence_${friend.id}",
-                        accentColor = avatarColorInt
+                        accentColor = avatarColorInt,
+                        category = NotificationCategory.SOCIAL
                     )
-                }
-                else -> {
-                    title = null
-                    subtitle = null
-                }
-            }
-
-            if (title != null && !isAppInForeground()) {
-                try {
-                    SocialOverlayService.show(context, title, subtitle)
-                } catch (e: Exception) {
-                    Log.w(TAG, "Failed to show overlay from background", e)
                 }
             }
         }
@@ -1665,10 +1647,6 @@ class SocialRepository @Inject constructor(
         } catch (_: Exception) {
             null
         }
-    }
-
-    private fun isAppInForeground(): Boolean {
-        return ProcessLifecycleOwner.get().lifecycle.currentState.isAtLeast(Lifecycle.State.RESUMED)
     }
 
     private val friendComparator = compareByDescending<Friend> { it.isFavorite }

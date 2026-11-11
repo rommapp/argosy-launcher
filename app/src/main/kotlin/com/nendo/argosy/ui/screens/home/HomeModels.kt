@@ -327,6 +327,7 @@ data class HomeUiState(
         emptyMap(),
     val tileMedia: Map<String, HomeMediaUi> = emptyMap(),
     val continueGameId: Long? = null,
+    val runningOrder: Map<Long, Int> = emptyMap(),
     val raTileSummary: com.nendo.argosy.domain.model.RaTileContent? = null,
     val isLoading: Boolean = true,
     val isRommConfigured: Boolean = false,
@@ -334,6 +335,8 @@ data class HomeUiState(
     val gameMenuFocusIndex: Int = 0,
     val gameMenuDisplays: List<com.nendo.argosy.ui.components.AppLaunchTarget> = emptyList(),
     val gameMenuHasSiblingGroup: Boolean = false,
+    val gameMenuRunning: com.nendo.argosy.ui.common.RunningGameUi? = null,
+    val gameMenuMoveTargets: List<com.nendo.argosy.ui.screens.running.RunningMoveTarget> = emptyList(),
     val showAddToCollectionModal: Boolean = false,
     val collectionGameId: Long? = null,
     val collections: List<CollectionItemUi> = emptyList(),
@@ -464,6 +467,17 @@ data class HomeUiState(
         get() = currentRow is HomeRow.Platform && platformItemsFor != currentPlatform?.id
 
     /**
+     * The Continue row in its shown order: games left running first, in the Resume list's order,
+     * then the rest by last played.
+     */
+    val continueGames: List<HomeGameUi>
+        get() = if (runningOrder.isEmpty()) {
+            recentGames
+        } else {
+            recentGames.sortedBy { runningOrder[it.id] ?: Int.MAX_VALUE }
+        }
+
+    /**
      * What the row under the cursor holds, in the order it is walked.
      *
      * Favorites is the one row carrying both kinds, and they run one after the other -- games, then
@@ -487,9 +501,9 @@ data class HomeUiState(
             HomeRow.Continue -> when {
                 recentGames.isEmpty() -> emptyList()
                 layoutKind == com.nendo.argosy.domain.model.HomeLayoutKind.CAROUSEL ->
-                    recentGames.take(CAROUSEL_RECENT_LIMIT).map { HomeRowItem.Game(it) } +
+                    continueGames.take(CAROUSEL_RECENT_LIMIT).map { HomeRowItem.Game(it) } +
                         HomeRowItem.ViewAll(sourceFilter = "PLAYABLE")
-                else -> recentGames.map { HomeRowItem.Game(it) }
+                else -> continueGames.map { HomeRowItem.Game(it) }
             }
             HomeRow.Recommendations -> {
                 if (recommendedGames.isEmpty()) emptyList()

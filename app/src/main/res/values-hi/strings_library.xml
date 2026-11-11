@@ -186,4 +186,10 @@
     <string name="library_showcase_play_time_hours">%1$d घं</string>
     <string name="library_showcase_play_time_minutes">%1$d मि</string>
     <string name="library_apps_launch_failed">ऐप नहीं खोला जा सका</string>
+    <string name="library_quickmenu_resume_game">फिर से खेलें</string>
+    <string name="library_quickmenu_close_game">गेम बंद करें</string>
+    <string name="library_quickmenu_move_to_display">डिस्प्ले %1$d पर ले जाएँ</string>
+    <string name="library_search_result_running">चल रहा है</string>
+    <string name="library_search_result_running_in">%1$s में चल रहा है</string>
+    <string name="library_search_result_saving">सेव हो रहा है</string>
 </resources>

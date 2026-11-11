@@ -569,7 +569,8 @@ fun BoxArtSection(
                     isFocused = true,
                     modifier = Modifier
                         .width(Dimens.gameCardWidth)
-                        .aspectRatio(previewAspect)
+                        .aspectRatio(previewAspect),
+                    showRunningMark = false
                 )
             }
 

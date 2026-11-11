@@ -173,6 +173,7 @@ class LibraryLaunchHoldTest {
         showcaseSource = mockk(relaxed = true),
         reorderPlatforms = mockk(relaxed = true),
         quickNavigation = mockk { every { enabled } returns MutableStateFlow(true) },
-        launchProgressTracker = mockk { every { launchLive } returns this@LibraryLaunchHoldTest.launchLive }
+        launchProgressTracker = mockk { every { launchLive } returns this@LibraryLaunchHoldTest.launchLive },
+        runningGameMenu = mockk(relaxed = true)
     ).also { it.listDispatcher = dispatcher }
 }

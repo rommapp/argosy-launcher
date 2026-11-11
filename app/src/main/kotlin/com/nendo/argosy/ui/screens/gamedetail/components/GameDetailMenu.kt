@@ -22,6 +22,7 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.MenuBook
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Description
 import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.EmojiEvents
@@ -38,6 +39,7 @@ import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Sync
 import androidx.compose.material.icons.filled.Tune
+import androidx.compose.material.icons.filled.Tv
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material.icons.outlined.Visibility
 import androidx.compose.material.icons.outlined.VisibilityOff
@@ -80,7 +82,9 @@ data class MenuLayoutState(
     val hasSaveSync: Boolean = false,
     val hasRelated: Boolean = false,
     val hasPerGameSettings: Boolean = false,
-    val hasDocuments: Boolean = false
+    val hasDocuments: Boolean = false,
+    val isRunning: Boolean = false,
+    val moveTargetCount: Int = 0
 )
 
 sealed class MenuItem(
@@ -88,6 +92,15 @@ sealed class MenuItem(
     val visibleWhen: (MenuLayoutState) -> Boolean = { true }
 ) {
     data object Play : MenuItem("play")
+
+    /**
+     * The Move to Display row for the [slot]th move target of the running game.
+     */
+    data class MoveToDisplay(val slot: Int) : MenuItem(
+        "move_to_display_$slot",
+        visibleWhen = { it.isRunning && slot < it.moveTargetCount }
+    )
+
     data object Saves : MenuItem("saves", visibleWhen = { it.hasSaveSync })
     data object Favorite : MenuItem("favorite")
     data object Privacy : MenuItem("privacy", visibleWhen = { it.hasSocialAccount })
@@ -100,12 +113,15 @@ sealed class MenuItem(
     data object Reviews : MenuItem("reviews", visibleWhen = { it.hasSocialAccount })
     data object Achievements : MenuItem("achievements", visibleWhen = { it.hasAchievements })
     data object RelatedGames : MenuItem("related", visibleWhen = { it.hasRelated })
+    data object CloseGame : MenuItem("close_game", visibleWhen = { it.isRunning })
 
     companion object {
+        private const val MOVE_TARGET_SLOTS = 3
+
         val ALL: List<MenuItem>
-            get() = listOf(
-                Play, Saves, Favorite, Privacy, PerGameSettings, Options, Details,
-                Description, Screenshots, Documents, Reviews, Achievements, RelatedGames
+            get() = listOf<MenuItem>(Play) + List(MOVE_TARGET_SLOTS) { MoveToDisplay(it) } + listOf(
+                Saves, Favorite, Privacy, PerGameSettings, Options, Details,
+                Description, Screenshots, Documents, Reviews, Achievements, RelatedGames, CloseGame
             )
     }
 }
@@ -125,7 +141,9 @@ data class GameDetailMenuState(
     val saveStatus: SaveStatusInfo? = null,
     val isSyncingSaves: Boolean = false,
     val downloadSizeBytes: Long? = null,
-    val isPrivate: Boolean = false
+    val isPrivate: Boolean = false,
+    val running: com.nendo.argosy.ui.common.RunningGameUi? = null,
+    val moveTargets: List<com.nendo.argosy.ui.screens.running.RunningMoveTarget> = emptyList()
 )
 
 @Composable
@@ -181,6 +199,18 @@ fun GameDetailMenu(
                         isAwaitingServer = displayState.isAwaitingServer,
                         isFocused = isFocused,
                         downloadSizeBytes = displayState.downloadSizeBytes,
+                        isCompact = isCompact,
+                        running = displayState.running,
+                        onClick = { onFocusChange(focusIndex); onItemClick(item) }
+                    )
+                }
+
+                is MenuItem.MoveToDisplay -> {
+                    val screenNumber = displayState.moveTargets.getOrNull(item.slot)?.screenNumber ?: 0
+                    IconTextMenuItem(
+                        label = stringResource(R.string.gamedetail_menu_move_to_display, screenNumber),
+                        icon = Icons.Default.Tv,
+                        isFocused = isFocused,
                         isCompact = isCompact,
                         onClick = { onFocusChange(focusIndex); onItemClick(item) }
                     )
@@ -307,6 +337,16 @@ fun GameDetailMenu(
                         onClick = { onFocusChange(focusIndex); onItemClick(item) }
                     )
                 }
+
+                MenuItem.CloseGame -> {
+                    IconTextMenuItem(
+                        label = stringResource(R.string.gamedetail_menu_close_game),
+                        icon = Icons.Default.Close,
+                        isFocused = isFocused,
+                        isCompact = isCompact,
+                        onClick = { onFocusChange(focusIndex); onItemClick(item) }
+                    )
+                }
             }
         }
     }
@@ -320,9 +360,50 @@ private fun PlayMenuItem(
     isFocused: Boolean,
     downloadSizeBytes: Long?,
     isCompact: Boolean,
+    running: com.nendo.argosy.ui.common.RunningGameUi?,
     onClick: () -> Unit
 ) {
-    val label = when (downloadStatus) {
+    val runningGame = running?.takeIf { downloadStatus == GameDownloadStatus.DOWNLOADED }
+    val label = when {
+        runningGame?.isClosing == true -> stringResource(R.string.gamedetail_menu_play_button_saving)
+        runningGame != null -> stringResource(R.string.gamedetail_menu_play_button_resume_game)
+        else -> playButtonLabel(downloadStatus, downloadProgress, isAwaitingServer)
+    }
+    val isClosingGame = runningGame?.isClosing == true
+    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+        PlayButtonBody(
+            label = label,
+            downloadStatus = downloadStatus,
+            downloadProgress = downloadProgress,
+            isFocused = isFocused && !isClosingGame,
+            downloadSizeBytes = downloadSizeBytes,
+            isCompact = isCompact,
+            onClick = if (isClosingGame) ({}) else onClick
+        )
+        if (runningGame != null && !isCompact) {
+            com.nendo.argosy.ui.components.RunningSubLine(
+                running = runningGame,
+                labels = PLAY_BUTTON_RUNNING_LABELS,
+                modifier = Modifier.padding(top = Dimens.spacingXs)
+            )
+        }
+    }
+}
+
+private val PLAY_BUTTON_RUNNING_LABELS = com.nendo.argosy.ui.components.RunningLineLabels(
+    running = R.string.gamedetail_menu_play_sub_running,
+    runningIn = R.string.gamedetail_menu_play_sub_running_in,
+    saving = R.string.gamedetail_menu_play_sub_closing,
+    runningWithTime = R.string.gamedetail_menu_play_sub_running_with_time
+)
+
+@Composable
+private fun playButtonLabel(
+    downloadStatus: GameDownloadStatus,
+    downloadProgress: State<Float>,
+    isAwaitingServer: Boolean
+): String {
+    return when (downloadStatus) {
         GameDownloadStatus.NO_FILE ->
             stringResource(R.string.gamedetail_menu_play_button_no_file)
         GameDownloadStatus.EXTRACTING ->
@@ -350,7 +431,18 @@ private fun PlayMenuItem(
         GameDownloadStatus.NOT_DOWNLOADED ->
             stringResource(R.string.gamedetail_menu_play_button_download)
     }
+}
 
+@Composable
+private fun PlayButtonBody(
+    label: String,
+    downloadStatus: GameDownloadStatus,
+    downloadProgress: State<Float>,
+    isFocused: Boolean,
+    downloadSizeBytes: Long?,
+    isCompact: Boolean,
+    onClick: () -> Unit
+) {
     val isFailed = downloadStatus == GameDownloadStatus.FAILED
     val baseContainerColor = if (isFailed) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary
     val baseContentColor = if (isFailed) MaterialTheme.colorScheme.onError else MaterialTheme.colorScheme.onPrimary

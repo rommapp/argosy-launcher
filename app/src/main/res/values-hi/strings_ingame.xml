@@ -80,11 +80,13 @@
     <string name="ingame_return_message_netplay">आपका नेटप्ले सेशन खत्म हो जाएगा और गेम सेव होकर बंद हो जाएगा।</string>
     <string name="ingame_return_confirm">लौटें</string>
 
-    <string name="ingame_achievement_hardcore_heading">हार्डकोर अनलॉक्ड</string>
-    <string name="ingame_achievement_heading">अचीवमेंट अनलॉक्ड</string>
-    <plurals name="ingame_achievement_points">
-        <item quantity="one">+%d अंक</item>
-        <item quantity="other">+%d अंक</item>
+    <plurals name="ingame_achievement_notice_hardcore_title">
+        <item quantity="one">हार्डकोर, %d अंक</item>
+        <item quantity="other">हार्डकोर, %d अंक</item>
+    </plurals>
+    <plurals name="ingame_achievement_notice_unlocked_title">
+        <item quantity="one">अनलॉक, %d अंक</item>
+        <item quantity="other">अनलॉक, %d अंक</item>
     </plurals>
 
     <string name="ingame_raconnect_title">RetroAchievements कनेक्टेड</string>
@@ -92,6 +94,60 @@
     <string name="ingame_raconnect_casual">कैज़ुअल मोड</string>
     <string name="ingame_raconnect_unavailable_title">RetroAchievements उपलब्ध नहीं</string>
     <string name="ingame_raconnect_earned">%1$d/%2$d अर्जित</string>
+
+    <string name="ingame_hotkey_quicksave_netplay_title">सेव स्टेट बंद</string>
+    <string name="ingame_hotkey_quicksave_netplay_body">नेटप्ले के दौरान</string>
+    <string name="ingame_hotkey_quicksave_hardcore_title">सेव स्टेट बंद</string>
+    <string name="ingame_hotkey_quicksave_hardcore_body">हार्डकोर मोड</string>
+    <string name="ingame_hotkey_quicksave_unsupported_title">सेव स्टेट नहीं</string>
+    <string name="ingame_hotkey_quicksave_unsupported_body">इस कोर पर नहीं</string>
+    <string name="ingame_hotkey_quicksave_success_title">स्टेट सेव हुआ</string>
+    <string name="ingame_hotkey_quicksave_failure_title">स्टेट सेव नहीं हुआ</string>
+
+    <string name="ingame_hotkey_quickload_netplay_title">सेव स्टेट बंद</string>
+    <string name="ingame_hotkey_quickload_netplay_body">नेटप्ले के दौरान</string>
+    <string name="ingame_hotkey_quickload_hardcore_title">सेव स्टेट बंद</string>
+    <string name="ingame_hotkey_quickload_hardcore_body">हार्डकोर मोड</string>
+    <string name="ingame_hotkey_quickload_unsupported_title">सेव स्टेट नहीं</string>
+    <string name="ingame_hotkey_quickload_unsupported_body">इस कोर पर नहीं</string>
+    <string name="ingame_hotkey_quickload_success_title">स्टेट लोड हुआ</string>
+    <string name="ingame_hotkey_quickload_failure_title">स्टेट लोड नहीं हुआ</string>
+
+    <string name="ingame_hotkey_rewind_hardcore_title">रिवाइंड बंद</string>
+    <string name="ingame_hotkey_rewind_hardcore_body">हार्डकोर मोड</string>
+    <string name="ingame_hotkey_reset_netplay_title">रीसेट बंद</string>
+    <string name="ingame_hotkey_reset_netplay_body">नेटप्ले के दौरान</string>
+    <string name="ingame_hotkey_reset_success_title">गेम रीसेट हुआ</string>
+
+    <string name="ingame_netplay_notice_joined_title">फ्रेंड जुड़ा</string>
+    <string name="ingame_netplay_notice_joined_ping_title">जुड़ा, %1$d ms</string>
+    <string name="ingame_netplay_notice_peer_fallback">फ्रेंड</string>
+    <string name="ingame_netplay_notice_quality_title">पिंग %1$d ms</string>
+    <string name="ingame_netplay_notice_left_title">फ्रेंड चला गया</string>
+    <string name="ingame_netplay_notice_open_unavailable_title">नेटप्ले त्रुटि</string>
+    <string name="ingame_netplay_notice_open_unavailable_body">उपलब्ध नहीं</string>
+    <string name="ingame_netplay_notice_open_hash_title">नेटप्ले त्रुटि</string>
+    <string name="ingame_netplay_notice_open_hash_body">गेम जाँच विफल</string>
+    <string name="ingame_netplay_notice_opened_title">सेशन खुला</string>
+    <string name="ingame_netplay_notice_opened_open_body">फ्रेंड्स के लिए</string>
+    <string name="ingame_netplay_notice_opened_private_body">निजी</string>
+    <string name="ingame_netplay_notice_opened_invite_body">केवल आमंत्रण</string>
+    <string name="ingame_netplay_notice_open_failed_title">नेटप्ले विफल</string>
+    <string name="ingame_netplay_notice_open_failed_body">सेशन नहीं खुला</string>
+    <string name="ingame_netplay_notice_invite_unavailable_title">नेटप्ले त्रुटि</string>
+    <string name="ingame_netplay_notice_invite_unavailable_body">उपलब्ध नहीं</string>
+    <string name="ingame_netplay_notice_invite_sent_title">आमंत्रण भेजा</string>
+    <string name="ingame_netplay_notice_invite_failed_title">आमंत्रण विफल</string>
+    <string name="ingame_netplay_notice_invite_hash_title">नेटप्ले त्रुटि</string>
+    <string name="ingame_netplay_notice_invite_hash_body">गेम जाँच विफल</string>
+    <string name="ingame_netplay_notice_open_invite_sent_title">आमंत्रण भेजा</string>
+    <string name="ingame_netplay_notice_open_invite_failed_title">आमंत्रण विफल</string>
+    <string name="ingame_netplay_notice_open_invite_failed_body">सेशन खुला है</string>
+    <string name="ingame_netplay_notice_invite_open_failed_title">नेटप्ले विफल</string>
+    <string name="ingame_netplay_notice_invite_open_failed_body">सेशन नहीं खुला</string>
+    <string name="ingame_netplay_notice_reservation_cleared_title">सभी फ्रेंड्स के लिए</string>
+    <string name="ingame_netplay_notice_reservation_failed_title">बदलाव विफल</string>
+    <string name="ingame_netplay_notice_reservation_failed_body">केवल आमंत्रण</string>
 
     <string name="ingame_speedrun_paused">रुका हुआ</string>
     <string name="ingame_speedrun_personal_best">पर्सनल बेस्ट</string>
@@ -587,4 +643,31 @@
 
     <string name="ingame_touch_generic_sys_select">सेलेक्ट</string>
     <string name="ingame_touch_generic_sys_start">स्टार्ट</string>
+    <string name="ingame_controller_join_prompt_title">जुड़ने के लिए दबाएँ</string>
+    <string name="ingame_controller_joined_title">प्लेयर %1$d जुड़ा</string>
+    <string name="ingame_controller_disconnected_title">डिस्कनेक्ट हुआ</string>
+    <plurals name="ingame_controller_burst_joined_title">
+        <item quantity="one">%1$d प्लेयर जुड़ा</item>
+        <item quantity="other">%1$d प्लेयर जुड़े</item>
+    </plurals>
+    <plurals name="ingame_controller_burst_connected_title">
+        <item quantity="one">%1$d कनेक्ट हुआ</item>
+        <item quantity="other">%1$d कनेक्ट हुए</item>
+    </plurals>
+    <plurals name="ingame_controller_burst_waiting_body">
+        <item quantity="one">%1$d जुड़ने की प्रतीक्षा में</item>
+        <item quantity="other">%1$d जुड़ने की प्रतीक्षा में</item>
+    </plurals>
+    <plurals name="ingame_controller_burst_disconnected_title">
+        <item quantity="one">%1$d डिस्कनेक्ट हुआ</item>
+        <item quantity="other">%1$d डिस्कनेक्ट हुए</item>
+    </plurals>
+    <string name="ingame_controller_players_two">प्लेयर %1$d और %2$d</string>
+    <string name="ingame_controller_players_three">प्लेयर %1$d, %2$d और %3$d</string>
+    <string name="ingame_controller_paused_title">गेम रुका है</string>
+    <string name="ingame_controller_paused_body">खेलने के लिए फिर जोड़ें</string>
+    <string name="ingame_controller_offer_title">प्लेयर %1$d बनें?</string>
+    <string name="ingame_controller_offer_body">जुड़ने के लिए %1$s दबाएँ</string>
+    <string name="ingame_controller_battery_low_title">पैड बैटरी कम</string>
+    <string name="ingame_controller_badge_player">P%1$d</string>
 </resources>

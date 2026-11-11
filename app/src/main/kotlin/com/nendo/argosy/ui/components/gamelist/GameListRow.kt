@@ -44,8 +44,11 @@ import com.nendo.argosy.R
 import com.nendo.argosy.data.social.FriendActivity
 import com.nendo.argosy.domain.model.SaveListState
 import com.nendo.argosy.ui.common.GameListDetails
+import com.nendo.argosy.ui.common.RunningGameUi
 import com.nendo.argosy.ui.common.rememberFileImageModel
 import com.nendo.argosy.ui.components.GameTitle
+import com.nendo.argosy.ui.components.RunningLineLabels
+import com.nendo.argosy.ui.components.RunningSubLine
 import com.nendo.argosy.ui.components.platformBadgeLabel
 import com.nendo.argosy.ui.components.friends.SocialAvatar
 import com.nendo.argosy.ui.screens.home.GameDownloadIndicator
@@ -55,6 +58,12 @@ import com.nendo.argosy.ui.theme.generated.ComponentDefaults
 import com.nendo.argosy.ui.primitives.FocusIndicators
 import com.nendo.argosy.ui.primitives.argosyFocusIndicators
 import com.nendo.argosy.ui.util.clickableNoFocus
+
+private val GAME_LIST_RUNNING_LABELS = RunningLineLabels(
+    running = R.string.gamelist_row_running,
+    runningIn = R.string.gamelist_row_running_in,
+    saving = R.string.gamelist_row_saving
+)
 
 private const val PLACEHOLDER_ICON_ALPHA = 0.5f
 private const val PLACEHOLDER_ICON_FILL = 0.5f
@@ -84,7 +93,8 @@ fun GameListRow(
     downloadIndicator: GameDownloadIndicator = GameDownloadIndicator.NONE,
     friends: List<FriendActivity> = emptyList(),
     saveState: SaveListState? = null,
-    onCoverLoadFailed: ((String) -> Unit)? = null
+    onCoverLoadFailed: ((String) -> Unit)? = null,
+    running: RunningGameUi? = null
 ) {
     val cornerRadius = LocalBoxArtStyle.current.cornerRadiusDp
     val focusWidth = ComponentDefaults.GameListRow.focusBorderWidth.dp
@@ -108,7 +118,13 @@ fun GameListRow(
                         needsInstall = needsInstall
                     )
                 },
-                progress = { ProgressStats(details = details) },
+                progress = {
+                    if (running != null) {
+                        RunningSubLine(running = running, labels = GAME_LIST_RUNNING_LABELS)
+                    } else {
+                        ProgressStats(details = details)
+                    }
+                },
                 friends = { FriendStack(friends = friends) },
                 tabs = {
                     GameListRowTabs(

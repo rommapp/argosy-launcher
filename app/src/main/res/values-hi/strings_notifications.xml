@@ -38,8 +38,8 @@
 
     <!-- Friend presence notifications (SocialRepository). -->
 
-    <string name="notif_social_friend_started_playing">%1$s खेलना शुरू किया</string>
-    <string name="notif_social_friend_online">अब ऑनलाइन है</string>
+    <string name="notif_social_presence_playing_title">खेल रहे हैं</string>
+    <string name="notif_social_presence_online_title">ऑनलाइन</string>
 
     <!-- Settings: image cache and download validation (SettingsGeneralRouter). -->
 
@@ -229,4 +229,24 @@
 
     <string name="notif_new_display_title">नया डिस्प्ले मिला</string>
     <string name="notif_new_display_action">डिस्प्ले सेट करें</string>
+    <string name="notif_battery_low_title">बैटरी %1$d%%</string>
+    <string name="notif_battery_critical_title">बैटरी %1$d%%</string>
+    <string name="notif_battery_critical_saved">गेम सेव हो गया</string>
+    <string name="notif_battery_charging_title">चार्जिंग, %1$d%%</string>
+    <string name="notif_battery_charging_full_in_hours_minutes">%1$dh %2$dm में फुल</string>
+    <string name="notif_battery_charging_full_in_minutes">%1$dm में फुल</string>
+    <string name="notif_battery_unplugged_title">बैटरी पर, %1$d%%</string>
+    <string name="notif_battery_unplugged_left_hours_minutes">%1$dh %2$dm बाकी</string>
+    <string name="notif_battery_unplugged_left_minutes">%1$dm बाकी</string>
+    <string name="notif_controller_connected_title">कनेक्ट हुआ</string>
+    <string name="notif_controller_disconnected_title">डिस्कनेक्ट हुआ</string>
+    <plurals name="notif_controller_burst_connected_title">
+        <item quantity="one">%1$d कनेक्ट हुआ</item>
+        <item quantity="other">%1$d कनेक्ट हुए</item>
+    </plurals>
+    <plurals name="notif_controller_burst_disconnected_title">
+        <item quantity="one">%1$d डिस्कनेक्ट हुआ</item>
+        <item quantity="other">%1$d डिस्कनेक्ट हुए</item>
+    </plurals>
+    <string name="notif_controller_battery_low_title">पैड बैटरी कम</string>
 </resources>

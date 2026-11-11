@@ -643,6 +643,41 @@ class DisplaySettingsDelegate @Inject constructor(
         }
     }
 
+    fun setNotificationsEnabled(scope: CoroutineScope, enabled: Boolean) {
+        scope.launch {
+            preferencesRepository.setNotificationsEnabled(enabled)
+            _state.update { it.copy(notificationsEnabled = enabled) }
+        }
+    }
+
+    fun setNotifyDownloadsFinished(scope: CoroutineScope, enabled: Boolean) {
+        scope.launch {
+            preferencesRepository.setNotifyDownloadsFinished(enabled)
+            _state.update { it.copy(notifyDownloadsFinished = enabled) }
+        }
+    }
+
+    fun setNotifyBattery(scope: CoroutineScope, enabled: Boolean) {
+        scope.launch {
+            preferencesRepository.setNotifyBattery(enabled)
+            _state.update { it.copy(notifyBattery = enabled) }
+        }
+    }
+
+    fun setNotifyCharging(scope: CoroutineScope, enabled: Boolean) {
+        scope.launch {
+            preferencesRepository.setNotifyCharging(enabled)
+            _state.update { it.copy(notifyCharging = enabled) }
+        }
+    }
+
+    fun setNotifyControllers(scope: CoroutineScope, enabled: Boolean) {
+        scope.launch {
+            preferencesRepository.setNotifyControllers(enabled)
+            _state.update { it.copy(notifyControllers = enabled) }
+        }
+    }
+
     fun setHomeAppAvailable(scope: CoroutineScope, available: Boolean) {
         scope.launch {
             val applied = homeAppAvailability.setAvailable(available)

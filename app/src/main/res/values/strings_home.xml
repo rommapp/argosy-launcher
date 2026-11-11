@@ -128,6 +128,17 @@
     <string name="home_footer_game_download">Download</string>
     <!-- Footer hint on a game whose download is paused in the queue. Verb: starts that download. -->
     <string name="home_footer_game_resume_download">Resume</string>
+    <!-- Footer hint on a game that is still running in the background. Verb: brings the running
+         game back to the front. Not the paused-download Resume. -->
+    <string name="home_footer_game_resume_game">Resume</string>
+    <!-- Line in the title block of a focused game that is still running in the background. -->
+    <string name="home_title_running">Running</string>
+    <!-- Same line for a game another emulator app holds. %1$s is the emulator name. -->
+    <string name="home_title_running_in">Running in %1$s</string>
+    <!-- Same line while the running game saves and closes. Verb in progress. -->
+    <string name="home_title_saving">Saving</string>
+    <!-- Same line with this run's play time. %1$s is a duration such as "1h 12m". -->
+    <string name="home_title_running_with_time">Running %1$s</string>
     <!-- Footer hint on a game that is not a favourite. Verb: marks it as one. -->
     <string name="home_footer_game_favorite">Favorite</string>
     <!-- Footer hint on a game that is already a favourite. Verb: takes it back out. -->
@@ -231,6 +242,12 @@
     <string name="home_quick_actions_remove_from_library">Remove from Library</string>
     <!-- Row in that menu. Verb: keeps the game in the library but stops showing it. -->
     <string name="home_quick_actions_hide">Hide</string>
+    <!-- Row in that menu while the game is still running in the background, on a device with more
+         than one screen. %1$d is the number drawn on that screen. Verb: to move the running game. -->
+    <string name="home_quick_actions_move_to_display">Move to Display %1$d</string>
+    <!-- Last row in that menu while the game is still running in the background. Verb phrase:
+         saves and closes the running game. -->
+    <string name="home_quick_actions_close_game">Close game</string>
 
     <!-- Heading shown in place of the Next Up row when there is nothing to follow on from. -->
     <string name="home_media_empty_next_up_title">Nothing up next</string>

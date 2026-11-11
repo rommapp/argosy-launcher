@@ -13,6 +13,8 @@ interface GameWindowMover {
     suspend fun isAvailable(): Boolean
 
     suspend fun moveGame(displayId: Int): Boolean
+
+    suspend fun moveTask(taskId: Int, displayId: Int): Boolean
 }
 
 class ThorGameWindowMover(
@@ -31,6 +33,11 @@ class ThorGameWindowMover(
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) return false
         val activityManager = appContext.getSystemService(ActivityManager::class.java) ?: return false
         val taskId = builtInGameTask(activityManager)?.taskId ?: return false
+        return taskMover.moveTask(taskId, displayId)
+    }
+
+    override suspend fun moveTask(taskId: Int, displayId: Int): Boolean {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) return false
         return taskMover.moveTask(taskId, displayId)
     }
 }

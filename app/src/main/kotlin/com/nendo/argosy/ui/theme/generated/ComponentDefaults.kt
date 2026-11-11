@@ -364,7 +364,6 @@ object ComponentDefaults {
         const val artHeightDp = 240
         const val artHeightRatio = 0.4f
         const val titleMaxLines = 2
-        const val breathMs = 4000
         const val breathPeakAlpha = 0.18f
         const val breathFloorAlpha = 0f
         const val breathSpreadDp = 28
@@ -375,6 +374,42 @@ object ComponentDefaults {
         const val makeRoomClosedScale = 0.85f
         const val makeRoomClosedAlpha = 0.55f
         const val makeRoomClosedSaturation = 0f
+    }
+
+    object RunningLine {
+        const val heightDp = 3
+        const val edgeGapDp = 1
+        const val minEndInsetDp = 8
+        const val glowHeightDp = 16
+        const val glowSpreadRatio = 0.12f
+        const val lineTroughAlpha = 0.7f
+        const val linePeakAlpha = 1f
+        const val glowTroughAlpha = 0.45f
+        const val glowPeakAlpha = 0.85f
+        const val badgeGapDp = 4
+        const val savingDashDp = 4
+        const val savingGapDp = 3
+        const val savingGlowAlpha = 0.35f
+    }
+
+    object ResumeOverlay {
+        const val backdropDownscale = 8f
+    }
+
+    object RunningStrip {
+        const val unitWidthDp = 7
+        const val unitHeightDp = 11
+        const val unitGapDp = 2
+        const val unitRadiusDp = 2
+        const val externalGapDp = 4
+        const val loadedAlpha = 0.7f
+        const val externalAlpha = 0.45f
+        const val closingStripeDp = 2
+    }
+
+    object RunningFrame {
+        const val panelMaxWidthDp = 320
+        const val statsScrimAlpha = 0.7f
     }
 
     object UnlockRecap {
@@ -498,6 +533,17 @@ object ComponentDefaults {
         const val statusBatteryFontSizeRatio = 0.75f
         const val statusPaddingHorizontalDp = 24
         const val footerLabelFontSizeSp = 14
+    }
+
+    object Notification {
+        const val surfaceAlpha = 0.92f
+        const val tintAlpha = 0.15f
+        const val bodyAlpha = 0.7f
+        const val badgeHeightDp = 16
+        const val badgeMinWidthDp = 22
+        const val badgeFontSizeSp = 10
+        const val badgeFillAlpha = 0.3f
+        const val bodyGlyphSizeRatio = 1.1f
     }
 
 }

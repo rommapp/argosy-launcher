@@ -110,7 +110,12 @@ class DownloadNotificationObserver @Inject constructor(
             imagePath = progress.coverPath,
             duration = if (immediate) NotificationDuration.MEDIUM else NotificationDuration.SHORT,
             key = "download-${progress.gameId}",
-            immediate = immediate
+            immediate = immediate,
+            category = if (progress.state == DownloadState.COMPLETED) {
+                NotificationCategory.DOWNLOAD
+            } else {
+                NotificationCategory.GENERAL
+            }
         )
     }
 

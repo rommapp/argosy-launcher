@@ -30,8 +30,14 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.Dp
+import com.nendo.argosy.R
 import com.nendo.argosy.data.social.FriendActivity
+import com.nendo.argosy.ui.common.LocalRunningGames
 import com.nendo.argosy.ui.components.GameTitle
+import com.nendo.argosy.ui.components.RunningLineLabels
+import com.nendo.argosy.ui.components.RunningLineText
+import com.nendo.argosy.ui.components.RunningSubLine
+import com.nendo.argosy.ui.components.runningLineText
 import com.nendo.argosy.ui.components.StatBadgeItem
 import com.nendo.argosy.ui.components.gameStatBadges
 import com.nendo.argosy.ui.components.friends.FriendsActivityBadge
@@ -44,11 +50,19 @@ import com.nendo.argosy.util.formatTimeToBeat
 
 private const val HOME_TITLE_SERIES_SCALE = 0.75f
 
+private val HOME_TITLE_RUNNING_LABELS = RunningLineLabels(
+    running = R.string.home_title_running,
+    runningIn = R.string.home_title_running_in,
+    saving = R.string.home_title_saving,
+    runningWithTime = R.string.home_title_running_with_time
+)
+
 internal data class HomeMetadataMeasureInput(
     val subtitle: String?,
     val badges: List<String>,
     val friendsLabel: String?,
-    val avatarCount: Int
+    val avatarCount: Int,
+    val runningLine: RunningLineText? = null
 )
 
 private data class HomeTextMeasureKey(
@@ -72,7 +86,8 @@ internal fun rememberHomeTitleMetadata(uiState: HomeUiState): List<HomeMetadataM
     val items = uiState.currentItems
     val context = LocalContext.current
     val configuration = LocalConfiguration.current
-    return remember(items, uiState.friendsActivity, context, configuration) {
+    val running = LocalRunningGames.current
+    return remember(items, uiState.friendsActivity, context, configuration, running) {
         items.mapNotNull { item ->
             when (item) {
                 is HomeRowItem.Game -> {
@@ -81,6 +96,9 @@ internal fun rememberHomeTitleMetadata(uiState: HomeUiState): List<HomeMetadataM
                     val playing = friends.filter { it.playingNow }
                     val shown = playing.ifEmpty { friends }
                     HomeMetadataMeasureInput(
+                        runningLine = running.markFor(game.id)?.let {
+                            runningLineText(context.resources, it, HOME_TITLE_RUNNING_LABELS)
+                        },
                         subtitle = null,
                         badges = gameStatBadges(
                             game.rating, game.userRating, game.userDifficulty,
@@ -155,6 +173,12 @@ internal fun rememberHomeTitleReserve(inputs: List<HomeMetadataMeasureInput>, ma
         val metadata = inputs.distinct().maxOfOrNull { input ->
             val subtitleHeight = input.subtitle?.let { measure(it, subtitleStyle, maxLines = 1).height } ?: 0
             val items = buildList {
+                input.runningLine?.let { line ->
+                    val lead = measure(line.lead, badgeStyle, maxLines = 1)
+                    val time = line.trailingTime?.let { measure(it, badgeStyle, maxLines = 1) }
+                    val lineWidth = lead.width + (time?.let { it.width + rowGap } ?: 0)
+                    add(HomeFlowSize(lineWidth.coerceAtMost(width), maxOf(lead.height, time?.height ?: 0)))
+                }
                 input.friendsLabel?.let {
                     val avatarAdvance = avatar * (1f - FRIENDS_AVATAR_OVERLAP_SHARE)
                     val avatarsWidth = (avatar + avatarAdvance * (input.avatarCount - 1)).toInt()
@@ -238,6 +262,15 @@ internal fun HomeTitleSection(
                     ),
                     verticalArrangement = Arrangement.spacedBy(gap)
                 ) {
+                    val running = game?.let { LocalRunningGames.current.markFor(it.id) }
+                    if (running != null) {
+                        RunningSubLine(
+                            running = running,
+                            labels = HOME_TITLE_RUNNING_LABELS,
+                            style = MaterialTheme.typography.labelMedium,
+                            timeColor = subtitleColor
+                        )
+                    }
                     FriendsActivityBadge(friends = friends, textColor = subtitleColor)
                     badges.forEach { badge ->
                         StatBadgeItem(badge, textColorOverride ?: badge.tint, subtitleColor)

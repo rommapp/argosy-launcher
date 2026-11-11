@@ -1207,6 +1207,16 @@ class SettingsViewModel @Inject constructor(
     fun setLockScreenArt(enabled: Boolean) = displayDelegate.setLockScreenArt(viewModelScope, enabled)
     fun setPreLaunchRecaps(enabled: Boolean) = displayDelegate.setPreLaunchRecaps(viewModelScope, enabled)
     fun setMonthlyRecap(enabled: Boolean) = displayDelegate.setMonthlyRecap(viewModelScope, enabled)
+    fun setNotificationsEnabled(enabled: Boolean) =
+        displayDelegate.setNotificationsEnabled(viewModelScope, enabled)
+    fun setNotifyDownloadsFinished(enabled: Boolean) =
+        displayDelegate.setNotifyDownloadsFinished(viewModelScope, enabled)
+    fun setNotifyBattery(enabled: Boolean) =
+        displayDelegate.setNotifyBattery(viewModelScope, enabled)
+    fun setNotifyCharging(enabled: Boolean) =
+        displayDelegate.setNotifyCharging(viewModelScope, enabled)
+    fun setNotifyControllers(enabled: Boolean) =
+        displayDelegate.setNotifyControllers(viewModelScope, enabled)
     fun setHomeAppAvailable(available: Boolean) =
         displayDelegate.setHomeAppAvailable(viewModelScope, available)
     fun refreshDefaultHome() = displayDelegate.refreshDefaultHome(viewModelScope)

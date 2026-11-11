@@ -25,6 +25,7 @@ import com.nendo.argosy.ui.theme.LocalMotionTier
 import com.nendo.argosy.ui.theme.Motion
 import com.nendo.argosy.ui.theme.MotionTier
 import com.nendo.argosy.ui.theme.generated.ComponentDefaults
+import com.nendo.argosy.ui.theme.generated.MotionTokens
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
@@ -84,7 +85,7 @@ internal fun Modifier.launchBreathGlow(artColor: Color?, breathKey: Any?): Modif
         onDrawBehind {
             val alpha = breathAlpha(
                 elapsedMs = elapsedMs.longValue,
-                periodMs = Defaults.breathMs,
+                periodMs = MotionTokens.Tween.breathMs,
                 floor = Defaults.breathFloorAlpha,
                 peak = Defaults.breathPeakAlpha,
                 reduced = reduced

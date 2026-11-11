@@ -504,4 +504,16 @@
     <string name="gamedetail_per_game_gpu_driver_reason_core_unknown">此核心</string>
     <string name="gamedetail_per_game_gpu_driver_reason_backend">渲染后端为 Vulkan 时生效</string>
     <string name="gamedetail_per_game_gpu_driver_reason_device">自定义驱动需要 Adreno GPU</string>
+    <string name="gamedetail_menu_play_button_resume_game">继续游戏</string>
+    <string name="gamedetail_menu_play_button_saving">正在保存</string>
+    <string name="gamedetail_menu_play_sub_running">运行中</string>
+    <string name="gamedetail_menu_play_sub_running_in">正在 %1$s 中运行</string>
+    <string name="gamedetail_menu_play_sub_closing">正在关闭游戏</string>
+    <string name="gamedetail_menu_play_sub_running_with_time">已运行 %1$s</string>
+    <string name="gamedetail_menu_close_game">关闭游戏</string>
+    <string name="gamedetail_menu_move_to_display">移到显示器 %1$d</string>
+    <string name="gamedetail_running_frame_saved">%1$s保存</string>
+    <string name="gamedetail_footer_play_resume_game">继续游戏</string>
+    <string name="gamedetail_footer_play_closing_game">正在保存</string>
+    <string name="gamedetail_footer_close_game">关闭游戏</string>
 </resources>

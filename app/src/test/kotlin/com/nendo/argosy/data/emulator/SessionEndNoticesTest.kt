@@ -2,6 +2,7 @@ package com.nendo.argosy.data.emulator
 
 import android.app.Application
 import com.nendo.argosy.R
+import com.nendo.argosy.core.notification.NotificationCategory
 import com.nendo.argosy.core.notification.NotificationDuration
 import com.nendo.argosy.core.notification.NotificationManager
 import com.nendo.argosy.core.notification.NotificationText
@@ -57,7 +58,12 @@ class SessionEndNoticesTest {
     private fun synced(sync: SyncSaveOnSessionEndUseCase.Result) =
         SessionSaveOutcome.Synced(SaveCacheManager.CacheResult.Created(timestamp = 1L), sync, conflictId = null)
 
-    private fun verifyToast(titleRes: Int, type: NotificationType, duration: NotificationDuration) {
+    private fun verifyToast(
+        titleRes: Int,
+        type: NotificationType,
+        duration: NotificationDuration,
+        category: NotificationCategory = NotificationCategory.SAVE
+    ) {
         verify(exactly = 1) {
             notificationManager.show(
                 title = NotificationText.Res(titleRes),
@@ -68,13 +74,16 @@ class SessionEndNoticesTest {
                 duration = duration,
                 key = syncKey,
                 immediate = true,
-                accentColor = null
+                accentColor = null,
+                category = category
             )
         }
     }
 
     private fun verifyNoToast() {
-        verify(exactly = 0) { notificationManager.show(any(), any(), any(), any(), any(), any(), any(), any(), any()) }
+        verify(exactly = 0) {
+            notificationManager.show(any(), any(), any(), any(), any(), any(), any(), any(), any(), any())
+        }
     }
 
     @Test
@@ -137,7 +146,8 @@ class SessionEndNoticesTest {
                 duration = NotificationDuration.MEDIUM,
                 key = syncKey,
                 immediate = true,
-                accentColor = null
+                accentColor = null,
+                category = NotificationCategory.SAVE
             )
         }
     }
@@ -153,14 +163,24 @@ class SessionEndNoticesTest {
     fun `an orphaned save that uploads toasts save uploaded`() = runTest {
         notices.orphanSaveRecovered(gameId, synced(SyncSaveOnSessionEndUseCase.Result.Uploaded()))
 
-        verifyToast(R.string.sync_session_save_uploaded_orphan, NotificationType.SUCCESS, NotificationDuration.MEDIUM)
+        verifyToast(
+            R.string.sync_session_save_uploaded_orphan,
+            NotificationType.SUCCESS,
+            NotificationDuration.MEDIUM,
+            NotificationCategory.GENERAL
+        )
     }
 
     @Test
     fun `an orphaned save whose upload is queued toasts that it is on this device and not uploaded yet`() = runTest {
         notices.orphanSaveRecovered(gameId, synced(SyncSaveOnSessionEndUseCase.Result.Queued))
 
-        verifyToast(R.string.sync_session_save_queued_orphan, NotificationType.INFO, NotificationDuration.MEDIUM)
+        verifyToast(
+            R.string.sync_session_save_queued_orphan,
+            NotificationType.INFO,
+            NotificationDuration.MEDIUM,
+            NotificationCategory.GENERAL
+        )
     }
 
     @Test
@@ -191,7 +211,7 @@ class SessionEndNoticesTest {
     fun `every session-end toast uses the sync key of its game`() = runTest {
         val keys = mutableListOf<String?>()
         every {
-            notificationManager.show(any(), any(), any(), any(), any(), any(), captureNullable(keys), any(), any())
+            notificationManager.show(any(), any(), any(), any(), any(), any(), captureNullable(keys), any(), any(), any())
         } returns "id"
 
         notices.sessionSaveSynced(gameId, SyncSaveOnSessionEndUseCase.Result.Uploaded())
@@ -208,7 +228,7 @@ class SessionEndNoticesTest {
     @Test
     fun `a toast that fails to post never throws into the session end`() = runTest {
         every {
-            notificationManager.show(any(), any(), any(), any(), any(), any(), any(), any(), any())
+            notificationManager.show(any(), any(), any(), any(), any(), any(), any(), any(), any(), any())
         } throws IllegalStateException("host gone")
 
         notices.sessionSaveSynced(gameId, SyncSaveOnSessionEndUseCase.Result.Uploaded())
@@ -236,7 +256,8 @@ class SessionEndNoticesTest {
                 duration = NotificationDuration.MEDIUM,
                 key = syncKey,
                 immediate = true,
-                accentColor = null
+                accentColor = null,
+                category = NotificationCategory.SAVE
             )
         }
     }
@@ -248,7 +269,7 @@ class SessionEndNoticesTest {
         )
         val images = mutableListOf<String?>()
         every {
-            notificationManager.show(any(), any(), any(), captureNullable(images), any(), any(), any(), any(), any())
+            notificationManager.show(any(), any(), any(), captureNullable(images), any(), any(), any(), any(), any(), any())
         } returns "id"
 
         notices.sessionSaveSynced(gameId, SyncSaveOnSessionEndUseCase.Result.Uploaded())

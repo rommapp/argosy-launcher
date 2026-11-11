@@ -7,7 +7,6 @@ import android.content.IntentFilter
 import android.net.ConnectivityManager
 import android.net.Network
 import android.net.NetworkCapabilities
-import android.os.BatteryManager
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
@@ -15,12 +14,30 @@ import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.unit.Dp
+import com.nendo.argosy.R
+import com.nendo.argosy.ui.common.LocalOpenRunningGames
+import com.nendo.argosy.ui.common.LocalRunningGames
+import com.nendo.argosy.ui.common.RunningGamesUi
+import com.nendo.argosy.ui.theme.LocalArgosyTheme
+import com.nendo.argosy.ui.util.clickableNoFocus
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Image
 import androidx.compose.material.icons.outlined.SettingsEthernet
@@ -46,6 +63,8 @@ import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
+import com.nendo.argosy.domain.model.BatteryThresholds
+import com.nendo.argosy.hardware.toBatterySample
 import com.nendo.argosy.ui.theme.generated.ColorTokens
 import com.nendo.argosy.ui.theme.generated.ComponentDefaults
 import androidx.compose.ui.graphics.drawscope.Stroke
@@ -64,44 +83,24 @@ data class BatteryState(
     val isCharging: Boolean = false
 )
 
-internal const val BATTERY_LOW_PERCENT = 20
-
 @Composable
 fun rememberBatteryState(): State<BatteryState> {
     val context = LocalContext.current
     val batteryState = remember { mutableStateOf(BatteryState()) }
 
     DisposableEffect(context) {
+        fun publish(intent: Intent) {
+            val sample = intent.toBatterySample() ?: return
+            batteryState.value = BatteryState(level = sample.level, isCharging = sample.charging)
+        }
+
         val receiver = object : BroadcastReceiver() {
             override fun onReceive(ctx: Context, intent: Intent) {
-                val level = intent.getIntExtra(BatteryManager.EXTRA_LEVEL, -1)
-                val scale = intent.getIntExtra(BatteryManager.EXTRA_SCALE, 100)
-                val status = intent.getIntExtra(BatteryManager.EXTRA_STATUS, -1)
-                val isCharging = status == BatteryManager.BATTERY_STATUS_CHARGING ||
-                        status == BatteryManager.BATTERY_STATUS_FULL
-
-                batteryState.value = BatteryState(
-                    level = (level * 100) / scale,
-                    isCharging = isCharging
-                )
+                publish(intent)
             }
         }
 
-        val filter = IntentFilter(Intent.ACTION_BATTERY_CHANGED)
-        val sticky = context.registerReceiver(receiver, filter)
-
-        sticky?.let { intent ->
-            val level = intent.getIntExtra(BatteryManager.EXTRA_LEVEL, -1)
-            val scale = intent.getIntExtra(BatteryManager.EXTRA_SCALE, 100)
-            val status = intent.getIntExtra(BatteryManager.EXTRA_STATUS, -1)
-            val isCharging = status == BatteryManager.BATTERY_STATUS_CHARGING ||
-                    status == BatteryManager.BATTERY_STATUS_FULL
-
-            batteryState.value = BatteryState(
-                level = (level * 100) / scale,
-                isCharging = isCharging
-            )
-        }
+        context.registerReceiver(receiver, IntentFilter(Intent.ACTION_BATTERY_CHANGED))?.let { publish(it) }
 
         onDispose {
             context.unregisterReceiver(receiver)
@@ -250,13 +249,17 @@ fun SystemStatusBar(
         }
 
     }
+    val running = LocalRunningGames.current
     val indicators: @Composable (Modifier) -> Unit = { itemModifier ->
-        if (shown.network || shown.battery) {
+        if (shown.network || shown.battery || running.isAnyRunning) {
             Row(
                 modifier = itemModifier,
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(Dimens.spacingSm)
             ) {
+                if (running.isAnyRunning) {
+                    RunningSlotStrip(running = running, onOpen = LocalOpenRunningGames.current)
+                }
                 if (shown.network) {
                     NetworkIndicator(color = effectiveColor)
                 }
@@ -299,6 +302,83 @@ fun SystemStatusBar(
 
 internal fun hasStatusBarContent(items: StatusBarItems, scrapingArtwork: Boolean): Boolean =
     items.clock || items.battery || items.network || scrapingArtwork
+
+@Composable
+private fun RunningSlotStrip(running: RunningGamesUi, onOpen: () -> Unit) {
+    val theme = LocalArgosyTheme.current
+    val strip = ComponentDefaults.RunningStrip
+    val unitShape = RoundedCornerShape(strip.unitRadiusDp.dp)
+    val unitGap = strip.unitGapDp.dp
+    val loaded = theme.focusAccent.copy(alpha = strip.loadedAlpha)
+    val external = theme.textPrimary.copy(alpha = strip.externalAlpha)
+    val description = stringResource(R.string.ui_status_bar_running_desc)
+    Row(
+        modifier = Modifier
+            .clip(RoundedCornerShape(Dimens.radiusSm))
+            .clickableNoFocus(onClick = onOpen)
+            .semantics { contentDescription = description }
+            .padding(horizontal = Dimens.spacingXs, vertical = Dimens.borderMedium),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(unitGap)
+    ) {
+        running.slotUnits.forEach { unit ->
+            StripUnit(
+                width = strip.unitWidthDp.dp * unit.weight + unitGap * (unit.weight - 1),
+                color = loaded,
+                shape = unitShape,
+                closingBase = theme.surfaceElevated.takeIf { unit.isClosing }
+            )
+        }
+        repeat(running.freeUnits) {
+            StripUnit(width = strip.unitWidthDp.dp, color = theme.surfaceElevated, shape = unitShape)
+        }
+        running.outsidePoolUnits.forEachIndexed { index, unit ->
+            if (index == 0 && (running.slotUnits.isNotEmpty() || running.freeUnits > 0)) {
+                Spacer(modifier = Modifier.width(strip.externalGapDp.dp - unitGap))
+            }
+            StripUnit(
+                width = strip.unitWidthDp.dp,
+                color = external,
+                shape = unitShape,
+                closingBase = theme.surfaceElevated.takeIf { unit.isClosing }
+            )
+        }
+    }
+}
+
+@Composable
+private fun StripUnit(width: Dp, color: Color, shape: RoundedCornerShape, closingBase: Color? = null) {
+    Box(
+        modifier = Modifier
+            .width(width)
+            .height(ComponentDefaults.RunningStrip.unitHeightDp.dp)
+            .clip(shape)
+            .then(
+                if (closingBase == null) {
+                    Modifier.background(color)
+                } else {
+                    Modifier.background(closingBase).drawBehind { drawClosingStripes(color) }
+                }
+            )
+    )
+}
+
+private fun androidx.compose.ui.graphics.drawscope.DrawScope.drawClosingStripes(color: Color) {
+    val stripe = ComponentDefaults.RunningStrip.closingStripeDp.dp.toPx()
+    val period = stripe * 2
+    var start = -size.height
+    while (start < size.width) {
+        val path = androidx.compose.ui.graphics.Path().apply {
+            moveTo(start, size.height)
+            lineTo(start + stripe, size.height)
+            lineTo(start + stripe + size.height, 0f)
+            lineTo(start + size.height, 0f)
+            close()
+        }
+        drawPath(path, color)
+        start += period
+    }
+}
 
 /**
  * Says that artwork is still being fetched, without saying what. It pulses so it reads as work in
@@ -385,7 +465,7 @@ internal fun BatteryIcon(
 ) {
     val fillColor = when {
         isCharging -> ColorTokens.Domain.Battery.charging
-        level <= BATTERY_LOW_PERCENT -> ColorTokens.Domain.Battery.low
+        level <= BatteryThresholds.LOW_PERCENT -> ColorTokens.Domain.Battery.low
         else -> color
     }
 

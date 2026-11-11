@@ -140,6 +140,7 @@ class LibraryGameStartTest {
         showcaseSource = mockk(relaxed = true),
         reorderPlatforms = mockk(relaxed = true),
         quickNavigation = mockk { io.mockk.every { enabled } returns MutableStateFlow(true) },
-        launchProgressTracker = mockk { io.mockk.every { launchLive } returns MutableStateFlow(false) }
+        launchProgressTracker = mockk { io.mockk.every { launchLive } returns MutableStateFlow(false) },
+        runningGameMenu = mockk(relaxed = true)
     ).also { it.listDispatcher = dispatcher }
 }

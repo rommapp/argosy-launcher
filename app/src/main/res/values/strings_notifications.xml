@@ -106,11 +106,12 @@
 
     <!-- Friend presence notifications (SocialRepository). -->
 
-    <!-- Subtitle when a friend starts playing a game. %1$s is the game's title
-         (untranslated, user content). -->
-    <string name="notif_social_friend_started_playing">Started playing %1$s</string>
-    <!-- Subtitle when a friend comes online. Statement of fact, not a command. -->
-    <string name="notif_social_friend_online">Is now online</string>
+    <!-- Title when a friend starts playing a game. The friend's name is the body and the
+         game's cover is the icon. Present participle, one word if possible. -->
+    <string name="notif_social_presence_playing_title">Playing</string>
+    <!-- Title when a friend comes online. The friend's name is the body. Status adjective,
+         one word if possible. -->
+    <string name="notif_social_presence_online_title">Online</string>
 
     <!-- Settings: image cache and download validation (SettingsGeneralRouter). -->
 
@@ -427,4 +428,53 @@
     <!-- Follows a controller button icon, so it reads as "[X] Set up displays". Keep it short
          enough to sit on one line beside the icon. -->
     <string name="notif_new_display_action">Set up displays</string>
+
+    <!-- Battery notices (BatteryNoticePoster). Titles fit 16 characters and bodies 17,
+         counting a three-digit level. h and m are hours and minutes, matching the play-time
+         strings. -->
+
+    <!-- Warning when the device battery drops to the low threshold while not charging.
+         %1$d is the battery level in percent. Noun phrase, not a command. -->
+    <string name="notif_battery_low_title">Battery %1$d%%</string>
+    <!-- Error when the battery drops to the critical threshold while not charging. %1$d is the
+         battery level in percent. Kept apart from notif_battery_low_title so either can change
+         alone. -->
+    <string name="notif_battery_critical_title">Battery %1$d%%</string>
+    <!-- Body under the critical battery title when the built-in game in front has just written
+         its save to storage. Past participle, "saved" means written to storage. -->
+    <string name="notif_battery_critical_saved">Game saved</string>
+    <!-- Shown while a game runs when the charger is plugged in. %1$d is the battery level in
+         percent. "Charging" describes the battery taking power. -->
+    <string name="notif_battery_charging_title">Charging, %1$d%%</string>
+    <!-- Body under the charging title: time until the battery is full. %1$d hours, %2$d minutes. -->
+    <string name="notif_battery_charging_full_in_hours_minutes">Full in %1$dh %2$dm</string>
+    <!-- Body under the charging title when less than an hour remains. %1$d is minutes. -->
+    <string name="notif_battery_charging_full_in_minutes">Full in %1$dm</string>
+    <!-- Shown while a game runs when the charger is pulled out. %1$d is the battery level in
+         percent. "On battery" means running without the charger. -->
+    <string name="notif_battery_unplugged_title">On battery, %1$d%%</string>
+    <!-- Body under the unplugged title: estimated play time left. %1$d hours, %2$d minutes. -->
+    <string name="notif_battery_unplugged_left_hours_minutes">%1$dh %2$dm left</string>
+    <!-- Body under the unplugged title when less than an hour remains. %1$d is minutes. -->
+    <string name="notif_battery_unplugged_left_minutes">%1$dm left</string>
+
+    <!-- Controller notices over Argosy's screens and other apps (ControllerNoticePoster). The
+         body is the controller's own name as the system reports it. Titles fit 16 characters. -->
+
+    <!-- A game controller connected. Past participle; the controller is the subject. -->
+    <string name="notif_controller_connected_title">Connected</string>
+    <!-- A game controller disconnected. Past participle; the controller is the subject. -->
+    <string name="notif_controller_disconnected_title">Disconnected</string>
+    <!-- Several controllers connected at once. %1$d is how many. -->
+    <plurals name="notif_controller_burst_connected_title">
+        <item quantity="one">%1$d connected</item>
+        <item quantity="other">%1$d connected</item>
+    </plurals>
+    <!-- Several controllers disconnected at once. %1$d is how many. -->
+    <plurals name="notif_controller_burst_disconnected_title">
+        <item quantity="one">%1$d disconnected</item>
+        <item quantity="other">%1$d disconnected</item>
+    </plurals>
+    <!-- A wireless controller's own battery is low. "Pad" is short for game controller. -->
+    <string name="notif_controller_battery_low_title">Pad battery low</string>
 </resources>

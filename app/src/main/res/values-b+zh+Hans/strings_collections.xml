@@ -22,6 +22,8 @@
     <string name="collections_options_rename">重命名合集</string>
     <string name="collections_options_delete">删除合集</string>
     <string name="collections_options_remove_game">移除“%1$s”</string>
+    <string name="collections_options_move_to_display">移到显示器 %1$d</string>
+    <string name="collections_options_close_game">关闭游戏</string>
     <string name="collections_options_remove_game_fallback">游戏</string>
 
     <string name="collections_delete_dialog_title">删除合集</string>

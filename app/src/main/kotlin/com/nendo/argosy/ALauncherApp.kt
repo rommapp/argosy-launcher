@@ -63,6 +63,9 @@ class ArgosyApp : Application(), Configuration.Provider, ImageLoaderFactory {
     lateinit var backgroundGames: com.nendo.argosy.data.emulator.background.BackgroundGames
 
     @Inject
+    lateinit var runningGames: dagger.Lazy<com.nendo.argosy.data.emulator.background.RunningGames>
+
+    @Inject
     lateinit var userCertStore: com.nendo.argosy.data.remote.ssl.UserCertStore
 
     @Inject
@@ -159,6 +162,15 @@ class ArgosyApp : Application(), Configuration.Provider, ImageLoaderFactory {
     lateinit var pushInstallCoordinator: com.nendo.argosy.data.install.PushInstallCoordinator
 
     @Inject
+    lateinit var overAppNoticeWindow: dagger.Lazy<com.nendo.argosy.ui.notification.OverAppNoticeWindow>
+
+    @Inject
+    lateinit var batteryNoticePoster: dagger.Lazy<com.nendo.argosy.ui.notification.BatteryNoticePoster>
+
+    @Inject
+    lateinit var controllerNoticePoster: dagger.Lazy<com.nendo.argosy.ui.notification.ControllerNoticePoster>
+
+    @Inject
     lateinit var siblingGroupRepository: com.nendo.argosy.data.repository.SiblingGroupRepository
 
     @Inject
@@ -231,9 +243,13 @@ class ArgosyApp : Application(), Configuration.Provider, ImageLoaderFactory {
         downloadServiceController.start()
         syncServiceController.start()
         pushInstallCoordinator.start()
+        overAppNoticeWindow.get().start()
+        batteryNoticePoster.get().start()
+        controllerNoticePoster.get().start()
         siblingGroupRepository.start()
         lidSleepGuard.start()
         backgroundGames.start()
+        runningGames.get().start()
         siblingGroupDownloadObserver.start()
         raPatchDownloadObserver.start()
         appScope.launch {

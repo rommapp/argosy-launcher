@@ -1,9 +1,13 @@
 package com.nendo.argosy.libretro
 
+import com.nendo.argosy.R
+import com.nendo.argosy.core.notification.NotificationText
 import com.nendo.argosy.data.local.entity.CoreInputMode
 import com.nendo.argosy.data.local.entity.FastForwardMode
 import com.nendo.argosy.data.local.entity.HotkeyAction
 import com.nendo.argosy.libretro.ui.NetplayMenuRole
+import com.nendo.argosy.ui.notification.InGameNotice
+import com.nendo.argosy.ui.notification.NotificationSeverity
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
 import com.swordfish.libretrodroid.GLRetroView
@@ -22,7 +26,7 @@ class LibretroHotkeyDispatcher(
     private val saveStateManager: SaveStateManager,
     private val videoSettings: VideoSettingsManager,
     private val getRetroView: () -> GLRetroView,
-    private val showToast: (String) -> Unit,
+    private val showNotice: (InGameNotice) -> Unit,
     private val isHardcoreMode: () -> Boolean,
     private val canSerialize: () -> Boolean,
     private val isNetplayInSession: () -> Boolean,
@@ -52,7 +56,7 @@ class LibretroHotkeyDispatcher(
         videoSettings = videoSettings,
         hotkeyManager = hotkeyManager,
         getRetroView = getRetroView,
-        showToast = showToast,
+        showNotice = showNotice,
         isHardcoreMode = isHardcoreMode,
         canSerialize = canSerialize,
         isNetplayInSession = isNetplayInSession,
@@ -155,6 +159,11 @@ class LibretroHotkeyDispatcher(
         if (isNetplayInSession()) return
         getRetroView().reset()
         onGameReset()
-        showToast("Game reset")
+        showNotice(
+            InGameNotice(
+                severity = NotificationSeverity.INFO,
+                title = NotificationText.Res(R.string.ingame_hotkey_reset_success_title)
+            )
+        )
     }
 }

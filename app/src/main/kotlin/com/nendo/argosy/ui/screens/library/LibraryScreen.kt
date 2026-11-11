@@ -50,6 +50,8 @@ import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material.icons.filled.GridView
 import androidx.compose.material.icons.filled.Folder
 import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Tv
 import androidx.compose.material.icons.filled.Layers
 import androidx.compose.material.icons.filled.InstallMobile
 import androidx.compose.material.icons.filled.PlayArrow
@@ -651,8 +653,15 @@ fun LibraryScreen(
                     rows = libraryQuickMenuRows(
                         game = game,
                         isCustomGridHome = uiState.isCustomGridHome,
-                        hasSiblingGroup = uiState.quickMenuHasSiblingGroup
+                        hasSiblingGroup = uiState.quickMenuHasSiblingGroup,
+                        isRunning = uiState.quickMenuRunning != null,
+                        moveTargetCount = uiState.quickMenuMoveTargets.size
                     ),
+                    moveTargets = uiState.quickMenuMoveTargets,
+                    onMoveToDisplay = { target ->
+                        viewModel.moveRunningGame(target)
+                        viewModel.toggleQuickMenu()
+                    },
                     focusIndex = uiState.quickMenuFocusIndex,
                     onDismiss = { viewModel.toggleQuickMenu() },
                     onPrimaryAction = {
@@ -694,12 +703,18 @@ fun LibraryScreen(
                     onHide = {
                         viewModel.toggleQuickMenu()
                         if (game.isHidden) viewModel.unhideGame(game.id) else viewModel.hideGame(game.id)
+                    },
+                    onCloseGame = {
+                        viewModel.requestCloseRunningGame()
+                        viewModel.toggleQuickMenu()
                     }
                 )
             }
         }
 
         com.nendo.argosy.ui.common.GameConfirmHost(viewModel.gameConfirm)
+
+        com.nendo.argosy.ui.screens.running.RunningGameCloseHost(viewModel.runningGameMenu)
 
         AnimatedVisibility(
             visible = uiState.showAddToCollectionModal,
@@ -1738,6 +1753,8 @@ private fun FilterOptionItem(
 private fun QuickMenuOverlay(
     game: LibraryGameUi,
     rows: List<LibraryQuickMenuRow>,
+    moveTargets: List<com.nendo.argosy.ui.screens.running.RunningMoveTarget>,
+    onMoveToDisplay: (com.nendo.argosy.ui.screens.running.RunningMoveTarget) -> Unit,
     focusIndex: Int,
     onDismiss: () -> Unit,
     onPrimaryAction: () -> Unit,
@@ -1750,7 +1767,8 @@ private fun QuickMenuOverlay(
     onResyncPlatform: () -> Unit,
     onDelete: () -> Unit,
     onRemoveFromLibrary: () -> Unit,
-    onHide: () -> Unit
+    onHide: () -> Unit,
+    onCloseGame: () -> Unit
 ) {
     val primaryIcon = when {
         game.needsInstall -> Icons.Default.InstallMobile
@@ -1758,6 +1776,8 @@ private fun QuickMenuOverlay(
         else -> Icons.Default.Download
     }
     val primaryLabel = when {
+        com.nendo.argosy.ui.common.LocalRunningGames.current.isRunning(game.id) ->
+            stringResource(R.string.library_quickmenu_resume_game)
         game.needsInstall -> stringResource(R.string.library_quickmenu_install)
         game.isDownloaded -> stringResource(R.string.library_quickmenu_play)
         else -> stringResource(R.string.library_quickmenu_download)
@@ -1787,14 +1807,24 @@ private fun QuickMenuOverlay(
         stringResource(R.string.library_quickmenu_delete_download)
     }
     val removeFromLibraryLabel = stringResource(R.string.library_quickmenu_remove_from_library)
+    val closeGameLabel = stringResource(R.string.library_quickmenu_close_game)
+    val moveLabels = moveTargets.map { stringResource(R.string.library_quickmenu_move_to_display, it.screenNumber) }
     val hideLabel = if (game.isHidden) {
         stringResource(R.string.library_quickmenu_show)
     } else {
         stringResource(R.string.library_quickmenu_hide)
     }
 
-    fun LibraryQuickMenuRow.toEntry(): MenuEntry = when (this) {
+    fun LibraryQuickMenuRow.toEntry(position: Int): MenuEntry = when (this) {
         LibraryQuickMenuRow.PRIMARY -> MenuEntry(primaryIcon, primaryLabel, onClick = onPrimaryAction)
+        LibraryQuickMenuRow.MOVE_TO_DISPLAY -> {
+            val targetIndex = rows.moveTargetIndexAt(position)
+            MenuEntry(
+                Icons.Default.Tv,
+                moveLabels.getOrElse(targetIndex) { "" },
+                onClick = { moveTargets.getOrNull(targetIndex)?.let(onMoveToDisplay) }
+            )
+        }
         LibraryQuickMenuRow.FAVORITE -> MenuEntry(
             if (game.isFavorite) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
             favoriteLabel,
@@ -1827,10 +1857,17 @@ private fun QuickMenuOverlay(
             onClick = onRemoveFromLibrary
         )
         LibraryQuickMenuRow.HIDE -> MenuEntry(label = hideLabel, isDangerous = !game.isHidden, onClick = onHide)
+        LibraryQuickMenuRow.CLOSE_GAME -> MenuEntry(
+            Icons.Default.Close,
+            closeGameLabel,
+            isDangerous = true,
+            onClick = onCloseGame
+        )
     }
 
-    val options = rows.filterNot { it.isDangerous }.map { it.toEntry() }
-    val dangerousOptions = rows.filter { it.isDangerous }.map { it.toEntry() }
+    val entries = rows.mapIndexed { position, row -> row to row.toEntry(position) }
+    val options = entries.filterNot { it.first.isDangerous }.map { it.second }
+    val dangerousOptions = entries.filter { it.first.isDangerous }.map { it.second }
 
     ModalPresenceEffect()
     val isDarkTheme = LocalLauncherTheme.current.isDarkTheme

@@ -1030,4 +1030,16 @@
     <string name="ui_launch_overlay_makeroom_closed">已关闭</string>
     <string name="ui_launch_overlay_running_close_label">关闭并启动</string>
     <string name="ui_launch_overlay_running_close_subtitle">正在运行的游戏中未保存的进度将会丢失</string>
+    <string name="ui_game_card_running">运行中</string>
+    <string name="ui_game_card_saving">正在保存</string>
+    <string name="ui_running_duration_hours_minutes">%1$dh %2$dm</string>
+    <string name="ui_running_duration_minutes">%1$dm</string>
+    <string name="ui_status_bar_running_desc">运行中的游戏</string>
+    <string name="ui_quick_menu_row_running">运行中</string>
+    <string name="ui_quick_menu_row_running_in">正在 %1$s 中运行</string>
+    <string name="ui_quick_menu_row_saving">正在保存</string>
+    <string name="ui_quick_menu_random_action_resume_game">继续游戏</string>
+    <string name="gamelist_row_running">运行中</string>
+    <string name="gamelist_row_running_in">正在 %1$s 中运行</string>
+    <string name="gamelist_row_saving">正在保存</string>
 </resources>

@@ -90,6 +90,8 @@
     <string name="home_quick_actions_remove_from_home">Убрать с главного экрана</string>
     <string name="home_quick_actions_remove_from_library">Удалить из библиотеки</string>
     <string name="home_quick_actions_hide">Скрыть</string>
+    <string name="home_quick_actions_move_to_display">Перенести на дисплей %1$d</string>
+    <string name="home_quick_actions_close_game">Закрыть игру</string>
 
     <string name="home_media_empty_next_up_title">Нечего смотреть далее</string>
     <string name="home_media_empty_next_up_message">Закончите эпизод, и следующий появится здесь.</string>
@@ -193,4 +195,9 @@
 
     <string name="home_grid_tile_ra_points_label">Очки</string>
     <string name="home_grid_tile_ra_unlocks_label">Достижения</string>
+    <string name="home_footer_game_resume_game">Продолжить</string>
+    <string name="home_title_running">Запущена</string>
+    <string name="home_title_running_in">Запущена в %1$s</string>
+    <string name="home_title_saving">Сохранение</string>
+    <string name="home_title_running_with_time">В игре %1$s</string>
 </resources>

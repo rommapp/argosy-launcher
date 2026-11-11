@@ -407,6 +407,17 @@
     <string name="settings_interface_pre_launch_recaps_subtitle">Vor einem RetroAchievements-Spiel, das du eine Woche nicht gespielt hast, zeigen, wo du aufgehört hast</string>
     <string name="settings_interface_monthly_recap_title">Monatsrückblick</string>
     <string name="settings_interface_monthly_recap_subtitle">Zu Monatsbeginn auf dem Startbildschirm eine Zusammenfassung des Vormonats zeigen</string>
+    <string name="settings_interface_section_notifications">Benachrichtigungen</string>
+    <string name="settings_interface_notifications_title">Benachrichtigungen</string>
+    <string name="settings_interface_notifications_subtitle">Hinweise von Argosy im Launcher und über Spielen anzeigen. Akkuhinweise erscheinen weiterhin</string>
+    <string name="settings_interface_notify_downloads_finished_title">Downloads abgeschlossen</string>
+    <string name="settings_interface_notify_downloads_finished_subtitle">Einen Hinweis zeigen, wenn ein Download fertig ist</string>
+    <string name="settings_interface_notify_battery_title">Akku</string>
+    <string name="settings_interface_notify_battery_subtitle" formatted="false">Warnt bei 15 % und 5 %. Integrierte Spiele speichern bei 5 % trotzdem</string>
+    <string name="settings_interface_notify_charging_title">Laden</string>
+    <string name="settings_interface_notify_charging_subtitle">Einen Hinweis zeigen, wenn das Ladegerät beim Spielen ein- oder ausgesteckt wird</string>
+    <string name="settings_interface_notify_controllers_title">Controller</string>
+    <string name="settings_interface_notify_controllers_subtitle">Einen Hinweis zeigen, wenn ein Controller verbunden oder getrennt wird oder sein Akku schwach ist</string>
 
     <string name="settings_home_screen_background_title">Hintergrund</string>
     <string name="settings_home_screen_background_subtitle">Spielgrafik oder Hintergrundmuster</string>

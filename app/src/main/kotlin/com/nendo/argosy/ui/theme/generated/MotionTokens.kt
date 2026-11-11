@@ -50,6 +50,14 @@ object MotionTokens {
         val page: AnimationSpec<Float> = tween(durationMillis = pageMs)
         const val drawerMs = 450
         val drawer: AnimationSpec<Float> = tween(durationMillis = drawerMs)
+        const val noticeFadeMs = 100
+        val noticeFade: AnimationSpec<Float> = tween(durationMillis = noticeFadeMs)
+        const val noticeRevealMs = 250
+        val noticeReveal: AnimationSpec<Float> = tween(durationMillis = noticeRevealMs)
+        const val noticeProgressMs = 600
+        val noticeProgress: AnimationSpec<Float> = tween(durationMillis = noticeProgressMs)
+        const val breathMs = 4000
+        val breath: AnimationSpec<Float> = tween(durationMillis = breathMs)
     }
 
 }

@@ -90,6 +90,8 @@
     <string name="home_quick_actions_remove_from_home">होम से हटाएं</string>
     <string name="home_quick_actions_remove_from_library">लाइब्रेरी से हटाएं</string>
     <string name="home_quick_actions_hide">छिपाएं</string>
+    <string name="home_quick_actions_move_to_display">डिस्प्ले %1$d पर ले जाएँ</string>
+    <string name="home_quick_actions_close_game">गेम बंद करें</string>
 
     <string name="home_media_empty_next_up_title">आगे कुछ नहीं</string>
     <string name="home_media_empty_next_up_message">एक एपिसोड पूरा करें और अगला यहां दिखेगा।</string>
@@ -185,4 +187,9 @@
 
     <string name="home_grid_tile_ra_points_label">अंक</string>
     <string name="home_grid_tile_ra_unlocks_label">उपलब्धियाँ</string>
+    <string name="home_footer_game_resume_game">फिर से खेलें</string>
+    <string name="home_title_running">चल रहा है</string>
+    <string name="home_title_running_in">%1$s में चल रहा है</string>
+    <string name="home_title_saving">सेव हो रहा है</string>
+    <string name="home_title_running_with_time">%1$s से चल रहा है</string>
 </resources>

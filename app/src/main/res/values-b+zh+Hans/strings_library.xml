@@ -176,4 +176,10 @@
     <string name="library_showcase_play_time_hours">%1$d小时</string>
     <string name="library_showcase_play_time_minutes">%1$d分钟</string>
     <string name="library_apps_launch_failed">无法打开应用</string>
+    <string name="library_quickmenu_resume_game">继续游戏</string>
+    <string name="library_quickmenu_close_game">关闭游戏</string>
+    <string name="library_quickmenu_move_to_display">移到显示器 %1$d</string>
+    <string name="library_search_result_running">运行中</string>
+    <string name="library_search_result_running_in">正在 %1$s 中运行</string>
+    <string name="library_search_result_saving">正在保存</string>
 </resources>

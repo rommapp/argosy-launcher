@@ -90,6 +90,8 @@
     <string name="home_quick_actions_remove_from_home">从主页移除</string>
     <string name="home_quick_actions_remove_from_library">从游戏库中移除</string>
     <string name="home_quick_actions_hide">隐藏</string>
+    <string name="home_quick_actions_move_to_display">移到显示器 %1$d</string>
+    <string name="home_quick_actions_close_game">关闭游戏</string>
 
     <string name="home_media_empty_next_up_title">暂无接下来的内容</string>
     <string name="home_media_empty_next_up_message">看完一集后，下一集会显示在这里。</string>
@@ -181,4 +183,9 @@
 
     <string name="home_grid_tile_ra_points_label">点数</string>
     <string name="home_grid_tile_ra_unlocks_label">成就</string>
+    <string name="home_footer_game_resume_game">继续游戏</string>
+    <string name="home_title_running">运行中</string>
+    <string name="home_title_running_in">正在 %1$s 中运行</string>
+    <string name="home_title_saving">正在保存</string>
+    <string name="home_title_running_with_time">已运行 %1$s</string>
 </resources>

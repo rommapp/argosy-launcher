@@ -60,6 +60,7 @@ import com.nendo.argosy.core.notification.NotificationManager
 import com.nendo.argosy.core.notification.SyncNotificationObserver
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
+import com.nendo.argosy.ui.common.toRunningGamesUi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -203,10 +204,24 @@ class ArgosyViewModel @Inject constructor(
     private val connectedControllerTracker: com.nendo.argosy.core.input.ConnectedControllerTracker,
     val apkInstallManager: com.nendo.argosy.data.update.ApkInstallManager,
     val privilegedAccess: com.nendo.argosy.data.access.PrivilegedAccess,
-    private val backgroundGames: com.nendo.argosy.data.emulator.background.BackgroundGames
+    private val runningGames: com.nendo.argosy.data.emulator.background.RunningGames
 ) : ViewModel() {
 
-    private val runningCount = MutableStateFlow(0)
+    val runningGamesUi: StateFlow<com.nendo.argosy.ui.common.RunningGamesUi> = runningGames.state
+        .map { it.toRunningGamesUi() }
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.Eagerly,
+            initialValue = com.nendo.argosy.ui.common.RunningGamesUi()
+        )
+
+    private val runningCount = runningGamesUi.map { it.appCount }
+
+    /**
+     * Keeps the running list polled while the calling coroutine runs; the app root holds it for
+     * as long as Argosy is started.
+     */
+    suspend fun watchRunningGames() = runningGames.watch()
 
     suspend fun resolveDeepLinkLaunch(
         request: com.nendo.argosy.domain.model.DeepLinkRequest
@@ -567,9 +582,7 @@ class ArgosyViewModel @Inject constructor(
             syncCoordinator.processQueue()
             downloadManager.recheckStorageAndResume()
         }
-        viewModelScope.launch(Dispatchers.IO) {
-            runningCount.value = backgroundGames.refresh().size
-        }
+        viewModelScope.launch(Dispatchers.IO) { runningGames.refresh() }
     }
 
     val screenDimmerPreferences: StateFlow<ScreenDimmerPreferences> = preferencesRepository.userPreferences

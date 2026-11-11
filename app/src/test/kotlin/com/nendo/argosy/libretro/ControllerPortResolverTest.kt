@@ -34,7 +34,7 @@ class ControllerPortResolverTest {
         builtIn = pad(deviceId = 1, external = false, label = "builtin")
         external = pad(deviceId = 2, external = true, label = "bluetooth")
         secondExternal = pad(deviceId = 3, external = true, label = "usb")
-        resolver.onPortClaimed = { controllerId, port -> claims += controllerId to port }
+        resolver.addPortClaimedListener { controllerId, port -> claims += controllerId to port }
     }
 
     @After
@@ -227,6 +227,53 @@ class ControllerPortResolverTest {
         assertEquals(0, resolver.getPort(builtIn))
         assertEquals(1, resolver.getPort(external))
         assertTrue(claims.none { it.first == id(builtIn) })
+    }
+
+    @Test
+    fun `every listener hears a claim and a removed one does not`() {
+        connected(external)
+        val second = mutableListOf<Pair<String, Int>>()
+        val listener: (String, Int) -> Unit = { controllerId, port -> second += controllerId to port }
+        resolver.addPortClaimedListener(listener)
+
+        resolver.getPort(external)
+        resolver.removePortClaimedListener(listener)
+        connected(external, secondExternal)
+        resolver.getPort(secondExternal)
+
+        assertEquals(listOf(id(external) to 0, id(secondExternal) to 1), claims)
+        assertEquals(listOf(id(external) to 0), second)
+    }
+
+    @Test
+    fun `release reports the seats the departed pads held`() {
+        connected(external, secondExternal)
+        resolver.getPort(external)
+        resolver.getPort(secondExternal)
+
+        connected(external)
+        val released = resolver.releaseDisconnected(setOf(id(external)))
+
+        assertEquals(mapOf(id(secondExternal) to 1), released)
+        assertNull(resolver.seatOf(id(secondExternal)))
+    }
+
+    @Test
+    fun `a taken seat outranks the saved pad for it until the taker leaves`() {
+        connected(secondExternal)
+        resolver.setControllerOrder(listOf(order(external, 0)))
+
+        resolver.takeSeat(id(secondExternal), 0)
+
+        assertEquals(0, resolver.seatOf(id(secondExternal)))
+        assertNull(resolver.seatOf(id(external)))
+        assertEquals(id(secondExternal), resolver.playerOneControllerId())
+        assertEquals(id(secondExternal) to 0, claims.last())
+
+        connected(external)
+        resolver.releaseDisconnected(setOf(id(external)))
+
+        assertEquals(0, resolver.seatOf(id(external)))
     }
 
     private fun connected(vararg devices: InputDevice) {

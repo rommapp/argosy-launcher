@@ -993,6 +993,15 @@
     <string name="dual_showcase_progress_main">%1$s of %2$s main story</string>
     <!-- On the presentation screen, how long the player has played. %1$s is a duration such as "27h". -->
     <string name="dual_showcase_played">%1$s played</string>
+    <!-- On the presentation screen, under the title of a game still running in the background.
+         Adjective: the game is running. -->
+    <string name="dual_showcase_running">Running</string>
+    <!-- Same line for a game an external emulator holds. %1$s is the emulator's name. -->
+    <string name="dual_showcase_running_in">Running in %1$s</string>
+    <!-- Same line while the running game saves before it closes. Verb in progress. -->
+    <string name="dual_showcase_saving">Saving</string>
+    <!-- Same line with this run's play time. %1$s is a duration such as "1h 12m". -->
+    <string name="dual_showcase_running_with_time">Running %1$s</string>
     <!-- Header of the progress card on the presentation screen's journal layout. -->
     <string name="dual_showcase_journey_header">Your journey</string>
     <!-- Right side of that card: how long the main story takes, e.g. "Main story 13h". -->

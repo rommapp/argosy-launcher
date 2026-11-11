@@ -7,6 +7,7 @@ import android.net.Uri
 object ArgosyHomeIntent {
     const val EXTRA_OPEN_RUNNING = "com.nendo.argosy.extra.OPEN_RUNNING"
     const val RUNNING_DEEP_LINK_HOST = "running"
+    const val GAME_DEEP_LINK_HOST = "game"
 
     fun create(context: Context, openRunning: Boolean = false): Intent =
         Intent(Intent.ACTION_MAIN)
@@ -14,6 +15,14 @@ object ArgosyHomeIntent {
             .setPackage(context.packageName)
             .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
             .apply { if (openRunning) putExtra(EXTRA_OPEN_RUNNING, true) }
+
+    fun gameDetail(context: Context, gameId: Long): Intent =
+        Intent(
+            Intent.ACTION_VIEW,
+            Uri.Builder().scheme("argosy").authority(GAME_DEEP_LINK_HOST).appendPath(gameId.toString()).build()
+        )
+            .setPackage(context.packageName)
+            .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
 
     fun runningDeepLinkOf(intent: Intent?): Uri? =
         if (intent?.getBooleanExtra(EXTRA_OPEN_RUNNING, false) == true) {

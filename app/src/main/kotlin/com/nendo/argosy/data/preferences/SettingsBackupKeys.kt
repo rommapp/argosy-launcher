@@ -288,11 +288,19 @@ object SettingsBackupKeys {
         SettingsBackupKey("monthly_recap_enabled", SettingsBackupType.BOOLEAN)
     )
 
+    private val NOTIFICATIONS = listOf(
+        SettingsBackupKey("notifications_enabled", SettingsBackupType.BOOLEAN),
+        SettingsBackupKey("notify_downloads_finished", SettingsBackupType.BOOLEAN),
+        SettingsBackupKey("notify_battery", SettingsBackupType.BOOLEAN),
+        SettingsBackupKey("notify_charging", SettingsBackupType.BOOLEAN),
+        SettingsBackupKey("notify_controllers", SettingsBackupType.BOOLEAN)
+    )
+
     val EXPORTED: List<SettingsBackupKey> =
         APPEARANCE + BACKDROP + BOX_ART + BACKGROUND + HOME_AND_LIBRARY + APP_SHELVES +
             FEEDBACK + NAVIGATION + BUILTIN_GENERAL + BUILTIN_VIDEO + BUILTIN_AUDIO +
             BUILTIN_MOTION + BUILTIN_INPUT + BUILTIN_TOUCH + BUILTIN_HUD + BUILTIN_SPEEDRUN +
-            DOWNLOADS_AND_CACHES + SYNC_FILTERS + MEDIA_PLAYBACK + UPDATES + SESSIONS
+            DOWNLOADS_AND_CACHES + SYNC_FILTERS + MEDIA_PLAYBACK + UPDATES + SESSIONS + NOTIFICATIONS
 
     val BY_NAME: Map<String, SettingsBackupKey> = EXPORTED.associateBy { it.name }
 }

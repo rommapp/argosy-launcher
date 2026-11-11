@@ -1,8 +1,13 @@
 package com.nendo.argosy.libretro
 
+import androidx.annotation.StringRes
+import com.nendo.argosy.R
+import com.nendo.argosy.core.notification.NotificationText
 import com.nendo.argosy.data.local.entity.CoreInputMode
 import com.nendo.argosy.data.local.entity.HotkeyAction
 import com.nendo.argosy.libretro.ui.NetplayMenuRole
+import com.nendo.argosy.ui.notification.InGameNotice
+import com.nendo.argosy.ui.notification.NotificationSeverity
 import com.swordfish.libretrodroid.GLRetroView
 
 class HotkeyDispatcher(
@@ -10,7 +15,7 @@ class HotkeyDispatcher(
     private val videoSettings: VideoSettingsManager,
     private val hotkeyManager: HotkeyManager,
     private val getRetroView: () -> GLRetroView,
-    private val showToast: (String) -> Unit,
+    private val showNotice: (InGameNotice) -> Unit,
     private val isHardcoreMode: () -> Boolean,
     private val canSerialize: () -> Boolean,
     private val isNetplayInSession: () -> Boolean,
@@ -40,19 +45,31 @@ class HotkeyDispatcher(
             }
             HotkeyAction.QUICK_SAVE -> {
                 if (isNetplayInSession() && getNetplayRole() != NetplayMenuRole.Host) {
-                    showToast("Save states disabled during netplay")
+                    notify(
+                        NotificationSeverity.WARNING,
+                        R.string.ingame_hotkey_quicksave_netplay_title,
+                        R.string.ingame_hotkey_quicksave_netplay_body
+                    )
                 } else if (isHardcoreMode()) {
-                    showToast("Save states disabled in Hardcore mode")
+                    notify(
+                        NotificationSeverity.WARNING,
+                        R.string.ingame_hotkey_quicksave_hardcore_title,
+                        R.string.ingame_hotkey_quicksave_hardcore_body
+                    )
                 } else if (!canSerialize()) {
-                    showToast("Save states unavailable for this core")
+                    notify(
+                        NotificationSeverity.WARNING,
+                        R.string.ingame_hotkey_quicksave_unsupported_title,
+                        R.string.ingame_hotkey_quicksave_unsupported_body
+                    )
                 } else {
                     val rv = getRetroView()
                     val stateData = try { rv.serializeState() } catch (_: Exception) { null }
                     val bitmap = try { rv.captureRawFrame() } catch (_: Exception) { null }
                     if (stateData != null && saveStateManager.performQuickSave(stateData, bitmap)) {
-                        showToast("State saved")
+                        notify(NotificationSeverity.SUCCESS, R.string.ingame_hotkey_quicksave_success_title)
                     } else {
-                        showToast("Failed to save state")
+                        notify(NotificationSeverity.ERROR, R.string.ingame_hotkey_quicksave_failure_title)
                     }
                 }
                 hotkeyManager.clearState()
@@ -60,16 +77,28 @@ class HotkeyDispatcher(
             }
             HotkeyAction.QUICK_LOAD -> {
                 if (isNetplayInSession()) {
-                    showToast("Save states disabled during netplay")
+                    notify(
+                        NotificationSeverity.WARNING,
+                        R.string.ingame_hotkey_quickload_netplay_title,
+                        R.string.ingame_hotkey_quickload_netplay_body
+                    )
                 } else if (isHardcoreMode()) {
-                    showToast("Save states disabled in Hardcore mode")
+                    notify(
+                        NotificationSeverity.WARNING,
+                        R.string.ingame_hotkey_quickload_hardcore_title,
+                        R.string.ingame_hotkey_quickload_hardcore_body
+                    )
                 } else if (!canSerialize()) {
-                    showToast("Save states unavailable for this core")
+                    notify(
+                        NotificationSeverity.WARNING,
+                        R.string.ingame_hotkey_quickload_unsupported_title,
+                        R.string.ingame_hotkey_quickload_unsupported_body
+                    )
                 } else {
                     if (saveStateManager.performQuickLoad(getRetroView())) {
-                        showToast("State loaded")
+                        notify(NotificationSeverity.SUCCESS, R.string.ingame_hotkey_quickload_success_title)
                     } else {
-                        showToast("Failed to load state")
+                        notify(NotificationSeverity.ERROR, R.string.ingame_hotkey_quickload_failure_title)
                     }
                 }
                 hotkeyManager.clearState()
@@ -83,7 +112,11 @@ class HotkeyDispatcher(
             HotkeyAction.REWIND -> {
                 if (isNetplayInSession()) return true
                 if (isHardcoreMode()) {
-                    showToast("Rewind disabled in Hardcore mode")
+                    notify(
+                        NotificationSeverity.WARNING,
+                        R.string.ingame_hotkey_rewind_hardcore_title,
+                        R.string.ingame_hotkey_rewind_hardcore_body
+                    )
                     return true
                 }
                 if (videoSettings.rewindEnabled) {
@@ -99,7 +132,11 @@ class HotkeyDispatcher(
             }
             HotkeyAction.RESET_GAME -> {
                 if (isNetplayInSession()) {
-                    showToast("Reset disabled during netplay")
+                    notify(
+                        NotificationSeverity.WARNING,
+                        R.string.ingame_hotkey_reset_netplay_title,
+                        R.string.ingame_hotkey_reset_netplay_body
+                    )
                     return true
                 }
                 onResetGame()
@@ -159,5 +196,15 @@ class HotkeyDispatcher(
                 return true
             }
         }
+    }
+
+    private fun notify(severity: NotificationSeverity, @StringRes title: Int, @StringRes body: Int? = null) {
+        showNotice(
+            InGameNotice(
+                severity = severity,
+                title = NotificationText.Res(title),
+                body = body?.let { NotificationText.Res(it) }
+            )
+        )
     }
 }

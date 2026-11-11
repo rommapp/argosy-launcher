@@ -11,12 +11,15 @@ internal object SlotProtocol {
     const val SAVE_WRITTEN = 6
     const val CACHE_FOR_QUIT = 7
     const val END_SESSION = 8
+    const val SHOW_RESUME = 9
 
     const val SESSION_STATE = 101
     const val SAVE_WRITTEN_PUSH = 102
     const val CACHE_DONE = 103
     const val SAVE_AND_CLOSE = 104
     const val GUIDE_KEY = 105
+    const val NOTICE = 106
+    const val RESUME_CLOSED = 107
 
     const val KEY_SLOT = "slot"
     const val KEY_PID = "pid"
@@ -34,6 +37,8 @@ internal object SlotProtocol {
     const val KEY_REQUEST_ID = "requestId"
     const val KEY_SESSION_START = "sessionStart"
     const val KEY_PRESSED = "pressed"
+    const val KEY_DISPLAY_ID = "displayId"
+    const val KEY_SHOWN = "shown"
 
     const val NONE = -1L
 

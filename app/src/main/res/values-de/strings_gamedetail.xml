@@ -568,4 +568,16 @@
     <string name="gamedetail_per_game_gpu_driver_reason_core_unknown">diesem Kern</string>
     <string name="gamedetail_per_game_gpu_driver_reason_backend">Gilt, wenn das Backend Vulkan ist</string>
     <string name="gamedetail_per_game_gpu_driver_reason_device">Eigene Treiber benötigen eine Adreno-GPU</string>
+    <string name="gamedetail_menu_play_button_resume_game">Fortsetzen</string>
+    <string name="gamedetail_menu_play_button_saving">Speichert</string>
+    <string name="gamedetail_menu_play_sub_running">Läuft</string>
+    <string name="gamedetail_menu_play_sub_running_in">Läuft in %1$s</string>
+    <string name="gamedetail_menu_play_sub_closing">Spiel wird geschlossen</string>
+    <string name="gamedetail_menu_play_sub_running_with_time">Läuft seit %1$s</string>
+    <string name="gamedetail_menu_close_game">Spiel schließen</string>
+    <string name="gamedetail_menu_move_to_display">Auf Display %1$d verschieben</string>
+    <string name="gamedetail_running_frame_saved">Gespeichert %1$s</string>
+    <string name="gamedetail_footer_play_resume_game">Fortsetzen</string>
+    <string name="gamedetail_footer_play_closing_game">Speichert</string>
+    <string name="gamedetail_footer_close_game">Spiel schließen</string>
 </resources>

@@ -53,6 +53,13 @@
     <string name="collections_options_delete">Delete Collection</string>
     <!-- Option row. Verb phrase: remove one game from the collection; %1$s is the game's title. -->
     <string name="collections_options_remove_game">Remove \"%1$s\"</string>
+    <!-- Option row while the focused game is still running in the background, on a device with
+         more than one screen. %1$d is the number drawn on that screen. Verb: to move the running
+         game. -->
+    <string name="collections_options_move_to_display">Move to Display %1$d</string>
+    <!-- Last option row while the focused game is still running in the background. Verb phrase:
+         saves and closes the running game. -->
+    <string name="collections_options_close_game">Close game</string>
     <!-- Fallback noun used in place of the game's title above if it is somehow unknown. -->
     <string name="collections_options_remove_game_fallback">Game</string>
 

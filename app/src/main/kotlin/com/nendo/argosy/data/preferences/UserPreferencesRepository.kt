@@ -172,6 +172,11 @@ class UserPreferencesRepository @Inject constructor(
             monthlyRecapEnabled = app.monthlyRecapEnabled,
             lastMonthlyRecapShown = app.lastMonthlyRecapShown,
             preLaunchRecapBaseline = app.preLaunchRecapBaseline,
+            notificationsEnabled = app.notificationsEnabled,
+            notifyDownloadsFinished = app.notifyDownloadsFinished,
+            notifyBattery = app.notifyBattery,
+            notifyCharging = app.notifyCharging,
+            notifyControllers = app.notifyControllers,
             saveSyncEnabled = sync.saveSyncEnabled,
             secureSaves = sync.secureSaves,
             stateCacheEnabled = sync.stateCacheEnabled,
@@ -608,6 +613,11 @@ class UserPreferencesRepository @Inject constructor(
     suspend fun setPreLaunchRecapsEnabled(enabled: Boolean) = appPrefs.setPreLaunchRecapsEnabled(enabled)
     suspend fun setMonthlyRecapEnabled(enabled: Boolean) = appPrefs.setMonthlyRecapEnabled(enabled)
     suspend fun setLastMonthlyRecapShown(month: java.time.YearMonth) = appPrefs.setLastMonthlyRecapShown(month)
+    suspend fun setNotificationsEnabled(enabled: Boolean) = appPrefs.setNotificationsEnabled(enabled)
+    suspend fun setNotifyDownloadsFinished(enabled: Boolean) = appPrefs.setNotifyDownloadsFinished(enabled)
+    suspend fun setNotifyBattery(enabled: Boolean) = appPrefs.setNotifyBattery(enabled)
+    suspend fun setNotifyCharging(enabled: Boolean) = appPrefs.setNotifyCharging(enabled)
+    suspend fun setNotifyControllers(enabled: Boolean) = appPrefs.setNotifyControllers(enabled)
 
     suspend fun setPreLaunchRecapBaseline(at: java.time.Instant) = appPrefs.setPreLaunchRecapBaseline(at)
 
@@ -959,6 +969,11 @@ data class UserPreferences(
     val monthlyRecapEnabled: Boolean = true,
     val lastMonthlyRecapShown: java.time.YearMonth? = null,
     val preLaunchRecapBaseline: java.time.Instant? = null,
+    val notificationsEnabled: Boolean = true,
+    val notifyDownloadsFinished: Boolean = true,
+    val notifyBattery: Boolean = true,
+    val notifyCharging: Boolean = true,
+    val notifyControllers: Boolean = true,
     val saveSyncEnabled: Boolean = false,
     val secureSaves: Boolean = true,
     val stateCacheEnabled: Boolean = true,

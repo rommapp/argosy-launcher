@@ -45,7 +45,11 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.merge
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -243,7 +247,15 @@ class GameLaunchDelegate @Inject constructor(
         return true
     }
 
-    private suspend fun evictSessionReturningStopped(session: com.nendo.argosy.data.emulator.ActiveSession): String? {
+    private suspend fun evictSessionReturningStopped(
+        session: com.nendo.argosy.data.emulator.ActiveSession,
+        endBehindSwitch: Boolean = false
+    ): String? {
+        if (endBehindSwitch && backgroundGameLaunch.keepsAlive(session.emulatorPackage)) {
+            endSessionBehindSwitch(session)
+            backgroundGameLaunch.remember(session)
+            return null
+        }
         endSessionAndAwaitConflictAnswer()
         if (backgroundGameLaunch.keepsAlive(session.emulatorPackage)) {
             backgroundGameLaunch.remember(session)
@@ -252,6 +264,14 @@ class GameLaunchDelegate @Inject constructor(
         gameLauncher.forceStopEmulator(session.emulatorPackage)
         delay(EMULATOR_KILL_DELAY_MS)
         return session.emulatorPackage
+    }
+
+    private suspend fun endSessionBehindSwitch(session: com.nendo.argosy.data.emulator.ActiveSession) {
+        val ending = playSessionTracker.endSessionInBackground()
+        merge(
+            playSessionTracker.activeSession.filter { it == null || it.startTime != session.startTime }.map { },
+            flow { ending.join(); emit(Unit) }
+        ).first()
     }
 
     private suspend fun endSessionAndAwaitConflictAnswer(): SessionEndResult {
@@ -338,7 +358,7 @@ class GameLaunchDelegate @Inject constructor(
                 var stoppedPackage: String? = null
                 if (!canResume && activeSession != null && !sessionRequiresKill) {
                     android.util.Log.d("GameLaunchDelegate", "Evicting stale session for game ${activeSession.gameId} in ${activeSession.emulatorPackage}")
-                    stoppedPackage = evictSessionReturningStopped(activeSession)
+                    stoppedPackage = evictSessionReturningStopped(activeSession, endBehindSwitch = liveInBackground != null)
                 }
                 if (evictsOwnSessionAlive) {
                     liveInBackground = backgroundGameLaunch.findLive(gameId, resolvedVariantId, emulatorPackage)

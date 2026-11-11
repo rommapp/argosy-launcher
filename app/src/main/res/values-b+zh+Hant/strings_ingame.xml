@@ -80,10 +80,11 @@
     <string name="ingame_return_message_netplay">你的連線對戰將結束，遊戲將儲存並關閉。</string>
     <string name="ingame_return_confirm">返回</string>
 
-    <string name="ingame_achievement_hardcore_heading">硬核解鎖</string>
-    <string name="ingame_achievement_heading">成就解鎖</string>
-    <plurals name="ingame_achievement_points">
-        <item quantity="other">+%d分</item>
+    <plurals name="ingame_achievement_notice_hardcore_title">
+        <item quantity="other">硬核，%d分</item>
+    </plurals>
+    <plurals name="ingame_achievement_notice_unlocked_title">
+        <item quantity="other">已解鎖，%d分</item>
     </plurals>
 
     <string name="ingame_raconnect_title">RetroAchievements已連線</string>
@@ -91,6 +92,60 @@
     <string name="ingame_raconnect_casual">一般模式</string>
     <string name="ingame_raconnect_unavailable_title">RetroAchievements無法使用</string>
     <string name="ingame_raconnect_earned">已達成%1$d/%2$d</string>
+
+    <string name="ingame_hotkey_quicksave_netplay_title">即時存檔無法使用</string>
+    <string name="ingame_hotkey_quicksave_netplay_body">連線對戰中</string>
+    <string name="ingame_hotkey_quicksave_hardcore_title">即時存檔無法使用</string>
+    <string name="ingame_hotkey_quicksave_hardcore_body">硬核模式</string>
+    <string name="ingame_hotkey_quicksave_unsupported_title">無即時存檔</string>
+    <string name="ingame_hotkey_quicksave_unsupported_body">此核心不支援</string>
+    <string name="ingame_hotkey_quicksave_success_title">已儲存即時存檔</string>
+    <string name="ingame_hotkey_quicksave_failure_title">無法儲存即時存檔</string>
+
+    <string name="ingame_hotkey_quickload_netplay_title">即時存檔無法使用</string>
+    <string name="ingame_hotkey_quickload_netplay_body">連線對戰中</string>
+    <string name="ingame_hotkey_quickload_hardcore_title">即時存檔無法使用</string>
+    <string name="ingame_hotkey_quickload_hardcore_body">硬核模式</string>
+    <string name="ingame_hotkey_quickload_unsupported_title">無即時存檔</string>
+    <string name="ingame_hotkey_quickload_unsupported_body">此核心不支援</string>
+    <string name="ingame_hotkey_quickload_success_title">已載入即時存檔</string>
+    <string name="ingame_hotkey_quickload_failure_title">無法載入即時存檔</string>
+
+    <string name="ingame_hotkey_rewind_hardcore_title">無法倒轉</string>
+    <string name="ingame_hotkey_rewind_hardcore_body">硬核模式</string>
+    <string name="ingame_hotkey_reset_netplay_title">無法重設</string>
+    <string name="ingame_hotkey_reset_netplay_body">連線對戰中</string>
+    <string name="ingame_hotkey_reset_success_title">遊戲已重設</string>
+
+    <string name="ingame_netplay_notice_joined_title">好友已加入</string>
+    <string name="ingame_netplay_notice_joined_ping_title">已加入，%1$d毫秒</string>
+    <string name="ingame_netplay_notice_peer_fallback">好友</string>
+    <string name="ingame_netplay_notice_quality_title">延遲%1$d毫秒</string>
+    <string name="ingame_netplay_notice_left_title">好友已離開</string>
+    <string name="ingame_netplay_notice_open_unavailable_title">連線對戰錯誤</string>
+    <string name="ingame_netplay_notice_open_unavailable_body">暫時無法使用</string>
+    <string name="ingame_netplay_notice_open_hash_title">連線對戰錯誤</string>
+    <string name="ingame_netplay_notice_open_hash_body">遊戲驗證失敗</string>
+    <string name="ingame_netplay_notice_opened_title">連線已開啟</string>
+    <string name="ingame_netplay_notice_opened_open_body">開放給好友</string>
+    <string name="ingame_netplay_notice_opened_private_body">不公開</string>
+    <string name="ingame_netplay_notice_opened_invite_body">僅限邀請</string>
+    <string name="ingame_netplay_notice_open_failed_title">連線對戰失敗</string>
+    <string name="ingame_netplay_notice_open_failed_body">連線未開啟</string>
+    <string name="ingame_netplay_notice_invite_unavailable_title">連線對戰錯誤</string>
+    <string name="ingame_netplay_notice_invite_unavailable_body">暫時無法使用</string>
+    <string name="ingame_netplay_notice_invite_sent_title">已送出邀請</string>
+    <string name="ingame_netplay_notice_invite_failed_title">邀請失敗</string>
+    <string name="ingame_netplay_notice_invite_hash_title">連線對戰錯誤</string>
+    <string name="ingame_netplay_notice_invite_hash_body">遊戲驗證失敗</string>
+    <string name="ingame_netplay_notice_open_invite_sent_title">已送出邀請</string>
+    <string name="ingame_netplay_notice_open_invite_failed_title">邀請失敗</string>
+    <string name="ingame_netplay_notice_open_invite_failed_body">連線已開啟</string>
+    <string name="ingame_netplay_notice_invite_open_failed_title">連線對戰失敗</string>
+    <string name="ingame_netplay_notice_invite_open_failed_body">連線未開啟</string>
+    <string name="ingame_netplay_notice_reservation_cleared_title">開放給所有好友</string>
+    <string name="ingame_netplay_notice_reservation_failed_title">變更失敗</string>
+    <string name="ingame_netplay_notice_reservation_failed_body">仍僅限邀請</string>
 
     <string name="ingame_speedrun_paused">已暫停</string>
     <string name="ingame_speedrun_personal_best">個人最佳</string>
@@ -579,4 +634,27 @@
 
     <string name="ingame_touch_generic_sys_select">Select</string>
     <string name="ingame_touch_generic_sys_start">Start</string>
+    <string name="ingame_controller_join_prompt_title">按鍵加入</string>
+    <string name="ingame_controller_joined_title">玩家 %1$d 已加入</string>
+    <string name="ingame_controller_disconnected_title">已中斷連線</string>
+    <plurals name="ingame_controller_burst_joined_title">
+        <item quantity="other">%1$d 名玩家已加入</item>
+    </plurals>
+    <plurals name="ingame_controller_burst_connected_title">
+        <item quantity="other">%1$d 個已連線</item>
+    </plurals>
+    <plurals name="ingame_controller_burst_waiting_body">
+        <item quantity="other">%1$d 個等待加入</item>
+    </plurals>
+    <plurals name="ingame_controller_burst_disconnected_title">
+        <item quantity="other">%1$d 個已中斷</item>
+    </plurals>
+    <string name="ingame_controller_players_two">玩家 %1$d 和 %2$d</string>
+    <string name="ingame_controller_players_three">玩家 %1$d、%2$d 和 %3$d</string>
+    <string name="ingame_controller_paused_title">遊戲已暫停</string>
+    <string name="ingame_controller_paused_body">重新連線以繼續</string>
+    <string name="ingame_controller_offer_title">接手玩家 %1$d？</string>
+    <string name="ingame_controller_offer_body">按 %1$s 加入</string>
+    <string name="ingame_controller_battery_low_title">控制器電量低</string>
+    <string name="ingame_controller_badge_player">P%1$d</string>
 </resources>

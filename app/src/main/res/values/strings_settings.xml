@@ -367,6 +367,32 @@
     <string name="settings_interface_monthly_recap_title">Monthly Recap</string>
     <!-- Second line of that row. -->
     <string name="settings_interface_monthly_recap_subtitle">At the start of each month, show a summary of last month on Home</string>
+    <!-- Group header above the notification toggles in the Interface settings section. -->
+    <string name="settings_interface_section_notifications">Notifications</string>
+    <!-- Master toggle for every notice card Argosy shows, in the launcher and over games. -->
+    <string name="settings_interface_notifications_title">Notifications</string>
+    <!-- Second line of the master toggle. Battery warnings are the one kind of notice that keeps
+         showing with this toggle off; they have their own toggle below. -->
+    <string name="settings_interface_notifications_subtitle">Show Argosy notices in the launcher and over games. Battery notices still show</string>
+    <!-- Toggle for the notice shown when a game download completes. -->
+    <string name="settings_interface_notify_downloads_finished_title">Downloads finished</string>
+    <string name="settings_interface_notify_downloads_finished_subtitle">Show a notice when a download completes</string>
+    <!-- Toggle for the low battery (15%) and critical battery (5%) notices. "Battery" is the
+         device's battery, a noun. -->
+    <string name="settings_interface_notify_battery_title">Battery</string>
+    <!-- Second line of that row. Built-in games are the emulators inside Argosy; they write their
+         save to storage at 5% battery whether or not this notice is on. "Save" is a verb here. -->
+    <string name="settings_interface_notify_battery_subtitle" formatted="false">Warn at 15% and 5%. Built-in games still save at 5%</string>
+    <!-- Toggle for the notices shown when the charger is plugged in or pulled out while a game
+         runs. "Charging" is the state of the battery taking power. -->
+    <string name="settings_interface_notify_charging_title">Charging</string>
+    <!-- Second line of that row. -->
+    <string name="settings_interface_notify_charging_subtitle">Show a notice when the charger is plugged in or out during play</string>
+    <!-- Toggle for the notices shown when a game controller connects, disconnects, joins a game
+         or runs low on battery. "Controllers" is a noun, the gamepads. -->
+    <string name="settings_interface_notify_controllers_title">Controllers</string>
+    <!-- Second line of that row. -->
+    <string name="settings_interface_notify_controllers_subtitle">Show a notice when a controller connects, disconnects or runs low</string>
     <!-- Row opening the settings for handhelds with a clip-on grip. Noun phrase. -->
     <string name="settings_interface_controller_grip_title">Controller Grip</string>
     <!-- Second line of that row. -->

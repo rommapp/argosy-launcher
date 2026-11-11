@@ -333,8 +333,10 @@ private fun RandomActions(
     onFavorite: () -> Unit,
     onReroll: () -> Unit
 ) {
+    val isRunning = com.nendo.argosy.ui.common.LocalRunningGames.current.isRunning(game.id)
     val playLabel = stringResource(
         when {
+            isRunning -> R.string.ui_quick_menu_random_action_resume_game
             game.needsInstall -> R.string.ui_quick_menu_random_action_install
             game.isDownloaded -> R.string.ui_quick_menu_random_action_play
             else -> R.string.ui_quick_menu_random_action_download

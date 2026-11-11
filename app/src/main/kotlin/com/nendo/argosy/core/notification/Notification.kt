@@ -15,6 +15,21 @@ enum class NotificationDuration(val ms: Long) {
     LONG(6000)
 }
 
+/**
+ * What a notice is about. [GENERAL] is held while a game is in front unless it is a warning or an
+ * error; every other category shows over games. [BATTERY] keeps showing with notifications turned
+ * off.
+ */
+enum class NotificationCategory(val showsOverGames: Boolean, val bypassesGlobalOff: Boolean = false) {
+    GENERAL(showsOverGames = false),
+    DOWNLOAD(showsOverGames = true),
+    SAVE(showsOverGames = true),
+    SOCIAL(showsOverGames = true),
+    BATTERY(showsOverGames = true, bypassesGlobalOff = true),
+    CHARGING(showsOverGames = true),
+    CONTROLLER(showsOverGames = true)
+}
+
 data class NotificationProgress(
     val current: Int,
     val total: Int
@@ -37,5 +52,6 @@ data class Notification(
     val duration: NotificationDuration = NotificationDuration.SHORT,
     val immediate: Boolean = false,
     val progress: NotificationProgress? = null,
-    val accentColor: Int? = null
+    val accentColor: Int? = null,
+    val category: NotificationCategory = NotificationCategory.GENERAL
 )

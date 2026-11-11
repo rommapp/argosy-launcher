@@ -203,6 +203,16 @@
     <!-- Top entry of the quick action menu when the game is already on the device. Verb,
          starts the game. Not the noun "play" and not play time. -->
     <string name="library_quickmenu_play">Play</string>
+    <!-- Top entry of the quick action menu when the game is still running in the background.
+         Verb, brings the running game back to the front. -->
+    <string name="library_quickmenu_resume_game">Resume</string>
+    <!-- Last entry of the quick action menu when the game is still running in the background.
+         Verb phrase, saves and closes the running game. -->
+    <string name="library_quickmenu_close_game">Close game</string>
+    <!-- Quick action menu entry while the game is still running in the background, on a device
+         with more than one screen. %1$d is the number drawn on that screen. Verb: to move the
+         running game. -->
+    <string name="library_quickmenu_move_to_display">Move to Display %1$d</string>
     <!-- Top entry of the quick action menu when the game is not on the device yet. Verb,
          fetches it from the server. -->
     <string name="library_quickmenu_download">Download</string>
@@ -382,6 +392,12 @@
     <!-- Stands in for a game's platform name in a search result when the platform cannot be
          resolved. Adjective describing the missing platform. -->
     <string name="library_search_result_platform_unknown">Unknown</string>
+    <!-- Line on a search result for a game still running in the background. -->
+    <string name="library_search_result_running">Running</string>
+    <!-- Same line for a game another emulator app holds. %1$s is the emulator name. -->
+    <string name="library_search_result_running_in">Running in %1$s</string>
+    <!-- Same line while the running game saves and closes. Verb in progress. -->
+    <string name="library_search_result_saving">Saving</string>
     <!-- Stands in for the library name of a search result that is a television programme.
          Noun, a TV series, never a game franchise. -->
     <string name="library_search_result_kind_series">Series</string>

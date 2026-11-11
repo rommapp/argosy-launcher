@@ -217,7 +217,8 @@ internal fun LibraryGameList(
                                     saveState = uiState.saveStates[game.id],
                                     onCoverLoadFailed = { path -> viewModel.repairCoverImage(game.id, path) },
                                     onClick = onClick,
-                                    onLongClick = onLongClick
+                                    onLongClick = onLongClick,
+                                    running = com.nendo.argosy.ui.common.LocalRunningGames.current.markFor(game.id)
                                 )
                             }
                         }

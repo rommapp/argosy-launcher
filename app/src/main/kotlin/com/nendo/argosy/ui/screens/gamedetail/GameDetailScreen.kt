@@ -465,7 +465,9 @@ private fun GameDetailContent(
         saveStatus = uiState.saveStatusInfo,
         isSyncingSaves = uiState.isSyncingSaves,
         downloadSizeBytes = uiState.downloadSizeBytes,
-        isPrivate = uiState.isPrivate
+        isPrivate = uiState.isPrivate,
+        running = uiState.running,
+        moveTargets = uiState.runningMoveTargets
     )
 
     val focusedItem = menuLayout.itemAtFocusIndex(uiState.menuFocusIndex, menuLayoutState)
@@ -522,23 +524,30 @@ private fun GameDetailContent(
         Box(modifier = Modifier.fillMaxSize().blur(combinedBlur)) {
             val liveBackgroundPath = com.nendo.argosy.ui.common.rememberResolvedBackgroundPath(game.id, game.backgroundPath)
             val effectiveBackgroundPath = uiState.repairedBackgroundPath ?: liveBackgroundPath
-            if (effectiveBackgroundPath != null) {
+            val runningFrame = com.nendo.argosy.ui.common.rememberTaskSnapshotRequest(
+                uiState.running?.snapshotPath,
+                uiState.running?.snapshotTakenAtMillis ?: 0L
+            )
+            if (runningFrame != null || effectiveBackgroundPath != null) {
                 val backgroundModel = rememberFileImageModel(effectiveBackgroundPath)
                 val backgroundContext = LocalContext.current
+                val artRequest = remember(backgroundModel) {
+                    ImageRequest.Builder(backgroundContext)
+                        .data(backgroundModel)
+                        .stackedScreenshotBackdrop()
+                        .build()
+                }
                 AsyncImage(
-                    model = remember(backgroundModel) {
-                        ImageRequest.Builder(backgroundContext)
-                            .data(backgroundModel)
-                            .stackedScreenshotBackdrop()
-                            .build()
-                    },
+                    model = runningFrame ?: artRequest,
                     contentDescription = null,
                     contentScale = ContentScale.Crop,
                     modifier = Modifier
                         .fillMaxSize()
                         .blur(24.dp),
                     onError = {
-                        if (uiState.repairedBackgroundPath == null && liveBackgroundPath?.startsWith("/") == true) {
+                        if (runningFrame == null && uiState.repairedBackgroundPath == null &&
+                            liveBackgroundPath?.startsWith("/") == true
+                        ) {
                             viewModel.repairBackgroundImage(game.id, liveBackgroundPath)
                         }
                     }
@@ -605,6 +614,7 @@ private fun GameDetailContent(
                                 onItemClick = { item ->
                                     when (item) {
                                         MenuItem.Play -> viewModel.primaryAction()
+                                        is MenuItem.MoveToDisplay -> viewModel.moveRunningGame(item.slot)
                                         MenuItem.Saves -> viewModel.syncSavesNow()
                                         MenuItem.Favorite -> viewModel.toggleFavorite()
                                         MenuItem.Privacy -> viewModel.togglePrivacy()
@@ -627,6 +637,7 @@ private fun GameDetailContent(
                                         MenuItem.RelatedGames -> coroutineScope.launch {
                                             scrollState.animateScrollTo(relatedTopY.coerceAtLeast(0))
                                         }
+                                        MenuItem.CloseGame -> viewModel.requestCloseRunningGame()
                                     }
                                 },
                                 onFocusChange = viewModel::setMenuFocusIndex,
@@ -650,6 +661,15 @@ private fun GameDetailContent(
                             ) {
                                 if (!heroOnOtherScreen) {
                                     ExpandedHeader(game = game, friends = uiState.friendsActivity)
+                                    uiState.running?.let { running ->
+                                        com.nendo.argosy.ui.screens.gamedetail.components.RunningFramePanel(
+                                            running = running,
+                                            savedAt = uiState.saveStatusInfo?.displayTime(LocalContext.current),
+                                            raEarned = game.achievements.count { it.isUnlocked },
+                                            raTotal = game.achievements.size,
+                                            modifier = Modifier.padding(top = Dimens.spacingMd)
+                                        )
+                                    }
                                     Spacer(modifier = Modifier.height(Dimens.spacingXl))
                                 }
 
@@ -783,6 +803,9 @@ private fun GameDetailContent(
                 val playDownloadingHint = stringResource(R.string.gamedetail_footer_play_downloading)
                 val playExtractingHint = stringResource(R.string.gamedetail_footer_play_extracting)
                 val playResumeHint = stringResource(R.string.gamedetail_footer_play_resume)
+                val playResumeGameHint = stringResource(R.string.gamedetail_footer_play_resume_game)
+                val playClosingHint = stringResource(R.string.gamedetail_footer_play_closing_game)
+                val closeGameHint = stringResource(R.string.gamedetail_footer_close_game)
                 val playRetryFailedHint =
                     stringResource(R.string.gamedetail_footer_play_retry_failed)
                 val playFallbackHint = stringResource(R.string.gamedetail_footer_play_fallback)
@@ -820,6 +843,9 @@ private fun GameDetailContent(
                         }
                         when (focusedItem) {
                             MenuItem.Play -> add(InputButton.A to when {
+                                uiState.running?.isClosing == true -> playClosingHint
+                                uiState.running != null &&
+                                    uiState.downloadStatus == GameDownloadStatus.DOWNLOADED -> playResumeGameHint
                                 isAnySyncing -> playSyncingHint
                                 uiState.downloadStatus == GameDownloadStatus.DOWNLOADED -> playDownloadedHint
                                 uiState.downloadStatus == GameDownloadStatus.NEEDS_INSTALL -> playInstallHint
@@ -838,10 +864,11 @@ private fun GameDetailContent(
                             MenuItem.PerGameSettings -> add(InputButton.A to configureHint)
                             MenuItem.Options -> add(InputButton.A to optionsHint)
                             MenuItem.Screenshots -> add(InputButton.A to viewScreenshotHint)
-                            MenuItem.Documents -> Unit
+                            MenuItem.Documents, is MenuItem.MoveToDisplay -> Unit
                             MenuItem.Reviews -> add(InputButton.A to viewReviewsHint)
                             MenuItem.Achievements -> add(InputButton.A to viewAllAchievementsHint)
                             MenuItem.RelatedGames -> add(InputButton.A to openRelatedHint)
+                            MenuItem.CloseGame -> add(InputButton.A to closeGameHint)
                             MenuItem.Details, MenuItem.Description, null -> {}
                         }
                         add(InputButton.B to backHint)
@@ -1345,6 +1372,8 @@ private fun GameDetailModals(
     }
 
     com.nendo.argosy.ui.common.GameConfirmHost(viewModel.gameConfirm)
+
+    com.nendo.argosy.ui.screens.running.RunningGameCloseHost(viewModel.runningGameMenu)
 
     if (uiState.showCreateCollectionDialog) {
         CreateCollectionDialog(

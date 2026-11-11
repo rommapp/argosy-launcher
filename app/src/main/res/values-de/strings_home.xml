@@ -90,6 +90,8 @@
     <string name="home_quick_actions_remove_from_home">Von Startseite entfernen</string>
     <string name="home_quick_actions_remove_from_library">Aus Bibliothek entfernen</string>
     <string name="home_quick_actions_hide">Ausblenden</string>
+    <string name="home_quick_actions_move_to_display">Auf Display %1$d verschieben</string>
+    <string name="home_quick_actions_close_game">Spiel schließen</string>
 
     <string name="home_media_empty_next_up_title">Nichts Neues</string>
     <string name="home_media_empty_next_up_message">Beenden Sie eine Episode, und die nächste erscheint hier.</string>
@@ -185,4 +187,9 @@
 
     <string name="home_grid_tile_ra_points_label">Punkte</string>
     <string name="home_grid_tile_ra_unlocks_label">Freischaltungen</string>
+    <string name="home_footer_game_resume_game">Fortsetzen</string>
+    <string name="home_title_running">Läuft</string>
+    <string name="home_title_running_in">Läuft in %1$s</string>
+    <string name="home_title_saving">Speichert</string>
+    <string name="home_title_running_with_time">Läuft seit %1$s</string>
 </resources>

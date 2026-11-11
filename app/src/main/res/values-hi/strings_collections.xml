@@ -24,6 +24,8 @@
     <string name="collections_options_rename">कलेक्शन का नाम बदलें</string>
     <string name="collections_options_delete">कलेक्शन हटाएं</string>
     <string name="collections_options_remove_game">\"%1$s\" हटाएं</string>
+    <string name="collections_options_move_to_display">डिस्प्ले %1$d पर ले जाएँ</string>
+    <string name="collections_options_close_game">गेम बंद करें</string>
     <string name="collections_options_remove_game_fallback">गेम</string>
 
     <string name="collections_delete_dialog_title">कलेक्शन हटाएं</string>

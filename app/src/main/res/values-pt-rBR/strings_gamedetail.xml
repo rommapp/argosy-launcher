@@ -902,4 +902,16 @@
     <string name="gamedetail_speedrun_import_none_found">Nenhuma categoria encontrada online para \"%1$s\"</string>
     <!-- Brief message when the import query failed. %1$s is the game name. -->
     <string name="gamedetail_speedrun_import_fetch_failed">Não foi possível buscar divisões para %1$s</string>
+    <string name="gamedetail_menu_play_button_resume_game">Retomar</string>
+    <string name="gamedetail_menu_play_button_saving">Salvando</string>
+    <string name="gamedetail_menu_play_sub_running">Em execução</string>
+    <string name="gamedetail_menu_play_sub_running_in">Em execução no %1$s</string>
+    <string name="gamedetail_menu_play_sub_closing">Fechando o jogo</string>
+    <string name="gamedetail_menu_play_sub_running_with_time">Em execução há %1$s</string>
+    <string name="gamedetail_menu_close_game">Fechar jogo</string>
+    <string name="gamedetail_menu_move_to_display">Mover para a tela %1$d</string>
+    <string name="gamedetail_running_frame_saved">Salvo %1$s</string>
+    <string name="gamedetail_footer_play_resume_game">Retomar</string>
+    <string name="gamedetail_footer_play_closing_game">Salvando</string>
+    <string name="gamedetail_footer_close_game">Fechar jogo</string>
 </resources>

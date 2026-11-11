@@ -337,7 +337,7 @@ class CollectionsViewModel @Inject constructor(
                 hideOptionsModal()
                 _showDeleteDialog.value = true
             }
-            CollectionOption.DOWNLOAD_ALL, CollectionOption.REMOVE_GAME, null -> {}
+            CollectionOption.DOWNLOAD_ALL, CollectionOption.REMOVE_GAME, CollectionOption.CLOSE_GAME, null -> {}
         }
     }
 

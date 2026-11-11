@@ -1091,4 +1091,16 @@
     <string name="ui_launch_overlay_makeroom_closed">बंद हो गया</string>
     <string name="ui_launch_overlay_running_close_label">बंद करें और लॉन्च करें</string>
     <string name="ui_launch_overlay_running_close_subtitle">चल रहे गेम में बिना सेव की गई प्रगति खो जाएगी</string>
+    <string name="ui_game_card_running">चल रहा है</string>
+    <string name="ui_game_card_saving">सेव हो रहा है</string>
+    <string name="ui_running_duration_hours_minutes">%1$dh %2$dm</string>
+    <string name="ui_running_duration_minutes">%1$dm</string>
+    <string name="ui_status_bar_running_desc">चल रहे गेम</string>
+    <string name="ui_quick_menu_row_running">चल रहा है</string>
+    <string name="ui_quick_menu_row_running_in">%1$s में चल रहा है</string>
+    <string name="ui_quick_menu_row_saving">सेव हो रहा है</string>
+    <string name="ui_quick_menu_random_action_resume_game">फिर से खेलें</string>
+    <string name="gamelist_row_running">चल रहा है</string>
+    <string name="gamelist_row_running_in">%1$s में चल रहा है</string>
+    <string name="gamelist_row_saving">सेव हो रहा है</string>
 </resources>

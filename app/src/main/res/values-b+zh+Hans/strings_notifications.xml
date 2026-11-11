@@ -33,8 +33,8 @@
     <string name="notif_storage_hardreset_failed">硬重置失败：%1$s</string>
     <string name="notif_storage_hardreset_failed_default_detail">请重试</string>
 
-    <string name="notif_social_friend_started_playing">开始玩%1$s</string>
-    <string name="notif_social_friend_online">刚刚上线</string>
+    <string name="notif_social_presence_playing_title">正在游戏</string>
+    <string name="notif_social_presence_online_title">在线</string>
 
     <string name="notif_settings_cache_validate_title">正在验证图片缓存</string>
     <string name="notif_settings_cache_validate_starting">正在开始&#8230;</string>
@@ -192,4 +192,22 @@
 
     <string name="notif_new_display_title">检测到新显示屏</string>
     <string name="notif_new_display_action">设置显示屏</string>
+    <string name="notif_battery_low_title">电量 %1$d%%</string>
+    <string name="notif_battery_critical_title">电量 %1$d%%</string>
+    <string name="notif_battery_critical_saved">游戏已保存</string>
+    <string name="notif_battery_charging_title">充电中，%1$d%%</string>
+    <string name="notif_battery_charging_full_in_hours_minutes">%1$dh %2$dm 后充满</string>
+    <string name="notif_battery_charging_full_in_minutes">%1$dm 后充满</string>
+    <string name="notif_battery_unplugged_title">使用电池，%1$d%%</string>
+    <string name="notif_battery_unplugged_left_hours_minutes">剩余 %1$dh %2$dm</string>
+    <string name="notif_battery_unplugged_left_minutes">剩余 %1$dm</string>
+    <string name="notif_controller_connected_title">已连接</string>
+    <string name="notif_controller_disconnected_title">已断开</string>
+    <plurals name="notif_controller_burst_connected_title">
+        <item quantity="other">%1$d 个已连接</item>
+    </plurals>
+    <plurals name="notif_controller_burst_disconnected_title">
+        <item quantity="other">%1$d 个已断开</item>
+    </plurals>
+    <string name="notif_controller_battery_low_title">手柄电量低</string>
 </resources>

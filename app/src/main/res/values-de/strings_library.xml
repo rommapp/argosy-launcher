@@ -186,4 +186,10 @@
     <string name="library_showcase_play_time_hours">%1$d h</string>
     <string name="library_showcase_play_time_minutes">%1$d min</string>
     <string name="library_apps_launch_failed">App konnte nicht geöffnet werden</string>
+    <string name="library_quickmenu_resume_game">Fortsetzen</string>
+    <string name="library_quickmenu_close_game">Spiel schließen</string>
+    <string name="library_quickmenu_move_to_display">Auf Display %1$d verschieben</string>
+    <string name="library_search_result_running">Läuft</string>
+    <string name="library_search_result_running_in">Läuft in %1$s</string>
+    <string name="library_search_result_saving">Speichert</string>
 </resources>

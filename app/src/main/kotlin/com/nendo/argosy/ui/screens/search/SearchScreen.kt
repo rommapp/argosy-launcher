@@ -378,9 +378,16 @@ private fun RowScope.GameResultContent(result: SearchResultUi.Game) {
         title = result.title,
         primaryDetail = result.platformName
             ?: stringResource(R.string.library_search_result_platform_unknown),
-        details = listOfNotNull(result.releaseYear?.toString(), result.developer)
+        details = listOfNotNull(result.releaseYear?.toString(), result.developer),
+        running = com.nendo.argosy.ui.common.LocalRunningGames.current.markFor(result.gameId)
     )
 }
+
+private val SEARCH_RUNNING_LABELS = com.nendo.argosy.ui.components.RunningLineLabels(
+    running = R.string.library_search_result_running,
+    runningIn = R.string.library_search_result_running_in,
+    saving = R.string.library_search_result_saving
+)
 
 /**
  * A title identifies itself by its library the way a game identifies itself by its platform. Where
@@ -429,7 +436,8 @@ private fun RowScope.MediaResultContent(result: SearchResultUi.Media) {
 private fun RowScope.ResultLabels(
     title: String,
     primaryDetail: String,
-    details: List<String>
+    details: List<String>,
+    running: com.nendo.argosy.ui.common.RunningGameUi? = null
 ) {
     Column(modifier = Modifier.weight(WEIGHT_FILL)) {
         Text(
@@ -464,6 +472,9 @@ private fun RowScope.ResultLabels(
                     overflow = TextOverflow.Ellipsis
                 )
             }
+        }
+        if (running != null) {
+            com.nendo.argosy.ui.components.RunningSubLine(running = running, labels = SEARCH_RUNNING_LABELS)
         }
     }
 }

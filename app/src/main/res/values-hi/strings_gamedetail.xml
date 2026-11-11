@@ -567,4 +567,16 @@
     <string name="gamedetail_per_game_gpu_driver_reason_core_unknown">इस कोर</string>
     <string name="gamedetail_per_game_gpu_driver_reason_backend">बैकएंड Vulkan होने पर लागू होता है</string>
     <string name="gamedetail_per_game_gpu_driver_reason_device">कस्टम ड्राइवर के लिए Adreno GPU चाहिए</string>
+    <string name="gamedetail_menu_play_button_resume_game">फिर से खेलें</string>
+    <string name="gamedetail_menu_play_button_saving">सेव हो रहा है</string>
+    <string name="gamedetail_menu_play_sub_running">चल रहा है</string>
+    <string name="gamedetail_menu_play_sub_running_in">%1$s में चल रहा है</string>
+    <string name="gamedetail_menu_play_sub_closing">गेम बंद हो रहा है</string>
+    <string name="gamedetail_menu_play_sub_running_with_time">%1$s से चल रहा है</string>
+    <string name="gamedetail_menu_close_game">गेम बंद करें</string>
+    <string name="gamedetail_menu_move_to_display">डिस्प्ले %1$d पर ले जाएँ</string>
+    <string name="gamedetail_running_frame_saved">%1$s सेव किया गया</string>
+    <string name="gamedetail_footer_play_resume_game">फिर से खेलें</string>
+    <string name="gamedetail_footer_play_closing_game">सेव हो रहा है</string>
+    <string name="gamedetail_footer_close_game">गेम बंद करें</string>
 </resources>

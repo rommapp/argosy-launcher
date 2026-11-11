@@ -581,4 +581,16 @@
     <string name="gamedetail_per_game_gpu_driver_reason_core_unknown">ce cœur</string>
     <string name="gamedetail_per_game_gpu_driver_reason_backend">S\'applique quand le moteur de rendu est Vulkan</string>
     <string name="gamedetail_per_game_gpu_driver_reason_device">Les pilotes personnalisés exigent un GPU Adreno</string>
+    <string name="gamedetail_menu_play_button_resume_game">Reprendre</string>
+    <string name="gamedetail_menu_play_button_saving">Sauvegarde en cours</string>
+    <string name="gamedetail_menu_play_sub_running">En cours</string>
+    <string name="gamedetail_menu_play_sub_running_in">En cours dans %1$s</string>
+    <string name="gamedetail_menu_play_sub_closing">Fermeture du jeu</string>
+    <string name="gamedetail_menu_play_sub_running_with_time">En cours depuis %1$s</string>
+    <string name="gamedetail_menu_close_game">Fermer le jeu</string>
+    <string name="gamedetail_menu_move_to_display">Déplacer vers l\'écran %1$d</string>
+    <string name="gamedetail_running_frame_saved">Sauvegardé %1$s</string>
+    <string name="gamedetail_footer_play_resume_game">Reprendre</string>
+    <string name="gamedetail_footer_play_closing_game">Sauvegarde en cours</string>
+    <string name="gamedetail_footer_close_game">Fermer le jeu</string>
 </resources>

@@ -33,8 +33,8 @@
     <string name="notif_storage_hardreset_failed">Не удалось выполнить полный сброс - %1$s</string>
     <string name="notif_storage_hardreset_failed_default_detail">попробуйте снова</string>
 
-    <string name="notif_social_friend_started_playing">Сейчас играет в %1$s</string>
-    <string name="notif_social_friend_online">Теперь в сети</string>
+    <string name="notif_social_presence_playing_title">Играет</string>
+    <string name="notif_social_presence_online_title">В сети</string>
 
     <string name="notif_settings_cache_validate_title">Проверка кэша изображений</string>
     <string name="notif_settings_cache_validate_starting">Запуск…</string>
@@ -213,4 +213,28 @@
 
     <string name="notif_new_display_title">Обнаружен новый экран</string>
     <string name="notif_new_display_action">Настроить экраны</string>
+    <string name="notif_battery_low_title">Батарея %1$d%%</string>
+    <string name="notif_battery_critical_title">Батарея %1$d%%</string>
+    <string name="notif_battery_critical_saved">Игра сохранена</string>
+    <string name="notif_battery_charging_title">Зарядка, %1$d%%</string>
+    <string name="notif_battery_charging_full_in_hours_minutes">До полной %1$dh %2$dm</string>
+    <string name="notif_battery_charging_full_in_minutes">До полной %1$dm</string>
+    <string name="notif_battery_unplugged_title">От батареи, %1$d%%</string>
+    <string name="notif_battery_unplugged_left_hours_minutes">Осталось %1$dh %2$dm</string>
+    <string name="notif_battery_unplugged_left_minutes">Осталось %1$dm</string>
+    <string name="notif_controller_connected_title">Подключён</string>
+    <string name="notif_controller_disconnected_title">Отключён</string>
+    <plurals name="notif_controller_burst_connected_title">
+        <item quantity="one">%1$d подключён</item>
+        <item quantity="few">%1$d подключено</item>
+        <item quantity="many">%1$d подключено</item>
+        <item quantity="other">%1$d подключено</item>
+    </plurals>
+    <plurals name="notif_controller_burst_disconnected_title">
+        <item quantity="one">%1$d отключён</item>
+        <item quantity="few">%1$d отключено</item>
+        <item quantity="many">%1$d отключено</item>
+        <item quantity="other">%1$d отключено</item>
+    </plurals>
+    <string name="notif_controller_battery_low_title">Низкий заряд</string>
 </resources>

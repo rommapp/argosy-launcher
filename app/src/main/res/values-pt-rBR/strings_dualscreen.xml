@@ -1002,6 +1002,10 @@
     <string name="dual_showcase_progress_main">%1$s de %2$s de história principal</string>
     <!-- On the presentation screen, how long the player has played. %1$s is a duration such as "27h". -->
     <string name="dual_showcase_played">%1$s jogado</string>
+    <string name="dual_showcase_running">Em execução</string>
+    <string name="dual_showcase_running_in">Em execução no %1$s</string>
+    <string name="dual_showcase_saving">Salvando</string>
+    <string name="dual_showcase_running_with_time">Em execução há %1$s</string>
     <!-- Header of the progress card on the presentation screen's journal layout. -->
     <string name="dual_showcase_journey_header">Sua jornada</string>
     <!-- Right side of that card: how long the main story takes, e.g. "Main story 13h". -->

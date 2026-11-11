@@ -403,6 +403,17 @@
     <string name="settings_interface_pre_launch_recaps_subtitle">Avant un jeu RetroAchievements auquel vous n\'avez pas joué depuis une semaine, montrer où vous vous étiez arrêté</string>
     <string name="settings_interface_monthly_recap_title">Récapitulatif mensuel</string>
     <string name="settings_interface_monthly_recap_subtitle">Au début de chaque mois, afficher sur l\'accueil un résumé du mois précédent</string>
+    <string name="settings_interface_section_notifications">Notifications</string>
+    <string name="settings_interface_notifications_title">Notifications</string>
+    <string name="settings_interface_notifications_subtitle">Afficher les notifications d\'Argosy dans le launcher et par-dessus les jeux. Les alertes de batterie restent affichées</string>
+    <string name="settings_interface_notify_downloads_finished_title">Téléchargements terminés</string>
+    <string name="settings_interface_notify_downloads_finished_subtitle">Afficher une notification à la fin d\'un téléchargement</string>
+    <string name="settings_interface_notify_battery_title">Batterie</string>
+    <string name="settings_interface_notify_battery_subtitle" formatted="false">Alerte à 15 % et 5 %. Les jeux intégrés sauvegardent quand même à 5 %</string>
+    <string name="settings_interface_notify_charging_title">Charge</string>
+    <string name="settings_interface_notify_charging_subtitle">Afficher une notification quand le chargeur est branché ou débranché en jeu</string>
+    <string name="settings_interface_notify_controllers_title">Manettes</string>
+    <string name="settings_interface_notify_controllers_subtitle">Afficher une notification quand une manette se connecte, se déconnecte ou est presque déchargée</string>
 
     <string name="settings_home_screen_background_title">Arrière-plan</string>
     <string name="settings_home_screen_background_subtitle">Jaquette du jeu ou motif de fond</string>

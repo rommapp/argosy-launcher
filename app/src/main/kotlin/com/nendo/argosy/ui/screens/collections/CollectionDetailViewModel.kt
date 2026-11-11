@@ -89,13 +89,24 @@ data class CollectionDetailUiState(
     val currentSectionLabel: String = "",
     val isSearchActive: Boolean = false,
     val searchQuery: String = "",
-    val overlayLetter: String? = null
+    val overlayLetter: String? = null,
+    val optionsRunning: com.nendo.argosy.ui.common.RunningGameUi? = null,
+    val optionsMoveTargets: List<com.nendo.argosy.ui.screens.running.RunningMoveTarget> = emptyList()
 ) {
     val focusedGame: CollectionGameUi?
         get() = games.getOrNull(focusedIndex)
 
     val downloadableGamesCount: Int
         get() = games.count { !it.isDownloaded && it.rommId != null }
+
+    val optionRows: List<com.nendo.argosy.ui.screens.collections.dialogs.CollectionOptionRow>
+        get() = com.nendo.argosy.ui.screens.collections.dialogs.collectionOptionRows(
+            showDownloadAll = true,
+            downloadableCount = downloadableGamesCount,
+            showRemoveGame = focusedGame != null,
+            moveTargets = optionsMoveTargets.takeIf { optionsRunning != null }.orEmpty(),
+            showCloseGame = optionsRunning != null
+        )
 
     val showSectionSidebar: Boolean
         get() = !isSearchActive && sectionLabels.size > 1
@@ -116,7 +127,8 @@ class CollectionDetailViewModel @Inject constructor(
     private val notificationManager: NotificationManager,
     private val positions: VirtualBrowsePositions,
     private val downloadFileStatusRepository: DownloadFileStatusRepository,
-    showcaseSource: com.nendo.argosy.ui.common.PresentationShowcaseSource
+    showcaseSource: com.nendo.argosy.ui.common.PresentationShowcaseSource,
+    val runningGameMenu: com.nendo.argosy.ui.screens.running.RunningGameMenu
 ) : ViewModel() {
 
     private val presentation = com.nendo.argosy.ui.common.PresentationFocus(
@@ -140,7 +152,9 @@ class CollectionDetailViewModel @Inject constructor(
         val isPinned: Boolean = false,
         val isRefreshing: Boolean = false,
         val searchActive: Boolean = false,
-        val searchQuery: String = ""
+        val searchQuery: String = "",
+        val optionsRunning: com.nendo.argosy.ui.common.RunningGameUi? = null,
+        val optionsMoveTargets: List<com.nendo.argosy.ui.screens.running.RunningMoveTarget> = emptyList()
     )
 
     private val _modalState = MutableStateFlow(ModalState(focusedIndex = positions.get(stickyKey)))
@@ -220,7 +234,9 @@ class CollectionDetailViewModel @Inject constructor(
             sectionLabels = if (modalState.searchActive) emptyList() else listing.sectionLabels,
             currentSectionLabel = listing.sectionLabelByGame.getOrNull(clamped) ?: "",
             isSearchActive = modalState.searchActive,
-            searchQuery = modalState.searchQuery
+            searchQuery = modalState.searchQuery,
+            optionsRunning = modalState.optionsRunning,
+            optionsMoveTargets = modalState.optionsMoveTargets
         )
     }
 
@@ -345,60 +361,64 @@ class CollectionDetailViewModel @Inject constructor(
         _modalState.update { it.copy(searchQuery = query, focusedIndex = 0) }
     }
 
+    private var optionsOpenJob: Job? = null
+
     fun showOptionsModal() {
-        _modalState.update {
-            it.copy(
-                showOptionsModal = true,
-                optionsModalFocusIndex = 0
-            )
+        if (optionsOpenJob?.isActive == true) return
+        val gameId = uiState.value.games.getOrNull(_modalState.value.focusedIndex)?.id
+        optionsOpenJob = viewModelScope.launch {
+            val running = gameId?.let { runningGameMenu.markFor(it) }
+            val moveTargets = runningGameMenu.moveTargets(running)
+            _modalState.update {
+                it.copy(
+                    showOptionsModal = true,
+                    optionsModalFocusIndex = 0,
+                    optionsRunning = running,
+                    optionsMoveTargets = moveTargets
+                )
+            }
         }
     }
 
     fun hideOptionsModal() {
+        optionsOpenJob?.cancel()
         _modalState.update { it.copy(showOptionsModal = false) }
     }
 
     fun moveOptionsFocus(delta: Int) {
-        val state = uiState.value
-        val hasGame = state.focusedGame != null
-        val hasDownloadable = state.downloadableGamesCount > 0
-        val optionCount = 2 + (if (hasDownloadable) 1 else 0) + (if (hasGame) 1 else 0)
-        val maxIndex = optionCount - 1
+        val maxIndex = (uiState.value.optionRows.size - 1).coerceAtLeast(0)
         val currentIndex = _modalState.value.optionsModalFocusIndex
         val newIndex = (currentIndex + delta).coerceIn(0, maxIndex)
         _modalState.update { it.copy(optionsModalFocusIndex = newIndex) }
     }
 
     fun selectOption(option: CollectionOption) {
+        val state = uiState.value
         hideOptionsModal()
         when (option) {
             CollectionOption.DOWNLOAD_ALL -> downloadAllGames()
             CollectionOption.RENAME -> showEditDialog()
             CollectionOption.DELETE -> showDeleteDialog()
             CollectionOption.REMOVE_GAME -> showRemoveGameDialog()
+            CollectionOption.CLOSE_GAME -> runningGameMenu.requestClose(state.optionsRunning, state.focusedGame?.title)
         }
+    }
+
+    fun moveRunningGame(target: com.nendo.argosy.ui.screens.running.RunningMoveTarget) {
+        val state = uiState.value
+        hideOptionsModal()
+        val running = state.optionsRunning ?: return
+        val title = state.focusedGame?.title ?: return
+        runningGameMenu.moveTo(viewModelScope, running, target, title)
     }
 
     fun confirmOptionSelection() {
         val state = uiState.value
-        val hasDownloadable = state.downloadableGamesCount > 0
-        var idx = _modalState.value.optionsModalFocusIndex
-
-        val option = if (hasDownloadable) {
-            when (idx) {
-                0 -> CollectionOption.DOWNLOAD_ALL
-                1 -> CollectionOption.RENAME
-                2 -> CollectionOption.DELETE
-                else -> CollectionOption.REMOVE_GAME
-            }
-        } else {
-            when (idx) {
-                0 -> CollectionOption.RENAME
-                1 -> CollectionOption.DELETE
-                else -> CollectionOption.REMOVE_GAME
-            }
+        when (val row = state.optionRows.getOrNull(_modalState.value.optionsModalFocusIndex)) {
+            is com.nendo.argosy.ui.screens.collections.dialogs.CollectionOptionRow.Action -> selectOption(row.option)
+            is com.nendo.argosy.ui.screens.collections.dialogs.CollectionOptionRow.MoveTo -> moveRunningGame(row.target)
+            null -> Unit
         }
-        selectOption(option)
     }
 
     fun downloadAllGames() {

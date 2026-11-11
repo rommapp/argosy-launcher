@@ -59,6 +59,7 @@ import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.automirrored.filled.PlaylistAdd
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Tv
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -560,7 +561,14 @@ fun HomeScreen(
         (!backdropEnabled || uiState.homeBackgroundMode == HomeBackgroundMode.GAME_ART)
 
     var backgroundIsScreenshot = false
-    val effectiveBackgroundPath = if (uiState.useGameBackground) {
+    val runningFrame = uiState.focusedGame
+        ?.takeIf { uiState.useGameBackground }
+        ?.let { com.nendo.argosy.ui.common.LocalRunningGames.current.markFor(it.id) }
+        ?.takeIf { it.snapshotPath != null }
+    val runningFrameKey = runningFrame?.let { "${it.snapshotPath}@${it.snapshotTakenAtMillis}" }
+    val effectiveBackgroundPath = if (runningFrame != null) {
+        runningFrame.snapshotPath
+    } else if (uiState.useGameBackground) {
         uiState.focusedGame?.let { game ->
             val background = com.nendo.argosy.ui.common.rememberResolvedBackgroundPath(game.id, game.backgroundPath)
             val cover = com.nendo.argosy.ui.common.rememberResolvedCoverPath(game.id, game.coverPath)
@@ -672,12 +680,18 @@ fun HomeScreen(
                     if (effectiveBackgroundPath != null) {
                         val backgroundContext = LocalContext.current
                         val backgroundModel = rememberFileImageModel(effectiveBackgroundPath)
-                        val backgroundRequest = remember(backgroundModel, backgroundIsScreenshot) {
+                        val backgroundRequest = remember(backgroundModel, backgroundIsScreenshot, runningFrameKey) {
                             ImageRequest.Builder(backgroundContext)
                                 .data(backgroundModel)
                                 .size(640, 360)
                                 .transitionFactory(AlwaysCrossfadeFactory(380))
                                 .apply { if (backgroundIsScreenshot) stackedScreenshotBackdrop() }
+                                .apply {
+                                    runningFrameKey?.let { key ->
+                                        memoryCacheKey(key)
+                                        diskCachePolicy(coil.request.CachePolicy.DISABLED)
+                                    }
+                                }
                                 .build()
                         }
                         AsyncImage(
@@ -1215,6 +1229,8 @@ fun HomeScreen(
                                     null
                                 },
                                 InputButton.A to when {
+                                    com.nendo.argosy.ui.common.LocalRunningGames.current.isRunning(focusedGame.id) ->
+                                        stringResource(R.string.home_footer_game_resume_game)
                                     focusedGame.needsInstall ->
                                         stringResource(R.string.home_footer_game_install)
                                     focusedGame.isDownloaded ->
@@ -1460,6 +1476,16 @@ fun HomeScreen(
                         viewModel.moveGameMenuFocus(index + 1 - uiState.gameMenuFocusIndex)
                         viewModel.confirmGameMenuSelection(onGameSelect)
                     },
+                    moveTargets = uiState.gameMenuMoveTargets.takeIf { uiState.gameMenuRunning != null }.orEmpty(),
+                    onMoveToDisplay = { target ->
+                        viewModel.moveRunningGame(target)
+                        viewModel.toggleGameMenu()
+                    },
+                    isRunning = uiState.gameMenuRunning != null,
+                    onCloseGame = {
+                        viewModel.requestCloseRunningGame()
+                        viewModel.toggleGameMenu()
+                    },
                     onFavorite = { viewModel.toggleFavorite(focusedGame.id) },
                     onDetails = {
                         viewModel.toggleGameMenu()
@@ -1497,6 +1523,7 @@ fun HomeScreen(
         }
 
         com.nendo.argosy.ui.common.GameConfirmHost(viewModel.gameConfirm)
+        com.nendo.argosy.ui.screens.running.RunningGameCloseHost(viewModel.runningGameMenu)
 
         val siblingChoiceState by viewModel.siblingChoiceState.collectAsState()
         com.nendo.argosy.ui.screens.common.SiblingChoiceModalHost(
@@ -1985,6 +2012,10 @@ private fun GameSelectOverlay(
     onPrimaryAction: () -> Unit,
     playDisplays: List<com.nendo.argosy.ui.components.AppLaunchTarget>,
     onPlayOnDisplay: (Int) -> Unit,
+    moveTargets: List<com.nendo.argosy.ui.screens.running.RunningMoveTarget>,
+    onMoveToDisplay: (com.nendo.argosy.ui.screens.running.RunningMoveTarget) -> Unit,
+    isRunning: Boolean,
+    onCloseGame: () -> Unit,
     onFavorite: () -> Unit,
     onDetails: () -> Unit,
     onAddToCollection: () -> Unit,
@@ -2023,6 +2054,8 @@ private fun GameSelectOverlay(
     val removeFromHomeLabel = stringResource(R.string.home_quick_actions_remove_from_home)
     val removeFromLibraryLabel = stringResource(R.string.home_quick_actions_remove_from_library)
     val hideLabel = stringResource(R.string.home_quick_actions_hide)
+    val closeGameLabel = stringResource(R.string.home_quick_actions_close_game)
+    val moveLabels = moveTargets.map { stringResource(R.string.home_quick_actions_move_to_display, it.screenNumber) }
 
     data class MenuEntry(
         val icon: androidx.compose.ui.graphics.vector.ImageVector? = null,
@@ -2043,6 +2076,9 @@ private fun GameSelectOverlay(
                     )
                 )
             }
+        }
+        moveTargets.forEachIndexed { index, target ->
+            add(MenuEntry(Icons.Default.Tv, moveLabels[index], onClick = { onMoveToDisplay(target) }))
         }
         add(
             MenuEntry(
@@ -2101,6 +2137,9 @@ private fun GameSelectOverlay(
             )
         }
         add(MenuEntry(label = hideLabel, isDangerous = true, onClick = onHide))
+        if (isRunning) {
+            add(MenuEntry(Icons.Default.Close, closeGameLabel, isDangerous = true, onClick = onCloseGame))
+        }
     }
 
     ModalPresenceEffect()

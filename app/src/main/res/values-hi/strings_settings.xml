@@ -397,6 +397,17 @@
     <string name="settings_interface_pre_launch_recaps_subtitle">जिस RetroAchievements गेम को आपने एक हफ़्ते से नहीं खेला, उसे शुरू करने से पहले दिखाएँ कि आपने कहाँ छोड़ा था</string>
     <string name="settings_interface_monthly_recap_title">मासिक रीकैप</string>
     <string name="settings_interface_monthly_recap_subtitle">हर महीने की शुरुआत में होम पर पिछले महीने का सारांश दिखाएँ</string>
+    <string name="settings_interface_section_notifications">सूचनाएँ</string>
+    <string name="settings_interface_notifications_title">सूचनाएँ</string>
+    <string name="settings_interface_notifications_subtitle">लॉन्चर में और गेम के ऊपर Argosy की सूचनाएँ दिखाएँ। बैटरी सूचनाएँ फिर भी दिखती हैं</string>
+    <string name="settings_interface_notify_downloads_finished_title">डाउनलोड पूरे हुए</string>
+    <string name="settings_interface_notify_downloads_finished_subtitle">डाउनलोड पूरा होने पर सूचना दिखाएँ</string>
+    <string name="settings_interface_notify_battery_title">बैटरी</string>
+    <string name="settings_interface_notify_battery_subtitle" formatted="false">15% और 5% पर चेतावनी दें। बिल्ट-इन गेम 5% पर फिर भी सेव होते हैं</string>
+    <string name="settings_interface_notify_charging_title">चार्जिंग</string>
+    <string name="settings_interface_notify_charging_subtitle">खेलते समय चार्जर लगाने या निकालने पर सूचना दिखाएँ</string>
+    <string name="settings_interface_notify_controllers_title">कंट्रोलर</string>
+    <string name="settings_interface_notify_controllers_subtitle">कंट्रोलर जुड़ने, अलग होने या बैटरी कम होने पर सूचना दिखाएँ</string>
 
     <string name="settings_home_screen_background_title">बैकग्राउंड</string>
     <string name="settings_home_screen_background_subtitle">गेम आर्ट या बैकड्रॉप पैटर्न</string>

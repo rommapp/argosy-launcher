@@ -106,11 +106,12 @@
 
     <!-- Friend presence notifications (SocialRepository). -->
 
-    <!-- Subtitle when a friend starts playing a game. %1$s is the game's title
-          (untranslated, user content). -->
-    <string name="notif_social_friend_started_playing">Começou a jogar %1$s</string>
-    <!-- Subtitle when a friend comes online. Statement of fact, not a command. -->
-    <string name="notif_social_friend_online">Está online agora</string>
+    <!-- Title when a friend starts playing a game. The friend's name is the body and the
+         game's cover is the icon. Present participle, one word if possible. -->
+    <string name="notif_social_presence_playing_title">Jogando</string>
+    <!-- Title when a friend comes online. The friend's name is the body. Status adjective,
+         one word if possible. -->
+    <string name="notif_social_presence_online_title">Online</string>
 
     <!-- Settings: image cache and download validation (SettingsGeneralRouter). -->
 
@@ -433,4 +434,26 @@
     <!-- Follows a controller button icon, so it reads as "[X] Set up displays". Keep it short
           enough to sit on one line beside the icon. -->
     <string name="notif_new_display_action">Configurar displays</string>
+    <string name="notif_battery_low_title">Bateria %1$d%%</string>
+    <string name="notif_battery_critical_title">Bateria %1$d%%</string>
+    <string name="notif_battery_critical_saved">Jogo salvo</string>
+    <string name="notif_battery_charging_title">Carregando, %1$d%%</string>
+    <string name="notif_battery_charging_full_in_hours_minutes">Cheia em %1$dh %2$dm</string>
+    <string name="notif_battery_charging_full_in_minutes">Cheia em %1$dm</string>
+    <string name="notif_battery_unplugged_title">Na bateria, %1$d%%</string>
+    <string name="notif_battery_unplugged_left_hours_minutes">Restam %1$dh %2$dm</string>
+    <string name="notif_battery_unplugged_left_minutes">Restam %1$dm</string>
+    <string name="notif_controller_connected_title">Conectado</string>
+    <string name="notif_controller_disconnected_title">Desconectado</string>
+    <plurals name="notif_controller_burst_connected_title">
+        <item quantity="one">%1$d conectado</item>
+        <item quantity="many">%1$d conectados</item>
+        <item quantity="other">%1$d conectados</item>
+    </plurals>
+    <plurals name="notif_controller_burst_disconnected_title">
+        <item quantity="one">%1$d desconectado</item>
+        <item quantity="many">%1$d desconectados</item>
+        <item quantity="other">%1$d desconectados</item>
+    </plurals>
+    <string name="notif_controller_battery_low_title">Bateria baixa</string>
 </resources>

@@ -408,6 +408,17 @@
     <string name="settings_interface_pre_launch_recaps_subtitle">Перед игрой RetroAchievements, в которую вы не играли неделю, показывать, на чём вы остановились</string>
     <string name="settings_interface_monthly_recap_title">Итоги месяца</string>
     <string name="settings_interface_monthly_recap_subtitle">В начале каждого месяца показывать на главном экране сводку за прошлый месяц</string>
+    <string name="settings_interface_section_notifications">Уведомления</string>
+    <string name="settings_interface_notifications_title">Уведомления</string>
+    <string name="settings_interface_notifications_subtitle">Показывать уведомления Argosy в лаунчере и поверх игр. Уведомления о батарее по-прежнему показываются</string>
+    <string name="settings_interface_notify_downloads_finished_title">Загрузки завершены</string>
+    <string name="settings_interface_notify_downloads_finished_subtitle">Показывать уведомление, когда загрузка завершится</string>
+    <string name="settings_interface_notify_battery_title">Батарея</string>
+    <string name="settings_interface_notify_battery_subtitle" formatted="false">Предупреждать при 15% и 5%. Встроенные игры всё равно сохраняются при 5%</string>
+    <string name="settings_interface_notify_charging_title">Зарядка</string>
+    <string name="settings_interface_notify_charging_subtitle">Показывать уведомление, когда зарядку подключают или отключают во время игры</string>
+    <string name="settings_interface_notify_controllers_title">Контроллеры</string>
+    <string name="settings_interface_notify_controllers_subtitle">Показывать уведомление, когда контроллер подключается, отключается или разряжается</string>
 
     <string name="settings_home_screen_background_title">Фон</string>
     <string name="settings_home_screen_background_subtitle">Арт игры или фоновый узор</string>

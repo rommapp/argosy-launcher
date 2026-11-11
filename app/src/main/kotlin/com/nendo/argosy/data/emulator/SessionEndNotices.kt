@@ -1,6 +1,7 @@
 package com.nendo.argosy.data.emulator
 
 import android.app.Application
+import com.nendo.argosy.core.notification.NotificationCategory
 import com.nendo.argosy.core.notification.NotificationDuration
 import com.nendo.argosy.core.notification.NotificationManager
 import com.nendo.argosy.core.notification.NotificationText
@@ -44,7 +45,8 @@ class SessionEndNotices @Inject constructor(
                     imagePath = coverPathFor(gameId),
                     duration = NotificationDuration.MEDIUM,
                     key = syncKey(gameId),
-                    immediate = true
+                    immediate = true,
+                    category = NotificationCategory.SAVE
                 )
             }
             is SyncSaveOnSessionEndUseCase.Result.NoChange -> {
@@ -56,7 +58,8 @@ class SessionEndNotices @Inject constructor(
                     imagePath = coverPathFor(gameId),
                     duration = NotificationDuration.SHORT,
                     key = syncKey(gameId),
-                    immediate = true
+                    immediate = true,
+                    category = NotificationCategory.SAVE
                 )
             }
             is SyncSaveOnSessionEndUseCase.Result.Queued -> {
@@ -68,7 +71,8 @@ class SessionEndNotices @Inject constructor(
                     imagePath = coverPathFor(gameId),
                     duration = NotificationDuration.MEDIUM,
                     key = syncKey(gameId),
-                    immediate = true
+                    immediate = true,
+                    category = NotificationCategory.SAVE
                 )
             }
             is SyncSaveOnSessionEndUseCase.Result.NoSaveFound -> {
@@ -93,7 +97,8 @@ class SessionEndNotices @Inject constructor(
                     imagePath = coverPathFor(gameId),
                     duration = NotificationDuration.MEDIUM,
                     key = syncKey(gameId),
-                    immediate = true
+                    immediate = true,
+                    category = NotificationCategory.SAVE
                 )
             }
         }
@@ -108,7 +113,8 @@ class SessionEndNotices @Inject constructor(
             imagePath = coverPathFor(gameId),
             duration = NotificationDuration.LONG,
             key = syncKey(gameId),
-            immediate = true
+            immediate = true,
+            category = NotificationCategory.SAVE
         )
     }
 

@@ -439,6 +439,10 @@
     <string name="dual_detail_option_write_review">写评价</string>
     <string name="dual_showcase_progress_main">%1$s / 主线 %2$s</string>
     <string name="dual_showcase_played">已玩 %1$s</string>
+    <string name="dual_showcase_running">运行中</string>
+    <string name="dual_showcase_running_in">正在 %1$s 中运行</string>
+    <string name="dual_showcase_saving">正在保存</string>
+    <string name="dual_showcase_running_with_time">已运行 %1$s</string>
     <string name="dual_showcase_journey_header">你的旅程</string>
     <string name="dual_showcase_journey_main">主线 %1$s</string>
     <string name="dual_showcase_completionist">全收集 %1$s</string>

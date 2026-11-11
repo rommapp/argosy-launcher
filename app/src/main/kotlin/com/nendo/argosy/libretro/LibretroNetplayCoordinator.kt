@@ -3,9 +3,12 @@ package com.nendo.argosy.libretro
 import android.app.Activity
 import android.content.pm.ActivityInfo
 import android.util.Log
+import androidx.annotation.StringRes
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import com.nendo.argosy.R
+import com.nendo.argosy.core.notification.NotificationText
 import com.nendo.argosy.data.local.dao.GameDao
 import com.nendo.argosy.data.netplay.CandidateGatherer
 import com.nendo.argosy.data.netplay.CoreHashCache
@@ -27,6 +30,8 @@ import com.nendo.argosy.libretro.ui.NetplayProgressStage
 import com.nendo.argosy.libretro.ui.NetplayProgressState
 import com.nendo.argosy.libretro.ui.NetplayQualityInfo
 import com.nendo.argosy.libretro.ui.NetplayQualityLabel
+import com.nendo.argosy.ui.notification.InGameNotice
+import com.nendo.argosy.ui.notification.NotificationSeverity
 import com.swordfish.libretrodroid.GLRetroView
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.delay
@@ -52,7 +57,7 @@ class LibretroNetplayCoordinator(
     private val argosSocialService: ArgosSocialService,
     private val preferencesRepository: UserPreferencesRepository,
     private val scope: CoroutineScope,
-    private val showToast: (String) -> Unit,
+    private val showNotice: (InGameNotice) -> Unit,
     private val onFastForwardRelease: () -> Unit,
     private val getRetroView: () -> GLRetroView,
     private val getResolvedCoreId: () -> String?,
@@ -207,13 +212,22 @@ class LibretroNetplayCoordinator(
                         peerConnected = true
                         hudGuestAvatarColor = resolveFriendAvatarColor(state.peerUserId)
                         val initRtt = manager.initialRttMs
-                        val rttSuffix = if (initRtt != null) " -- ${initRtt}ms" else ""
                         if (role == NetplayMenuRole.Host &&
                             !wasReconnecting &&
                             lastJoinedToastPeerId != state.peerUserId
                         ) {
                             lastJoinedToastPeerId = state.peerUserId
-                            showToast("$peerName joined your session$rttSuffix")
+                            showNotice(
+                                InGameNotice(
+                                    severity = NotificationSeverity.SUCCESS,
+                                    title = if (initRtt != null) {
+                                        NotificationText.Res(R.string.ingame_netplay_notice_joined_ping_title, listOf(initRtt))
+                                    } else {
+                                        NotificationText.Res(R.string.ingame_netplay_notice_joined_title)
+                                    },
+                                    body = peerNameText(state.peerUserId)
+                                )
+                            )
                         }
                         if (progressState?.stage != NetplayProgressStage.Failed) {
                             val label = NetplayQualityInfo.labelForRttMs(initRtt)
@@ -360,7 +374,14 @@ class LibretroNetplayCoordinator(
                     } else if (System.currentTimeMillis() - candidateStartMs >= TIER_CHANGE_DEBOUNCE_MS) {
                         lastAnnouncedTier = currentTier
                         tierChangeTimestamp = System.currentTimeMillis()
-                        showToast("Connection: ${activity.getString(currentTier.labelRes)} (${rttMs}ms)")
+                        showNotice(
+                            InGameNotice(
+                                severity = currentTier.noticeSeverity(),
+                                title = NotificationText.Res(R.string.ingame_netplay_notice_quality_title, listOf(rttMs)),
+                                body = NotificationText.Res(currentTier.labelRes),
+                                key = QUALITY_NOTICE_KEY
+                            )
+                        )
                     }
                 } else {
                     candidateTier = null
@@ -372,8 +393,13 @@ class LibretroNetplayCoordinator(
     private fun observeGuestLeftEvents(manager: NetplaySessionManager) {
         scope.launch {
             manager.guestLeftEvents.collect { event ->
-                val name = resolveFriendDisplayName(event.guestUserId)
-                showToast("$name left your session")
+                showNotice(
+                    InGameNotice(
+                        severity = NotificationSeverity.INFO,
+                        title = NotificationText.Res(R.string.ingame_netplay_notice_left_title),
+                        body = peerNameText(event.guestUserId)
+                    )
+                )
                 peerDisplayName = "Friend"
                 peerConnected = false
                 hudGuestAvatarColor = null
@@ -447,6 +473,27 @@ class LibretroNetplayCoordinator(
         return socialRepository.friends.value.firstOrNull { it.id == userId }?.displayName ?: "Friend"
     }
 
+    private fun peerNameText(userId: String): NotificationText =
+        socialRepository.friends.value.firstOrNull { it.id == userId }?.displayName
+            ?.let { NotificationText.Raw(it) }
+            ?: NotificationText.Res(R.string.ingame_netplay_notice_peer_fallback)
+
+    private fun NetplayQualityLabel.noticeSeverity(): NotificationSeverity = when (this) {
+        NetplayQualityLabel.Excellent, NetplayQualityLabel.Good -> NotificationSeverity.SUCCESS
+        NetplayQualityLabel.Fair, NetplayQualityLabel.Poor -> NotificationSeverity.WARNING
+        NetplayQualityLabel.Bad -> NotificationSeverity.ERROR
+    }
+
+    private fun notify(severity: NotificationSeverity, @StringRes title: Int, body: NotificationText? = null) {
+        showNotice(
+            InGameNotice(
+                severity = severity,
+                title = NotificationText.Res(title),
+                body = body
+            )
+        )
+    }
+
     private fun resolveFriendAvatarColor(userId: String): String? {
         return socialRepository.friends.value.firstOrNull { it.id == userId }?.avatarColor
     }
@@ -477,11 +524,19 @@ class LibretroNetplayCoordinator(
 
     fun handleOpenWithMode(mode: NetplaySessionMode) {
         val manager = sessionManager ?: run {
-            showToast("Netplay manager unavailable")
+            notify(
+                NotificationSeverity.ERROR,
+                R.string.ingame_netplay_notice_open_unavailable_title,
+                NotificationText.Res(R.string.ingame_netplay_notice_open_unavailable_body)
+            )
             return
         }
         val payload = buildOpenPayload() ?: run {
-            showToast("Netplay: failed to compute hashes")
+            notify(
+                NotificationSeverity.ERROR,
+                R.string.ingame_netplay_notice_open_hash_title,
+                NotificationText.Res(R.string.ingame_netplay_notice_open_hash_body)
+            )
             return
         }
         manager.sessionMode = mode
@@ -490,27 +545,39 @@ class LibretroNetplayCoordinator(
         getRetroView().suppressAutoResume = false
         getRetroView().resumeEmulation()
         scope.launch {
-            val result = manager.openServer(payload)
-            showToast(result.fold(
+            manager.openServer(payload).fold(
                 onSuccess = { _ ->
-                    val label = when (mode) {
-                        NetplaySessionMode.OPEN -> "open"
-                        NetplaySessionMode.PRIVATE -> "private"
-                        NetplaySessionMode.INVITE_ONLY -> "invite-only"
+                    val modeLabel = when (mode) {
+                        NetplaySessionMode.OPEN -> R.string.ingame_netplay_notice_opened_open_body
+                        NetplaySessionMode.PRIVATE -> R.string.ingame_netplay_notice_opened_private_body
+                        NetplaySessionMode.INVITE_ONLY -> R.string.ingame_netplay_notice_opened_invite_body
                     }
-                    "Netplay session opened ($label)"
+                    notify(
+                        NotificationSeverity.SUCCESS,
+                        R.string.ingame_netplay_notice_opened_title,
+                        NotificationText.Res(modeLabel)
+                    )
                 },
                 onFailure = { e ->
                     role = null
-                    "Netplay open failed: ${e.message}"
+                    Log.w(TAG, "openServer failed", e)
+                    notify(
+                        NotificationSeverity.ERROR,
+                        R.string.ingame_netplay_notice_open_failed_title,
+                        NotificationText.Res(R.string.ingame_netplay_notice_open_failed_body)
+                    )
                 }
-            ))
+            )
         }
     }
 
     fun handleInviteFriend() {
         if (sessionManager == null) {
-            showToast("Netplay manager unavailable")
+            notify(
+                NotificationSeverity.ERROR,
+                R.string.ingame_netplay_notice_invite_unavailable_title,
+                NotificationText.Res(R.string.ingame_netplay_notice_invite_unavailable_body)
+            )
             return
         }
         val onlineFriends = socialRepository.friends.value
@@ -540,10 +607,26 @@ class LibretroNetplayCoordinator(
                 manager.sessionMode = NetplaySessionMode.INVITE_ONLY
                 val ok = manager.reserveSession(friend.userId)
                 if (ok) sessionIsReserved = true
-                showToast(if (ok) "Invited ${friend.displayName}" else "Invite failed")
+                if (ok) {
+                    notify(
+                        NotificationSeverity.SUCCESS,
+                        R.string.ingame_netplay_notice_invite_sent_title,
+                        NotificationText.Raw(friend.displayName)
+                    )
+                } else {
+                    notify(
+                        NotificationSeverity.ERROR,
+                        R.string.ingame_netplay_notice_invite_failed_title,
+                        NotificationText.Raw(friend.displayName)
+                    )
+                }
             } else {
                 val payload = buildOpenPayload() ?: run {
-                    showToast("Netplay: failed to compute hashes")
+                    notify(
+                        NotificationSeverity.ERROR,
+                        R.string.ingame_netplay_notice_invite_hash_title,
+                        NotificationText.Res(R.string.ingame_netplay_notice_invite_hash_body)
+                    )
                     return@launch
                 }
                 manager.sessionMode = NetplaySessionMode.INVITE_ONLY
@@ -554,11 +637,28 @@ class LibretroNetplayCoordinator(
                     onSuccess = {
                         val reserved = manager.reserveSession(friend.userId)
                         if (reserved) sessionIsReserved = true
-                        showToast(if (reserved) "Invited ${friend.displayName}" else "Session opened; invite failed")
+                        if (reserved) {
+                            notify(
+                                NotificationSeverity.SUCCESS,
+                                R.string.ingame_netplay_notice_open_invite_sent_title,
+                                NotificationText.Raw(friend.displayName)
+                            )
+                        } else {
+                            notify(
+                                NotificationSeverity.WARNING,
+                                R.string.ingame_netplay_notice_open_invite_failed_title,
+                                NotificationText.Res(R.string.ingame_netplay_notice_open_invite_failed_body)
+                            )
+                        }
                     },
                     onFailure = { e ->
                         role = null
-                        showToast("Netplay open failed: ${e.message}")
+                        Log.w(TAG, "openServer for invite failed", e)
+                        notify(
+                            NotificationSeverity.ERROR,
+                            R.string.ingame_netplay_notice_invite_open_failed_title,
+                            NotificationText.Res(R.string.ingame_netplay_notice_invite_open_failed_body)
+                        )
                     }
                 )
             }
@@ -577,9 +677,13 @@ class LibretroNetplayCoordinator(
                 if (head != null) {
                     manager.acceptJoin(head.fromUserId)
                 }
-                showToast("Session open to all friends")
+                notify(NotificationSeverity.SUCCESS, R.string.ingame_netplay_notice_reservation_cleared_title)
             } else {
-                showToast("Failed to clear reservation")
+                notify(
+                    NotificationSeverity.ERROR,
+                    R.string.ingame_netplay_notice_reservation_failed_title,
+                    NotificationText.Res(R.string.ingame_netplay_notice_reservation_failed_body)
+                )
             }
         }
     }
@@ -698,5 +802,6 @@ class LibretroNetplayCoordinator(
         private const val NETPLAY_CLOSE_TIMEOUT_MS = 500L
         private const val TIER_CHANGE_DEBOUNCE_MS = 2000L
         private const val RTT_RING_BUFFER_SIZE = 6
+        private const val QUALITY_NOTICE_KEY = "netplay-quality"
     }
 }

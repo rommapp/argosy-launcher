@@ -25,6 +25,7 @@
     <string name="running_menu_switch_to">Alternar para</string>
     <!-- Context menu entry that stops the app. Verb: to close an app. -->
     <string name="running_menu_close">Fechar</string>
+    <string name="running_menu_move_to_display">Mover para a tela %1$d</string>
 
     <!-- Footer hint for the button that stops the focused app. Verb: to close an app. -->
     <string name="running_hint_close">Fechar</string>
@@ -47,6 +48,7 @@
 
     <!-- Error shown when the system refuses to bring an app forward. %1$s is the app name. -->
     <string name="running_notice_switch_failed">Não foi possível alternar para %1$s</string>
+    <string name="running_notice_move_failed">Não foi possível mover %1$s</string>
     <string name="running_card_time_hours_minutes">%1$dh %2$dm</string>
     <string name="running_card_time_minutes_seconds">%1$dm %2$ds</string>
     <string name="running_card_time_seconds">%1$ds</string>
@@ -58,4 +60,5 @@
     <string name="running_friends_two">%1$s e %2$s estão jogando isto</string>
     <string name="running_friends_three">%1$s, %2$s e %3$s estão jogando isto</string>
     <string name="running_friends_many">%1$s, %2$s, %3$s e outros estão jogando isto</string>
+    <string name="running_notice_game_stopped">Jogo encerrado</string>
 </resources>

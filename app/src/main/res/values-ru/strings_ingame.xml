@@ -80,13 +80,17 @@
     <string name="ingame_return_message_netplay">Сетевая сессия завершится, а игра сохранится и закроется.</string>
     <string name="ingame_return_confirm">Вернуться</string>
 
-    <string name="ingame_achievement_hardcore_heading">РАЗБЛОКИРОВАНО В ХАРДКОРЕ</string>
-    <string name="ingame_achievement_heading">ДОСТИЖЕНИЕ РАЗБЛОКИРОВАНО</string>
-    <plurals name="ingame_achievement_points">
-        <item quantity="one">+%d очко</item>
-        <item quantity="few">+%d очка</item>
-        <item quantity="many">+%d очков</item>
-        <item quantity="other">+%d очка</item>
+    <plurals name="ingame_achievement_notice_hardcore_title">
+        <item quantity="one">Хардкор, %d очко</item>
+        <item quantity="few">Хардкор, %d очка</item>
+        <item quantity="many">Хардкор, %d очков</item>
+        <item quantity="other">Хардкор, %d очка</item>
+    </plurals>
+    <plurals name="ingame_achievement_notice_unlocked_title">
+        <item quantity="one">Открыто, %d очко</item>
+        <item quantity="few">Открыто, %d очка</item>
+        <item quantity="many">Открыто, %d очков</item>
+        <item quantity="other">Открыто, %d очка</item>
     </plurals>
 
     <string name="ingame_raconnect_title">RetroAchievements подключены</string>
@@ -94,6 +98,60 @@
     <string name="ingame_raconnect_casual">Казуальный режим</string>
     <string name="ingame_raconnect_unavailable_title">RetroAchievements недоступны</string>
     <string name="ingame_raconnect_earned">%1$d/%2$d получено</string>
+
+    <string name="ingame_hotkey_quicksave_netplay_title">Нет состояний</string>
+    <string name="ingame_hotkey_quicksave_netplay_body">Идёт сетевая игра</string>
+    <string name="ingame_hotkey_quicksave_hardcore_title">Нет состояний</string>
+    <string name="ingame_hotkey_quicksave_hardcore_body">Режим хардкор</string>
+    <string name="ingame_hotkey_quicksave_unsupported_title">Нет состояний</string>
+    <string name="ingame_hotkey_quicksave_unsupported_body">Не для этого ядра</string>
+    <string name="ingame_hotkey_quicksave_success_title">Сохранено</string>
+    <string name="ingame_hotkey_quicksave_failure_title">Не сохранено</string>
+
+    <string name="ingame_hotkey_quickload_netplay_title">Нет состояний</string>
+    <string name="ingame_hotkey_quickload_netplay_body">Идёт сетевая игра</string>
+    <string name="ingame_hotkey_quickload_hardcore_title">Нет состояний</string>
+    <string name="ingame_hotkey_quickload_hardcore_body">Режим хардкор</string>
+    <string name="ingame_hotkey_quickload_unsupported_title">Нет состояний</string>
+    <string name="ingame_hotkey_quickload_unsupported_body">Не для этого ядра</string>
+    <string name="ingame_hotkey_quickload_success_title">Загружено</string>
+    <string name="ingame_hotkey_quickload_failure_title">Не загружено</string>
+
+    <string name="ingame_hotkey_rewind_hardcore_title">Без перемотки</string>
+    <string name="ingame_hotkey_rewind_hardcore_body">Режим хардкор</string>
+    <string name="ingame_hotkey_reset_netplay_title">Сброс недоступен</string>
+    <string name="ingame_hotkey_reset_netplay_body">Идёт сетевая игра</string>
+    <string name="ingame_hotkey_reset_success_title">Игра сброшена</string>
+
+    <string name="ingame_netplay_notice_joined_title">Друг подключился</string>
+    <string name="ingame_netplay_notice_joined_ping_title">Вошёл, %1$d мс</string>
+    <string name="ingame_netplay_notice_peer_fallback">Друг</string>
+    <string name="ingame_netplay_notice_quality_title">Пинг %1$d мс</string>
+    <string name="ingame_netplay_notice_left_title">Друг вышел</string>
+    <string name="ingame_netplay_notice_open_unavailable_title">Сетевая игра</string>
+    <string name="ingame_netplay_notice_open_unavailable_body">Недоступна</string>
+    <string name="ingame_netplay_notice_open_hash_title">Сетевая игра</string>
+    <string name="ingame_netplay_notice_open_hash_body">Сбой проверки</string>
+    <string name="ingame_netplay_notice_opened_title">Сессия открыта</string>
+    <string name="ingame_netplay_notice_opened_open_body">Для друзей</string>
+    <string name="ingame_netplay_notice_opened_private_body">Приватно</string>
+    <string name="ingame_netplay_notice_opened_invite_body">По приглашению</string>
+    <string name="ingame_netplay_notice_open_failed_title">Сбой сетевой игры</string>
+    <string name="ingame_netplay_notice_open_failed_body">Сессия не открыта</string>
+    <string name="ingame_netplay_notice_invite_unavailable_title">Сетевая игра</string>
+    <string name="ingame_netplay_notice_invite_unavailable_body">Недоступна</string>
+    <string name="ingame_netplay_notice_invite_sent_title">Приглашение ушло</string>
+    <string name="ingame_netplay_notice_invite_failed_title">Сбой приглашения</string>
+    <string name="ingame_netplay_notice_invite_hash_title">Сетевая игра</string>
+    <string name="ingame_netplay_notice_invite_hash_body">Сбой проверки</string>
+    <string name="ingame_netplay_notice_open_invite_sent_title">Приглашение ушло</string>
+    <string name="ingame_netplay_notice_open_invite_failed_title">Сбой приглашения</string>
+    <string name="ingame_netplay_notice_open_invite_failed_body">Сессия открыта</string>
+    <string name="ingame_netplay_notice_invite_open_failed_title">Сбой сетевой игры</string>
+    <string name="ingame_netplay_notice_invite_open_failed_body">Сессия не открыта</string>
+    <string name="ingame_netplay_notice_reservation_cleared_title">Для всех друзей</string>
+    <string name="ingame_netplay_notice_reservation_failed_title">Не изменено</string>
+    <string name="ingame_netplay_notice_reservation_failed_body">По приглашению</string>
 
     <string name="ingame_speedrun_paused">ПАУЗА</string>
     <string name="ingame_speedrun_personal_best">Личный рекорд</string>
@@ -605,4 +663,39 @@
 
     <string name="ingame_touch_generic_sys_select">Select</string>
     <string name="ingame_touch_generic_sys_start">Start</string>
+    <string name="ingame_controller_join_prompt_title">Нажмите для входа</string>
+    <string name="ingame_controller_joined_title">Игрок %1$d в игре</string>
+    <string name="ingame_controller_disconnected_title">Отключён</string>
+    <plurals name="ingame_controller_burst_joined_title">
+        <item quantity="one">%1$d игрок в игре</item>
+        <item quantity="few">%1$d игрока в игре</item>
+        <item quantity="many">%1$d игроков в игре</item>
+        <item quantity="other">%1$d игрока в игре</item>
+    </plurals>
+    <plurals name="ingame_controller_burst_connected_title">
+        <item quantity="one">%1$d подключён</item>
+        <item quantity="few">%1$d подключено</item>
+        <item quantity="many">%1$d подключено</item>
+        <item quantity="other">%1$d подключено</item>
+    </plurals>
+    <plurals name="ingame_controller_burst_waiting_body">
+        <item quantity="one">%1$d ждёт входа</item>
+        <item quantity="few">%1$d ждут входа</item>
+        <item quantity="many">%1$d ждут входа</item>
+        <item quantity="other">%1$d ждут входа</item>
+    </plurals>
+    <plurals name="ingame_controller_burst_disconnected_title">
+        <item quantity="one">%1$d отключён</item>
+        <item quantity="few">%1$d отключено</item>
+        <item quantity="many">%1$d отключено</item>
+        <item quantity="other">%1$d отключено</item>
+    </plurals>
+    <string name="ingame_controller_players_two">Игроки %1$d и %2$d</string>
+    <string name="ingame_controller_players_three">Игроки %1$d, %2$d и %3$d</string>
+    <string name="ingame_controller_paused_title">Игра на паузе</string>
+    <string name="ingame_controller_paused_body">Подключите снова</string>
+    <string name="ingame_controller_offer_title">Стать игроком %1$d?</string>
+    <string name="ingame_controller_offer_body">Нажмите %1$s для входа</string>
+    <string name="ingame_controller_battery_low_title">Низкий заряд</string>
+    <string name="ingame_controller_badge_player">И%1$d</string>
 </resources>

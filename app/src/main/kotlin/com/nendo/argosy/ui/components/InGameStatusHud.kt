@@ -15,6 +15,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontFamily
+import com.nendo.argosy.domain.model.BatteryThresholds
 import com.nendo.argosy.ui.theme.Dimens
 import com.nendo.argosy.ui.theme.generated.ColorTokens
 
@@ -88,7 +89,7 @@ fun InGameStatusHud(
 private fun BatteryReadout(level: Int, isCharging: Boolean) {
     val color = when {
         isCharging -> ColorTokens.Domain.Battery.charging
-        level <= BATTERY_LOW_PERCENT -> ColorTokens.Domain.Battery.low
+        level <= BatteryThresholds.LOW_PERCENT -> ColorTokens.Domain.Battery.low
         else -> MaterialTheme.colorScheme.onSurface.copy(alpha = HUD_TEXT_ALPHA)
     }
     Row(

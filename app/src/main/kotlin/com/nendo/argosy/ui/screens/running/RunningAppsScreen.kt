@@ -1,5 +1,6 @@
 package com.nendo.argosy.ui.screens.running
 
+import android.graphics.Bitmap
 import androidx.compose.animation.Crossfade
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.tween
@@ -44,7 +45,6 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.EmojiEvents
-import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -82,6 +82,8 @@ import com.nendo.argosy.ui.theme.generated.ComponentDefaults
 import com.nendo.argosy.data.platform.PlatformDefinitions
 import com.nendo.argosy.libretro.slot.GameSlots
 import com.nendo.argosy.ui.components.PlatformIconAssets
+import com.nendo.argosy.ui.components.RunPlayTimeChip
+import com.nendo.argosy.ui.components.showsRunPlayTime
 import com.nendo.argosy.ui.coil.AppIconData
 import com.nendo.argosy.ui.common.GameArtBackdrop
 import com.nendo.argosy.ui.common.rememberFileImageModel
@@ -114,13 +116,12 @@ fun RunningAppsScreen(
     onOpenGame: (Long) -> Unit,
     viewModel: RunningAppsViewModel = hiltViewModel()
 ) {
-    val uiState by viewModel.uiState.collectAsState()
-    LaunchedEffect(viewModel) {
-        viewModel.openGame.collect { onOpenGame(it) }
+    val controller = viewModel.controller
+    LaunchedEffect(controller) {
+        controller.openGame.collect { onOpenGame(it) }
     }
     val inputDispatcher = LocalInputDispatcher.current
-    val inputHandler = remember(onBack) { viewModel.createInputHandler(onBack) }
-    val menuInputHandler = remember(viewModel) { viewModel.createMenuInputHandler() }
+    val inputHandler = remember(controller, onBack) { controller.createInputHandler(onBack) }
 
     val lifecycleOwner = LocalLifecycleOwner.current
     DisposableEffect(lifecycleOwner, inputHandler) {
@@ -128,9 +129,9 @@ fun RunningAppsScreen(
             when (event) {
                 Lifecycle.Event.ON_RESUME -> {
                     inputDispatcher.subscribeView(inputHandler, forRoute = Screen.ROUTE_RUNNING)
-                    viewModel.onVisible()
+                    controller.onVisible()
                 }
-                Lifecycle.Event.ON_PAUSE -> viewModel.onHidden()
+                Lifecycle.Event.ON_PAUSE -> controller.onHidden()
                 else -> Unit
             }
         }
@@ -138,21 +139,36 @@ fun RunningAppsScreen(
         inputDispatcher.subscribeView(inputHandler, forRoute = Screen.ROUTE_RUNNING)
         onDispose {
             lifecycleOwner.lifecycle.removeObserver(observer)
-            viewModel.onHidden()
+            controller.onHidden()
         }
     }
 
+    RunningAppsContent(controller = controller)
+}
+
+/**
+ * The Resume list without any host wiring: the host subscribes [controller]'s input handler and
+ * starts and stops its polling. The menu's own input is taken here.
+ */
+@Composable
+fun RunningAppsContent(
+    controller: RunningAppsController,
+    modifier: Modifier = Modifier,
+    showsGameBackdrop: Boolean = true
+) {
+    val uiState by controller.uiState.collectAsState()
+    val menuInputHandler = remember(controller) { controller.createMenuInputHandler() }
     ModalInputEffect(active = uiState.menu != null, handler = menuInputHandler)
 
     val cardBounds = remember { mutableStateMapOf<Int, Rect>() }
     var screenOrigin by remember { mutableStateOf(Offset.Zero) }
 
     Box(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxSize()
             .onGloballyPositioned { screenOrigin = it.boundsInRoot().topLeft }
     ) {
-        FocusedGameBackdrop(gameId = uiState.focusedApp?.gameId)
+        if (showsGameBackdrop) FocusedGameBackdrop(gameId = uiState.focusedApp?.gameId)
         Column(modifier = Modifier.fillMaxSize()) {
             Text(
                 text = stringResource(R.string.running_header_title),
@@ -177,15 +193,15 @@ fun RunningAppsScreen(
                 }
                 uiState.showsSnapshots -> RunningAppsCarousel(
                     uiState = uiState,
-                    onTap = viewModel::switchTo,
-                    onLongPress = viewModel::openMenu,
+                    onTap = controller::switchTo,
+                    onLongPress = controller::openMenu,
                     onSnapshotPlaced = { taskId, bounds -> cardBounds[taskId] = bounds },
                     modifier = Modifier.weight(1f)
                 )
                 else -> RunningAppsList(
                     uiState = uiState,
-                    onTap = viewModel::switchTo,
-                    onLongPress = viewModel::openMenu,
+                    onTap = controller::switchTo,
+                    onLongPress = controller::openMenu,
                     modifier = Modifier.weight(1f)
                 )
             }
@@ -202,7 +218,7 @@ fun RunningAppsScreen(
                 }
             }
 
-            if (uiState.apps.isNotEmpty()) {
+            if (uiState.apps.isNotEmpty() && uiState.resumingTaskId == null) {
                 FooterHints(
                     leadingContent = { SlotCartridges(uiState.apps, uiState.focusedApp?.taskId) },
                     hints = listOf(
@@ -211,8 +227,8 @@ fun RunningAppsScreen(
                     ),
                     onHintClick = { button ->
                         when (button) {
-                            InputButton.X -> viewModel.requestClose(uiState.focusedIndex)
-                            InputButton.Y -> viewModel.requestCloseAll()
+                            InputButton.X -> controller.requestClose(uiState.focusedIndex)
+                            InputButton.Y -> controller.requestCloseAll()
                             else -> Unit
                         }
                     }
@@ -226,10 +242,10 @@ fun RunningAppsScreen(
             val from = cardBounds[taskId]
             if (app != null && from != null) {
                 ResumeZoom(app = app, from = from.translate(-screenOrigin)) {
-                    viewModel.onResumeZoomFinished(taskId)
+                    controller.onResumeZoomFinished(taskId)
                 }
             } else {
-                LaunchedEffect(taskId) { viewModel.onResumeZoomFinished(taskId) }
+                LaunchedEffect(taskId) { controller.onResumeZoomFinished(taskId) }
             }
         }
 
@@ -239,11 +255,11 @@ fun RunningAppsScreen(
             CustomTileMenuModal(
                 header = menuApp.details?.platformName ?: menuApp.label,
                 title = menuApp.gameTitle,
-                entries = RunningMenuAction.entries.map { stringResource(it.labelRes) },
+                entries = menu.entries.map { entry -> runningMenuLabel(entry) },
                 focusIndex = menu.focusIndex,
-                dangerFromIndex = RunningMenuAction.CLOSE.ordinal,
-                onSelect = viewModel::selectMenuAction,
-                onDismiss = viewModel::dismissMenu
+                dangerFromIndex = menu.entries.indexOf(RunningMenuEntry.Close).takeIf { it >= 0 },
+                onSelect = controller::selectMenuAction,
+                onDismiss = controller::dismissMenu
             )
         }
 
@@ -254,8 +270,8 @@ fun RunningAppsScreen(
                 message = stringResource(R.string.running_confirm_close_message),
                 confirmLabel = stringResource(R.string.running_confirm_close_confirm),
                 destructive = true,
-                onConfirm = viewModel::confirmClose,
-                onDismiss = viewModel::dismissConfirm
+                onConfirm = controller::confirmClose,
+                onDismiss = controller::dismissConfirm
             )
             is RunningConfirm.CloseAll -> ArgosyConfirmModalHost(
                 visible = true,
@@ -263,12 +279,19 @@ fun RunningAppsScreen(
                 message = stringResource(R.string.running_confirm_close_all_message),
                 confirmLabel = stringResource(R.string.running_confirm_close_all_confirm),
                 destructive = true,
-                onConfirm = viewModel::confirmClose,
-                onDismiss = viewModel::dismissConfirm
+                onConfirm = controller::confirmClose,
+                onDismiss = controller::dismissConfirm
             )
             null -> Unit
         }
     }
+}
+
+@Composable
+private fun runningMenuLabel(entry: RunningMenuEntry): String = when (entry) {
+    RunningMenuEntry.SwitchTo -> stringResource(R.string.running_menu_switch_to)
+    is RunningMenuEntry.MoveTo -> stringResource(R.string.running_menu_move_to_display, entry.target.screenNumber)
+    RunningMenuEntry.Close -> stringResource(R.string.running_menu_close)
 }
 
 @Composable
@@ -417,6 +440,7 @@ private fun RunningAppsCarousel(
                     onClick = { onTap(index) },
                     onLongClick = { onLongPress(index) },
                     closeStage = uiState.closing[app.taskId],
+                    liveFrame = uiState.frontFrame.takeIf { app.taskId == uiState.frontTaskId },
                     onSnapshotPlaced = { bounds -> onSnapshotPlaced(app.taskId, bounds) },
                     modifier = Modifier
                         .width(cardWidth)
@@ -438,12 +462,13 @@ private fun RunningAppCard(
     onClick: () -> Unit,
     onLongClick: () -> Unit,
     closeStage: MakeRoomStage?,
+    liveFrame: Bitmap?,
     onSnapshotPlaced: (boundsInRoot: Rect) -> Unit,
     modifier: Modifier = Modifier
 ) {
     val theme = LocalArgosyTheme.current
     val shape = RoundedCornerShape(Dimens.radiusLg)
-    val request = rememberTaskSnapshotRequest(app.snapshotPath, app.snapshotTakenAtMillis)
+    val request = liveFrame ?: rememberTaskSnapshotRequest(app.snapshotPath, app.snapshotTakenAtMillis)
     val closed = closeStage == MakeRoomStage.CLOSED
     val closeMs = if (LocalMotionTier.current == MotionTier.Reduced) 0 else Motion.durationContent
     val scale by animateFloatAsState(
@@ -500,8 +525,8 @@ private fun RunningAppCard(
                         .clip(RoundedCornerShape(Dimens.radiusMd))
                 )
             }
-            app.details?.playedThisRunMs?.takeIf { it >= MILLIS_PER_SECOND }?.let { playedMs ->
-                PlayTimeChip(
+            app.details?.playedThisRunMs?.takeIf(::showsRunPlayTime)?.let { playedMs ->
+                RunPlayTimeChip(
                     playedMs = playedMs,
                     modifier = Modifier
                         .align(Alignment.TopEnd)
@@ -569,41 +594,6 @@ private fun ResumeZoom(app: RunningAppUi, from: Rect, onFilled: () -> Unit) {
                 )
             }
         }
-    }
-}
-
-@Composable
-private fun PlayTimeChip(playedMs: Long, modifier: Modifier = Modifier) {
-    val theme = LocalArgosyTheme.current
-    val totalSeconds = playedMs / MILLIS_PER_SECOND
-    val hours = totalSeconds / SECONDS_PER_HOUR
-    val minutes = (totalSeconds % SECONDS_PER_HOUR) / SECONDS_PER_MINUTE
-    val seconds = totalSeconds % SECONDS_PER_MINUTE
-    val text = when {
-        hours > 0 -> stringResource(R.string.running_card_time_hours_minutes, hours, minutes)
-        minutes > 0 -> stringResource(R.string.running_card_time_minutes_seconds, minutes, seconds)
-        else -> stringResource(R.string.running_card_time_seconds, seconds)
-    }
-    Row(
-        modifier = modifier
-            .clip(RoundedCornerShape(Dimens.radiusSm))
-            .background(theme.surfaceBase.copy(alpha = PLAY_TIME_SCRIM_ALPHA))
-            .padding(horizontal = Dimens.spacingSm, vertical = Dimens.spacingXs),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(Dimens.spacingXs)
-    ) {
-        Icon(
-            imageVector = Icons.Filled.Schedule,
-            contentDescription = null,
-            tint = theme.textPrimary,
-            modifier = Modifier.size(Dimens.iconSm)
-        )
-        Text(
-            text = text,
-            style = MaterialTheme.typography.labelMedium,
-            color = theme.textPrimary,
-            maxLines = 1
-        )
     }
 }
 
@@ -862,7 +852,3 @@ private const val CARTRIDGE_FOCUSED_FILL_ALPHA = 0.5f
 private const val COVER_FALLBACK_ICON_FRACTION = 0.7f
 private const val SHOWN_FRIENDS = 3
 private const val FRIEND_OVERLAP_DIVISOR = 3
-private const val MILLIS_PER_SECOND = 1_000L
-private const val SECONDS_PER_MINUTE = 60L
-private const val SECONDS_PER_HOUR = 3_600L
-private const val PLAY_TIME_SCRIM_ALPHA = 0.85f

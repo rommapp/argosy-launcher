@@ -80,11 +80,13 @@
     <string name="ingame_return_message_netplay">Deine Netplay-Sitzung endet, und das Spiel wird gespeichert und geschlossen.</string>
     <string name="ingame_return_confirm">Zurück</string>
 
-    <string name="ingame_achievement_hardcore_heading">HARDCORE FREIGESCHALTET</string>
-    <string name="ingame_achievement_heading">ERFOLG FREIGESCHALTET</string>
-    <plurals name="ingame_achievement_points">
-        <item quantity="one">+%d Punkt</item>
-        <item quantity="other">+%d Punkte</item>
+    <plurals name="ingame_achievement_notice_hardcore_title">
+        <item quantity="one">Hardcore, %d Pkt</item>
+        <item quantity="other">Hardcore, %d Pkt</item>
+    </plurals>
+    <plurals name="ingame_achievement_notice_unlocked_title">
+        <item quantity="one">Erhalten, %d Pkt</item>
+        <item quantity="other">Erhalten, %d Pkt</item>
     </plurals>
 
     <string name="ingame_raconnect_title">RetroAchievements verbunden</string>
@@ -92,6 +94,60 @@
     <string name="ingame_raconnect_casual">Casual-Modus</string>
     <string name="ingame_raconnect_unavailable_title">RetroAchievements nicht verfügbar</string>
     <string name="ingame_raconnect_earned">%1$d/%2$d erreicht</string>
+
+    <string name="ingame_hotkey_quicksave_netplay_title">Savestates aus</string>
+    <string name="ingame_hotkey_quicksave_netplay_body">Während Netplay</string>
+    <string name="ingame_hotkey_quicksave_hardcore_title">Savestates aus</string>
+    <string name="ingame_hotkey_quicksave_hardcore_body">Hardcore-Modus</string>
+    <string name="ingame_hotkey_quicksave_unsupported_title">Keine Savestates</string>
+    <string name="ingame_hotkey_quicksave_unsupported_body">Kein Core-Support</string>
+    <string name="ingame_hotkey_quicksave_success_title">State gespeichert</string>
+    <string name="ingame_hotkey_quicksave_failure_title">Nicht gespeichert</string>
+
+    <string name="ingame_hotkey_quickload_netplay_title">Savestates aus</string>
+    <string name="ingame_hotkey_quickload_netplay_body">Während Netplay</string>
+    <string name="ingame_hotkey_quickload_hardcore_title">Savestates aus</string>
+    <string name="ingame_hotkey_quickload_hardcore_body">Hardcore-Modus</string>
+    <string name="ingame_hotkey_quickload_unsupported_title">Keine Savestates</string>
+    <string name="ingame_hotkey_quickload_unsupported_body">Kein Core-Support</string>
+    <string name="ingame_hotkey_quickload_success_title">State geladen</string>
+    <string name="ingame_hotkey_quickload_failure_title">Nicht geladen</string>
+
+    <string name="ingame_hotkey_rewind_hardcore_title">Rückspulen aus</string>
+    <string name="ingame_hotkey_rewind_hardcore_body">Hardcore-Modus</string>
+    <string name="ingame_hotkey_reset_netplay_title">Reset aus</string>
+    <string name="ingame_hotkey_reset_netplay_body">Während Netplay</string>
+    <string name="ingame_hotkey_reset_success_title">Neu gestartet</string>
+
+    <string name="ingame_netplay_notice_joined_title">Freund dabei</string>
+    <string name="ingame_netplay_notice_joined_ping_title">Dabei, %1$d ms</string>
+    <string name="ingame_netplay_notice_peer_fallback">Freund</string>
+    <string name="ingame_netplay_notice_quality_title">Ping %1$d ms</string>
+    <string name="ingame_netplay_notice_left_title">Freund gegangen</string>
+    <string name="ingame_netplay_notice_open_unavailable_title">Netplay-Fehler</string>
+    <string name="ingame_netplay_notice_open_unavailable_body">Nicht verfügbar</string>
+    <string name="ingame_netplay_notice_open_hash_title">Netplay-Fehler</string>
+    <string name="ingame_netplay_notice_open_hash_body">Prüfung misslang</string>
+    <string name="ingame_netplay_notice_opened_title">Sitzung offen</string>
+    <string name="ingame_netplay_notice_opened_open_body">Für Freunde offen</string>
+    <string name="ingame_netplay_notice_opened_private_body">Privat</string>
+    <string name="ingame_netplay_notice_opened_invite_body">Nur auf Einladung</string>
+    <string name="ingame_netplay_notice_open_failed_title">Netplay misslang</string>
+    <string name="ingame_netplay_notice_open_failed_body">Keine Sitzung</string>
+    <string name="ingame_netplay_notice_invite_unavailable_title">Netplay-Fehler</string>
+    <string name="ingame_netplay_notice_invite_unavailable_body">Nicht verfügbar</string>
+    <string name="ingame_netplay_notice_invite_sent_title">Eingeladen</string>
+    <string name="ingame_netplay_notice_invite_failed_title">Nicht eingeladen</string>
+    <string name="ingame_netplay_notice_invite_hash_title">Netplay-Fehler</string>
+    <string name="ingame_netplay_notice_invite_hash_body">Prüfung misslang</string>
+    <string name="ingame_netplay_notice_open_invite_sent_title">Eingeladen</string>
+    <string name="ingame_netplay_notice_open_invite_failed_title">Nicht eingeladen</string>
+    <string name="ingame_netplay_notice_open_invite_failed_body">Sitzung ist offen</string>
+    <string name="ingame_netplay_notice_invite_open_failed_title">Netplay misslang</string>
+    <string name="ingame_netplay_notice_invite_open_failed_body">Keine Sitzung</string>
+    <string name="ingame_netplay_notice_reservation_cleared_title">Für Freunde offen</string>
+    <string name="ingame_netplay_notice_reservation_failed_title">Änderung misslang</string>
+    <string name="ingame_netplay_notice_reservation_failed_body">Nur auf Einladung</string>
 
     <string name="ingame_speedrun_paused">PAUSIERT</string>
     <string name="ingame_speedrun_personal_best">Persönliche Bestzeit</string>
@@ -587,4 +643,31 @@
 
     <string name="ingame_touch_generic_sys_select">Select</string>
     <string name="ingame_touch_generic_sys_start">Start</string>
+    <string name="ingame_controller_join_prompt_title">Taste drücken</string>
+    <string name="ingame_controller_joined_title">Spieler %1$d dabei</string>
+    <string name="ingame_controller_disconnected_title">Getrennt</string>
+    <plurals name="ingame_controller_burst_joined_title">
+        <item quantity="one">%1$d Spieler dabei</item>
+        <item quantity="other">%1$d Spieler dabei</item>
+    </plurals>
+    <plurals name="ingame_controller_burst_connected_title">
+        <item quantity="one">%1$d verbunden</item>
+        <item quantity="other">%1$d verbunden</item>
+    </plurals>
+    <plurals name="ingame_controller_burst_waiting_body">
+        <item quantity="one">%1$d wartet</item>
+        <item quantity="other">%1$d warten</item>
+    </plurals>
+    <plurals name="ingame_controller_burst_disconnected_title">
+        <item quantity="one">%1$d getrennt</item>
+        <item quantity="other">%1$d getrennt</item>
+    </plurals>
+    <string name="ingame_controller_players_two">Spieler %1$d und %2$d</string>
+    <string name="ingame_controller_players_three">Spieler %1$d, %2$d und %3$d</string>
+    <string name="ingame_controller_paused_title">Spiel pausiert</string>
+    <string name="ingame_controller_paused_body">Neu verbinden</string>
+    <string name="ingame_controller_offer_title">Als Spieler %1$d?</string>
+    <string name="ingame_controller_offer_body">%1$s zum Beitreten</string>
+    <string name="ingame_controller_battery_low_title">Pad-Akku schwach</string>
+    <string name="ingame_controller_badge_player">S%1$d</string>
 </resources>

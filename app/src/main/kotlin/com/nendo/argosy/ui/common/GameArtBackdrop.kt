@@ -19,15 +19,25 @@ import com.nendo.argosy.ui.theme.LocalLauncherTheme
  */
 @Composable
 fun GameArtBackdrop(imagePath: String?, modifier: Modifier = Modifier) {
+    BlurredBackdrop(model = imagePath?.let { rememberFileImageModel(it) }, modifier = modifier)
+}
+
+/**
+ * Any image [model] Coil can load, blurred under the same scrim as [GameArtBackdrop]; the scrim
+ * alone when [model] is null. [strength] scales the blur and the scrim together, from the image
+ * as it is at 0 to the full backdrop at 1.
+ */
+@Composable
+fun BlurredBackdrop(model: Any?, modifier: Modifier = Modifier, strength: Float = 1f) {
     val isDark = LocalLauncherTheme.current.isDarkTheme
     val scrim = if (isDark) Color.Black else Color.White
     Box(modifier = modifier.fillMaxSize()) {
-        if (imagePath != null) {
+        if (model != null) {
             AsyncImage(
-                model = rememberFileImageModel(imagePath),
+                model = model,
                 contentDescription = null,
                 contentScale = ContentScale.Crop,
-                modifier = Modifier.fillMaxSize().blur(Dimens.gameArtBackdropBlur)
+                modifier = Modifier.fillMaxSize().blur(Dimens.gameArtBackdropBlur * strength)
             )
         }
         Box(
@@ -36,8 +46,8 @@ fun GameArtBackdrop(imagePath: String?, modifier: Modifier = Modifier) {
                 .background(
                     Brush.verticalGradient(
                         listOf(
-                            scrim.copy(alpha = if (isDark) BACKDROP_TOP_DARK else BACKDROP_TOP_LIGHT),
-                            scrim.copy(alpha = if (isDark) BACKDROP_BOTTOM_DARK else BACKDROP_BOTTOM_LIGHT)
+                            scrim.copy(alpha = (if (isDark) BACKDROP_TOP_DARK else BACKDROP_TOP_LIGHT) * strength),
+                            scrim.copy(alpha = (if (isDark) BACKDROP_BOTTOM_DARK else BACKDROP_BOTTOM_LIGHT) * strength)
                         )
                     )
                 )

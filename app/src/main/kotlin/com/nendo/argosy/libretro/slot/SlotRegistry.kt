@@ -4,8 +4,11 @@ import android.os.Messenger
 import android.os.RemoteException
 import android.os.Message
 import com.nendo.argosy.util.Logger
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import java.util.concurrent.ConcurrentHashMap
@@ -34,6 +37,17 @@ class SlotRegistry @Inject constructor() {
     val slots: StateFlow<Map<Int, LiveSlot>> = _slots.asStateFlow()
 
     private val clients = ConcurrentHashMap<Int, Messenger>()
+
+    private val _died = MutableSharedFlow<LiveSlot>(extraBufferCapacity = DIED_BUFFER)
+
+    /**
+     * Slots whose process died while still registered, without saying it was closing.
+     */
+    val died: SharedFlow<LiveSlot> = _died.asSharedFlow()
+
+    fun reportDied(slot: LiveSlot) {
+        _died.tryEmit(slot)
+    }
 
     fun put(slot: LiveSlot, client: Messenger) {
         clients[slot.slotIndex] = client
@@ -82,5 +96,6 @@ class SlotRegistry @Inject constructor() {
 
     private companion object {
         const val TAG = "SlotRegistry"
+        const val DIED_BUFFER = 4
     }
 }

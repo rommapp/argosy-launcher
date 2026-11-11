@@ -12,6 +12,7 @@ import android.os.Message
 import android.os.Messenger
 import android.os.RemoteException
 import androidx.core.os.bundleOf
+import com.nendo.argosy.core.notification.ResolvedNotice
 import com.nendo.argosy.libretro.slot.SlotProtocol.optionalLong
 import com.nendo.argosy.util.Logger
 import kotlinx.coroutines.CompletableDeferred
@@ -33,7 +34,8 @@ class RemoteGameSessionLink(
     private val context: Context,
     private val slotIndex: Int,
     private val onCloseRequested: () -> Unit,
-    private val onGuideKey: (pressed: Boolean) -> Unit
+    private val onGuideKey: (pressed: Boolean) -> Unit,
+    private val onNotice: (ResolvedNotice) -> Unit
 ) : GameSessionLink {
 
     private val handler = Handler(Looper.getMainLooper()) { message -> receive(message) }
@@ -43,6 +45,7 @@ class RemoteGameSessionLink(
     private val requestIds = AtomicInteger()
     private var host: Messenger? = null
     private var bound = false
+    private var resumeOverlayClosed: ((Boolean) -> Unit)? = null
 
     private val _sessionStart = MutableStateFlow<Instant?>(null)
     override val sessionStart: StateFlow<Instant?> = _sessionStart.asStateFlow()
@@ -59,6 +62,7 @@ class RemoteGameSessionLink(
         override fun onServiceDisconnected(name: ComponentName?) {
             host = null
             Logger.warn(TAG, "slot $slotIndex lost Argosy's session host")
+            finishResumeOverlay(shown = true)
         }
     }
 
@@ -138,6 +142,22 @@ class RemoteGameSessionLink(
         bundleOf(SlotProtocol.KEY_GAME_ID to gameId, SlotProtocol.KEY_SKIP_SAVE_SYNC to skipSaveSync)
     )
 
+    override fun showResumeOverlay(displayId: Int, onClosed: (shown: Boolean) -> Unit) {
+        finishResumeOverlay(shown = true)
+        if (!bound) {
+            onClosed(false)
+            return
+        }
+        resumeOverlayClosed = onClosed
+        send(SlotProtocol.SHOW_RESUME, bundleOf(SlotProtocol.KEY_DISPLAY_ID to displayId))
+    }
+
+    private fun finishResumeOverlay(shown: Boolean) {
+        val callback = resumeOverlayClosed ?: return
+        resumeOverlayClosed = null
+        callback(shown)
+    }
+
     override fun release() {
         if (!bound) return
         bound = false
@@ -176,6 +196,8 @@ class RemoteGameSessionLink(
             SlotProtocol.CACHE_DONE -> awaitingCache[data.getInt(SlotProtocol.KEY_REQUEST_ID)]?.complete(Unit)
             SlotProtocol.SAVE_AND_CLOSE -> onCloseRequested()
             SlotProtocol.GUIDE_KEY -> onGuideKey(data.getBoolean(SlotProtocol.KEY_PRESSED))
+            SlotProtocol.NOTICE -> ResolvedNotice.fromBundle(data)?.let(onNotice)
+            SlotProtocol.RESUME_CLOSED -> finishResumeOverlay(data.getBoolean(SlotProtocol.KEY_SHOWN))
             else -> return false
         }
         return true

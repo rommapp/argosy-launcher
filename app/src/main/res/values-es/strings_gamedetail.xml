@@ -581,4 +581,16 @@
     <string name="gamedetail_per_game_gpu_driver_reason_core_unknown">este núcleo</string>
     <string name="gamedetail_per_game_gpu_driver_reason_backend">Se aplica cuando el motor de renderizado es Vulkan</string>
     <string name="gamedetail_per_game_gpu_driver_reason_device">Los controladores personalizados requieren una GPU Adreno</string>
+    <string name="gamedetail_menu_play_button_resume_game">Reanudar</string>
+    <string name="gamedetail_menu_play_button_saving">Guardando</string>
+    <string name="gamedetail_menu_play_sub_running">En ejecución</string>
+    <string name="gamedetail_menu_play_sub_running_in">En ejecución en %1$s</string>
+    <string name="gamedetail_menu_play_sub_closing">Cerrando el juego</string>
+    <string name="gamedetail_menu_play_sub_running_with_time">En ejecución desde hace %1$s</string>
+    <string name="gamedetail_menu_close_game">Cerrar juego</string>
+    <string name="gamedetail_menu_move_to_display">Mover a la pantalla %1$d</string>
+    <string name="gamedetail_running_frame_saved">Guardado %1$s</string>
+    <string name="gamedetail_footer_play_resume_game">Reanudar</string>
+    <string name="gamedetail_footer_play_closing_game">Guardando</string>
+    <string name="gamedetail_footer_close_game">Cerrar juego</string>
 </resources>

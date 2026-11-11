@@ -30,12 +30,21 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import com.nendo.argosy.R
+import com.nendo.argosy.ui.common.LocalRunningGames
 import com.nendo.argosy.ui.common.rememberFileImageModel
 import com.nendo.argosy.ui.components.GameTitle
+import com.nendo.argosy.ui.components.RunningLineLabels
+import com.nendo.argosy.ui.components.RunningSubLine
 import com.nendo.argosy.ui.quickmenu.GameRowUi
 import com.nendo.argosy.ui.quickmenu.MetadataType
 import com.nendo.argosy.ui.theme.Dimens
 import com.nendo.argosy.ui.theme.LocalArgosyTheme
+
+private val QUICK_MENU_RUNNING_LABELS = RunningLineLabels(
+    running = R.string.ui_quick_menu_row_running,
+    runningIn = R.string.ui_quick_menu_row_running_in,
+    saving = R.string.ui_quick_menu_row_saving
+)
 
 @Composable
 fun QuickMenuGameRow(
@@ -97,7 +106,10 @@ fun QuickMenuGameRow(
                     color = MaterialTheme.colorScheme.primary
                 )
 
-                if (game.isDownloaded) {
+                val running = LocalRunningGames.current.markFor(game.id)
+                if (running != null) {
+                    RunningSubLine(running = running, labels = QUICK_MENU_RUNNING_LABELS)
+                } else if (game.isDownloaded) {
                     Icon(
                         Icons.Default.CheckCircle,
                         contentDescription = stringResource(

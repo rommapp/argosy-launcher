@@ -161,7 +161,8 @@ fun VirtualCategoryScreen(
                                     isDownloaded = game.isDownloaded,
                                     isFocused = uiState.focusedIndex == index,
                                     onClick = { onGameClick(game.id) },
-                                    onLongClick = { inputHandler.onLongConfirm() }
+                                    onLongClick = { inputHandler.onLongConfirm() },
+                                    running = com.nendo.argosy.ui.common.LocalRunningGames.current.markFor(game.id)
                                 )
                             }
                         }

@@ -166,7 +166,7 @@ class GamepadInputHandler @Inject constructor(
     private var backDeferJob: Job? = null
     private var guideDeferred = false
     private var guideDeferJob: Job? = null
-    private val longPressThresholdMs = 500L
+    private val longPressThresholdMs = LONG_PRESS_THRESHOLD_MS
 
     private val padDirections = mutableMapOf<Int, AxisDirectionTracker>()
     private var heldDeviceId: Int? = null
@@ -471,6 +471,8 @@ class GamepadInputHandler @Inject constructor(
     override fun mapKeyToEvent(keyCode: Int): GamepadEvent? =
         mapKeycodeToGamepadEvent(keyCode, swapAB, swapXY, swapStartSelect)
 }
+
+const val LONG_PRESS_THRESHOLD_MS = 500L
 
 fun mapKeycodeToGamepadEvent(
     keyCode: Int,

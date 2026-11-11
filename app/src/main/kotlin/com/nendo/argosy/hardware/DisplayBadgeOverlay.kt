@@ -33,12 +33,12 @@ enum class DisplayBadgeSize { LARGE, SMALL }
 class DisplayBadgeOverlay(private val context: Context) {
 
     private val shown = mutableMapOf<Int, View>()
-    private var owner: BadgeWindowOwner? = null
+    private var owner: ComposeWindowOwner? = null
 
     fun show(numbers: Map<Int, Int>, size: DisplayBadgeSize) {
         hide()
         if (numbers.isEmpty()) return
-        val lifecycleOwner = BadgeWindowOwner().also { owner = it }
+        val lifecycleOwner = ComposeWindowOwner().also { owner = it }
         lifecycleOwner.start()
         numbers.forEach { (displayId, number) ->
             addBadge(displayId, number, size, lifecycleOwner)?.let { shown[displayId] = it }
@@ -58,7 +58,7 @@ class DisplayBadgeOverlay(private val context: Context) {
         displayId: Int,
         number: Int,
         size: DisplayBadgeSize,
-        lifecycleOwner: BadgeWindowOwner
+        lifecycleOwner: ComposeWindowOwner
     ): View? {
         val displayContext = badgeWindowContext(displayId) ?: return null
         val windowManager = displayContext.getSystemService(WindowManager::class.java) ?: return null
@@ -135,7 +135,7 @@ class DisplayBadgeOverlay(private val context: Context) {
     }
 }
 
-private class BadgeWindowOwner : LifecycleOwner, SavedStateRegistryOwner, ViewModelStoreOwner {
+internal class ComposeWindowOwner : LifecycleOwner, SavedStateRegistryOwner, ViewModelStoreOwner {
 
     private val lifecycleRegistry = LifecycleRegistry(this)
     private val savedStateController = SavedStateRegistryController.create(this)

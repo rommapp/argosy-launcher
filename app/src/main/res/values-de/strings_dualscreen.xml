@@ -485,6 +485,10 @@
     <string name="dual_detail_option_write_review">Rezension schreiben</string>
     <string name="dual_showcase_progress_main">%1$s von %2$s Hauptstory</string>
     <string name="dual_showcase_played">%1$s gespielt</string>
+    <string name="dual_showcase_running">Läuft</string>
+    <string name="dual_showcase_running_in">Läuft in %1$s</string>
+    <string name="dual_showcase_saving">Speichert</string>
+    <string name="dual_showcase_running_with_time">Läuft seit %1$s</string>
     <string name="dual_showcase_journey_header">Dein Fortschritt</string>
     <string name="dual_showcase_journey_main">Hauptstory %1$s</string>
     <string name="dual_showcase_completionist">Komplettierung %1$s</string>

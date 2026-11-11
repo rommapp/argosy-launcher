@@ -192,6 +192,7 @@ class ArgosyActivity : ComponentActivity() {
         com.nendo.argosy.ui.screens.media.delegates.MediaSeriesDelegate
     @Inject lateinit var mediaSiblingsDelegate:
         com.nendo.argosy.ui.screens.media.delegates.MediaSiblingsDelegate
+    @Inject lateinit var runningGames: com.nendo.argosy.data.emulator.background.RunningGames
 
     private val sessionStateStore by lazy {
         com.nendo.argosy.data.preferences.SessionStateStore(this)
@@ -338,6 +339,7 @@ class ArgosyActivity : ComponentActivity() {
                 mediaDownloadDelegate = mediaDownloadDelegate,
                 mediaSeriesDelegate = mediaSeriesDelegate,
                 mediaSiblingsDelegate = mediaSiblingsDelegate,
+                runningGames = runningGames,
                 imageCacheManager = imageCacheManager,
                 romMRepository = romMRepository,
                 gameDocumentLoader = gameDocumentLoader,

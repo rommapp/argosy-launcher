@@ -597,6 +597,20 @@
     <!-- Icon description on the marker a game card shows when the game is on the device.
          Adjective describing the game. -->
     <string name="ui_game_card_downloaded">Downloaded</string>
+    <!-- Description of the line a game card shows while the game is still running in the
+         background. Adjective describing the game. -->
+    <string name="ui_game_card_running">Running</string>
+    <!-- Description of the same line while the running game saves before closing. Verb in
+         progress. -->
+    <string name="ui_game_card_saving">Saving</string>
+    <!-- How long a running game has been played this run. h and m are the unit abbreviations
+         for hours and minutes. -->
+    <string name="ui_running_duration_hours_minutes">%1$dh %2$dm</string>
+    <!-- Same duration under an hour. m is the unit abbreviation for minutes. -->
+    <string name="ui_running_duration_minutes">%1$dm</string>
+    <!-- Description of the strip of game slots in the status bar. Tapping it opens the list of
+         running games. -->
+    <string name="ui_status_bar_running_desc">Running games</string>
 
     <!-- Icon description on the badge over a paused download. Adjective describing the
          download. -->
@@ -1800,6 +1814,12 @@
     <!-- Icon description on the tick shown on a quick menu list row when the game is on the
          device. Adjective describing the game. -->
     <string name="ui_quick_menu_row_downloaded">Downloaded</string>
+    <!-- Line on a quick menu list row for a game still running in the background. -->
+    <string name="ui_quick_menu_row_running">Running</string>
+    <!-- Same line for a game another emulator app holds. %1$s is the emulator name. -->
+    <string name="ui_quick_menu_row_running_in">Running in %1$s</string>
+    <!-- Same line while the running game saves and closes. Verb in progress. -->
+    <string name="ui_quick_menu_row_saving">Saving</string>
     <!-- Stands in for the platform name on the random game card, when the platform is no longer
          in the library. Adjective. -->
     <string name="ui_quick_menu_random_platform_unknown">Unknown</string>
@@ -1810,6 +1830,9 @@
     <string name="ui_quick_menu_random_action_reroll">Re-roll</string>
     <!-- Action on the random game card that starts the game. Verb, as in play a game. -->
     <string name="ui_quick_menu_random_action_play">Play</string>
+    <!-- Action on the random game card when the game is still running in the background. Verb,
+         brings the running game back to the front. -->
+    <string name="ui_quick_menu_random_action_resume_game">Resume</string>
     <!-- Action on the random game card when the game is not on the device yet. Verb. -->
     <string name="ui_quick_menu_random_action_download">Download</string>
     <!-- Action on the random game card when the Android app still has to be installed. Verb. -->
@@ -2183,6 +2206,12 @@
     <string name="gamelist_row_playtime_of_hltb">%1$s / %2$s</string>
     <!-- Screen reader label for the mark showing the game is on this device. -->
     <string name="gamelist_row_cd_downloaded">Downloaded</string>
+    <!-- Second line of a list row for a game still running in the background. -->
+    <string name="gamelist_row_running">Running</string>
+    <!-- Same line for a game another emulator app holds. %1$s is the emulator name. -->
+    <string name="gamelist_row_running_in">Running in %1$s</string>
+    <!-- Same line while the running game saves and closes. Verb in progress. -->
+    <string name="gamelist_row_saving">Saving</string>
     <!-- Screen reader label for the mark showing the game's download is paused. -->
     <string name="gamelist_row_cd_download_paused">Download paused</string>
     <!-- Screen reader label for the mark showing the game is waiting to download. -->

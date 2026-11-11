@@ -161,7 +161,8 @@ fun CollectionDetailScreen(
                                     isDownloaded = game.isDownloaded,
                                     isFocused = !hasDialogOpen && uiState.focusedIndex == index,
                                     onClick = { onGameClick(game.id) },
-                                    onLongClick = { viewModel.handleGameLongPress(index) }
+                                    onLongClick = { viewModel.handleGameLongPress(index) },
+                                    running = com.nendo.argosy.ui.common.LocalRunningGames.current.markFor(game.id)
                                 )
                             }
                         }
@@ -299,12 +300,14 @@ fun CollectionDetailScreen(
             focusIndex = uiState.optionsModalFocusIndex,
             onOptionSelect = { option -> viewModel.selectOption(option) },
             onDismiss = { viewModel.hideOptionsModal() },
-            showDownloadAll = true,
+            rows = uiState.optionRows,
             downloadableCount = uiState.downloadableGamesCount,
-            showRemoveGame = uiState.focusedGame != null,
-            gameTitle = uiState.focusedGame?.title
+            gameTitle = uiState.focusedGame?.title,
+            onMoveToDisplay = { target -> viewModel.moveRunningGame(target) }
         )
     }
+
+    com.nendo.argosy.ui.screens.running.RunningGameCloseHost(viewModel.runningGameMenu)
 
     if (uiState.showRemoveGameDialog && uiState.gameToRemove != null) {
         RemoveGameDialog(

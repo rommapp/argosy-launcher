@@ -50,7 +50,7 @@ class InputConfigCoordinator(
 
             val connectedDevices = inputConfigRepository.getConnectedControllers()
                 .mapNotNull { InputDevice.getDevice(it.deviceId) }
-            portResolver.onPortClaimed = { _, _ ->
+            portResolver.addPortClaimedListener { _, _ ->
                 hotkeyManager.setPlayer1ControllerId(portResolver.playerOneControllerId())
             }
 
@@ -87,16 +87,13 @@ class InputConfigCoordinator(
         hotkeyManager.setPlayer1ControllerId(portResolver.playerOneControllerId())
     }
 
-    /**
-     * Gives up the seats of pads that have gone away. Player one goes with them unless settings
-     * name one, so the next pad to send something takes the seat instead of playing as player two.
-     */
-    fun releaseDisconnectedControllers() {
+    fun releaseDisconnectedControllers(): Map<String, Int> {
         val connected = inputConfigRepository.getConnectedControllers()
             .map { it.controllerId }
             .toSet()
-        portResolver.releaseDisconnected(connected)
+        val released = portResolver.releaseDisconnected(connected)
         hotkeyManager.setPlayer1ControllerId(portResolver.playerOneControllerId())
+        return released
     }
 
     fun setGameId(newGameId: Long?) {

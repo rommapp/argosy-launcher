@@ -2035,6 +2035,7 @@ private fun GameSelectOverlay(
     }
     val primaryLabel = when {
         game.needsInstall -> stringResource(R.string.home_quick_actions_install)
+        isRunning -> stringResource(R.string.home_quick_actions_resume_game)
         game.isDownloaded -> stringResource(R.string.home_quick_actions_play)
         isDownloadPaused -> stringResource(R.string.home_quick_actions_resume_download)
         else -> stringResource(R.string.home_quick_actions_download)

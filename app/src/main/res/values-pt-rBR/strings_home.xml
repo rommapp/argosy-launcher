@@ -79,6 +79,7 @@
     <string name="home_quick_actions_play_on_screen">Jogar na tela %1$d</string>
     <string name="home_quick_actions_download">Baixar</string>
     <string name="home_quick_actions_resume_download">Retomar</string>
+    <string name="home_quick_actions_resume_game">Retomar</string>
     <string name="home_quick_actions_favorite">Favoritar</string>
     <string name="home_quick_actions_unfavorite">Desfavoritar</string>
     <string name="home_quick_actions_details">Detalhes</string>

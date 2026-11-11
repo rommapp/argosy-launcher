@@ -79,6 +79,7 @@
     <string name="home_quick_actions_play_on_screen">Играть на экране %1$d</string>
     <string name="home_quick_actions_download">Скачать</string>
     <string name="home_quick_actions_resume_download">Продолжить</string>
+    <string name="home_quick_actions_resume_game">Продолжить</string>
     <string name="home_quick_actions_favorite">В избранное</string>
     <string name="home_quick_actions_unfavorite">Убрать из избранного</string>
     <string name="home_quick_actions_details">Детали</string>

@@ -79,6 +79,7 @@
     <string name="home_quick_actions_play_on_screen">在螢幕 %1$d 上遊玩</string>
     <string name="home_quick_actions_download">下載</string>
     <string name="home_quick_actions_resume_download">繼續</string>
+    <string name="home_quick_actions_resume_game">繼續遊戲</string>
     <string name="home_quick_actions_favorite">加入最愛</string>
     <string name="home_quick_actions_unfavorite">取消最愛</string>
     <string name="home_quick_actions_details">詳情</string>

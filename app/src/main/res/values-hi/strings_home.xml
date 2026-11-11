@@ -79,6 +79,7 @@
     <string name="home_quick_actions_play_on_screen">स्क्रीन %1$d पर खेलें</string>
     <string name="home_quick_actions_download">डाउनलोड</string>
     <string name="home_quick_actions_resume_download">फिर से शुरू करें</string>
+    <string name="home_quick_actions_resume_game">फिर से खेलें</string>
     <string name="home_quick_actions_favorite">पसंदीदा</string>
     <string name="home_quick_actions_unfavorite">पसंदीदा हटाएं</string>
     <string name="home_quick_actions_details">विवरण</string>

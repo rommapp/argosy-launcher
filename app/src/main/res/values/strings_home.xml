@@ -213,6 +213,9 @@
     <!-- Row in that menu, for a game whose download is paused in the queue. Verb: starts that
          download. -->
     <string name="home_quick_actions_resume_download">Resume</string>
+    <!-- Row in that menu, for a game still running in the background. Verb: switches back to
+         that game. -->
+    <string name="home_quick_actions_resume_game">Resume</string>
     <!-- Row in that menu. Verb: marks the game as a favourite. -->
     <string name="home_quick_actions_favorite">Favorite</string>
     <!-- Row in that menu. Verb: takes the game back out of the favourites. -->

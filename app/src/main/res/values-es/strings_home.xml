@@ -79,6 +79,7 @@
     <string name="home_quick_actions_play_on_screen">Jugar en la pantalla %1$d</string>
     <string name="home_quick_actions_download">Descargar</string>
     <string name="home_quick_actions_resume_download">Reanudar</string>
+    <string name="home_quick_actions_resume_game">Reanudar</string>
     <string name="home_quick_actions_favorite">Agregar a favoritos</string>
     <string name="home_quick_actions_unfavorite">Quitar de favoritos</string>
     <string name="home_quick_actions_details">Detalles</string>

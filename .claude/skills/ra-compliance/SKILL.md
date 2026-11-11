@@ -117,11 +117,12 @@ lands on the wrapper, not the gates.
 
 ```bash
 grep -n "isHardcoreMode()" app/src/main/kotlin/com/nendo/argosy/libretro/HotkeyDispatcher.kt
-grep -n "disabled in Hardcore mode" app/src/main/kotlin/com/nendo/argosy/libretro/HotkeyDispatcher.kt
+grep -n "_hardcore_title" app/src/main/kotlin/com/nendo/argosy/libretro/HotkeyDispatcher.kt
 ```
 
-Expect three `isHardcoreMode()` gates and toasts "Save states disabled in
-Hardcore mode" (x2) and "Rewind disabled in Hardcore mode".
+Expect three `isHardcoreMode()` gates and three in-game notices: "Save states
+off / Hardcore mode" (quick save and quick load) and "Rewind off / Hardcore
+mode" (`ingame_hotkey_*_hardcore_*` in `res/values/strings_ingame.xml`).
 
 Belt-and-suspenders: LibretroActivity never allocates the rewind buffer in
 hardcore (grep `rewindEnabled && !hardcoreMode`), and `checkStateSupport()`
@@ -477,8 +478,8 @@ Run when hardcore logic changed. Log tag anchors:
 
 ### Blocking in-session (hardcore)
 1. In-game menu shows no Quick Save / Quick Load / Manage States rows.
-2. Quick-save hotkey -> toast "Save states disabled in Hardcore mode";
-   quick-load likewise; rewind hotkey -> "Rewind disabled in Hardcore mode".
+2. Quick-save hotkey -> notice "Save states off / Hardcore mode";
+   quick-load likewise; rewind hotkey -> "Rewind off / Hardcore mode".
 3. No Cheats row; cheats previously enabled for the game are not applied.
 4. Exit the game: no auto-save state written; relaunch does not auto-restore
    a state.

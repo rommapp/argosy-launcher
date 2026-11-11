@@ -12,12 +12,14 @@ import java.util.concurrent.atomic.AtomicBoolean
  * Entry point of the pad driver, run as root through `app_process` with Argosy's APK on the
  * class path so it outlives the launcher process. It finds Nintendo Switch Online pads among the
  * kernel's hidraw nodes, wakes each one with the Nintendo USB handshake, mutes the generic input
- * device the kernel made from it, and republishes its input as a clean uhid gamepad.
+ * device the kernel made from it, and republishes its input as a clean uhid gamepad. The muted
+ * devices of every pad it serves are listed in [MutedPadDevices.FILE_NAME] beside the seats file.
  */
 object PadDriverMain {
 
     private const val TAG = "PadDriver"
     private const val SCAN_INTERVAL_MS = 1_000L
+    private const val UNPUBLISH_GRACE_MS = 1_000L
     private const val HANDSHAKE_STEP_MS = 120L
     private const val HIDRAW_CLASS = "/sys/class/hidraw"
     private const val INPUT_CLASS = "/sys/class/input"
@@ -38,15 +40,19 @@ object PadDriverMain {
     private val NEUTRAL_RUMBLE = intArrayOf(0x00, 0x01, 0x40, 0x40, 0x00, 0x01, 0x40, 0x40)
 
     private var seatsFile: File? = null
+    private var mutedFile: File? = null
     private val HID_ID = Regex("""HID_ID=(0003|0005):0000([0-9A-F]{4}):0000([0-9A-F]{4})""")
     private val HID_NAME = Regex("""HID_NAME=(.*)""")
     private val HID_UNIQ = Regex("""HID_UNIQ=(.*)""")
 
     private val served = ConcurrentHashMap<String, Thread>()
+    private val mutedByPad = ConcurrentHashMap<String, List<PadDeviceIdentity>>()
 
     @JvmStatic
     fun main(args: Array<String>) {
         seatsFile = args.getOrNull(0)?.let(::File)
+        mutedFile = seatsFile?.parentFile?.let { File(it, MutedPadDevices.FILE_NAME) }
+        publishMuted()
         runCatching { File(OOM_SCORE_ADJ).writeText(NEVER_KILL) }
             .onFailure { Log.w(TAG, "oom_score_adj not set: ${it.message}") }
         Log.i(TAG, "driver up, uid=${android.os.Process.myUid()} pid=${android.os.Process.myPid()}")
@@ -103,11 +109,13 @@ object PadDriverMain {
                     UhidGamepad(FileOutputStream(UHID_NODE)).use { gamepad ->
                         val uniq = "argosy-${pad.uniq}"
                         gamepad.create(
-                            name = "Nintendo ${pad.model.displayName}",
+                            name = pad.model.virtualName,
                             uniq = uniq,
                             vendorId = NsoPadModel.VENDOR_ID,
                             productId = pad.model.productId
                         )
+                        mutedByPad[pad.hidraw] = muted.mapNotNull { flag -> flag.parentFile?.let(::identityOf) }
+                        publishMuted()
                         val pumping = AtomicBoolean(true)
                         val lights = Thread({ lightPlayers(output, uniq, pumping::get) }, "lights-${pad.hidraw}").apply {
                             isDaemon = true
@@ -126,9 +134,29 @@ object PadDriverMain {
             Log.i(TAG, "${pad.hidraw} closed: ${e.message}")
         } finally {
             unmute(muted)
+            if (mutedByPad.containsKey(pad.hidraw)) {
+                runCatching { Thread.sleep(UNPUBLISH_GRACE_MS) }
+                mutedByPad.remove(pad.hidraw)
+                publishMuted()
+            }
             served.remove(pad.hidraw.substringAfterLast('/'))
         }
     }
+
+    @Synchronized
+    private fun publishMuted() {
+        val file = mutedFile ?: return
+        runCatching { MutedPadDevices.write(file, mutedByPad.values.flatten(), MutedPadDevices.bootStartedAt()) }
+            .onFailure { Log.w(TAG, "muted devices not published: ${it.message}") }
+    }
+
+    private fun identityOf(inputDir: File): PadDeviceIdentity? = runCatching {
+        PadDeviceIdentity(
+            vendorId = File(inputDir, "id/vendor").readText().trim().toInt(16),
+            productId = File(inputDir, "id/product").readText().trim().toInt(16),
+            name = File(inputDir, "name").readText().trim()
+        )
+    }.getOrNull()
 
     private fun handshake(output: FileOutputStream) {
         HANDSHAKE.forEach { step ->

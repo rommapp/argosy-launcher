@@ -1,7 +1,9 @@
 package com.nendo.argosy.ui.input
 
 import android.view.InputDevice
+import android.view.KeyEvent
 import android.view.MotionEvent
+import com.nendo.argosy.core.input.ConnectedControllerTracker
 import com.nendo.argosy.data.preferences.UserPreferencesRepository
 import io.mockk.every
 import io.mockk.mockk
@@ -30,6 +32,10 @@ class GamepadInputHandlerTest {
     private val delivered = mutableListOf<Pair<GamepadEvent, Boolean>>()
     private val emitted = mutableListOf<GamepadInput>()
     private val collectorScope = CoroutineScope(testDispatcher)
+    private val removedDevices = mutableSetOf<Int>()
+    private val tracker = mockk<ConnectedControllerTracker>(relaxed = true) {
+        every { wasRemoved(any()) } answers { firstArg<Int>() in removedDevices }
+    }
     private lateinit var handler: GamepadInputHandler
 
     @Before
@@ -37,7 +43,7 @@ class GamepadInputHandlerTest {
         Dispatchers.setMain(testDispatcher)
         val preferences = mockk<UserPreferencesRepository>()
         every { preferences.preferences } returns emptyFlow()
-        handler = GamepadInputHandler(preferences, mockk(relaxed = true))
+        handler = GamepadInputHandler(preferences, tracker)
     }
 
     @After
@@ -235,6 +241,51 @@ class GamepadInputHandlerTest {
         scheduler.advanceTimeBy(401)
 
         assertEquals(listOf(GamepadEvent.Down to false, GamepadEvent.Down to true), delivered)
+    }
+
+    @Test
+    fun `a held direction stops repeating once its pad is removed`() {
+        process(sample(x = 1f, deviceId = PAD_A))
+        scheduler.advanceTimeBy(401)
+        assertEquals(listOf(GamepadEvent.Right to false, GamepadEvent.Right to true), delivered)
+
+        removedDevices += PAD_A
+        scheduler.advanceTimeBy(1000)
+
+        assertEquals(2, delivered.size)
+    }
+
+    @Test
+    fun `another pad's removal leaves a held direction repeating`() {
+        process(sample(x = 1f, deviceId = PAD_A))
+        removedDevices += PAD_B
+        scheduler.advanceTimeBy(401)
+
+        assertEquals(listOf(GamepadEvent.Right to false, GamepadEvent.Right to true), delivered)
+    }
+
+    @Test
+    fun `a late sample from a removed pad is swallowed without a direction`() {
+        removedDevices += PAD_A
+
+        assertTrue(process(sample(x = 1f, deviceId = PAD_A)))
+        scheduler.advanceTimeBy(1000)
+
+        assertTrue(delivered.isEmpty())
+    }
+
+    @Test
+    fun `a key repeat from a removed pad is swallowed`() {
+        collectEmitted()
+        removedDevices += PAD_A
+        val repeat = mockk<KeyEvent> {
+            every { deviceId } returns PAD_A
+        }
+
+        assertTrue(handler.handleKeyEvent(repeat))
+        scheduler.runCurrent()
+
+        assertTrue(emitted.isEmpty())
     }
 
     private companion object {

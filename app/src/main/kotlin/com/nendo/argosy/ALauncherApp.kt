@@ -221,6 +221,7 @@ class ArgosyApp : Application(), Configuration.Provider, ImageLoaderFactory {
     override fun onCreate() {
         super.onCreate()
         appScope.launch { userCertStore.initialize() }
+        appScope.launch { com.nendo.argosy.hardware.pad.MutedPadDevices.watch(filesDir) }
         if (com.nendo.argosy.libretro.slot.GameSlots.isSlotProcess) {
             appScope.launch { applyStoredAbiOverride() }
             return
@@ -232,6 +233,13 @@ class ArgosyApp : Application(), Configuration.Provider, ImageLoaderFactory {
         appScope.launch {
             privilegedAccess.start(appScope)
             performanceModeStore.restoreSavedMode()
+        }
+        appScope.launch {
+            com.nendo.argosy.hardware.pad.PadDriverLauncher.ensureRunning(this@ArgosyApp)
+            privilegedAccess.state
+                .map { it.reach == com.nendo.argosy.data.model.PrivilegedReach.ROOT }
+                .distinctUntilChanged()
+                .collect { rooted -> if (rooted) com.nendo.argosy.hardware.pad.PadDriverLauncher.ensureRunning(this@ArgosyApp) }
         }
         UpdateCheckWorker.schedule(this)
         SaveSyncWorker.schedule(this)

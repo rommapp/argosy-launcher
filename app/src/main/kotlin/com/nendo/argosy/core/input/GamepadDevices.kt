@@ -3,6 +3,8 @@ package com.nendo.argosy.core.input
 import android.view.InputDevice
 import android.view.InputEvent
 import android.view.KeyEvent
+import com.nendo.argosy.hardware.pad.MutedPadDevices
+import com.nendo.argosy.hardware.pad.PadDeviceIdentity
 
 private const val OEM_VIRTUAL_DEVICE_PREFIX = "uinput-"
 
@@ -40,13 +42,19 @@ fun InputDevice.actsAsGamepad(): Boolean = isPhysicalGamepad() || (isVirtual && 
  * HyperOS registers a `uinput-xiaomi` device that advertises a gamepad source with no controller
  * behind it, which hid the on-screen controls and claimed player one on a bare phone. A joystick
  * source without gamepad buttons is not a pad either: a TV remote's consumer-control node reports
- * one, and could never press a button to claim a controller seat.
+ * one, and could never press a button to claim a controller seat. A device the pad driver muted
+ * for a pad it serves is not a pad either: the driver's virtual pad stands in for it.
  */
 fun InputDevice.isPhysicalGamepad(): Boolean {
     val padSource = sources and InputDevice.SOURCE_GAMEPAD == InputDevice.SOURCE_GAMEPAD
     if (!padSource || isVirtual) return false
-    return !name.orEmpty().startsWith(OEM_VIRTUAL_DEVICE_PREFIX, ignoreCase = true)
+    if (name.orEmpty().startsWith(OEM_VIRTUAL_DEVICE_PREFIX, ignoreCase = true)) return false
+    return !isMutedByPadDriver(MutedPadDevices.devices.value)
 }
+
+internal fun InputDevice.isMutedByPadDriver(muted: Set<PadDeviceIdentity>): Boolean =
+    muted.isNotEmpty() &&
+        MutedPadDevices.isDriverMuted(PadDeviceIdentity(vendorId, productId, name.orEmpty()), muted)
 
 /**
  * Whether this pointer device is the touchpad of a connected game controller: a mouse or

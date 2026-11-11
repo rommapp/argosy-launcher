@@ -63,6 +63,10 @@ enum class NsoPadModel(val productId: Int, val displayName: String) {
         }
     };
 
+    val virtualName: String get() = "Nintendo $displayName"
+
+    val virtualIdentity: PadDeviceIdentity get() = PadDeviceIdentity(VENDOR_ID, productId, virtualName)
+
     abstract fun decode(report: ByteArray, center: StickCenter?): VirtualPadState
 
     open fun centerOf(report: ByteArray): StickCenter? = null

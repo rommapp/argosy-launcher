@@ -186,6 +186,7 @@ class GamepadInputHandler @Inject constructor(
         steerRightStick: Boolean,
         deliver: (GamepadEvent, Boolean) -> Unit
     ): Boolean {
+        if (releaseIfRemoved(event.deviceId)) return true
         observeInput(event)
         if (!event.isFromSource(InputDevice.SOURCE_CLASS_JOYSTICK)) return false
         if (handleMotionEvent(event)) {
@@ -221,6 +222,24 @@ class GamepadInputHandler @Inject constructor(
         releaseRightStick()
     }
 
+    /**
+     * Releases the stick directions and repeats a removed [deviceId] still holds; a pad that
+     * disappears mid-press sends no neutral sample. True when the device is gone, and its input is
+     * to be swallowed.
+     */
+    fun releaseIfRemoved(deviceId: Int?): Boolean {
+        if (deviceId == null || !controllerTracker.wasRemoved(deviceId)) return false
+        padDirections.remove(deviceId)
+        if (heldDeviceId == deviceId) {
+            heldDeviceId = null
+            heldDirection = null
+            directionRepeatJob?.cancel()
+            directionRepeatJob = null
+        }
+        if (rightStickDeviceId == deviceId) releaseRightStick()
+        return true
+    }
+
     private fun updateDirectionRepeat(direction: GamepadEvent?, deliver: (GamepadEvent, Boolean) -> Unit) {
         if (direction == heldDirection) return
         heldDirection = direction
@@ -230,7 +249,7 @@ class GamepadInputHandler @Inject constructor(
         } else {
             scope.launch {
                 delay(directionRepeatDelayMs)
-                while (isActive) {
+                while (isActive && !releaseIfRemoved(heldDeviceId)) {
                     deliver(direction, true)
                     delay(directionRepeatIntervalMs)
                 }
@@ -238,18 +257,27 @@ class GamepadInputHandler @Inject constructor(
         }
     }
 
-    private val rightStick = RightStickStepper(scope) { event, isRepeat -> emitWithDebounce(event, isRepeat) }
+    private var rightStickDeviceId: Int? = null
+
+    private val rightStick = RightStickStepper(scope) { event, isRepeat -> emitRightStick(event, isRepeat) }
     private val rightStickHorizontal = RightStickStepper(scope, ::rightStickHorizontalStepFor) { event, isRepeat ->
+        emitRightStick(event, isRepeat)
+    }
+
+    private fun emitRightStick(event: GamepadEvent, isRepeat: Boolean) {
+        if (isRepeat && releaseIfRemoved(rightStickDeviceId)) return
         emitWithDebounce(event, isRepeat)
     }
 
     private fun processRightStickMotion(event: MotionEvent) {
         if (event.source and InputDevice.SOURCE_JOYSTICK == 0) return
+        rightStickDeviceId = event.deviceId
         rightStick.onAxis(event.getAxisValue(MotionEvent.AXIS_RZ))
         rightStickHorizontal.onAxis(event.getAxisValue(MotionEvent.AXIS_Z))
     }
 
     private fun releaseRightStick() {
+        rightStickDeviceId = null
         rightStick.release()
         rightStickHorizontal.release()
     }
@@ -269,6 +297,7 @@ class GamepadInputHandler @Inject constructor(
      * past the threshold opens the quick panel instead of going back.
      */
     fun handleKeyEvent(event: KeyEvent): Boolean {
+        if (releaseIfRemoved(event.deviceId)) return true
         if (event.action == KeyEvent.ACTION_DOWN) {
             observeInput(event)
             com.nendo.argosy.util.Logger.verbose("GamepadInput") { "KeyEvent: keyCode=${event.keyCode}, scanCode=${event.scanCode}, device=${event.device?.name}, deviceId=${event.deviceId}, source=${event.source}" }

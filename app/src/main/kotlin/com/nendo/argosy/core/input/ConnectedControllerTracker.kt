@@ -4,11 +4,13 @@ import android.content.Context
 import android.hardware.input.InputManager
 import android.view.InputDevice
 import android.view.InputEvent
+import com.nendo.argosy.hardware.pad.MutedPadDevices
 import com.nendo.argosy.util.SafeCoroutineScope
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
@@ -21,6 +23,7 @@ import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import java.util.concurrent.ConcurrentHashMap
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -73,16 +76,28 @@ class ConnectedControllerTracker @Inject constructor(
             .flowOn(Dispatchers.IO)
             .stateIn(scope, SharingStarted.Eagerly, detectActive(null).layout)
 
+    private val removedDeviceIds: MutableSet<Int> = ConcurrentHashMap.newKeySet()
+
     private val listener = object : InputManager.InputDeviceListener {
         override fun onInputDeviceAdded(deviceId: Int) = refresh()
         override fun onInputDeviceChanged(deviceId: Int) = refresh()
-        override fun onInputDeviceRemoved(deviceId: Int) = refresh()
+        override fun onInputDeviceRemoved(deviceId: Int) {
+            removedDeviceIds.add(deviceId)
+            refresh()
+        }
     }
 
     init {
         inputManager.registerInputDeviceListener(listener, null)
         scope.launch { pollBattery() }
+        scope.launch { MutedPadDevices.devices.drop(1).collect { refresh() } }
     }
+
+    /**
+     * Whether the input device [deviceId] has been removed since this process started. Android
+     * never reuses a device id within a boot.
+     */
+    fun wasRemoved(deviceId: Int): Boolean = deviceId in removedDeviceIds
 
     fun noteInput(event: InputEvent) = activeState.noteInput(event)
 

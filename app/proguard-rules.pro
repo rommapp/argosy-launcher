@@ -75,6 +75,9 @@
 # Shizuku instantiates the user service by name in its own process
 -keep class com.nendo.argosy.util.ShizukuShellService { <init>(...); }
 
+# app_process starts the pad driver by class name from the installed APK
+-keep class com.nendo.argosy.hardware.pad.PadDriverMain { public static void main(java.lang.String[]); }
+
 # Discord Social SDK (optional, may not be present)
 -keep class com.discord.socialsdk.** { *; }
 -keep class discordpp.** { *; }

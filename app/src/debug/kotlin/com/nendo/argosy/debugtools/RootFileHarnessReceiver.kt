@@ -4,6 +4,7 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.util.Log
+import com.nendo.argosy.hardware.pad.PadDriverLauncher
 import com.nendo.argosy.util.PServerExecutor
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -61,16 +62,12 @@ class RootFileHarnessReceiver : BroadcastReceiver() {
                             "*) echo refused; exit 1 ;; esac"
                     )
                     "stacks" -> runRoot(work, "debuggerd -b ${android.os.Process.myPid()}", echoOutput = false)
-                    "paddriver" -> runRoot(
-                        work,
-                        "apk=${q(context.applicationInfo.sourceDir)}\n" +
-                            "pkill -f $PAD_DRIVER_CLASS\n" +
-                            "setsid nohup app_process -Djava.class.path=\"\$apk\" /system/bin $PAD_DRIVER_CLASS " +
-                            "${q(File(context.filesDir, com.nendo.argosy.hardware.pad.PadSeats.FILE_NAME).absolutePath)} " +
-                            "> $PAD_DRIVER_LOG 2>&1 < /dev/null &\n" +
-                            "sleep 1; ps -A -o PID,USER,NAME,ARGS | grep $PAD_DRIVER_CLASS | grep -v grep"
-                    )
-                    "paddriverstop" -> runRoot(work, "pkill -f $PAD_DRIVER_CLASS && echo stopped")
+                    "paddriver" -> {
+                        val started = PadDriverLauncher.restart(context)
+                        Thread.sleep(PAD_DRIVER_SETTLE_MS)
+                        Log.i(TAG, "paddriver started=$started running=${PadDriverLauncher.running(context)}")
+                    }
+                    "paddriverstop" -> Log.i(TAG, "paddriverstop stopped=${PadDriverLauncher.stop(context)}")
                     else -> Log.w(TAG, "unknown op $op")
                 }
             } catch (e: Exception) {
@@ -160,8 +157,7 @@ class RootFileHarnessReceiver : BroadcastReceiver() {
         const val SCRIPT_NAME = "harness-op.sh"
         const val WRAPPER_NAME = "harness-run.sh"
         const val OUTPUT_NAME = "harness-result.txt"
-        const val PAD_DRIVER_CLASS = "com.nendo.argosy.hardware.pad.PadDriverMain"
-        const val PAD_DRIVER_LOG = "/data/local/tmp/paddriver.log"
+        const val PAD_DRIVER_SETTLE_MS = 1_000L
         val OCTAL_MODE_PATTERN = Regex("^[0-7]{3,4}$")
         val SYMBOLIC_MODE_PATTERN = Regex("^[ugoa]*[-+=][rwxX]+$")
         val GROUP_PATTERN = Regex("^[0-9]+$")

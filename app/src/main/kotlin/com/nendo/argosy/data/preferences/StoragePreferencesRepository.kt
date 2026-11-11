@@ -9,12 +9,14 @@ import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import com.nendo.argosy.data.launcher.GameNativeSyncFolder
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import javax.inject.Inject
 import javax.inject.Singleton
 
 data class StoragePreferences(
     val romStoragePath: String? = null,
+    val romStoragePathConfirmed: Boolean = false,
     val musicStoragePath: String? = null,
     val mediaStoragePath: String? = null,
     val maxConcurrentDownloads: Int = 1,
@@ -35,6 +37,7 @@ class StoragePreferencesRepository @Inject constructor(
 ) {
     private object Keys {
         val ROM_STORAGE_PATH = stringPreferencesKey("rom_storage_path")
+        val ROM_STORAGE_PATH_CONFIRMED = booleanPreferencesKey("rom_storage_path_confirmed")
         val MUSIC_STORAGE_PATH = stringPreferencesKey("music_storage_path")
         val MEDIA_STORAGE_PATH = stringPreferencesKey("media_storage_path")
         val MAX_CONCURRENT_DOWNLOADS = intPreferencesKey("max_concurrent_downloads")
@@ -55,6 +58,7 @@ class StoragePreferencesRepository @Inject constructor(
     val preferences: Flow<StoragePreferences> = dataStore.data.map { prefs ->
         StoragePreferences(
             romStoragePath = prefs[Keys.ROM_STORAGE_PATH],
+            romStoragePathConfirmed = prefs[Keys.ROM_STORAGE_PATH_CONFIRMED] ?: false,
             musicStoragePath = prefs[Keys.MUSIC_STORAGE_PATH],
             mediaStoragePath = prefs[Keys.MEDIA_STORAGE_PATH],
             maxConcurrentDownloads = prefs[Keys.MAX_CONCURRENT_DOWNLOADS] ?: 1,
@@ -74,6 +78,22 @@ class StoragePreferencesRepository @Inject constructor(
 
     suspend fun setRomStoragePath(path: String) {
         dataStore.edit { it[Keys.ROM_STORAGE_PATH] = path }
+    }
+
+    suspend fun confirmRomStoragePath(path: String) {
+        dataStore.edit {
+            it[Keys.ROM_STORAGE_PATH] = path
+            it[Keys.ROM_STORAGE_PATH_CONFIRMED] = true
+        }
+    }
+
+    suspend fun hasRomStoragePath(): Boolean =
+        !dataStore.data.first()[Keys.ROM_STORAGE_PATH].isNullOrBlank()
+
+    suspend fun confirmExistingRomStoragePath() {
+        dataStore.edit { prefs ->
+            if (!prefs[Keys.ROM_STORAGE_PATH].isNullOrBlank()) prefs[Keys.ROM_STORAGE_PATH_CONFIRMED] = true
+        }
     }
 
     suspend fun setMusicStoragePath(path: String?) {

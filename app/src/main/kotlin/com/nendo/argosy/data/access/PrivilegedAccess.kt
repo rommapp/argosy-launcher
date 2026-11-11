@@ -8,8 +8,9 @@ import com.nendo.argosy.core.notification.NotificationType
 import com.nendo.argosy.data.model.PrivilegedAccessState
 import com.nendo.argosy.data.model.PrivilegedReach
 import com.nendo.argosy.data.model.PrivilegedRoute
-import com.nendo.argosy.data.preferences.AppPreferencesRepository
 import com.nendo.argosy.data.preferences.PrivilegedAccessPreferencesRepository
+import com.nendo.argosy.data.setup.SetupStateRepository
+import com.nendo.argosy.domain.model.isComplete
 import com.nendo.argosy.util.Logger
 import com.nendo.argosy.util.RootCommandRunner
 import com.nendo.argosy.util.RootShell
@@ -41,7 +42,7 @@ import javax.inject.Singleton
 @Singleton
 class PrivilegedAccess @Inject constructor(
     private val preferences: PrivilegedAccessPreferencesRepository,
-    private val appPreferences: AppPreferencesRepository,
+    private val setupState: SetupStateRepository,
     private val notificationManager: NotificationManager
 ) {
     private val _state = MutableStateFlow(PrivilegedAccessState())
@@ -54,8 +55,8 @@ class PrivilegedAccess @Inject constructor(
     private lateinit var scope: CoroutineScope
 
     /**
-     * Restores an enabled route, then watches for Shizuku starting or stopping and for first run
-     * finishing, which decide when the one-time prompt appears.
+     * Restores an enabled route, then watches for Shizuku starting or stopping and for setup
+     * completing, which decide when the one-time prompt appears.
      */
     suspend fun start(scope: CoroutineScope) {
         this.scope = scope
@@ -63,7 +64,7 @@ class PrivilegedAccess @Inject constructor(
         Shizuku.addBinderReceivedListenerSticky { scope.launch(Dispatchers.IO) { onShizukuReceived() } }
         Shizuku.addBinderDeadListener { scope.launch(Dispatchers.IO) { onShizukuGone() } }
         scope.launch {
-            appPreferences.preferences.map { it.firstRunComplete }.distinctUntilChanged().collect { complete ->
+            setupState.state.map { it.isComplete }.distinctUntilChanged().collect { complete ->
                 if (complete) {
                     delay(PROMPT_SETTLE_MS)
                     refreshOffer()
@@ -178,7 +179,7 @@ class PrivilegedAccess @Inject constructor(
         )
         _state.update { it.copy(detected = detected) }
         _prompt.value = PrivilegedAccessRules.promptRoute(
-            firstRunComplete = appPreferences.preferences.first().firstRunComplete,
+            setupComplete = setupState.state.first().isComplete,
             answered = preferences.isPromptAnswered(),
             enabled = _state.value.enabled,
             detected = detected

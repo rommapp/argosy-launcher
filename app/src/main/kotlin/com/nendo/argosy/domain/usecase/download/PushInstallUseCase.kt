@@ -89,6 +89,7 @@ class PushInstallUseCase @Inject constructor(
         DownloadGameFailureReason.NoDiscsQueued -> "no discs queued"
         DownloadGameFailureReason.GameNotFoundForRepair -> "game not found"
         DownloadGameFailureReason.NotMultiDisc -> "not multi-disc"
+        DownloadGameFailureReason.NoRomFolder -> "no game folder set"
         is DownloadGameFailureReason.Extraction -> "extraction failed"
     }
 

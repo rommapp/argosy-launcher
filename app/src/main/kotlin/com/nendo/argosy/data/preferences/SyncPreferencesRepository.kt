@@ -42,6 +42,8 @@ data class SyncPreferences(
     val uploadScreenshotsEnabled: Boolean = true,
     val boxArtCacheEnabled: Boolean = true,
     val saveSyncEnabled: Boolean = false,
+    val saveSyncAnswered: Boolean = false,
+    val librarySourceConfirmed: Boolean = false,
     val secureSaves: Boolean = true,
     val stateCacheEnabled: Boolean = true,
     val saveCacheLimit: Int = 10,
@@ -112,6 +114,8 @@ class SyncPreferencesRepository @Inject constructor(
         val UPLOAD_SCREENSHOTS_ENABLED = booleanPreferencesKey("upload_screenshots_enabled")
         val BOX_ART_CACHE_ENABLED = booleanPreferencesKey("box_art_cache_enabled")
         val SAVE_SYNC_ENABLED = booleanPreferencesKey("save_sync_enabled")
+        val SAVE_SYNC_ANSWERED = booleanPreferencesKey("save_sync_answered")
+        val ROMM_LIBRARY_CONFIRMED = booleanPreferencesKey("romm_library_confirmed")
         val SECURE_SAVES = booleanPreferencesKey("secure_saves")
         val STATE_CACHE_ENABLED = booleanPreferencesKey("state_cache_enabled")
         val SAVE_CACHE_LIMIT = intPreferencesKey("save_cache_limit")
@@ -339,6 +343,8 @@ class SyncPreferencesRepository @Inject constructor(
             boxArtCacheEnabled = prefs[Keys.BOX_ART_CACHE_ENABLED] ?: true,
             uploadScreenshotsEnabled = prefs[Keys.UPLOAD_SCREENSHOTS_ENABLED] ?: true,
             saveSyncEnabled = prefs[Keys.SAVE_SYNC_ENABLED] ?: false,
+            saveSyncAnswered = prefs[Keys.SAVE_SYNC_ANSWERED] ?: false,
+            librarySourceConfirmed = prefs[Keys.ROMM_LIBRARY_CONFIRMED] ?: false,
             secureSaves = prefs[Keys.SECURE_SAVES] ?: true,
             stateCacheEnabled = prefs[Keys.STATE_CACHE_ENABLED] ?: true,
             saveCacheLimit = prefs[Keys.SAVE_CACHE_LIMIT] ?: 10,
@@ -655,6 +661,35 @@ class SyncPreferencesRepository @Inject constructor(
 
     suspend fun setSaveSyncEnabled(enabled: Boolean) {
         dataStore.edit { it[Keys.SAVE_SYNC_ENABLED] = enabled }
+    }
+
+    suspend fun answerSaveSync(enabled: Boolean) {
+        dataStore.edit {
+            it[Keys.SAVE_SYNC_ENABLED] = enabled
+            it[Keys.SAVE_SYNC_ANSWERED] = true
+        }
+    }
+
+    suspend fun confirmRommLibrary() {
+        dataStore.edit { it[Keys.ROMM_LIBRARY_CONFIRMED] = true }
+    }
+
+    /**
+     * Marks the values an install finished setup with as confirmed: the save sync answer always,
+     * the RomM library only while credentials are stored.
+     */
+    suspend fun hasRomMCredentials(): Boolean {
+        val prefs = dataStore.data.first()
+        return !prefs[Keys.ROMM_URL].isNullOrBlank() && !prefs[Keys.ROMM_TOKEN].isNullOrBlank()
+    }
+
+    suspend fun confirmExistingSetupValues() {
+        dataStore.edit { prefs ->
+            prefs[Keys.SAVE_SYNC_ANSWERED] = true
+            if (!prefs[Keys.ROMM_URL].isNullOrBlank() && !prefs[Keys.ROMM_TOKEN].isNullOrBlank()) {
+                prefs[Keys.ROMM_LIBRARY_CONFIRMED] = true
+            }
+        }
     }
 
     suspend fun isSecureSaves(): Boolean =

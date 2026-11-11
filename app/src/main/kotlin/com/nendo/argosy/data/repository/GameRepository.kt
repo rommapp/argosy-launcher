@@ -92,22 +92,28 @@ class GameRepository @Inject constructor(
     private val gameScreenshotDao: GameScreenshotDao,
     private val platformFolderResolver: PlatformFolderResolver
 ) {
-    private val defaultDownloadDir: File get() = platformFolderResolver.defaultStorageBase
+    private val legacyDownloadDir: File get() = platformFolderResolver.legacyAppDownloadsDir
 
     private val validationMutex = Mutex()
     private val validationPass = AtomicInteger()
     private var lastValidationAt = 0L
 
-    suspend fun getDownloadDirForPlatformId(platformId: Long): File = withContext(Dispatchers.IO) {
-        val platform = platformDao.getById(platformId) ?: return@withContext defaultDownloadDir
-        platformDownloadDir(platform, platform.slug, platformFolderResolver.storageBase())
-            .also { it.mkdirs() }
+    /**
+     * The folder [platformId]'s roms download into, or null while no game folder is set or the
+     * platform is unknown.
+     */
+    suspend fun getDownloadDirForPlatformId(platformId: Long): File? = withContext(Dispatchers.IO) {
+        val platform = platformDao.getById(platformId) ?: return@withContext null
+        val base = platformFolderResolver.storageBase() ?: return@withContext null
+        platformDownloadDir(platform, platform.slug, base).also { it.mkdirs() }
     }
 
-    private suspend fun candidateRootsFor(platform: PlatformEntity): List<File> =
-        platformRomRoots(platform, platformFolderResolver.storageBase(), platformDao.getAllPlatforms())
+    private suspend fun candidateRootsFor(platform: PlatformEntity): List<File> {
+        val base = platformFolderResolver.storageBase() ?: return emptyList()
+        return platformRomRoots(platform, base, platformDao.getAllPlatforms())
+    }
 
-    private suspend fun getGlobalDownloadDir(): File = platformFolderResolver.storageBase()
+    private suspend fun getGlobalDownloadDir(): File? = platformFolderResolver.storageBase()
 
     private fun isStorageReady(): Boolean {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
@@ -213,7 +219,7 @@ class GameRepository @Inject constructor(
         val candidateDirs = buildList {
             platformDao.getById(platformId)?.customRomPath?.let { add(File(it)) }
             preferencesRepository.userPreferences.first().romStoragePath?.let { add(File(it, platformSlug)) }
-            add(File(defaultDownloadDir, platformSlug))
+            add(File(legacyDownloadDir, platformSlug))
         }
 
         for (dir in candidateDirs) {
@@ -243,7 +249,7 @@ class GameRepository @Inject constructor(
      */
     suspend fun romStorageVolumesReadable(): Boolean = withContext(Dispatchers.IO) {
         val roots = buildSet {
-            add(defaultDownloadDir.absolutePath)
+            add(legacyDownloadDir.absolutePath)
             preferencesRepository.userPreferences.first().romStoragePath?.let { add(it) }
             platformDao.getAllPlatforms().forEach { platform ->
                 platform.customRomPath?.let { add(it) }
@@ -494,7 +500,7 @@ class GameRepository @Inject constructor(
         var repaired = 0
         for ((platformId, entries) in missing.groupBy { it.platformId }) {
             val platformSlug = entries.first().platformSlug
-            val platformDir = getDownloadDirForPlatformId(platformId)
+            val platformDir = getDownloadDirForPlatformId(platformId) ?: continue
             if (!platformDir.isDirectory) continue
             val fileIndex by lazy { buildPlatformFileIndex(platformDir) }
             val listings = HashMap<String, Map<String, File>>()
@@ -592,7 +598,7 @@ class GameRepository @Inject constructor(
 
     suspend fun getAvailableStorageBytes(): Long = withContext(Dispatchers.IO) {
         try {
-            val downloadDir = getGlobalDownloadDir()
+            val downloadDir = getGlobalDownloadDir() ?: return@withContext 0L
             downloadDir.mkdirs()
             val stat = android.os.StatFs(downloadDir.absolutePath)
             stat.availableBytes
@@ -685,7 +691,7 @@ class GameRepository @Inject constructor(
     }
 
     suspend fun cleanupEmptyNumericFolders(): Int = withContext(Dispatchers.IO) {
-        val downloadDir = getGlobalDownloadDir()
+        val downloadDir = getGlobalDownloadDir() ?: return@withContext 0
         if (!downloadDir.exists()) return@withContext 0
 
         var removed = 0
@@ -731,8 +737,11 @@ class GameRepository @Inject constructor(
     }
 
     suspend fun deleteLocalFilesForPlatform(platformId: Long): Int = withContext(Dispatchers.IO) {
+        val platformDir = getDownloadDirForPlatformId(platformId) ?: run {
+            Log.w(TAG, "deleteLocalFilesForPlatform: no game folder is set, nothing deleted")
+            return@withContext 0
+        }
         val games = gameDao.getDownloadedByPlatform(platformId)
-        val platformDir = getDownloadDirForPlatformId(platformId)
         var deleted = 0
         for (game in games) {
             val path = game.localPath ?: continue

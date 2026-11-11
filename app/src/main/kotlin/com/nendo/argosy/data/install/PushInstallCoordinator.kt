@@ -3,7 +3,6 @@ package com.nendo.argosy.data.install
 import androidx.lifecycle.DefaultLifecycleObserver
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.ProcessLifecycleOwner
-import com.nendo.argosy.data.preferences.AppPreferencesRepository
 import com.nendo.argosy.data.preferences.StoragePreferencesRepository
 import com.nendo.argosy.data.remote.romm.ConnectionState
 import com.nendo.argosy.data.remote.romm.RomMConnectionManager
@@ -13,6 +12,8 @@ import com.nendo.argosy.data.remote.romm.RomMInstallReport
 import com.nendo.argosy.data.remote.romm.RomMInstallRequest
 import com.nendo.argosy.data.remote.romm.deviceCapabilities
 import com.nendo.argosy.data.repository.RomMAccountRepository
+import com.nendo.argosy.data.setup.SetupStateRepository
+import com.nendo.argosy.domain.model.isComplete
 import com.nendo.argosy.domain.usecase.download.PushInstallFailure
 import com.nendo.argosy.domain.usecase.download.PushInstallOutcome
 import com.nendo.argosy.domain.usecase.download.PushInstallUseCase
@@ -41,12 +42,12 @@ internal const val DRAIN_SETTLE_MS = 500L
  * Sole sender of this device's install capability; drains the claim endpoint on start, foreground,
  * socket connect and `install:queued`. A refused socket stays closed until the token or device id
  * changes. Inert below [com.nendo.argosy.data.remote.romm.RomMCapabilities.DEVICE_INSTALL_MIN_VERSION]
- * and until first-run setup completes; requests pushed before then stay queued on the server.
+ * and while setup is incomplete; requests pushed before then stay queued on the server.
  */
 @Singleton
 class PushInstallCoordinator @Inject constructor(
     private val connectionManager: RomMConnectionManager,
-    private val appPreferences: AppPreferencesRepository,
+    private val setupState: SetupStateRepository,
     private val storagePreferences: StoragePreferencesRepository,
     private val accountRepository: RomMAccountRepository,
     private val deviceSocket: RomMDeviceSocket,
@@ -100,7 +101,7 @@ class PushInstallCoordinator @Inject constructor(
                 connectionManager.deviceIdState,
                 storagePreferences.preferences.map { it.allowRemoteInstalls }.distinctUntilChanged(),
                 accountRepository.observeActiveAccount().map { it?.id }.distinctUntilChanged(),
-                appPreferences.preferences.map { it.firstRunComplete }.distinctUntilChanged()
+                setupState.state.map { it.isComplete }.distinctUntilChanged()
             ) { (state, baseUrl), deviceId, allow, accountId, setupComplete ->
                 RefreshKey(state, baseUrl, deviceId, allow, accountId, setupComplete)
             }
@@ -118,7 +119,7 @@ class PushInstallCoordinator @Inject constructor(
     }
 
     private suspend fun currentSession(): Session? {
-        if (!appPreferences.preferences.first().firstRunComplete) return null
+        if (!setupState.state.first().isComplete) return null
         val connected = connectionManager.connectionState.value as? ConnectionState.Connected ?: return null
         if (!connected.capabilities.supportsDeviceInstall) return null
         if (accountRepository.activeAccount() == null) return null

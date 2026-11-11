@@ -133,6 +133,8 @@ private sealed class DownloadResult {
 
 private const val MIN_ROM_SIZE_BYTES = 1024L
 
+private class MissingRomFolderException : IllegalStateException("no game folder is set")
+
 private val SMALL_COMPANION_EXTENSIONS = setOf(
     "cue", "m3u", "ccd", "sub", "sbi", "toc", "gdi", "xml", "txt", "nfo", "dat"
 )
@@ -322,12 +324,17 @@ class DownloadManager internal constructor(
         private const val TAG = "DownloadManager"
     }
 
-    private suspend fun getDownloadDir(gameId: Long, platformSlug: String): File =
-        platformFolderResolver.downloadDirForGame(gameId, platformSlug).also { it.mkdirs() }
+    private suspend fun getDownloadDir(gameId: Long, platformSlug: String): File? =
+        platformFolderResolver.downloadDirForGame(gameId, platformSlug)?.also { it.mkdirs() }
+
+    private suspend fun requireDownloadDir(gameId: Long, platformSlug: String): File =
+        getDownloadDir(gameId, platformSlug) ?: throw MissingRomFolderException()
+
+    suspend fun isRomFolderMissing(): Boolean = platformFolderResolver.storageBase() == null
 
     private suspend fun getAvailableStorageBytes(gameId: Long, platformSlug: String): Long {
         return withContext(Dispatchers.IO) {
-            val downloadDir = getDownloadDir(gameId, platformSlug)
+            val downloadDir = getDownloadDir(gameId, platformSlug) ?: return@withContext 0L
             romStagingManager.availableBytes(downloadDir) ?: 0L
         }
     }
@@ -399,7 +406,7 @@ class DownloadManager internal constructor(
             val part = row?.tempFilePath?.let(::File)
             val retainedDirect = area == null && (part?.isFile == true || (row?.bytesDownloaded ?: 0) > 0)
             val destinationDir = area?.destinationDir ?: if (retainedDirect) part!!.parentFile!! else
-                getDownloadDir(progress.gameId, progress.platformSlug)
+                requireDownloadDir(progress.gameId, progress.platformSlug)
             val destinationFree = romStagingManager.availableBytes(destinationDir)
             val total = row?.responseTotalBytes ?: progress.totalBytes
             val remainingArchive = (total - (row?.bytesDownloaded ?: 0)).coerceAtLeast(0L)
@@ -478,7 +485,7 @@ class DownloadManager internal constructor(
 
     private suspend fun getGlobalStorageBytes(): Long {
         return withContext(Dispatchers.IO) {
-            val dir = platformFolderResolver.storageBase().also { it.mkdirs() }
+            val dir = platformFolderResolver.storageBase()?.also { it.mkdirs() } ?: return@withContext 0L
             romStagingManager.availableBytes(dir) ?: 0L
         }
     }
@@ -524,6 +531,11 @@ class DownloadManager internal constructor(
                 }
             } catch (e: CancellationException) {
                 throw e
+            } catch (e: MissingRomFolderException) {
+                Logger.warn(TAG, "Download refused, no game folder is set | game=${progress.gameTitle}")
+                val result = DownloadResult.Failure(DownloadFailureReason.NoRomFolder)
+                settleDownload(progress, result)
+                onResult(result)
             } catch (e: Exception) {
                 val result = DownloadResult.Failure(DownloadFailureReason.Unexpected(e.message))
                 settleDownload(progress, result)
@@ -671,7 +683,10 @@ class DownloadManager internal constructor(
         enqueueMutex.withLock {
             if (hasDuplicateDownload(gameId)) return@withLock
             val initialState = initialQueueState(startNow)
-            val platformDir = platformFolderResolver.downloadDirForGame(gameId, platformSlug)
+            val platformDir = platformFolderResolver.downloadDirForGame(gameId, platformSlug) ?: run {
+                Logger.warn(TAG, "Enqueue refused, no game folder is set | game=$gameTitle")
+                return@withLock
+            }
             val diskFileName = FileNames.sanitize(fileName)
             val tempFilePath = newTempFile(platformDir).absolutePath
 
@@ -808,7 +823,10 @@ class DownloadManager internal constructor(
             if (hasDuplicateDownload(gameId, discId = discId)) return@withLock
             val initialState = initialQueueState(startNow)
 
-            val platformDir = platformFolderResolver.downloadDirForGame(gameId, platformSlug)
+            val platformDir = platformFolderResolver.downloadDirForGame(gameId, platformSlug) ?: run {
+                Logger.warn(TAG, "Enqueue refused, no game folder is set | game=$gameTitle disc=$discNumber")
+                return@withLock
+            }
             val diskFileName = FileNames.sanitize(fileName)
             val tempFilePath = newTempFile(platformDir).absolutePath
 
@@ -869,6 +887,10 @@ class DownloadManager internal constructor(
     ) {
         enqueueMutex.withLock {
             if (hasDuplicateDownload(gameId, gameFileId = gameFileId)) return@withLock
+            if (isRomFolderMissing()) {
+                Logger.warn(TAG, "Enqueue refused, no game folder is set | game=$gameTitle file=$fileName")
+                return@withLock
+            }
             val initialState = initialQueueState(startNow)
 
             val (gameFolder, categoryFolder) = withContext(Dispatchers.IO) {
@@ -960,7 +982,7 @@ class DownloadManager internal constructor(
     private suspend fun getGameFolder(
         gameId: Long, platformSlug: String, vararg names: String
     ): File {
-        val platformDir = getDownloadDir(gameId, platformSlug)
+        val platformDir = requireDownloadDir(gameId, platformSlug)
         return resolveGameFolder(platformDir, names.map(::sanitizeFolderName)).apply { mkdirs() }
     }
 
@@ -1084,7 +1106,7 @@ class DownloadManager internal constructor(
         gameTitle: String,
         category: String? = null
     ): File {
-        val platformDir = getDownloadDir(gameId, platformSlug)
+        val platformDir = requireDownloadDir(gameId, platformSlug)
         val romFolderName = romFileFolderName(gameId)
         if (extContentOrganizer.usesCombinedLayout(gameId)) {
             return if (isFlatUnderCombine(category)) {
@@ -1170,6 +1192,7 @@ class DownloadManager internal constructor(
         withContext(Dispatchers.IO) {
             try {
                 val platformDir = getDownloadDir(progress.gameId, progress.platformSlug)
+                    ?: return@withContext DownloadResult.Failure(DownloadFailureReason.NoRomFolder)
 
                 val carriedOver = romStagingManager.list()
                     .firstOrNull { it.manifest.downloadId == progress.id }
@@ -1425,7 +1448,7 @@ class DownloadManager internal constructor(
             val combined = if (extContentOrganizer.usesCombinedLayout(progress.gameId)) {
                 gameDao.getById(progress.gameId)?.copy(localPath = finalPath)?.let { game ->
                     extContentOrganizer.enforceCombinedLayout(
-                        game, getDownloadDir(progress.gameId, progress.platformSlug)
+                        game, requireDownloadDir(progress.gameId, progress.platformSlug)
                     )
                 }
             } else {
@@ -1434,7 +1457,7 @@ class DownloadManager internal constructor(
             if (combined != null) {
                 finalPath = combined.absolutePath
             } else {
-                extContentOrganizer.consolidate(finalPath, getDownloadDir(progress.gameId, progress.platformSlug))
+                extContentOrganizer.consolidate(finalPath, requireDownloadDir(progress.gameId, progress.platformSlug))
             }
         }
 
@@ -1647,6 +1670,7 @@ class DownloadManager internal constructor(
 
     private suspend fun resumeStagedDeploy(area: StagingArea, progress: DownloadProgress): DownloadResult {
         val platformDir = getDownloadDir(progress.gameId, progress.platformSlug)
+            ?: return DownloadResult.Failure(DownloadFailureReason.NoRomFolder)
         Logger.info(TAG, "Resuming interrupted move | game=${progress.gameTitle}")
         return when (val deployed = deployStagedArea(area, progress)) {
             is StagedDeployResult.Success ->
@@ -2141,10 +2165,8 @@ class DownloadManager internal constructor(
         }
     }
 
-    suspend fun getDownloadPath(gameId: Long, platformSlug: String, fileName: String): File {
-        val platformDir = getDownloadDir(gameId, platformSlug)
-        return File(platformDir, fileName)
-    }
+    suspend fun getDownloadPath(gameId: Long, platformSlug: String, fileName: String): File? =
+        getDownloadDir(gameId, platformSlug)?.let { File(it, fileName) }
 
     sealed class ExtractionResult {
         data class Success(val localPath: String) : ExtractionResult()
@@ -2159,6 +2181,7 @@ class DownloadManager internal constructor(
             queueEntry.tempFilePath?.let { File(it).toPath().startsWith(romStagingManager.stagingRoot.toPath()) } == true
         if (!isStaged) downloadJobs[queueEntry.id]?.cancelAndJoin()
         val platformDir = getDownloadDir(queueEntry.gameId, queueEntry.platformSlug)
+            ?: return@withContext ExtractionResult.Failure(DownloadFailureReason.NoRomFolder)
         val targetFile = File(queueEntry.tempFilePath?.let(::File)?.parentFile ?: platformDir, queueEntry.fileName)
 
         val verified = withContext(Dispatchers.IO) {
@@ -2298,14 +2321,15 @@ class DownloadManager internal constructor(
                     removeProgress(queueEntry.id)
                     return@cleanup
                 }
-                val platformDir = getDownloadDir(retained.gameId, retained.platformSlug)
                 val tempFile = retained.tempFilePath?.let(::File)
-                    ?: File(platformDir, "${retained.fileName}.tmp")
-                val targetFile = File(tempFile.parentFile, retained.fileName)
-
-                withContext(Dispatchers.IO) {
-                    if (targetFile.exists()) targetFile.delete()
-                    if (tempFile.exists()) tempFile.delete()
+                    ?: getDownloadDir(retained.gameId, retained.platformSlug)
+                        ?.let { File(it, "${retained.fileName}.tmp") }
+                if (tempFile != null) {
+                    val targetFile = File(tempFile.parentFile, retained.fileName)
+                    withContext(Dispatchers.IO) {
+                        if (targetFile.exists()) targetFile.delete()
+                        if (tempFile.exists()) tempFile.delete()
+                    }
                 }
 
                 discardStagingFor(queueEntry.id)

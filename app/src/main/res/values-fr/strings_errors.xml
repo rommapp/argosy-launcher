@@ -36,6 +36,7 @@
     <string name="error_download_no_discs_queued">Échec de la mise en file d\'attente des disques</string>
     <string name="error_download_game_not_found_for_repair">Jeu introuvable</string>
     <string name="error_download_not_multi_disc">Ce n\'est pas un jeu multi-disques</string>
+    <string name="error_download_game_no_rom_folder">Choisissez un dossier de jeux avant de télécharger</string>
 
     <string name="error_download_invalid_content_type">Type de fichier invalide : %1$s</string>
     <string name="error_download_file_too_small">Fichier trop petit pour être une ROM</string>
@@ -50,6 +51,7 @@
     <string name="error_download_downloaded_file_missing">Fichier téléchargé introuvable</string>
     <string name="error_download_no_download_entry">Aucune entrée de téléchargement trouvée</string>
     <string name="error_download_no_longer_exists">Le fichier téléchargé n\'existe plus</string>
+    <string name="error_download_no_rom_folder">Choisissez un dossier de jeux avant de télécharger</string>
     <string name="error_download_extraction_failed">Échec de l\'extraction</string>
 
     <string name="error_filepicker_already_downloaded">Jeu déjà téléchargé</string>

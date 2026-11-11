@@ -26,6 +26,7 @@ import com.nendo.argosy.hardware.CompanionGuardService
 import com.nendo.argosy.util.DisplayRoleResolver
 import com.nendo.argosy.util.Logger
 import com.nendo.argosy.domain.model.CompletionStatus
+import com.nendo.argosy.domain.model.isComplete
 import com.nendo.argosy.data.remote.ra.RAConsoleIds
 import com.nendo.argosy.ui.common.displayTitleId
 import com.nendo.argosy.ui.common.reportTitleIdRecheck
@@ -146,6 +147,7 @@ class DualScreenManager(
     internal val mediaSiblingsDelegate:
         com.nendo.argosy.ui.screens.media.delegates.MediaSiblingsDelegate? = null,
     internal val runningGames: com.nendo.argosy.data.emulator.background.RunningGames? = null,
+    internal val setupStateRepository: com.nendo.argosy.data.setup.SetupStateRepository? = null,
     initialRolesSwapped: Boolean = false,
     private val gameWindowMover: com.nendo.argosy.hardware.GameWindowMover =
         com.nendo.argosy.hardware.ThorGameWindowMover(context),
@@ -2262,18 +2264,16 @@ class DualScreenManager(
         }
     }
 
-    private val _isWizardActive = MutableStateFlow(!sessionStateStore.isFirstRunComplete())
-
     /**
-     * Whether the first-run wizard is showing on the launcher, for surfaces on the other screen
-     * that must stay out of its way.
+     * Whether setup is incomplete or its wizard is showing on the launcher, for surfaces on the
+     * other screen that must stay out of its way.
      */
-    val isWizardActive: StateFlow<Boolean> = _isWizardActive
-
-    fun recordWizardState(isActive: Boolean) {
-        _isWizardActive.value = isActive
-        if (!isActive) sessionStateStore.setFirstRunComplete(true)
-    }
+    val isWizardActive: StateFlow<Boolean> = kotlinx.coroutines.flow.combine(
+        setupStateRepository?.state?.map { !it.isComplete } ?: kotlinx.coroutines.flow.flowOf(false),
+        _primaryRoute.map { it == com.nendo.argosy.ui.navigation.Screen.FirstRun.route }
+    ) { incomplete, onWizard -> incomplete || onWizard }
+        .distinctUntilChanged()
+        .stateIn(activityIndependentScope, kotlinx.coroutines.flow.SharingStarted.Eagerly, false)
 
     private var lastSwapTimeMs = 0L
 

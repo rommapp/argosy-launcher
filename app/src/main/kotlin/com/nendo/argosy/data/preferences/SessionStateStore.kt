@@ -160,12 +160,6 @@ class SessionStateStore(context: Context) {
 
     fun isRolesSwapped(): Boolean = prefs.getBoolean(KEY_ROLES_SWAPPED, false)
 
-    fun setFirstRunComplete(complete: Boolean) {
-        prefs.edit().putBoolean(KEY_FIRST_RUN_COMPLETE, complete).apply()
-    }
-
-    fun isFirstRunComplete(): Boolean = prefs.getBoolean(KEY_FIRST_RUN_COMPLETE, false)
-
     /**
      * The launcher's chosen display language as a BCP 47 tag, or the "system" sentinel. Written
      * with commit() because every Activity and foreground service reads it during attachBaseContext
@@ -243,7 +237,6 @@ class SessionStateStore(context: Context) {
         private const val KEY_SESSION_START_TIME = "session_start_time"
         private const val KEY_EMULATOR_PACKAGE = "emulator_package"
         private const val KEY_EMULATOR_DISPLAY_ID = "emulator_display_id"
-        private const val KEY_FIRST_RUN_COMPLETE = "first_run_complete"
         private const val KEY_DUAL_SCREEN_ENABLED = "dual_screen_enabled"
         private const val KEY_SECONDARY_DISPLAY_USABLE = "secondary_display_usable"
         private const val KEY_SAVE_SYNC_ENABLED = "save_sync_enabled"

@@ -203,10 +203,10 @@ fun ArgosyApp(
     }
 
     val isOnWizard = currentRoute == Screen.FirstRun.route
+    val setupActive by rememberUpdatedState(uiState.setupIncomplete || isOnWizard)
     var wasOnWizard by remember { mutableStateOf(isOnWizard) }
-    LaunchedEffect(uiState.isFirstRun, isOnWizard) {
-        dsm?.recordWizardState(uiState.isFirstRun || isOnWizard)
-        if (wasOnWizard && !isOnWizard) {
+    LaunchedEffect(isOnWizard) {
+        if (wasOnWizard && !isOnWizard && !uiState.setupIncomplete) {
             viewModel.triggerPostWizardSync()
         }
         wasOnWizard = isOnWizard
@@ -289,7 +289,7 @@ fun ArgosyApp(
                     }
                 }
                 com.nendo.argosy.ArgosyHomeIntent.RUNNING_DEEP_LINK_HOST -> {
-                    if (!uiState.isFirstRun && awaitNavGraph()) {
+                    if (!setupActive && awaitNavGraph()) {
                         navigateFromDrawer(Screen.Running.route)
                     }
                 }
@@ -425,7 +425,7 @@ fun ArgosyApp(
 
     val startDestination = remember(uiState.isLoading) {
         when {
-            uiState.isFirstRun -> Screen.FirstRun.route
+            uiState.setupIncomplete -> Screen.FirstRun.route
             else -> Screen.Home.route
         }
     }
@@ -447,7 +447,7 @@ fun ArgosyApp(
 
     val openDrawer = remember(drawerInputHandler) {
         wizardGuard@{
-            if (uiState.isFirstRun) return@wizardGuard
+            if (setupActive) return@wizardGuard
             viewModel.hideNavBar()
             inputDispatcher.subscribeDrawer(drawerInputHandler)
             viewModel.setDrawerOpen(true)
@@ -546,7 +546,7 @@ fun ArgosyApp(
 
     val openQuickSettings = remember(quickSettingsInputHandler) {
         wizardGuard@{
-            if (uiState.isFirstRun) return@wizardGuard
+            if (setupActive) return@wizardGuard
             viewModel.hideNavBar()
             inputDispatcher.subscribeDrawer(quickSettingsInputHandler)
             viewModel.quickSettings.setOpen(true)
@@ -594,7 +594,7 @@ fun ArgosyApp(
 
     val openQuickMenu = remember(quickMenuInputHandler) {
         wizardGuard@{
-            if (uiState.isFirstRun) return@wizardGuard
+            if (setupActive) return@wizardGuard
             if (isDrawerOpen) closeDrawer()
             if (isQuickSettingsOpen) closeQuickSettings()
             viewModel.hideNavBar()
@@ -825,8 +825,20 @@ fun ArgosyApp(
         viewModel.gamepadInputHandler.homeEventEnabled = !isHome
     }
 
-    LaunchedEffect(currentRoute, uiState.isFirstRun, navRingState.destinations.isEmpty()) {
-        if (!uiState.isFirstRun && viewModel.isNavRingRoute(currentRoute)) {
+    LaunchedEffect(uiState.isLoading, uiState.setupIncomplete, currentRoute) {
+        if (uiState.isLoading || !uiState.setupIncomplete) return@LaunchedEffect
+        if (currentRoute == null || currentRoute == Screen.FirstRun.route) return@LaunchedEffect
+        if (isDrawerOpen) closeDrawer()
+        if (isQuickSettingsOpen) closeQuickSettings()
+        if (quickMenuState.isVisible) closeQuickMenu()
+        navController.navigate(Screen.FirstRun.route) {
+            popUpTo(navController.graph.id) { inclusive = true }
+            launchSingleTop = true
+        }
+    }
+
+    LaunchedEffect(currentRoute, setupActive, navRingState.destinations.isEmpty()) {
+        if (!setupActive && viewModel.isNavRingRoute(currentRoute)) {
             viewModel.showNavBar()
         } else {
             viewModel.hideNavBar()
@@ -933,7 +945,7 @@ fun ArgosyApp(
                         val delta = if (event == GamepadEvent.PrevSection) -1 else 1
                         val target = if (
                             !input.isRepeat &&
-                            !uiState.isFirstRun &&
+                            !setupActive &&
                             !isDrawerOpen &&
                             !isQuickSettingsOpen &&
                             !quickMenuState.isVisible
@@ -996,7 +1008,7 @@ fun ArgosyApp(
                         if (isQuickSettingsOpen) closeQuickSettings()
                         if (quickMenuState.isVisible) closeQuickMenu()
                         val homeRoute = Screen.Home.route
-                        if (currentRoute != homeRoute) {
+                        if (!setupActive && currentRoute != homeRoute) {
                             navController.navigate(homeRoute) {
                                 popUpTo(homeRoute) { inclusive = true }
                                 launchSingleTop = true
@@ -1004,7 +1016,7 @@ fun ArgosyApp(
                         }
                     }
                     GamepadEvent.LongHome -> {
-                        if (!uiState.isFirstRun) {
+                        if (!setupActive) {
                             if (isDrawerOpen) closeDrawer()
                             if (isQuickSettingsOpen) closeQuickSettings()
                             if (quickMenuState.isVisible) closeQuickMenu()
@@ -1020,7 +1032,7 @@ fun ArgosyApp(
     val shortcutGate = remember(inputDispatcher, navController) {
         object : UiShortcutGate {
             override fun hotkeysAllowed(): Boolean =
-                !uiState.isFirstRun &&
+                !setupActive &&
                     !isEmulatorRunning &&
                     navController.currentDestination?.route != Screen.FirstRun.route &&
                     !inputDispatcher.hasCapturingOverlay()
@@ -1068,7 +1080,7 @@ fun ArgosyApp(
         viewModel.gamepadInputHandler.homeEventFlow().flowWithLifecycle(inputLifecycle).collect {
             if (isEmulatorRunning) {
             } else {
-                if (navController.currentDestination != null) {
+                if (navController.currentDestination != null && !setupActive) {
                     if (isDrawerOpen) closeDrawer()
                     if (isQuickSettingsOpen) closeQuickSettings()
                     if (quickMenuState.isVisible) closeQuickMenu()
@@ -1139,7 +1151,7 @@ fun ArgosyApp(
                 ?: remember { kotlinx.coroutines.flow.MutableStateFlow(null) }
             ).collectAsState()
         val dimmerEnabled = dsm != null && screenDimmerPrefs.enabled && !isEmulatorRunning &&
-            !uiState.isFirstRun && mediaPlayback == null
+            !setupActive && mediaPlayback == null
         val bottomReserved = gripReserveBottomInset()
 
         ScreenDimmerOverlay(
@@ -1166,7 +1178,7 @@ fun ArgosyApp(
             val navBarAllowed = onRingDestination &&
                 !hasCapturingOverlay &&
                 !homeAppBarOwnsBottom &&
-                !uiState.isFirstRun &&
+                !setupActive &&
                 !isDrawerOpen &&
                 !isQuickSettingsOpen &&
                 !quickMenuState.isVisible &&
@@ -1217,7 +1229,7 @@ fun ArgosyApp(
                  * connected. The window inset is not trusted for this: it reads zero here even
                  * with the keyboard on screen, which is what made every text field unusable.
                  */
-                LaunchedEffect(keySinkFocused, drawerState.isOpen, uiState.isFirstRun) {
+                LaunchedEffect(keySinkFocused, drawerState.isOpen, setupActive) {
                     if (!keySinkFocused && !drawerState.isOpen) {
                         delay(KEY_SINK_RECLAIM_GRACE_MS)
                         if (imeManager?.isAcceptingText == true) return@LaunchedEffect
@@ -1238,7 +1250,7 @@ fun ArgosyApp(
 
                 ModalNavigationDrawer(
                 drawerState = drawerState,
-                gesturesEnabled = !uiState.isFirstRun,
+                gesturesEnabled = !setupActive,
                 scrimColor = scrimColor,
                 drawerContent = {
                     MainDrawer(
@@ -1284,7 +1296,7 @@ fun ArgosyApp(
                     val density = LocalDensity.current
                     var navBarHeight by remember { mutableStateOf(0.dp) }
                     val navBarHoldsSpace = navRingState.isAlwaysVisible && onRingDestination &&
-                        !homeAppBarOwnsBottom && !uiState.isFirstRun && navBarHeight > 0.dp
+                        !homeAppBarOwnsBottom && !setupActive && navBarHeight > 0.dp
                     val navBarClearance = if (navBarHoldsSpace) navBarHeight + Dimens.spacingSm else 0.dp
                     val navBarLift by androidx.compose.animation.core.animateDpAsState(
                         targetValue = if (

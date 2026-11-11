@@ -28,5 +28,7 @@ fun DownloadGameFailureReason.toNotificationText(): NotificationText = when (thi
         NotificationText.Res(R.string.error_download_game_not_found_for_repair)
     DownloadGameFailureReason.NotMultiDisc ->
         NotificationText.Res(R.string.error_download_not_multi_disc)
+    DownloadGameFailureReason.NoRomFolder ->
+        NotificationText.Res(R.string.error_download_game_no_rom_folder)
     is DownloadGameFailureReason.Extraction -> reason.toNotificationText()
 }

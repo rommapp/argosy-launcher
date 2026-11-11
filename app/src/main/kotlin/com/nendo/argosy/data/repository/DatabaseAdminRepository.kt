@@ -240,7 +240,7 @@ class DatabaseAdminRepository @Inject constructor(
                     }
                     val removed = if (file.isDirectory) {
                         val platformDir = gameRepository.get().getDownloadDirForPlatformId(target.game.platformId)
-                        !FileNames.isWithin(platformDir, file) && file.deleteRecursively()
+                        platformDir != null && !FileNames.isWithin(platformDir, file) && file.deleteRecursively()
                     } else {
                         file.delete()
                     }

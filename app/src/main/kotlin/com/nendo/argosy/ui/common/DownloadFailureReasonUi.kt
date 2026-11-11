@@ -71,5 +71,7 @@ fun DownloadFailureReason.toNotificationText(): NotificationText = when (this) {
         NotificationText.Res(R.string.error_download_no_longer_exists)
     is DownloadFailureReason.ExtractionFailed ->
         message?.let { NotificationText.Raw(it) } ?: NotificationText.Res(R.string.error_download_extraction_failed)
+    DownloadFailureReason.NoRomFolder ->
+        NotificationText.Res(R.string.error_download_no_rom_folder)
     is DownloadFailureReason.LegacyRaw -> NotificationText.Raw(message)
 }

@@ -54,7 +54,10 @@ class DeleteGameUseCase @Inject constructor(
         }
 
         val path = game.localPath ?: return false
-        val platformFolder = gameRepository.getDownloadDirForPlatformId(game.platformId)
+        val platformFolder = gameRepository.getDownloadDirForPlatformId(game.platformId) ?: run {
+            Logger.warn(TAG, "Kept game $gameId: no game folder to check its files against")
+            return false
+        }
 
         gameRepository.clearLocalPath(gameId)
         downloadManager.get().discardForGame(gameId)

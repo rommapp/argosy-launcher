@@ -1976,7 +1976,7 @@ class SettingsViewModel @Inject constructor(
      */
     private fun offerCombineRestore(platformId: Long) {
         viewModelScope.launch {
-            val platformDir = gameRepository.getDownloadDirForPlatformId(platformId)
+            val platformDir = gameRepository.getDownloadDirForPlatformId(platformId) ?: return@launch
             val holding = extContentOrganizer.gamesHoldingCombinedLayout(platformId, platformDir)
             if (holding.isEmpty()) return@launch
             _uiState.update {
@@ -1992,7 +1992,7 @@ class SettingsViewModel @Inject constructor(
     fun confirmCombineRestore(platformId: Long) {
         _uiState.update { it.copy(platformDetail = it.platformDetail.copy(combineRestoreCount = 0)) }
         viewModelScope.launch {
-            val platformDir = gameRepository.getDownloadDirForPlatformId(platformId)
+            val platformDir = gameRepository.getDownloadDirForPlatformId(platformId) ?: return@launch
             val holding = extContentOrganizer.gamesHoldingCombinedLayout(platformId, platformDir)
             val restored = holding.count { extContentOrganizer.restoreFromCombinedLayout(it, platformDir) > 0 }
             notificationManager.show(

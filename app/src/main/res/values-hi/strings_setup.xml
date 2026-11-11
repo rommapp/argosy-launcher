@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="setup_header_back_desc">वापस</string>
+    <string name="setup_rail_desc">चरण %1$d / %2$d</string>
+    <string name="setup_lead_eyebrow">चरण %1$d / %2$d</string>
+    <string name="setup_lead_context_on_other_screen">हर आइटम का विवरण दूसरी स्क्रीन पर दिखता है।</string>
+
+    <string name="setup_diagram_start">Start</string>
+    <string name="setup_diagram_select">Select</string>
+    <string name="setup_diagram_position_top_desc">ऊपरी बटन, %1$s</string>
+    <string name="setup_diagram_position_left_desc">बायाँ बटन, %1$s</string>
+    <string name="setup_diagram_position_right_desc">दायाँ बटन, %1$s</string>
+    <string name="setup_diagram_position_bottom_desc">निचला बटन, %1$s</string>
+    <string name="setup_diagram_position_menu_left_desc">बायाँ मेनू बटन, %1$s</string>
+    <string name="setup_diagram_position_menu_right_desc">दायाँ मेनू बटन, %1$s</string>
+
+    <string name="ui_permission_row_chip_allowed">अनुमति है</string>
+    <string name="ui_permission_row_chip_not_allowed">अनुमति नहीं</string>
+    <string name="ui_permission_row_chip_checking">जाँच हो रही है</string>
+    <string name="ui_permission_row_chip_unavailable">उपलब्ध नहीं</string>
+    <string name="ui_permission_tier_required">आवश्यक</string>
+    <string name="ui_permission_tier_recommended">अनुशंसित</string>
+    <string name="ui_permission_tier_other">अन्य</string>
+</resources>

@@ -71,8 +71,6 @@ class FirstRunInputHandler(
                 viewModel.closePlatformSearch()
                 return InputResult.HANDLED
             }
-            viewModel.proceedFromPlatformSelect()
-            return InputResult.HANDLED
         }
         viewModel.previousStep()
         return InputResult.HANDLED

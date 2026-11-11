@@ -193,10 +193,33 @@
     <!-- Note under the button once storage access has been granted. "Settings" names this app's
          own Settings screen, not the Android system settings. -->
     <string name="firstrun_permissions_note_optional">You can grant the other permissions later in Settings.</string>
-    <!-- Note under the button while storage access is still missing, shown in the error colour.
-         First sentence is an imperative; "The others" are the three optional permissions.
-         "Settings" names this app's own Settings screen. -->
-    <string name="firstrun_permissions_note_storage_required">Grant storage access to continue. The others are optional and can be granted later in Settings.</string>
+    <!-- Note under the button while a required permission is still missing, shown in the error
+         colour. The three named permissions are required; "Display over other apps" is optional.
+         Name each the way Android system settings name it in your language. -->
+    <string name="firstrun_permissions_note_required_missing">Allow all files access, usage access and notifications to continue. Display over other apps is optional.</string>
+    <!-- Replaces the usage access description on devices whose Android build has no Usage Access
+         settings screen, so the permission cannot be granted and setup continues without it. -->
+    <string name="firstrun_permissions_usage_unavailable">Not available on this device. Setup continues without it.</string>
+
+    <!-- ===== Save sync: whether saves are backed up to the server ===== -->
+
+    <!-- Heading of the step that asks whether game saves sync with the server. "Save" is a noun
+         here: a game's save data. -->
+    <string name="firstrun_save_sync_title">Save sync</string>
+    <!-- Line under that heading. "saves" are game save data; "pick up" means continue playing. -->
+    <string name="firstrun_save_sync_intro">Keep your saves on your server so you can pick up on any device.</string>
+    <!-- Option that turns save sync on. "Sync" is a verb; "saves" is a noun (game save data). -->
+    <string name="firstrun_save_sync_option_on_title">Sync saves</string>
+    <!-- Description under that option. "states" are save states, snapshots of a running game. -->
+    <string name="firstrun_save_sync_option_on_description">Backs up saves and states, and restores them before you play</string>
+    <!-- Option that leaves save sync off. "saves" is a noun (game save data). -->
+    <string name="firstrun_save_sync_option_off_title">Keep saves on this device</string>
+    <!-- Description under that option. "Settings" names this app's own Settings screen. -->
+    <string name="firstrun_save_sync_option_off_description">Nothing is uploaded. You can turn sync on later in Settings.</string>
+    <!-- Accessibility label of the check mark on the chosen save sync option. Adjective. -->
+    <string name="firstrun_save_sync_option_selected">Selected</string>
+    <!-- Button that records the chosen option and moves to the next step. -->
+    <string name="firstrun_save_sync_button_next">Next</string>
 
     <!-- ===== Step 5: where downloaded games are kept ===== -->
 

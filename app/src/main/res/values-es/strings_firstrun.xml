@@ -66,7 +66,16 @@
     <string name="firstrun_permissions_usage_description">Habilita el seguimiento preciso del tiempo de juego y la reanudación.</string>
     <string name="firstrun_permissions_button_continue">Continuar</string>
     <string name="firstrun_permissions_note_optional">Puedes conceder los demás permisos más tarde desde Ajustes.</string>
-    <string name="firstrun_permissions_note_storage_required">Concede acceso al almacenamiento para continuar. Los demás son opcionales y se pueden conceder más tarde desde Ajustes.</string>
+    <string name="firstrun_permissions_note_required_missing">Permite el acceso a todos los archivos, el acceso a datos de uso y las notificaciones para continuar. Mostrar sobre otras aplicaciones es opcional.</string>
+    <string name="firstrun_permissions_usage_unavailable">No disponible en este dispositivo. La configuración continúa sin él.</string>
+    <string name="firstrun_save_sync_title">Sincronización de partidas</string>
+    <string name="firstrun_save_sync_intro">Guarda tus partidas en tu servidor para continuar en cualquier dispositivo.</string>
+    <string name="firstrun_save_sync_option_on_title">Sincronizar partidas</string>
+    <string name="firstrun_save_sync_option_on_description">Hace copia de las partidas y los estados guardados, y los restaura antes de jugar</string>
+    <string name="firstrun_save_sync_option_off_title">Mantener las partidas en este dispositivo</string>
+    <string name="firstrun_save_sync_option_off_description">No se sube nada. Puedes activar la sincronización más tarde desde Ajustes.</string>
+    <string name="firstrun_save_sync_option_selected">Seleccionado</string>
+    <string name="firstrun_save_sync_button_next">Siguiente</string>
 
     <string name="firstrun_rom_path_title">Ruta de los juegos</string>
     <string name="firstrun_rom_path_description">Elige dónde se guardarán tus archivos de juego. Crearemos subcarpetas para cada consola automáticamente.</string>

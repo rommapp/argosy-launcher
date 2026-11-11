@@ -58,6 +58,8 @@
     <string name="error_download_no_discs_queued">Failed to queue any disc downloads</string>
     <string name="error_download_game_not_found_for_repair">Game not found</string>
     <string name="error_download_not_multi_disc">Not a multi-disc game</string>
+    <!-- Shown when a download is asked for before a folder for game files has been chosen. -->
+    <string name="error_download_game_no_rom_folder">Choose a game folder before downloading</string>
 
     <!-- DownloadManager / DownloadFailureReason (queue-level failures, persisted as a
          stable token via DownloadFailureReasonCodec, never as this English text). -->
@@ -75,6 +77,8 @@
     <string name="error_download_downloaded_file_missing">Downloaded file not found</string>
     <string name="error_download_no_download_entry">No download entry found</string>
     <string name="error_download_no_longer_exists">Downloaded file no longer exists</string>
+    <!-- Reason a queued download stopped: no folder for game files has been chosen. -->
+    <string name="error_download_no_rom_folder">Choose a game folder before downloading</string>
     <string name="error_download_extraction_failed">Extraction failed</string>
 
     <!-- FilePickerFlowUseCase (a DownloadResult.AlreadyDownloaded surfaced as an issue

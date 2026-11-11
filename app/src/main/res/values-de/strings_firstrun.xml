@@ -64,7 +64,16 @@
     <string name="firstrun_permissions_usage_description">Aktiviert die genaue Erfassung der Spielzeit und die Fortsetzung.</string>
     <string name="firstrun_permissions_button_continue">Weiter</string>
     <string name="firstrun_permissions_note_optional">Die anderen Berechtigungen können Sie später in den Einstellungen erteilen.</string>
-    <string name="firstrun_permissions_note_storage_required">Erteilen Sie den Speicherzugriff, um fortzufahren. Die anderen sind optional und können später in den Einstellungen erteilt werden.</string>
+    <string name="firstrun_permissions_note_required_missing">Erlauben Sie Zugriff auf alle Dateien, Zugriff auf Nutzungsdaten und Benachrichtigungen, um fortzufahren. Über anderen Apps einblenden ist optional.</string>
+    <string name="firstrun_permissions_usage_unavailable">Auf diesem Gerät nicht verfügbar. Die Einrichtung läuft ohne weiter.</string>
+    <string name="firstrun_save_sync_title">Spielstand-Synchronisierung</string>
+    <string name="firstrun_save_sync_intro">Bewahren Sie Ihre Spielstände auf Ihrem Server auf, um auf jedem Gerät weiterzuspielen.</string>
+    <string name="firstrun_save_sync_option_on_title">Spielstände synchronisieren</string>
+    <string name="firstrun_save_sync_option_on_description">Sichert Spielstände und Speicherzustände und stellt sie vor dem Spielen wieder her</string>
+    <string name="firstrun_save_sync_option_off_title">Spielstände auf diesem Gerät behalten</string>
+    <string name="firstrun_save_sync_option_off_description">Es wird nichts hochgeladen. Sie können die Synchronisierung später in den Einstellungen aktivieren.</string>
+    <string name="firstrun_save_sync_option_selected">Ausgewählt</string>
+    <string name="firstrun_save_sync_button_next">Weiter</string>
 
     <string name="firstrun_rom_path_title">Spielepfad</string>
     <string name="firstrun_rom_path_description">Wählen Sie, wo Ihre Spieldateien gespeichert werden. Wir erstellen automatisch Unterordner für jede Konsole.</string>

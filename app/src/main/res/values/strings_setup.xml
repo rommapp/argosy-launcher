@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!--
+      Owner: ui/screens/setup/components (key prefix setup_) and the shared permission row in
+      ui/components/PermissionCard.kt (key prefix ui_permission_).
+      Keys are named for the usage site, never for the English text, and identical English
+      is never shared between two usage sites.
+
+      These label the shared pieces of the first-run setup flow: the step container, its
+      progress rail, the controller button diagram, and the permission rows that setup and
+      Settings both show.
+    -->
+
+    <!-- ===== Step container ===== -->
+
+    <!-- Accessibility description for the arrow at the top left of a setup page. Tapping it goes
+         to the previous setup page. -->
+    <string name="setup_header_back_desc">Back</string>
+    <!-- Accessibility description for the segmented progress line at the top of setup.
+         %1$d is the current page number, %2$d the number of pages. -->
+    <string name="setup_rail_desc">Step %1$d of %2$d</string>
+    <!-- Small label above a setup page title, shown in capitals. %1$d is the current page number,
+         %2$d the number of pages. -->
+    <string name="setup_lead_eyebrow">Step %1$d of %2$d</string>
+    <!-- Line under a setup page title on a device with two screens, where the explanation for
+         the selected item is shown on the other screen. -->
+    <string name="setup_lead_context_on_other_screen">Details for each item show on the other screen.</string>
+
+    <!-- ===== Controller button diagram ===== -->
+
+    <!-- Label on the small pill for the controller's Start (menu) button in the button diagram.
+         The name of a physical controller button. -->
+    <string name="setup_diagram_start">Start</string>
+    <!-- Label on the small pill for the controller's Select (view) button in the button diagram.
+         The name of a physical controller button, not the verb "choose". -->
+    <string name="setup_diagram_select">Select</string>
+    <!-- Accessibility description for the top face button in the diagram. %1$s is the button's
+         letter, for example X. -->
+    <string name="setup_diagram_position_top_desc">Top button, %1$s</string>
+    <!-- Accessibility description for the left face button in the diagram. %1$s is the button's
+         letter, for example Y. -->
+    <string name="setup_diagram_position_left_desc">Left button, %1$s</string>
+    <!-- Accessibility description for the right face button in the diagram. %1$s is the button's
+         letter, for example A. -->
+    <string name="setup_diagram_position_right_desc">Right button, %1$s</string>
+    <!-- Accessibility description for the bottom face button in the diagram. %1$s is the button's
+         letter, for example B. -->
+    <string name="setup_diagram_position_bottom_desc">Bottom button, %1$s</string>
+    <!-- Accessibility description for the left of the two small menu buttons in the diagram.
+         %1$s is the button's name, Start or Select. -->
+    <string name="setup_diagram_position_menu_left_desc">Left menu button, %1$s</string>
+    <!-- Accessibility description for the right of the two small menu buttons in the diagram.
+         %1$s is the button's name, Start or Select. -->
+    <string name="setup_diagram_position_menu_right_desc">Right menu button, %1$s</string>
+
+    <!-- ===== Permission rows ===== -->
+
+    <!-- Status chip on a permission row: Android has granted this permission to Argosy. -->
+    <string name="ui_permission_row_chip_allowed">Allowed</string>
+    <!-- Status chip on a permission row: the permission has not been granted yet. -->
+    <string name="ui_permission_row_chip_not_allowed">Not allowed</string>
+    <!-- Status chip on a permission row while Argosy is checking or granting the permission.
+         Present participle, short. -->
+    <string name="ui_permission_row_chip_checking">Checking</string>
+    <!-- Status chip on a permission row: this device has no screen for granting the permission. -->
+    <string name="ui_permission_row_chip_unavailable">Not available</string>
+    <!-- Heading over the permissions Argosy cannot work without. Shown in capitals. Adjective. -->
+    <string name="ui_permission_tier_required">Required</string>
+    <!-- Heading over the permissions that improve Argosy but are optional. Shown in capitals.
+         Adjective. -->
+    <string name="ui_permission_tier_recommended">Recommended</string>
+    <!-- Heading over the remaining optional permissions in Settings. Shown in capitals. -->
+    <string name="ui_permission_tier_other">Other</string>
+</resources>

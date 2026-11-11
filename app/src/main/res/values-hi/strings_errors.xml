@@ -43,6 +43,7 @@
     <string name="error_download_no_discs_queued">किसी भी डिस्क डाउनलोड को कतार में जोड़ने में विफल</string>
     <string name="error_download_game_not_found_for_repair">गेम नहीं मिला</string>
     <string name="error_download_not_multi_disc">यह मल्टी-डिस्क गेम नहीं है</string>
+    <string name="error_download_game_no_rom_folder">डाउनलोड करने से पहले गेम फ़ोल्डर चुनें</string>
 
     <!-- DownloadManager / DownloadFailureReason -->
     <string name="error_download_invalid_content_type">अमान्य फ़ाइल प्रकार: %1$s</string>
@@ -58,6 +59,7 @@
     <string name="error_download_downloaded_file_missing">डाउनलोड की गई फ़ाइल नहीं मिली</string>
     <string name="error_download_no_download_entry">कोई डाउनलोड एंट्री नहीं मिली</string>
     <string name="error_download_no_longer_exists">डाउनलोड की गई फ़ाइल अब मौजूद नहीं है</string>
+    <string name="error_download_no_rom_folder">डाउनलोड करने से पहले गेम फ़ोल्डर चुनें</string>
     <string name="error_download_extraction_failed">एक्सट्रैक्शन विफल</string>
 
     <!-- FilePickerFlowUseCase -->

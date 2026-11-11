@@ -23,6 +23,7 @@ import com.nendo.argosy.data.social.NetplaySession
 import com.nendo.argosy.data.social.SocialConnectionState
 import com.nendo.argosy.data.social.SocialRepository
 import com.nendo.argosy.data.social.SocialUser
+import com.nendo.argosy.domain.model.isComplete
 import com.nendo.argosy.domain.usecase.game.LaunchGameUseCase
 import com.nendo.argosy.libretro.LibretroActivity
 import com.nendo.argosy.core.notification.NotificationDuration
@@ -79,7 +80,7 @@ import javax.inject.Inject
 private const val RECONNECT_SETTLE_MS = 5_000L
 
 data class ArgosyUiState(
-    val isFirstRun: Boolean = true,
+    val setupIncomplete: Boolean = true,
     val isLoading: Boolean = true,
     @StringRes val startupStatusRes: Int? = null,
     val showStatusClock: Boolean = true,
@@ -204,7 +205,8 @@ class ArgosyViewModel @Inject constructor(
     private val connectedControllerTracker: com.nendo.argosy.core.input.ConnectedControllerTracker,
     val apkInstallManager: com.nendo.argosy.data.update.ApkInstallManager,
     val privilegedAccess: com.nendo.argosy.data.access.PrivilegedAccess,
-    private val runningGames: com.nendo.argosy.data.emulator.background.RunningGames
+    private val runningGames: com.nendo.argosy.data.emulator.background.RunningGames,
+    private val setupStateRepository: com.nendo.argosy.data.setup.SetupStateRepository
 ) : ViewModel() {
 
     val runningGamesUi: StateFlow<com.nendo.argosy.ui.common.RunningGamesUi> = runningGames.state
@@ -337,12 +339,12 @@ class ArgosyViewModel @Inject constructor(
         preferencesRepository.userPreferences,
         connectedControllerTracker.activeLayout,
         launcherStartup.complete,
-        launcherStartup.status
-    ) { prefs, detectedLayout, startupDone, status ->
+        launcherStartup.status,
+        setupStateRepository.state
+    ) { prefs, detectedLayout, startupDone, status, setup ->
         val glyphSwaps = prefs.buttonGlyphSwaps(detectedLayout)
-        val hasExistingConfig = prefs.rommBaseUrl != null || prefs.romStoragePath != null
         ArgosyUiState(
-            isFirstRun = !prefs.firstRunComplete && !hasExistingConfig,
+            setupIncomplete = !setup.isComplete,
             isLoading = !startupDone,
             startupStatusRes = status,
             showStatusClock = prefs.showStatusClock,

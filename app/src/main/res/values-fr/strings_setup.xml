@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="setup_header_back_desc">Retour</string>
+    <string name="setup_rail_desc">Étape %1$d sur %2$d</string>
+    <string name="setup_lead_eyebrow">Étape %1$d sur %2$d</string>
+    <string name="setup_lead_context_on_other_screen">Les détails de chaque élément s\'affichent sur l\'autre écran.</string>
+
+    <string name="setup_diagram_start">Start</string>
+    <string name="setup_diagram_select">Select</string>
+    <string name="setup_diagram_position_top_desc">Bouton du haut, %1$s</string>
+    <string name="setup_diagram_position_left_desc">Bouton de gauche, %1$s</string>
+    <string name="setup_diagram_position_right_desc">Bouton de droite, %1$s</string>
+    <string name="setup_diagram_position_bottom_desc">Bouton du bas, %1$s</string>
+    <string name="setup_diagram_position_menu_left_desc">Bouton de menu gauche, %1$s</string>
+    <string name="setup_diagram_position_menu_right_desc">Bouton de menu droit, %1$s</string>
+
+    <string name="ui_permission_row_chip_allowed">Autorisée</string>
+    <string name="ui_permission_row_chip_not_allowed">Non autorisée</string>
+    <string name="ui_permission_row_chip_checking">Vérification</string>
+    <string name="ui_permission_row_chip_unavailable">Indisponible</string>
+    <string name="ui_permission_tier_required">Obligatoires</string>
+    <string name="ui_permission_tier_recommended">Recommandées</string>
+    <string name="ui_permission_tier_other">Autres</string>
+</resources>

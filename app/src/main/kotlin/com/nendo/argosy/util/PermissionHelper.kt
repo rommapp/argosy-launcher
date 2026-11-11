@@ -25,6 +25,9 @@ class PermissionHelper @Inject constructor() {
         return mode == AppOpsManager.MODE_ALLOWED
     }
 
+    fun canRequestUsageStats(context: Context): Boolean =
+        Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS).resolveActivity(context.packageManager) != null
+
     fun openUsageStatsSettings(context: Context) {
         val intent = Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS).apply {
             flags = Intent.FLAG_ACTIVITY_NEW_TASK

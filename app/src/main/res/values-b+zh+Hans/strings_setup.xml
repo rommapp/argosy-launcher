@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="setup_header_back_desc">返回</string>
+    <string name="setup_rail_desc">第 %1$d 步，共 %2$d 步</string>
+    <string name="setup_lead_eyebrow">第 %1$d 步，共 %2$d 步</string>
+    <string name="setup_lead_context_on_other_screen">每一项的详细说明显示在另一块屏幕上。</string>
+
+    <string name="setup_diagram_start">Start</string>
+    <string name="setup_diagram_select">Select</string>
+    <string name="setup_diagram_position_top_desc">上方按键，%1$s</string>
+    <string name="setup_diagram_position_left_desc">左侧按键，%1$s</string>
+    <string name="setup_diagram_position_right_desc">右侧按键，%1$s</string>
+    <string name="setup_diagram_position_bottom_desc">下方按键，%1$s</string>
+    <string name="setup_diagram_position_menu_left_desc">左侧菜单键，%1$s</string>
+    <string name="setup_diagram_position_menu_right_desc">右侧菜单键，%1$s</string>
+
+    <string name="ui_permission_row_chip_allowed">已允许</string>
+    <string name="ui_permission_row_chip_not_allowed">未允许</string>
+    <string name="ui_permission_row_chip_checking">正在检查</string>
+    <string name="ui_permission_row_chip_unavailable">不可用</string>
+    <string name="ui_permission_tier_required">必需</string>
+    <string name="ui_permission_tier_recommended">推荐</string>
+    <string name="ui_permission_tier_other">其他</string>
+</resources>

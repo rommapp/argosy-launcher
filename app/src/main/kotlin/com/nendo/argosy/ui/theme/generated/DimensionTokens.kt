@@ -153,6 +153,8 @@ object DimensionTokens {
         const val runningFriendAvatar = 30
         const val runningCartridgeWidth = 30
         const val runningCartridgeHeight = 34
+        const val setupLeadColumnWidth = 280
+        const val setupContentMaxWidth = 560
     }
 
     object Elevation {

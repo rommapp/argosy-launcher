@@ -1,11 +1,7 @@
 package com.nendo.argosy.ui.screens.firstrun
 
-import android.Manifest
-import android.os.Build
-import android.content.pm.PackageManager
 import android.provider.Settings
 import androidx.annotation.StringRes
-import androidx.core.content.ContextCompat
 import androidx.lifecycle.ViewModel
 import com.nendo.argosy.R
 import androidx.lifecycle.viewModelScope
@@ -32,9 +28,10 @@ import com.nendo.argosy.ui.input.HapticPattern
 import com.nendo.argosy.ui.components.PLATFORM_HEADER_COUNT
 import com.nendo.argosy.ui.components.PLATFORM_HEADER_SEARCH
 import com.nendo.argosy.ui.components.PLATFORM_HEADER_SORT
-import com.nendo.argosy.util.PermissionHelper
+import com.nendo.argosy.data.setup.SetupStateRepository
+import com.nendo.argosy.domain.setup.SetupRouter
+import com.nendo.argosy.libretro.LibretroCoreRegistry
 import com.nendo.argosy.util.PlatformFilterLogic
-import com.nendo.argosy.util.StorageAccess
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -51,6 +48,7 @@ enum class FirstRunStep {
     PERMISSIONS,
     ROM_PATH,
     IMAGE_CACHE,
+    SAVE_SYNC,
     PLATFORM_SELECT,
     CORE_PROMPT,
     CORE_DOWNLOAD,
@@ -122,6 +120,9 @@ data class FirstRunUiState(
     val hasNotificationPermission: Boolean = false,
     val hasOverlayPermission: Boolean = false,
     val hasUsageStatsPermission: Boolean = false,
+    val usageStatsGrantable: Boolean = true,
+    val requiredPermissionsGranted: Boolean = false,
+    val saveSyncEnabled: Boolean = true,
     val rommFocusField: Int? = null,
     val platforms: List<PlatformEntity> = emptyList(),
     val platformsAll: List<PlatformEntity> = emptyList(),
@@ -146,7 +147,7 @@ class FirstRunViewModel @Inject constructor(
     private val preferencesRepository: UserPreferencesRepository,
     private val romMRepository: RomMRepository,
     private val platformRepository: PlatformRepository,
-    private val permissionHelper: PermissionHelper,
+    private val setupStateRepository: SetupStateRepository,
     private val coreManager: LibretroCoreManager,
     private val gamepadInputHandler: GamepadInputHandler,
     private val hapticManager: HapticFeedbackManager,
@@ -168,106 +169,134 @@ class FirstRunViewModel @Inject constructor(
                 _uiState.update { it.copy(importedCertCount = certs.size) }
             }
         }
+        viewModelScope.launch {
+            setupStateRepository.facts.collect { facts ->
+                _uiState.update {
+                    it.copy(
+                        hasStoragePermission = facts.allFilesAccess,
+                        hasNotificationPermission = facts.notifications,
+                        hasUsageStatsPermission = facts.usageAccess,
+                        usageStatsGrantable = facts.usageAccessGrantable,
+                        requiredPermissionsGranted = SetupRouter.permissionsSatisfied(facts)
+                    )
+                }
+            }
+        }
+        viewModelScope.launch { openAtFirstMissingItem() }
+    }
+
+    private suspend fun openAtFirstMissingItem() {
+        val facts = setupStateRepository.facts.first()
+        val prefs = preferencesRepository.userPreferences.first()
+        val entry = entryStepFor(SetupRouter.derive(facts), facts)
+        _uiState.update { it.copy(rommUrl = it.rommUrl.ifBlank { prefs.rommBaseUrl.orEmpty() }) }
+        if (facts.librarySignedIn) loadLibrarySummary()
+        if (entry != FirstRunStep.WELCOME) moveTo(entry)
+    }
+
+    private suspend fun loadLibrarySummary() {
+        val summary = romMRepository.getLibrarySummary()
+        if (summary !is RomMResult.Success) return
+        val (platformCount, gameCount) = summary.data
+        _uiState.update { it.copy(rommGameCount = gameCount, rommPlatformCount = platformCount) }
     }
 
     fun nextStep() {
-        _uiState.update { state ->
-            val nextStep = when (state.currentStep) {
-                FirstRunStep.WELCOME -> FirstRunStep.ROMM_LOGIN
-                FirstRunStep.ROMM_LOGIN -> FirstRunStep.ROMM_SUCCESS
-                FirstRunStep.ROMM_SUCCESS -> FirstRunStep.PERMISSIONS
-                FirstRunStep.PERMISSIONS -> FirstRunStep.ROM_PATH
-                FirstRunStep.ROM_PATH -> FirstRunStep.IMAGE_CACHE
-                FirstRunStep.IMAGE_CACHE -> {
-                    if (state.rommPlatformCount > 10) FirstRunStep.PLATFORM_SELECT
-                    else FirstRunStep.CORE_PROMPT
-                }
-                FirstRunStep.PLATFORM_SELECT -> FirstRunStep.CORE_PROMPT
-                FirstRunStep.CORE_PROMPT -> FirstRunStep.CORE_DOWNLOAD
-                FirstRunStep.CORE_DOWNLOAD -> FirstRunStep.COMPLETE
-                FirstRunStep.COMPLETE -> FirstRunStep.COMPLETE
-            }
-            val initialFocus = if (nextStep == FirstRunStep.IMAGE_CACHE) 1 else 0
-            state.copy(currentStep = nextStep, focusedIndex = initialFocus)
-        }
-        when (_uiState.value.currentStep) {
-            FirstRunStep.PLATFORM_SELECT -> loadPlatformsForSelection()
-            FirstRunStep.CORE_PROMPT -> checkMissingCores()
-            FirstRunStep.CORE_DOWNLOAD -> prepareCoreDownloads()
-            else -> {}
-        }
+        moveTo(stepAfter(_uiState.value.currentStep, _uiState.value.rommPlatformCount))
     }
 
     fun previousStep() {
         devicePollJob?.cancel()
         devicePollJob = null
         romMRepository.cancelDeviceAuth()
+        _uiState.update { it.copy(rommUrlCommitted = false) }
+        moveTo(stepBefore(_uiState.value.currentStep, _uiState.value.rommPlatformCount))
+    }
+
+    private fun moveTo(step: FirstRunStep) {
+        _uiState.update { it.copy(currentStep = step, focusedIndex = initialFocusFor(step, it)) }
+        enterStep(step)
+    }
+
+    private fun initialFocusFor(step: FirstRunStep, state: FirstRunUiState): Int = when (step) {
+        FirstRunStep.IMAGE_CACHE -> if (state.imageCacheFolderSelected) 0 else 1
+        FirstRunStep.SAVE_SYNC -> if (state.saveSyncEnabled) SAVE_SYNC_ON_INDEX else SAVE_SYNC_OFF_INDEX
+        else -> 0
+    }
+
+    private fun enterStep(step: FirstRunStep) {
+        when (step) {
+            FirstRunStep.ROMM_SUCCESS -> viewModelScope.launch {
+                if (_uiState.value.rommGameCount == 0) loadLibrarySummary()
+            }
+            FirstRunStep.PERMISSIONS -> refreshAllPermissions()
+            FirstRunStep.ROM_PATH, FirstRunStep.IMAGE_CACHE, FirstRunStep.SAVE_SYNC ->
+                viewModelScope.launch { showSavedValues() }
+            FirstRunStep.PLATFORM_SELECT -> viewModelScope.launch { loadPlatforms(defaultSyncEnabled = false) }
+            FirstRunStep.CORE_PROMPT -> viewModelScope.launch { checkMissingCores() }
+            FirstRunStep.CORE_DOWNLOAD -> viewModelScope.launch { prepareCoreDownloads() }
+            else -> {}
+        }
+    }
+
+    private suspend fun showSavedValues() {
+        val prefs = preferencesRepository.userPreferences.first()
+        val saveSyncAnswered = setupStateRepository.facts.first().saveSyncAnswered
         _uiState.update { state ->
-            val prevStep = when (state.currentStep) {
-                FirstRunStep.WELCOME -> FirstRunStep.WELCOME
-                FirstRunStep.ROMM_LOGIN -> FirstRunStep.WELCOME
-                FirstRunStep.ROMM_SUCCESS -> FirstRunStep.ROMM_LOGIN
-                FirstRunStep.PERMISSIONS -> FirstRunStep.ROMM_SUCCESS
-                FirstRunStep.ROM_PATH -> FirstRunStep.PERMISSIONS
-                FirstRunStep.IMAGE_CACHE -> FirstRunStep.ROM_PATH
-                FirstRunStep.PLATFORM_SELECT -> FirstRunStep.IMAGE_CACHE
-                FirstRunStep.CORE_PROMPT -> {
-                    if (state.rommPlatformCount > 10) FirstRunStep.PLATFORM_SELECT
-                    else FirstRunStep.IMAGE_CACHE
-                }
-                FirstRunStep.CORE_DOWNLOAD -> FirstRunStep.CORE_PROMPT
-                FirstRunStep.COMPLETE -> FirstRunStep.CORE_DOWNLOAD
-            }
-            val initialFocus = if (prevStep == FirstRunStep.IMAGE_CACHE) 1 else 0
-            state.copy(currentStep = prevStep, focusedIndex = initialFocus, rommUrlCommitted = false)
+            val romPath = state.romStoragePath ?: prefs.romStoragePath?.takeIf { it.isNotBlank() }
+            val cachePath = state.imageCachePath ?: prefs.imageCachePath?.takeIf { it.isNotBlank() }
+            val saveSync = if (saveSyncAnswered) prefs.saveSyncEnabled else state.saveSyncEnabled
+            val updated = state.copy(
+                romStoragePath = romPath,
+                folderSelected = romPath != null,
+                imageCachePath = cachePath,
+                imageCacheFolderSelected = cachePath != null,
+                saveSyncEnabled = saveSync
+            )
+            updated.copy(focusedIndex = initialFocusFor(updated.currentStep, updated))
         }
     }
 
-    private fun loadPlatformsForSelection() {
-        viewModelScope.launch {
-            when (val result = romMRepository.fetchAndStorePlatforms(defaultSyncEnabled = false)) {
-                is RomMResult.Success -> {
-                    val allPlatforms = result.data
-                    val filtered = PlatformFilterLogic.filterAndSortPlatformEntities(
-                        items = allPlatforms,
-                        searchQuery = _uiState.value.platformFilterSearchQuery,
-                        filterMode = _uiState.value.platformFilterMode,
-                        sortMode = _uiState.value.platformFilterSortMode
-                    )
-                    _uiState.update { it.copy(platformsAll = allPlatforms, platforms = filtered) }
-                }
-                is RomMResult.Error -> {
-                    val platforms = platformRepository.observeAllPlatforms().first()
-                    _uiState.update { it.copy(platformsAll = platforms, platforms = platforms) }
-                }
-            }
+    private suspend fun loadPlatforms(defaultSyncEnabled: Boolean): List<PlatformEntity> {
+        val all = when (val result = romMRepository.fetchAndStorePlatforms(defaultSyncEnabled)) {
+            is RomMResult.Success -> result.data
+            is RomMResult.Error -> platformRepository.observeAllPlatforms().first()
         }
+        _uiState.update {
+            it.copy(
+                platformsAll = all,
+                platforms = PlatformFilterLogic.filterAndSortPlatformEntities(
+                    items = all,
+                    searchQuery = it.platformFilterSearchQuery,
+                    filterMode = it.platformFilterMode,
+                    sortMode = it.platformFilterSortMode
+                )
+            )
+        }
+        return all
     }
 
-    private fun checkMissingCores() {
-        val enabledPlatforms = _uiState.value.platforms
-            .filter { it.syncEnabled }
-            .map { it.slug }
-            .toSet()
+    private suspend fun platformsForCoreCheck(): List<PlatformEntity> =
+        _uiState.value.platformsAll.ifEmpty {
+            loadPlatforms(defaultSyncEnabled = !showsPlatformSelect(_uiState.value.rommPlatformCount))
+        }
 
-        val missingCores = coreManager.getMissingCoresForPlatforms(enabledPlatforms)
-        _uiState.update { it.copy(missingCoreCount = missingCores.size) }
+    private suspend fun missingCores(): List<LibretroCoreRegistry.CoreInfo> {
+        val enabledSlugs = platformsForCoreCheck().filter { it.syncEnabled }.map { it.slug }.toSet()
+        return coreManager.getMissingCoresForPlatforms(enabledSlugs)
+    }
+
+    private suspend fun checkMissingCores() {
+        val missing = missingCores()
+        _uiState.update { it.copy(missingCoreCount = missing.size) }
     }
 
     fun skipCorePrompt() {
-        _uiState.update { state ->
-            state.copy(currentStep = FirstRunStep.COMPLETE, focusedIndex = 0)
-        }
+        moveTo(FirstRunStep.COMPLETE)
     }
 
-    private fun prepareCoreDownloads() {
-        val enabledPlatforms = _uiState.value.platforms
-            .filter { it.syncEnabled }
-            .map { it.slug }
-            .toSet()
-
-        val missingCores = coreManager.getMissingCoresForPlatforms(enabledPlatforms)
-        val coreDownloads = missingCores.map { core ->
+    private suspend fun prepareCoreDownloads() {
+        val coreDownloads = missingCores().map { core ->
             CoreDownloadState(
                 coreId = core.coreId,
                 displayName = core.displayName,
@@ -463,6 +492,7 @@ class FirstRunViewModel @Inject constructor(
             FirstRunStep.PERMISSIONS -> 4
             FirstRunStep.ROM_PATH -> if (state.folderSelected) 1 else 0
             FirstRunStep.IMAGE_CACHE -> 1
+            FirstRunStep.SAVE_SYNC -> SAVE_SYNC_NEXT_INDEX
             FirstRunStep.PLATFORM_SELECT -> state.platforms.size
             FirstRunStep.CORE_PROMPT -> 1
             FirstRunStep.CORE_DOWNLOAD -> 1
@@ -866,11 +896,17 @@ class FirstRunViewModel @Inject constructor(
         }
     }
 
+    fun proceedFromRommSuccess() {
+        viewModelScope.launch { setupStateRepository.confirmLibrarySource() }
+        nextStep()
+    }
+
     fun proceedFromRomPath() {
         val state = _uiState.value
-        if (state.folderSelected) {
-            nextStep()
-        }
+        val path = state.romStoragePath
+        if (!state.folderSelected || path == null) return
+        viewModelScope.launch { setupStateRepository.confirmRomFolder(path) }
+        nextStep()
     }
 
     fun openImageCachePicker() {
@@ -892,38 +928,38 @@ class FirstRunViewModel @Inject constructor(
 
     fun skipImageCachePath() {
         _uiState.update { it.copy(imageCacheFolderSelected = false, imageCachePath = null) }
+        viewModelScope.launch { preferencesRepository.setImageCachePath(null) }
         nextStep()
     }
 
     fun proceedFromImageCache() {
+        val path = _uiState.value.imageCachePath?.takeIf { _uiState.value.imageCacheFolderSelected }
+        viewModelScope.launch { preferencesRepository.setImageCachePath(path) }
         nextStep()
     }
 
-    fun refreshAllPermissions() {
-        val hasStorage = StorageAccess.isGranted(application)
-        val hasNotification = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            ContextCompat.checkSelfPermission(
-                application,
-                Manifest.permission.POST_NOTIFICATIONS
-            ) == PackageManager.PERMISSION_GRANTED
-        } else {
-            true
-        }
-        val hasOverlay = Settings.canDrawOverlays(application)
-        val hasUsageStats = permissionHelper.hasUsageStatsPermission(application)
-
+    fun selectSaveSync(enabled: Boolean) {
         _uiState.update {
             it.copy(
-                hasStoragePermission = hasStorage,
-                hasNotificationPermission = hasNotification,
-                hasOverlayPermission = hasOverlay,
-                hasUsageStatsPermission = hasUsageStats
+                saveSyncEnabled = enabled,
+                focusedIndex = if (enabled) SAVE_SYNC_ON_INDEX else SAVE_SYNC_OFF_INDEX
             )
         }
     }
 
+    fun proceedFromSaveSync() {
+        val enabled = _uiState.value.saveSyncEnabled
+        viewModelScope.launch { setupStateRepository.answerSaveSync(enabled) }
+        nextStep()
+    }
+
+    fun refreshAllPermissions() {
+        setupStateRepository.refresh()
+        _uiState.update { it.copy(hasOverlayPermission = Settings.canDrawOverlays(application)) }
+    }
+
     fun proceedFromPermissions() {
-        if (!_uiState.value.hasStoragePermission) {
+        if (!_uiState.value.requiredPermissionsGranted) {
             hapticManager.vibrate(HapticPattern.BOUNDARY_HIT)
             return
         }
@@ -931,23 +967,7 @@ class FirstRunViewModel @Inject constructor(
     }
 
     fun completeSetup(onDone: () -> Unit = {}) {
-        val state = _uiState.value
-
-        viewModelScope.launch {
-            if (state.folderSelected) {
-                state.romStoragePath?.let { path ->
-                    preferencesRepository.setRomStoragePath(path)
-                }
-                if (state.imageCacheFolderSelected) {
-                    state.imageCachePath?.let { path ->
-                        preferencesRepository.setImageCachePath(path)
-                    }
-                }
-            }
-            preferencesRepository.setSaveSyncEnabled(true)
-            preferencesRepository.setFirstRunComplete()
-            onDone()
-        }
+        onDone()
     }
 
     fun handleConfirm(
@@ -993,15 +1013,20 @@ class FirstRunViewModel @Inject constructor(
                     }
                 }
             }
-            FirstRunStep.ROMM_SUCCESS -> nextStep()
+            FirstRunStep.ROMM_SUCCESS -> proceedFromRommSuccess()
             FirstRunStep.PERMISSIONS -> {
                 when (state.focusedIndex) {
                     0 -> if (!state.hasStoragePermission) onRequestStorage()
                     1 -> if (!state.hasNotificationPermission) onRequestNotifications()
                     2 -> if (!state.hasOverlayPermission) onRequestOverlay()
-                    3 -> if (!state.hasUsageStatsPermission) onRequestUsageStats()
+                    3 -> if (!state.hasUsageStatsPermission && state.usageStatsGrantable) onRequestUsageStats()
                     4 -> proceedFromPermissions()
                 }
+            }
+            FirstRunStep.SAVE_SYNC -> when (state.focusedIndex) {
+                SAVE_SYNC_ON_INDEX -> selectSaveSync(true)
+                SAVE_SYNC_OFF_INDEX -> selectSaveSync(false)
+                SAVE_SYNC_NEXT_INDEX -> proceedFromSaveSync()
             }
             FirstRunStep.ROM_PATH -> {
                 if (state.folderSelected) {

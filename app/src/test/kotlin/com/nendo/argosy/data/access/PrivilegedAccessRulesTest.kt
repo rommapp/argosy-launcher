@@ -35,13 +35,13 @@ class PrivilegedAccessRulesTest {
     }
 
     @Test
-    fun `the prompt waits for first run, appears once, and never for an enabled route`() {
+    fun `the prompt waits for setup, appears once, and never for an enabled route`() {
         val detected = PrivilegedRoute.MAGISK
-        assertNull(PrivilegedAccessRules.promptRoute(firstRunComplete = false, answered = false, enabled = null, detected = detected))
-        assertEquals(detected, PrivilegedAccessRules.promptRoute(firstRunComplete = true, answered = false, enabled = null, detected = detected))
-        assertNull(PrivilegedAccessRules.promptRoute(firstRunComplete = true, answered = true, enabled = null, detected = detected))
-        assertNull(PrivilegedAccessRules.promptRoute(firstRunComplete = true, answered = false, enabled = detected, detected = detected))
-        assertNull(PrivilegedAccessRules.promptRoute(firstRunComplete = true, answered = false, enabled = null, detected = null))
+        assertNull(PrivilegedAccessRules.promptRoute(setupComplete = false, answered = false, enabled = null, detected = detected))
+        assertEquals(detected, PrivilegedAccessRules.promptRoute(setupComplete = true, answered = false, enabled = null, detected = detected))
+        assertNull(PrivilegedAccessRules.promptRoute(setupComplete = true, answered = true, enabled = null, detected = detected))
+        assertNull(PrivilegedAccessRules.promptRoute(setupComplete = true, answered = false, enabled = detected, detected = detected))
+        assertNull(PrivilegedAccessRules.promptRoute(setupComplete = true, answered = false, enabled = null, detected = null))
     }
 
     @Test

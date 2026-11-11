@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="setup_header_back_desc">Atrás</string>
+    <string name="setup_rail_desc">Paso %1$d de %2$d</string>
+    <string name="setup_lead_eyebrow">Paso %1$d de %2$d</string>
+    <string name="setup_lead_context_on_other_screen">Los detalles de cada elemento aparecen en la otra pantalla.</string>
+
+    <string name="setup_diagram_start">Start</string>
+    <string name="setup_diagram_select">Select</string>
+    <string name="setup_diagram_position_top_desc">Botón superior, %1$s</string>
+    <string name="setup_diagram_position_left_desc">Botón izquierdo, %1$s</string>
+    <string name="setup_diagram_position_right_desc">Botón derecho, %1$s</string>
+    <string name="setup_diagram_position_bottom_desc">Botón inferior, %1$s</string>
+    <string name="setup_diagram_position_menu_left_desc">Botón de menú izquierdo, %1$s</string>
+    <string name="setup_diagram_position_menu_right_desc">Botón de menú derecho, %1$s</string>
+
+    <string name="ui_permission_row_chip_allowed">Permitido</string>
+    <string name="ui_permission_row_chip_not_allowed">No permitido</string>
+    <string name="ui_permission_row_chip_checking">Comprobando</string>
+    <string name="ui_permission_row_chip_unavailable">No disponible</string>
+    <string name="ui_permission_tier_required">Obligatorios</string>
+    <string name="ui_permission_tier_recommended">Recomendados</string>
+    <string name="ui_permission_tier_other">Otros</string>
+</resources>

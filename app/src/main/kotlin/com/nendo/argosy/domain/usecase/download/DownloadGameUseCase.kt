@@ -46,6 +46,7 @@ sealed class DownloadGameFailureReason {
     data object NoDiscsQueued : DownloadGameFailureReason()
     data object GameNotFoundForRepair : DownloadGameFailureReason()
     data object NotMultiDisc : DownloadGameFailureReason()
+    data object NoRomFolder : DownloadGameFailureReason()
     data class Extraction(val reason: com.nendo.argosy.data.download.DownloadFailureReason) : DownloadGameFailureReason()
 }
 
@@ -71,6 +72,10 @@ class DownloadGameUseCase @Inject constructor(
         val rommId = game.rommId
             ?: return DownloadResult.Error(DownloadGameFailureReason.GameNotSynced)
 
+        if (downloadManager.isRomFolderMissing()) {
+            return DownloadResult.Error(DownloadGameFailureReason.NoRomFolder)
+        }
+
         if (gameRepository.validateAndDiscoverGame(gameId)) {
             Log.d(TAG, "Game already downloaded: ${game.title}")
             return DownloadResult.AlreadyDownloaded
@@ -88,7 +93,7 @@ class DownloadGameUseCase @Inject constructor(
             decodedFailure is com.nendo.argosy.data.download.DownloadFailureReason.ExtractionFailed
         ) {
             val targetFile = downloadManager.getDownloadPath(gameId, failedEntry.platformSlug, failedEntry.fileName)
-            if (targetFile.exists()) {
+            if (targetFile?.exists() == true) {
                 return DownloadResult.ExtractionFailed(
                     gameId = gameId,
                     fileName = failedEntry.fileName,

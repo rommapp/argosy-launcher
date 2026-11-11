@@ -76,7 +76,7 @@ class FilePickerFlowUseCase @Inject constructor(
      */
     private suspend fun gameFolderOf(game: GameEntity): File? {
         val folder = game.localPath?.let { File(it).parentFile }?.takeIf { it.isDirectory } ?: return null
-        val platformDir = gameRepository.getDownloadDirForPlatformId(game.platformId)
+        val platformDir = gameRepository.getDownloadDirForPlatformId(game.platformId) ?: return null
         val folderCanonical = runCatching { folder.canonicalPath }.getOrNull() ?: return null
         val platformCanonical = runCatching { platformDir.canonicalPath }.getOrNull() ?: return null
         return folder.takeIf { folderCanonical != platformCanonical }

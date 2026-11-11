@@ -3,8 +3,6 @@ package com.nendo.argosy.data.install
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.ProcessLifecycleOwner
 import com.nendo.argosy.data.local.entity.RomMAccountEntity
-import com.nendo.argosy.data.preferences.AppPreferences
-import com.nendo.argosy.data.preferences.AppPreferencesRepository
 import com.nendo.argosy.data.preferences.StoragePreferences
 import com.nendo.argosy.data.preferences.StoragePreferencesRepository
 import com.nendo.argosy.data.remote.romm.ConnectionState
@@ -15,6 +13,9 @@ import com.nendo.argosy.data.remote.romm.RomMDeviceSocket
 import com.nendo.argosy.data.remote.romm.RomMInstallReport
 import com.nendo.argosy.data.remote.romm.RomMInstallRequest
 import com.nendo.argosy.data.repository.RomMAccountRepository
+import com.nendo.argosy.data.setup.SetupStateRepository
+import com.nendo.argosy.domain.model.SetupItem
+import com.nendo.argosy.domain.model.SetupState
 import com.nendo.argosy.domain.usecase.download.PushInstallFailure
 import com.nendo.argosy.domain.usecase.download.PushInstallOutcome
 import com.nendo.argosy.domain.usecase.download.PushInstallUseCase
@@ -47,8 +48,8 @@ class PushInstallCoordinatorTest {
     private val api: RomMApi = mockk(relaxed = true)
     private val connectionManager: RomMConnectionManager = mockk(relaxed = true)
     private val storagePreferences: StoragePreferencesRepository = mockk(relaxed = true)
-    private val appPreferences: AppPreferencesRepository = mockk(relaxed = true)
-    private val appState = MutableStateFlow(AppPreferences(firstRunComplete = true))
+    private val setupStateRepository: SetupStateRepository = mockk(relaxed = true)
+    private val setupState = MutableStateFlow<SetupState>(SetupState.Complete)
     private val accountRepository: RomMAccountRepository = mockk(relaxed = true)
     private val deviceSocket: RomMDeviceSocket = mockk(relaxed = true)
     private val pushInstall: PushInstallUseCase = mockk()
@@ -76,7 +77,7 @@ class PushInstallCoordinatorTest {
         every { connectionManager.getBaseUrl() } answers { baseUrlState.value }
         every { connectionManager.getApi() } returns api
         every { storagePreferences.preferences } returns preferences
-        every { appPreferences.preferences } returns appState
+        every { setupStateRepository.state } returns setupState
         every { accountRepository.observeActiveAccount() } returns flowOf(account)
         coEvery { accountRepository.activeAccount() } returns account
         every { deviceSocket.events } returns socketEvents
@@ -95,7 +96,7 @@ class PushInstallCoordinatorTest {
         preferences.value = StoragePreferences(allowRemoteInstalls = allowRemoteInstalls)
         return PushInstallCoordinator(
             connectionManager,
-            appPreferences,
+            setupStateRepository,
             storagePreferences,
             accountRepository,
             deviceSocket,
@@ -136,7 +137,7 @@ class PushInstallCoordinatorTest {
 
     @Test
     fun `before setup completes nothing is advertised, connected or claimed`() = runBlocking {
-        appState.value = AppPreferences(firstRunComplete = false)
+        setupState.value = SetupState.Incomplete(SetupItem.SAVE_SYNC)
         coordinator("5.4.0", allowRemoteInstalls = true).start()
 
         verify(timeout = WAIT_MS) { deviceSocket.disconnect() }
@@ -151,11 +152,11 @@ class PushInstallCoordinatorTest {
 
     @Test
     fun `completing setup drains the requests pushed during it`() = runBlocking {
-        appState.value = AppPreferences(firstRunComplete = false)
+        setupState.value = SetupState.Incomplete(SetupItem.SAVE_SYNC)
         coordinator("5.4.0", allowRemoteInstalls = true).start()
         verify(timeout = WAIT_MS) { deviceSocket.disconnect() }
 
-        appState.value = AppPreferences(firstRunComplete = true)
+        setupState.value = SetupState.Complete
 
         coVerify(timeout = WAIT_MS) { api.claimInstallRequests(DEVICE_ID) }
     }

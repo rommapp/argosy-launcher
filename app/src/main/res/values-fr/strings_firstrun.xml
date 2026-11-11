@@ -66,7 +66,16 @@
     <string name="firstrun_permissions_usage_description">Active le suivi précis du temps de jeu et la reprise.</string>
     <string name="firstrun_permissions_button_continue">Continuer</string>
     <string name="firstrun_permissions_note_optional">Vous pourrez accorder les autres autorisations plus tard dans les paramètres.</string>
-    <string name="firstrun_permissions_note_storage_required">Accordez l\'accès au stockage pour continuer. Les autres sont facultatives et peuvent être accordées plus tard dans les paramètres.</string>
+    <string name="firstrun_permissions_note_required_missing">Autorisez l\'accès à tous les fichiers, l\'accès aux données d\'utilisation et les notifications pour continuer. La superposition à d\'autres applis est facultative.</string>
+    <string name="firstrun_permissions_usage_unavailable">Non disponible sur cet appareil. La configuration continue sans elle.</string>
+    <string name="firstrun_save_sync_title">Synchronisation des sauvegardes</string>
+    <string name="firstrun_save_sync_intro">Conservez vos sauvegardes sur votre serveur pour reprendre sur n\'importe quel appareil.</string>
+    <string name="firstrun_save_sync_option_on_title">Synchroniser les sauvegardes</string>
+    <string name="firstrun_save_sync_option_on_description">Sauvegarde les parties et les états, et les restaure avant de jouer</string>
+    <string name="firstrun_save_sync_option_off_title">Garder les sauvegardes sur cet appareil</string>
+    <string name="firstrun_save_sync_option_off_description">Rien n\'est envoyé. Vous pourrez activer la synchronisation plus tard dans les paramètres.</string>
+    <string name="firstrun_save_sync_option_selected">Sélectionné</string>
+    <string name="firstrun_save_sync_button_next">Suivant</string>
 
     <string name="firstrun_rom_path_title">Emplacement des jeux</string>
     <string name="firstrun_rom_path_description">Choisissez où seront stockés vos fichiers de jeu. Nous créerons automatiquement des sous-dossiers pour chaque console.</string>

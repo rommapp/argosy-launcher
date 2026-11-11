@@ -36,6 +36,7 @@
     <string name="error_download_no_discs_queued">Не удалось поставить в очередь ни один диск</string>
     <string name="error_download_game_not_found_for_repair">Игра не найдена</string>
     <string name="error_download_not_multi_disc">Это не игра с несколькими дисками</string>
+    <string name="error_download_game_no_rom_folder">Перед загрузкой выберите папку для игр</string>
 
     <string name="error_download_invalid_content_type">Недопустимый тип файла: %1$s</string>
     <string name="error_download_file_too_small">Файл слишком мал, чтобы быть ROM</string>
@@ -50,6 +51,7 @@
     <string name="error_download_downloaded_file_missing">Загруженный файл не найден</string>
     <string name="error_download_no_download_entry">Запись о загрузке не найдена</string>
     <string name="error_download_no_longer_exists">Загруженный файл больше не существует</string>
+    <string name="error_download_no_rom_folder">Перед загрузкой выберите папку для игр</string>
     <string name="error_download_extraction_failed">Ошибка распаковки</string>
 
     <string name="error_filepicker_already_downloaded">Игра уже загружена</string>

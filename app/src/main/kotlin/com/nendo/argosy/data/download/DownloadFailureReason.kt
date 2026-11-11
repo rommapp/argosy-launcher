@@ -34,6 +34,7 @@ sealed class DownloadFailureReason {
     data object NoDownloadEntryFound : DownloadFailureReason()
     data object DownloadedFileNoLongerExists : DownloadFailureReason()
     data class ExtractionFailed(val message: String?) : DownloadFailureReason()
+    data object NoRomFolder : DownloadFailureReason()
 
     /**
      * A row written before this reason existed, or one this codec otherwise failed to parse. The
@@ -74,6 +75,7 @@ object DownloadFailureReasonCodec {
     private const val TOKEN_NO_DOWNLOAD_ENTRY = "NO_DOWNLOAD_ENTRY"
     private const val TOKEN_DOWNLOADED_FILE_NO_LONGER_EXISTS = "DOWNLOADED_FILE_NO_LONGER_EXISTS"
     private const val TOKEN_EXTRACTION_FAILED = "EXTRACTION_FAILED"
+    private const val TOKEN_NO_ROM_FOLDER = "NO_ROM_FOLDER"
 
     fun encode(reason: DownloadFailureReason): String = when (reason) {
         is DownloadFailureReason.HttpError -> "$TOKEN_HTTP_ERROR$SEP${reason.code}"
@@ -101,6 +103,7 @@ object DownloadFailureReasonCodec {
         DownloadFailureReason.DownloadedFileNoLongerExists -> TOKEN_DOWNLOADED_FILE_NO_LONGER_EXISTS
         is DownloadFailureReason.ExtractionFailed ->
             "$TOKEN_EXTRACTION_FAILED$SEP${reason.message.orEmpty()}"
+        DownloadFailureReason.NoRomFolder -> TOKEN_NO_ROM_FOLDER
         is DownloadFailureReason.LegacyRaw -> reason.message
     }
 
@@ -146,6 +149,7 @@ object DownloadFailureReasonCodec {
             TOKEN_DOWNLOADED_FILE_NO_LONGER_EXISTS -> DownloadFailureReason.DownloadedFileNoLongerExists
             TOKEN_EXTRACTION_FAILED ->
                 DownloadFailureReason.ExtractionFailed(rest(2).getOrNull(1)?.takeIf { it.isNotEmpty() })
+            TOKEN_NO_ROM_FOLDER -> DownloadFailureReason.NoRomFolder
             else -> decodeLegacy(raw)
         }
     }

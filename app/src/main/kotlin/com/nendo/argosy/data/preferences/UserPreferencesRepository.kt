@@ -54,7 +54,6 @@ class UserPreferencesRepository @Inject constructor(
     ) { sources, builtinEnabled, jellyfin ->
         val (display, sync, controls, storage, app) = sources
         UserPreferences(
-            firstRunComplete = app.firstRunComplete,
             rommBaseUrl = sync.rommBaseUrl,
             rommUsername = sync.rommUsername,
             rommUserId = sync.rommUserId,
@@ -590,7 +589,6 @@ class UserPreferencesRepository @Inject constructor(
 
     // --- App delegates ---
 
-    suspend fun setFirstRunComplete() = appPrefs.setFirstRunComplete()
     suspend fun setBetaUpdatesEnabled(enabled: Boolean) = appPrefs.setBetaUpdatesEnabled(enabled)
     suspend fun setCloseEmulatorOnSessionEnd(enabled: Boolean) = appPrefs.setCloseEmulatorOnSessionEnd(enabled)
     suspend fun setHiddenApps(apps: Set<String>) = appPrefs.setHiddenApps(apps)
@@ -868,7 +866,6 @@ data class BuiltinEmulatorSettings(
 }
 
 data class UserPreferences(
-    val firstRunComplete: Boolean = false,
     val rommBaseUrl: String? = null,
     val rommUsername: String? = null,
     val rommUserId: Long? = null,

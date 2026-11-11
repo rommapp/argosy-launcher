@@ -41,7 +41,8 @@ class DownloadFailureReasonCodecTest {
             DownloadFailureReason.DownloadedFileMissing,
             DownloadFailureReason.NoDownloadEntryFound,
             DownloadFailureReason.DownloadedFileNoLongerExists,
-            DownloadFailureReason.ExtractionFailed("bad central directory")
+            DownloadFailureReason.ExtractionFailed("bad central directory"),
+            DownloadFailureReason.NoRomFolder
         )
         reasons.forEach { assertEquals(it, roundTrip(it)) }
     }

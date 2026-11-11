@@ -3,7 +3,6 @@ package com.nendo.argosy.ui.screens.settings.delegates
 import android.content.Context
 import com.nendo.argosy.data.local.entity.PlatformEntity
 import com.nendo.argosy.data.platform.PlatformFolderResolver
-import com.nendo.argosy.data.platform.platformDownloadDir
 import com.nendo.argosy.data.preferences.UserPreferences
 import com.nendo.argosy.data.preferences.UserPreferencesRepository
 import com.nendo.argosy.data.repository.DatabaseAdminRepository
@@ -110,11 +109,8 @@ class StorageSettingsDelegateTest {
         return PlatformFolderResolver(appContext, mockk(relaxed = true), mockk(relaxed = true), preferencesRepository)
     }
 
-    private suspend fun downloadDir(resolver: PlatformFolderResolver, platform: PlatformEntity): String =
-        platformDownloadDir(platform, platform.slug, resolver.storageBase()).absolutePath
-
     @Test
-    fun `platform configs with no global path show the folder downloads use`() = testScope.runTest {
+    fun `platform configs with no global path show no folder`() = testScope.runTest {
         val resolver = resolverWithoutGlobalPath()
         every { platformRepository.observeConfigurablePlatforms() } returns flowOf(listOf(snes))
         delegate = delegateWith(appContext, resolver)
@@ -123,11 +119,11 @@ class StorageSettingsDelegateTest {
         delegate.loadPlatformConfigs(this)
         advanceUntilIdle()
 
-        assertEquals(downloadDir(resolver, snes), delegate.state.value.platformConfigs.single().effectivePath)
+        assertEquals("", delegate.state.value.platformConfigs.single().effectivePath)
     }
 
     @Test
-    fun `choosing a platform folder with no global path migrates from the folder downloads use`() = testScope.runTest {
+    fun `choosing a platform folder with no global path applies it without a migration`() = testScope.runTest {
         val resolver = resolverWithoutGlobalPath()
         coEvery { platformRepository.getById(snes.id) } returns snes
         coEvery { gameRepository.getGamesWithLocalPathsForPlatform(snes.id) } returns listOf(mockk(relaxed = true))
@@ -137,35 +133,17 @@ class StorageSettingsDelegateTest {
         delegate.setPlatformPath(this, snes.id, "/storage/emulated/0/Roms/snes")
         advanceUntilIdle()
 
-        val migration = delegate.state.value.showMigratePlatformConfirm
-        assertEquals(downloadDir(resolver, snes), migration?.oldPath)
-        assertEquals("/storage/emulated/0/Roms/snes", migration?.newPath)
+        assertEquals(null, delegate.state.value.showMigratePlatformConfirm)
+        coVerify(exactly = 1) { platformRepository.updateCustomRomPath(snes.id, "/storage/emulated/0/Roms/snes") }
     }
 
     @Test
-    fun `resetting a platform with no global path migrates to the folder downloads use`() = testScope.runTest {
-        val resolver = resolverWithoutGlobalPath()
-        val custom = snes.copy(customRomPath = "/storage/emulated/0/Roms/snes")
-        coEvery { platformRepository.getById(snes.id) } returns custom
-        coEvery { gameRepository.getGamesWithLocalPathsForPlatform(snes.id) } returns listOf(mockk(relaxed = true))
-        delegate = delegateWith(appContext, resolver)
-        delegate.updateState(StorageState(romStoragePath = ""))
-
-        delegate.resetPlatformToGlobal(this, snes.id)
-        advanceUntilIdle()
-
-        val migration = delegate.state.value.showMigratePlatformConfirm
-        assertEquals("/storage/emulated/0/Roms/snes", migration?.oldPath)
-        assertEquals(downloadDir(resolver, snes), migration?.newPath)
-    }
-
-    @Test
-    fun `resetting a platform with no games and no global path shows the folder downloads use`() = testScope.runTest {
+    fun `resetting a platform with no global path keeps its own folder`() = testScope.runTest {
         val resolver = resolverWithoutGlobalPath()
         val custom = snes.copy(customRomPath = "/storage/emulated/0/Roms/snes")
         every { platformRepository.observeConfigurablePlatforms() } returns flowOf(listOf(custom))
         coEvery { platformRepository.getById(snes.id) } returns custom
-        coEvery { gameRepository.getGamesWithLocalPathsForPlatform(snes.id) } returns emptyList()
+        coEvery { gameRepository.getGamesWithLocalPathsForPlatform(snes.id) } returns listOf(mockk(relaxed = true))
         delegate = delegateWith(appContext, resolver)
         delegate.updateState(StorageState(romStoragePath = ""))
         delegate.loadPlatformConfigs(this)
@@ -174,8 +152,12 @@ class StorageSettingsDelegateTest {
         delegate.resetPlatformToGlobal(this, snes.id)
         advanceUntilIdle()
 
-        assertEquals(downloadDir(resolver, snes), delegate.state.value.platformConfigs.single().effectivePath)
-        coVerify(exactly = 1) { platformRepository.updateCustomRomPath(snes.id, null) }
+        assertEquals(null, delegate.state.value.showMigratePlatformConfirm)
+        assertEquals(
+            "/storage/emulated/0/Roms/snes",
+            delegate.state.value.platformConfigs.single().effectivePath
+        )
+        coVerify(exactly = 0) { platformRepository.updateCustomRomPath(any(), any()) }
     }
 
     @After

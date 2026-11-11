@@ -36,6 +36,7 @@
     <string name="error_download_no_discs_queued">Falha ao enfileirar o download de qualquer disco</string>
     <string name="error_download_game_not_found_for_repair">Jogo não encontrado</string>
     <string name="error_download_not_multi_disc">Não é um jogo de múltiplos discos</string>
+    <string name="error_download_game_no_rom_folder">Escolha uma pasta de jogos antes de baixar</string>
 
     <string name="error_download_invalid_content_type">Tipo de arquivo inválido: %1$s</string>
     <string name="error_download_http">Falha no download (HTTP %1$d)</string>
@@ -58,6 +59,7 @@
     <string name="error_download_downloaded_file_missing">Arquivo do download não encontrado</string>
     <string name="error_download_no_download_entry">Nenhuma entrada de download encontrada</string>
     <string name="error_download_no_longer_exists">O arquivo do download não existe mais</string>
+    <string name="error_download_no_rom_folder">Escolha uma pasta de jogos antes de baixar</string>
     <string name="error_download_extraction_failed">Falha na extração</string>
 
     <string name="error_filepicker_already_downloaded">Jogo já baixado</string>

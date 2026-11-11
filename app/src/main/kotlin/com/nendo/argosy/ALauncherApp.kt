@@ -209,6 +209,9 @@ class ArgosyApp : Application(), Configuration.Provider, ImageLoaderFactory {
     @Inject
     lateinit var privilegedAccess: com.nendo.argosy.data.access.PrivilegedAccess
 
+    @Inject
+    lateinit var setupStateRepository: com.nendo.argosy.data.setup.SetupStateRepository
+
     private val lastForegroundSteamRefreshAt = AtomicLong(NEVER_REFRESHED)
 
     private val foregroundObserver = object : androidx.lifecycle.DefaultLifecycleObserver {
@@ -247,6 +250,7 @@ class ArgosyApp : Application(), Configuration.Provider, ImageLoaderFactory {
         CoreUpdateCheckWorker.schedule(this)
         com.nendo.argosy.data.quaypass.QuayPassCredentialRefreshWorker.schedule(this)
         ProcessLifecycleOwner.get().lifecycle.addObserver(foregroundObserver)
+        setupStateRepository.start()
         appScope.launch { observeSteamPackageChanges() }
         saveSyncDownloadObserver.start()
         cheatsDownloadObserver.start()

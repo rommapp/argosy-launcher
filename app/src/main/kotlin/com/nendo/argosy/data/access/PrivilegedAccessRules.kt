@@ -18,11 +18,11 @@ internal object PrivilegedAccessRules {
     }
 
     fun promptRoute(
-        firstRunComplete: Boolean,
+        setupComplete: Boolean,
         answered: Boolean,
         enabled: PrivilegedRoute?,
         detected: PrivilegedRoute?
-    ): PrivilegedRoute? = detected.takeIf { firstRunComplete && !answered && enabled == null }
+    ): PrivilegedRoute? = detected.takeIf { setupComplete && !answered && enabled == null }
 
     fun checkScript(userId: Int): String = """
         u=${'$'}(id -u)

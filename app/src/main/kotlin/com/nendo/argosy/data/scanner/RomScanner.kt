@@ -119,12 +119,12 @@ class RomScanner @Inject constructor(
         sortTitle: String,
         platformSlug: String,
         localPath: String,
-        storageBase: File,
+        storageBase: File?,
         allPlatforms: List<PlatformEntity>
     ): GameEntity? {
         val candidates = allPlatforms.filter { it.slug == platformSlug }
         val (owning, others) = candidates.partition { platform ->
-            platformRomRoots(platform, storageBase, allPlatforms).any { root ->
+            storageBase != null && platformRomRoots(platform, storageBase, allPlatforms).any { root ->
                 localPath.startsWith(root.absolutePath + File.separator)
             }
         }

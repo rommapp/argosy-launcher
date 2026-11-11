@@ -65,6 +65,11 @@ class MigrateStorageUseCase @Inject constructor(
                 }
 
                 val platformFolder = gameRepository.getDownloadDirForPlatformId(current.platformId)
+                if (platformFolder == null) {
+                    Log.d(TAG, "Migration: ${current.title} has no platform folder to move from")
+                    skipped++
+                    return@forEachIndexed
+                }
                 if (keepsOwnFolder(current.platformId, File(localPath), platformFolder)) {
                     Log.d(TAG, "Migration: ${current.title} stays in its platform's own folder")
                     skipped++

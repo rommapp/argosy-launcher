@@ -351,7 +351,9 @@ class StorageSettingsDelegate @Inject constructor(
             val emulatorInfo = pendingEmulatorInfo
 
             val configs = platforms.map { platform ->
-                val effectivePath = platformDownloadDir(platform, platform.slug, storageBase).absolutePath
+                val effectivePath = storageBase
+                    ?.let { platformDownloadDir(platform, platform.slug, it).absolutePath }
+                    ?: platform.customRomPath.orEmpty()
                 val downloadedCount = gameRepository.countDownloadedByPlatform(platform.id)
                 val info = emulatorInfo?.get(platform.id)
                 PlatformStorageConfig(
@@ -473,11 +475,12 @@ class StorageSettingsDelegate @Inject constructor(
         if (rejectIfPrivateAppPath(newPath)) return
         scope.launch {
             val platform = platformRepository.getById(platformId) ?: return@launch
-            val oldPath = platformDownloadDir(platform, platform.slug, platformFolderResolver.storageBase())
-                .absolutePath
+            val oldPath = platformFolderResolver.storageBase()
+                ?.let { platformDownloadDir(platform, platform.slug, it).absolutePath }
+                ?: platform.customRomPath
 
             val gamesWithPaths = gameRepository.getGamesWithLocalPathsForPlatform(platformId)
-            if (gamesWithPaths.isNotEmpty()) {
+            if (oldPath != null && gamesWithPaths.isNotEmpty()) {
                 _state.update {
                     it.copy(
                         showMigratePlatformConfirm = PlatformMigrationInfo(
@@ -516,8 +519,12 @@ class StorageSettingsDelegate @Inject constructor(
         scope.launch {
             val platform = platformRepository.getById(platformId) ?: return@launch
             val customPath = platform.customRomPath ?: return@launch
+            val storageBase = platformFolderResolver.storageBase() ?: run {
+                Logger.warn(TAG, "resetPlatformToGlobal: no game folder to reset platform $platformId to")
+                return@launch
+            }
             val newPath = platformDownloadDir(
-                platform.copy(customRomPath = null), platform.slug, platformFolderResolver.storageBase()
+                platform.copy(customRomPath = null), platform.slug, storageBase
             ).absolutePath
 
             val gamesWithPaths = gameRepository.getGamesWithLocalPathsForPlatform(platformId)

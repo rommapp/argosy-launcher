@@ -305,8 +305,11 @@ These must stay device-global:
 - The one-shot flags (`save_sync_local_rekey_done`, `save_path_cache_purged`,
   `sibling_split_repair_finished`, `sibling_config_carry_over_done`,
   `sibling_full_pass_done`, `variant_file_cleanup_done`, `builtin_migration_v2`,
-  `last_integrity_check_time`, `emulator_update_last_check`, `first_run_complete`) are device
-  migrations that run once per device. Re-running the rekey per account deletes save-sync rows.
+  `last_integrity_check_time`, `emulator_update_last_check`) are device migrations that run once
+  per device. Re-running the rekey per account deletes save-sync rows.
+- The setup confirmation markers (`romm_library_confirmed`, `rom_storage_path_confirmed`,
+  `save_sync_answered`, `default_home_declined`) sit beside device values, so they stay device
+  keys with them.
 - `sibling_pick_seeded_owners` is one device key holding the account ids already seeded, because
   picks are per account and each account gets its own one-time seed.
 

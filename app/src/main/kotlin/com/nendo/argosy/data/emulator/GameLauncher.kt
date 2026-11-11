@@ -2173,6 +2173,7 @@ class GameLauncher @Inject constructor(
     private suspend fun consolidateExtContent(game: GameEntity, emulator: EmulatorDef): File? {
         if (!extContentOrganizer.isExtcontentEmulator(emulator.id, game.platformSlug)) return null
         val platformDir = platformFolderResolver.downloadDirForPlatform(game.platformId, game.platformSlug)
+            ?: return null
         if (extContentOrganizer.usesCombinedLayout(game.platformId, game.platformSlug)) {
             extContentOrganizer.enforceCombinedLayout(game, platformDir)?.let { return it }
         }

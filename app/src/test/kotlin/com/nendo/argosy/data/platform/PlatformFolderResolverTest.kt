@@ -15,6 +15,7 @@ import io.mockk.mockk
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import java.io.File
@@ -82,16 +83,32 @@ class PlatformFolderResolverTest {
     }
 
     @Test
-    fun `without a storage root the app downloads folder is the base`() = runTest {
-        val appFiles = File("/data/app-files")
-        every { context.getExternalFilesDir(null) } returns appFiles
+    fun `without a game folder nothing resolves to app storage`() = runTest {
+        every { context.getExternalFilesDir(null) } returns File("/data/app-files")
         val snes = platform(3L, "snes")
         stubPlatforms(snes)
+        stubGame(20L, snes.id, "snes")
+        val resolver = resolver(romStoragePath = null)
+
+        assertNull(resolver.storageBase())
+        assertNull(resolver.downloadDirForPlatform(snes.id, "snes"))
+        assertNull(resolver.downloadDirForGame(20L, "snes"))
+        assertTrue(resolver.romRootsForPlatform(snes.id, "snes").isEmpty())
+    }
+
+    @Test
+    fun `without a game folder a platform override is still a launch root`() = runTest {
+        stubPlatforms(discs, packages)
 
         assertEquals(
-            File(File(appFiles, "downloads"), "snes"),
-            resolver(romStoragePath = null).downloadDirForPlatform(snes.id, "snes")
+            listOf(File(packagesFolder)),
+            resolver(romStoragePath = null).romRootsForPlatform(packages.id, "ps3")
         )
+    }
+
+    @Test
+    fun `a blank game folder counts as none`() = runTest {
+        assertNull(resolver(romStoragePath = "").storageBase())
     }
 
     @Test

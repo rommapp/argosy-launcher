@@ -48,7 +48,9 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Clear
+import androidx.compose.material.icons.filled.CloudSync
 import androidx.compose.material.icons.filled.Folder
+import androidx.compose.material.icons.filled.PhoneAndroid
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -67,6 +69,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusManager
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
@@ -117,6 +120,9 @@ import com.nendo.argosy.ui.filebrowser.FileFilter
 import com.nendo.argosy.ui.input.LocalInputDispatcher
 import androidx.compose.ui.graphics.Color
 import com.nendo.argosy.ui.primitives.ActionButton
+import com.nendo.argosy.ui.primitives.FocusIndicators
+import com.nendo.argosy.ui.primitives.argosyFocusIndicators
+import com.nendo.argosy.ui.util.clickableNoFocus
 import com.nendo.argosy.ui.theme.Dimens
 import com.nendo.argosy.ui.theme.LocalArgosyTheme
 import com.nendo.argosy.ui.theme.LocalMotionTier
@@ -293,13 +299,15 @@ fun FirstRunScreen(
                     gameCount = uiState.rommGameCount,
                     platformCount = uiState.rommPlatformCount,
                     isFocused = true,
-                    onContinue = { viewModel.nextStep() }
+                    onContinue = { viewModel.proceedFromRommSuccess() }
                 )
                 FirstRunStep.PERMISSIONS -> PermissionsStep(
                     hasStorage = uiState.hasStoragePermission,
                     hasNotifications = uiState.hasNotificationPermission,
                     hasOverlay = uiState.hasOverlayPermission,
                     hasUsageStats = uiState.hasUsageStatsPermission,
+                    usageStatsGrantable = uiState.usageStatsGrantable,
+                    requiredGranted = uiState.requiredPermissionsGranted,
                     focusedIndex = uiState.focusedIndex,
                     onRequestStorage = requestStorage,
                     onRequestNotifications = requestNotifications,
@@ -321,6 +329,12 @@ fun FirstRunScreen(
                     onChooseFolder = chooseImageCacheFolder,
                     onContinue = { viewModel.proceedFromImageCache() },
                     onSkip = { viewModel.skipImageCachePath() }
+                )
+                FirstRunStep.SAVE_SYNC -> SaveSyncStep(
+                    syncEnabled = uiState.saveSyncEnabled,
+                    focusedIndex = uiState.focusedIndex,
+                    onSelect = viewModel::selectSaveSync,
+                    onNext = { viewModel.proceedFromSaveSync() }
                 )
                 FirstRunStep.PLATFORM_SELECT -> PlatformSelectStep(
                     platforms = uiState.platforms,
@@ -1070,6 +1084,8 @@ private fun PermissionsStep(
     hasNotifications: Boolean,
     hasOverlay: Boolean,
     hasUsageStats: Boolean,
+    usageStatsGrantable: Boolean,
+    requiredGranted: Boolean,
     focusedIndex: Int,
     onRequestStorage: () -> Unit,
     onRequestNotifications: () -> Unit,
@@ -1120,10 +1136,14 @@ private fun PermissionsStep(
             PermissionCard(
                 icon = Icons.Default.Timer,
                 title = stringResource(R.string.firstrun_permissions_usage_title),
-                description = stringResource(R.string.firstrun_permissions_usage_description),
+                description = if (usageStatsGrantable) {
+                    stringResource(R.string.firstrun_permissions_usage_description)
+                } else {
+                    stringResource(R.string.firstrun_permissions_usage_unavailable)
+                },
                 isGranted = hasUsageStats,
                 isFocused = focusedIndex == 3,
-                onClick = onRequestUsageStats
+                onClick = { if (usageStatsGrantable) onRequestUsageStats() }
             )
         }
 
@@ -1131,19 +1151,19 @@ private fun PermissionsStep(
         FocusableButton(
             text = stringResource(R.string.firstrun_permissions_button_continue),
             isFocused = focusedIndex == 4,
-            enabled = hasStorage,
+            enabled = requiredGranted,
             onClick = onContinue
         )
         Spacer(modifier = Modifier.height(Dimens.spacingSm))
         Text(
-            text = if (hasStorage) {
+            text = if (requiredGranted) {
                 stringResource(R.string.firstrun_permissions_note_optional)
             } else {
-                stringResource(R.string.firstrun_permissions_note_storage_required)
+                stringResource(R.string.firstrun_permissions_note_required_missing)
             },
             style = MaterialTheme.typography.bodySmall,
             textAlign = TextAlign.Center,
-            color = if (hasStorage) {
+            color = if (requiredGranted) {
                 MaterialTheme.colorScheme.onSurfaceVariant
             } else {
                 MaterialTheme.colorScheme.error
@@ -1314,6 +1334,106 @@ private fun ImageCacheStep(
             textAlign = TextAlign.Center,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
+    }
+}
+
+@Composable
+private fun SaveSyncStep(
+    syncEnabled: Boolean,
+    focusedIndex: Int,
+    onSelect: (Boolean) -> Unit,
+    onNext: () -> Unit
+) {
+    StepColumn {
+        StepHeader(title = stringResource(R.string.firstrun_save_sync_title))
+        Spacer(modifier = Modifier.height(Dimens.spacingSm))
+        Text(
+            text = stringResource(R.string.firstrun_save_sync_intro),
+            style = MaterialTheme.typography.bodyMedium,
+            textAlign = TextAlign.Center,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.fillMaxWidth(0.9f)
+        )
+        Spacer(modifier = Modifier.height(Dimens.spacingMd))
+        Column(
+            verticalArrangement = Arrangement.spacedBy(Dimens.spacingSm),
+            modifier = Modifier.fillMaxWidth(0.9f)
+        ) {
+            SaveSyncOption(
+                icon = Icons.Default.CloudSync,
+                title = stringResource(R.string.firstrun_save_sync_option_on_title),
+                description = stringResource(R.string.firstrun_save_sync_option_on_description),
+                selected = syncEnabled,
+                isFocused = focusedIndex == SAVE_SYNC_ON_INDEX,
+                onClick = { onSelect(true) }
+            )
+            SaveSyncOption(
+                icon = Icons.Default.PhoneAndroid,
+                title = stringResource(R.string.firstrun_save_sync_option_off_title),
+                description = stringResource(R.string.firstrun_save_sync_option_off_description),
+                selected = !syncEnabled,
+                isFocused = focusedIndex == SAVE_SYNC_OFF_INDEX,
+                onClick = { onSelect(false) }
+            )
+        }
+        Spacer(modifier = Modifier.height(Dimens.spacingLg))
+        FocusableButton(
+            text = stringResource(R.string.firstrun_save_sync_button_next),
+            isFocused = focusedIndex == SAVE_SYNC_NEXT_INDEX,
+            onClick = onNext
+        )
+    }
+}
+
+@Composable
+private fun SaveSyncOption(
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    title: String,
+    description: String,
+    selected: Boolean,
+    isFocused: Boolean,
+    onClick: () -> Unit
+) {
+    val theme = LocalArgosyTheme.current
+    val shape = RoundedCornerShape(Dimens.radiusControl)
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .heightIn(min = Dimens.settingsItemMinHeight)
+            .clip(shape)
+            .argosyFocusIndicators(focused = isFocused, indicators = FocusIndicators.ListRow, shape = shape)
+            .clickableNoFocus(onClick = onClick)
+            .padding(Dimens.spacingMd),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(Dimens.spacingMd)
+    ) {
+        Icon(
+            imageVector = icon,
+            contentDescription = null,
+            tint = if (isFocused) theme.focusAccent else theme.textDim,
+            modifier = Modifier.size(Dimens.iconMd)
+        )
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = title,
+                style = MaterialTheme.typography.titleMedium,
+                color = theme.textPrimary
+            )
+            Spacer(modifier = Modifier.height(Dimens.spacingXs))
+            Text(
+                text = description,
+                style = MaterialTheme.typography.bodySmall,
+                color = theme.textDim
+            )
+        }
+        if (selected) {
+            Icon(
+                imageVector = Icons.Default.CheckCircle,
+                contentDescription = stringResource(R.string.firstrun_save_sync_option_selected),
+                tint = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.size(Dimens.iconMd)
+            )
+        }
     }
 }
 

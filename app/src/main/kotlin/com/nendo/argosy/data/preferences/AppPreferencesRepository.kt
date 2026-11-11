@@ -17,7 +17,7 @@ import javax.inject.Inject
 import javax.inject.Singleton
 
 data class AppPreferences(
-    val firstRunComplete: Boolean = false,
+    val defaultHomeDeclined: Boolean = false,
     val betaUpdatesEnabled: Boolean = false,
     val closeEmulatorOnSessionEnd: Boolean = false,
     val hiddenApps: Set<String> = emptySet(),
@@ -51,7 +51,9 @@ class AppPreferencesRepository @Inject constructor(
     private val dataStore: DataStore<Preferences>
 ) {
     private object Keys {
-        val FIRST_RUN_COMPLETE = booleanPreferencesKey("first_run_complete")
+        val LEGACY_FIRST_RUN_COMPLETE = booleanPreferencesKey("first_run_complete")
+        val LEGACY_SETUP_MIGRATED = booleanPreferencesKey("legacy_setup_migrated")
+        val DEFAULT_HOME_DECLINED = booleanPreferencesKey("default_home_declined")
         val BETA_UPDATES_ENABLED = booleanPreferencesKey("beta_updates_enabled")
         val CLOSE_EMULATOR_ON_SESSION_END = booleanPreferencesKey("close_emulator_on_session_end")
         val HIDDEN_APPS = stringPreferencesKey("hidden_apps")
@@ -86,7 +88,7 @@ class AppPreferencesRepository @Inject constructor(
 
     val preferences: Flow<AppPreferences> = dataStore.data.map { prefs ->
         AppPreferences(
-            firstRunComplete = prefs[Keys.FIRST_RUN_COMPLETE] ?: false,
+            defaultHomeDeclined = prefs[Keys.DEFAULT_HOME_DECLINED] ?: false,
             betaUpdatesEnabled = prefs[Keys.BETA_UPDATES_ENABLED] ?: false,
             closeEmulatorOnSessionEnd = prefs[Keys.CLOSE_EMULATOR_ON_SESSION_END] ?: false,
             hiddenApps = prefs[Keys.HIDDEN_APPS]
@@ -136,8 +138,17 @@ class AppPreferencesRepository @Inject constructor(
         )
     }.flowOn(Dispatchers.Default)
 
-    suspend fun setFirstRunComplete() {
-        dataStore.edit { it[Keys.FIRST_RUN_COMPLETE] = true }
+    suspend fun isLegacyFirstRunComplete(): Boolean =
+        dataStore.data.first()[Keys.LEGACY_FIRST_RUN_COMPLETE] ?: false
+
+    suspend fun isLegacySetupMigrated(): Boolean =
+        dataStore.data.first()[Keys.LEGACY_SETUP_MIGRATED] ?: false
+
+    suspend fun finishLegacySetupMigration() {
+        dataStore.edit {
+            it.remove(Keys.LEGACY_FIRST_RUN_COMPLETE)
+            it[Keys.LEGACY_SETUP_MIGRATED] = true
+        }
     }
 
     suspend fun setBetaUpdatesEnabled(enabled: Boolean) {

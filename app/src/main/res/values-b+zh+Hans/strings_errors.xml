@@ -36,6 +36,7 @@
     <string name="error_download_no_discs_queued">未能将任何光盘加入下载队列</string>
     <string name="error_download_game_not_found_for_repair">未找到游戏</string>
     <string name="error_download_not_multi_disc">不是多光盘游戏</string>
+    <string name="error_download_game_no_rom_folder">下载前请先选择游戏文件夹</string>
 
     <string name="error_download_invalid_content_type">无效的文件类型：%1$s</string>
     <string name="error_download_file_too_small">文件过小，不像是ROM</string>
@@ -50,6 +51,7 @@
     <string name="error_download_downloaded_file_missing">未找到下载的文件</string>
     <string name="error_download_no_download_entry">未找到下载记录</string>
     <string name="error_download_no_longer_exists">下载的文件已不存在</string>
+    <string name="error_download_no_rom_folder">下载前请先选择游戏文件夹</string>
     <string name="error_download_extraction_failed">解压失败</string>
 
     <string name="error_filepicker_already_downloaded">游戏已下载</string>

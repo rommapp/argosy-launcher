@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="setup_header_back_desc">Zurück</string>
+    <string name="setup_rail_desc">Schritt %1$d von %2$d</string>
+    <string name="setup_lead_eyebrow">Schritt %1$d von %2$d</string>
+    <string name="setup_lead_context_on_other_screen">Details zu jedem Eintrag erscheinen auf dem anderen Bildschirm.</string>
+
+    <string name="setup_diagram_start">Start</string>
+    <string name="setup_diagram_select">Select</string>
+    <string name="setup_diagram_position_top_desc">Obere Taste, %1$s</string>
+    <string name="setup_diagram_position_left_desc">Linke Taste, %1$s</string>
+    <string name="setup_diagram_position_right_desc">Rechte Taste, %1$s</string>
+    <string name="setup_diagram_position_bottom_desc">Untere Taste, %1$s</string>
+    <string name="setup_diagram_position_menu_left_desc">Linke Menütaste, %1$s</string>
+    <string name="setup_diagram_position_menu_right_desc">Rechte Menütaste, %1$s</string>
+
+    <string name="ui_permission_row_chip_allowed">Erlaubt</string>
+    <string name="ui_permission_row_chip_not_allowed">Nicht erlaubt</string>
+    <string name="ui_permission_row_chip_checking">Wird geprüft</string>
+    <string name="ui_permission_row_chip_unavailable">Nicht verfügbar</string>
+    <string name="ui_permission_tier_required">Erforderlich</string>
+    <string name="ui_permission_tier_recommended">Empfohlen</string>
+    <string name="ui_permission_tier_other">Weitere</string>
+</resources>

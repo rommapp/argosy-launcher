@@ -68,7 +68,16 @@
     <string name="firstrun_permissions_usage_description">Включает точный учёт времени в игре и возобновление.</string>
     <string name="firstrun_permissions_button_continue">Продолжить</string>
     <string name="firstrun_permissions_note_optional">Остальные разрешения можно предоставить позже в настройках.</string>
-    <string name="firstrun_permissions_note_storage_required">Предоставьте доступ к хранилищу, чтобы продолжить. Остальные разрешения необязательны и могут быть предоставлены позже в настройках.</string>
+    <string name="firstrun_permissions_note_required_missing">Чтобы продолжить, разрешите доступ ко всем файлам, доступ к истории использования и уведомления. Показ поверх других приложений необязателен.</string>
+    <string name="firstrun_permissions_usage_unavailable">Недоступно на этом устройстве. Настройка продолжится без него.</string>
+    <string name="firstrun_save_sync_title">Синхронизация сохранений</string>
+    <string name="firstrun_save_sync_intro">Храните сохранения на своём сервере, чтобы продолжать игру на любом устройстве.</string>
+    <string name="firstrun_save_sync_option_on_title">Синхронизировать сохранения</string>
+    <string name="firstrun_save_sync_option_on_description">Создаёт резервные копии сохранений и состояний и восстанавливает их перед игрой</string>
+    <string name="firstrun_save_sync_option_off_title">Хранить сохранения на этом устройстве</string>
+    <string name="firstrun_save_sync_option_off_description">Ничего не загружается. Синхронизацию можно включить позже в настройках.</string>
+    <string name="firstrun_save_sync_option_selected">Выбрано</string>
+    <string name="firstrun_save_sync_button_next">Далее</string>
 
     <string name="firstrun_rom_path_title">Путь к играм</string>
     <string name="firstrun_rom_path_description">Выберите, где будут храниться файлы игр. Мы автоматически создадим подпапки для каждой консоли.</string>

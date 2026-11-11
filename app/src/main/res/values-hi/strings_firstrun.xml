@@ -76,7 +76,16 @@
     <string name="firstrun_permissions_usage_description">सटीक खेलने के समय की ट्रैकिंग और रिज़्यूम सक्षम करता है।</string>
     <string name="firstrun_permissions_button_continue">जारी रखें</string>
     <string name="firstrun_permissions_note_optional">आप बाकी अनुमतियां बाद में सेटिंग्स से दे सकते हैं।</string>
-    <string name="firstrun_permissions_note_storage_required">जारी रखने के लिए स्टोरेज एक्सेस दें। बाकी वैकल्पिक हैं और बाद में सेटिंग्स से दी जा सकती हैं।</string>
+    <string name="firstrun_permissions_note_required_missing">जारी रखने के लिए सभी फ़ाइलों का एक्सेस, उपयोग का एक्सेस और सूचनाएं दें। दूसरे ऐप्लिकेशन के ऊपर दिखाना वैकल्पिक है।</string>
+    <string name="firstrun_permissions_usage_unavailable">इस डिवाइस पर उपलब्ध नहीं है। सेटअप इसके बिना जारी रहेगा।</string>
+    <string name="firstrun_save_sync_title">सेव सिंक</string>
+    <string name="firstrun_save_sync_intro">अपने सेव अपने सर्वर पर रखें ताकि आप किसी भी डिवाइस पर वहीं से खेल सकें।</string>
+    <string name="firstrun_save_sync_option_on_title">सेव सिंक करें</string>
+    <string name="firstrun_save_sync_option_on_description">सेव और स्टेट का बैकअप लेता है, और खेलने से पहले उन्हें वापस लाता है</string>
+    <string name="firstrun_save_sync_option_off_title">सेव इसी डिवाइस पर रखें</string>
+    <string name="firstrun_save_sync_option_off_description">कुछ भी अपलोड नहीं होता। आप बाद में सेटिंग्स में सिंक चालू कर सकते हैं।</string>
+    <string name="firstrun_save_sync_option_selected">चुना गया</string>
+    <string name="firstrun_save_sync_button_next">आगे</string>
 
     <!-- ===== Step 5: where downloaded games are kept ===== -->
 

@@ -364,18 +364,14 @@ class MainActivity : ComponentActivity() {
 
 ```kotlin
 class LauncherViewModel @Inject constructor(
-    private val preferences: UserPreferencesRepository
+    setupStateRepository: SetupStateRepository
 ) : ViewModel() {
 
-    val isFirstRun: StateFlow<Boolean> = preferences.isFirstRunComplete
-        .map { !it }
+    val isFirstRun: StateFlow<Boolean> = setupStateRepository.state
+        .map { !it.isComplete }
         .stateIn(viewModelScope, SharingStarted.Eagerly, true)
 
-    fun completeFirstRun() {
-        viewModelScope.launch {
-            preferences.setFirstRunComplete(true)
-        }
-    }
+    fun completeFirstRun() = Unit
 }
 
 @Composable

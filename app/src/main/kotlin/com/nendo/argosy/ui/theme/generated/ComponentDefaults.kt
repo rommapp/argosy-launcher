@@ -573,4 +573,16 @@ object ComponentDefaults {
         const val cellHeightDp = 44
     }
 
+    object Setup {
+        const val railSegmentHeightDp = 4
+        const val railSegmentGapDp = 4
+        const val railDoneAlpha = 0.45f
+        const val faceButtonDp = 56
+        const val miniFaceButtonDp = 24
+        const val menuPillWidthDp = 64
+        const val menuPillHeightDp = 24
+        const val chipHeightDp = 24
+        const val chipGrantedFillAlpha = 0.15f
+    }
+
 }

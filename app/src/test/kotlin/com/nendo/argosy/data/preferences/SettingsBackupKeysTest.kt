@@ -101,11 +101,16 @@ class SettingsBackupKeysTest {
 
     private val installPermissions = setOf("allow_remote_installs")
 
+    private val setupConfirmations = setOf(
+        "romm_library_confirmed", "rom_storage_path_confirmed", "save_sync_answered",
+        "default_home_declined", "legacy_setup_migrated"
+    )
+
     private val excluded: Set<String> =
         credentialsAndIdentity + presenceSharingAndServiceAccounts + syncWatermarksAndResume +
             oneShotAndVersionMarkers + liveSessionState + saveAndStateSafetyGates +
             filesystemLocations + hardwareAndUnit + perDeviceScreenChoices + localRowIdsAndSets +
-            derivedAndGenerated + diagnostics + installPermissions
+            derivedAndGenerated + diagnostics + installPermissions + setupConfirmations
 
     private val credentialShapes = listOf(
         "token", "credential", "password", "api_key", "username", "user_name", "user_id", "device_id",

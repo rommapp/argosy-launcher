@@ -36,6 +36,7 @@
     <string name="error_download_no_discs_queued">Discs konnten nicht in die Warteschlange eingereiht werden</string>
     <string name="error_download_game_not_found_for_repair">Spiel nicht gefunden</string>
     <string name="error_download_not_multi_disc">Kein Multi-Disc-Spiel</string>
+    <string name="error_download_game_no_rom_folder">Wähle vor dem Herunterladen einen Spieleordner</string>
 
     <string name="error_download_invalid_content_type">Ungültiger Dateityp: %1$s</string>
     <string name="error_download_file_too_small">Datei zu klein, um eine ROM zu sein</string>
@@ -50,6 +51,7 @@
     <string name="error_download_downloaded_file_missing">Heruntergeladene Datei nicht gefunden</string>
     <string name="error_download_no_download_entry">Kein Download-Eintrag gefunden</string>
     <string name="error_download_no_longer_exists">Heruntergeladene Datei existiert nicht mehr</string>
+    <string name="error_download_no_rom_folder">Wähle vor dem Herunterladen einen Spieleordner</string>
     <string name="error_download_extraction_failed">Extraktion fehlgeschlagen</string>
 
     <string name="error_filepicker_already_downloaded">Spiel bereits heruntergeladen</string>

@@ -62,7 +62,16 @@
     <string name="firstrun_permissions_usage_description">启用精确的游戏时长统计和续玩功能。</string>
     <string name="firstrun_permissions_button_continue">继续</string>
     <string name="firstrun_permissions_note_optional">其他权限可以稍后在设置中授予。</string>
-    <string name="firstrun_permissions_note_storage_required">请授予存储访问权限以继续。其他权限为可选项，可稍后在设置中授予。</string>
+    <string name="firstrun_permissions_note_required_missing">请允许所有文件访问权限、使用情况访问权限和通知以继续。显示在其他应用上层为可选项。</string>
+    <string name="firstrun_permissions_usage_unavailable">此设备不支持。设置将在没有此权限的情况下继续。</string>
+    <string name="firstrun_save_sync_title">存档同步</string>
+    <string name="firstrun_save_sync_intro">将存档保存在你的服务器上，以便在任何设备上继续游戏。</string>
+    <string name="firstrun_save_sync_option_on_title">同步存档</string>
+    <string name="firstrun_save_sync_option_on_description">备份存档和即时存档，并在游戏前恢复</string>
+    <string name="firstrun_save_sync_option_off_title">将存档保留在此设备上</string>
+    <string name="firstrun_save_sync_option_off_description">不会上传任何内容。你可以稍后在设置中开启同步。</string>
+    <string name="firstrun_save_sync_option_selected">已选择</string>
+    <string name="firstrun_save_sync_button_next">下一步</string>
 
     <string name="firstrun_rom_path_title">游戏存储路径</string>
     <string name="firstrun_rom_path_description">选择游戏文件的存储位置。我们会自动为每个主机创建子文件夹。</string>

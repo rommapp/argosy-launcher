@@ -18,7 +18,7 @@ import java.util.concurrent.atomic.AtomicBoolean
 object PadDriverMain {
 
     private const val TAG = "PadDriver"
-    private const val SCAN_INTERVAL_MS = 1_000L
+    private const val SCAN_INTERVAL_MS = 250L
     private const val UNPUBLISH_GRACE_MS = 1_000L
     private const val HANDSHAKE_STEP_MS = 120L
     private const val HIDRAW_CLASS = "/sys/class/hidraw"

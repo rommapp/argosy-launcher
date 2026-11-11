@@ -29,6 +29,7 @@ import javax.inject.Singleton
 
 private const val CONTROLLER_EVENT_BUFFER = 16
 private const val BATTERY_POLL_MS = 60_000L
+private const val CONNECT_SETTLE_MS = 1_500L
 
 fun controllerIdOf(device: InputDevice): String =
     "${device.vendorId}:${device.productId}:${device.descriptor}"
@@ -42,6 +43,8 @@ class ConnectedControllerTracker @Inject constructor(
     private val activeState = ActiveControllerState()
     private val deviceGeneration = MutableStateFlow(0)
     private val presence = ControllerPresence()
+    private val settler = ControllerEventSettler(CONNECT_SETTLE_MS)
+    @Volatile private var settleJob: kotlinx.coroutines.Job? = null
 
     private val _controllers = MutableStateFlow(readControllers().also { synchronized(presence) { presence.update(it) } })
 
@@ -112,12 +115,26 @@ class ConnectedControllerTracker @Inject constructor(
 
     fun refresh() {
         val snapshot = readControllers()
-        val events = synchronized(presence) { presence.update(snapshot) }
+        val events = synchronized(presence) {
+            settler.offer(presence.update(snapshot), System.currentTimeMillis())
+        }
         _controllers.value = snapshot
         _connectedControllerIds.value = idsOf(snapshot)
         events.forEach { _controllerEvents.tryEmit(it) }
+        scheduleSettledConnects()
         activeState.onPadsChanged(connectedPads().map { it.toActiveController() })
         deviceGeneration.value++
+    }
+
+    private fun scheduleSettledConnects() {
+        val wait = synchronized(presence) { settler.nextDueIn(System.currentTimeMillis()) } ?: return
+        settleJob?.cancel()
+        settleJob = scope.launch {
+            delay(wait)
+            val settled = synchronized(presence) { settler.due(System.currentTimeMillis()) }
+            settled.forEach { _controllerEvents.tryEmit(it) }
+            scheduleSettledConnects()
+        }
     }
 
     private suspend fun pollBattery() {

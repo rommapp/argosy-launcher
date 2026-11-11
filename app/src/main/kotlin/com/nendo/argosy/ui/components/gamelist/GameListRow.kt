@@ -30,7 +30,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.Layout
@@ -55,9 +54,8 @@ import com.nendo.argosy.ui.screens.home.GameDownloadIndicator
 import com.nendo.argosy.ui.theme.Dimens
 import com.nendo.argosy.ui.theme.LocalBoxArtStyle
 import com.nendo.argosy.ui.theme.generated.ComponentDefaults
-import com.nendo.argosy.ui.primitives.FocusIndicators
-import com.nendo.argosy.ui.primitives.argosyFocusIndicators
 import com.nendo.argosy.ui.util.clickableNoFocus
+import com.nendo.argosy.ui.util.focusBorder
 
 private val GAME_LIST_RUNNING_LABELS = RunningLineLabels(
     running = R.string.gamelist_row_running,
@@ -157,7 +155,7 @@ internal fun CompactGameListRow(
         isFocused = isFocused,
         onClick = onClick,
         onLongClick = onLongClick,
-        containerColor = Color.Transparent,
+        containerColor = if (isFocused) MaterialTheme.colorScheme.primaryContainer else Color.Transparent,
         modifier = modifier
     ) {
         Box(
@@ -191,11 +189,11 @@ private fun GameListRowCard(
     Card(
         modifier = modifier
             .fillMaxWidth()
-            .clip(shape)
-            .argosyFocusIndicators(
-                focused = isFocused,
-                indicators = FocusIndicators.NavRow,
-                shape = shape
+            .focusBorder(
+                isFocused,
+                MaterialTheme.colorScheme.primary,
+                ComponentDefaults.GameListRow.focusBorderWidth.dp,
+                shape
             )
             .clickableNoFocus(onClick = onClick, onLongClick = onLongClick),
         shape = shape,

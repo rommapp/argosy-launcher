@@ -3,6 +3,7 @@ package com.nendo.argosy.hardware
 import android.annotation.SuppressLint
 import android.accessibilityservice.AccessibilityService
 import android.accessibilityservice.GestureDescription
+import android.app.KeyguardManager
 import android.content.ComponentName
 import android.content.Context
 import android.graphics.Bitmap
@@ -20,12 +21,15 @@ import com.nendo.argosy.ArgosyHomeIntent
 import com.nendo.argosy.DualScreenManagerHolder
 import com.nendo.argosy.data.emulator.EmulatorRegistry
 import com.nendo.argosy.data.emulator.PlaySessionTracker
+import com.nendo.argosy.data.emulator.background.BackgroundGames
 import com.nendo.argosy.libretro.slot.ResumedGameRouter
 import com.nendo.argosy.data.preferences.UserPreferencesRepository
 import com.nendo.argosy.libretro.LibretroActivity
 import com.nendo.argosy.ui.quickpanel.QuickPanelOverlay
 import com.nendo.argosy.ui.screens.running.ResumeOverlay
 import com.nendo.argosy.ui.screens.player.PlayerActivity
+import com.nendo.argosy.util.RootShell
+import com.nendo.argosy.util.SecondaryHomeComponent
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -46,6 +50,7 @@ class FocusAccessibilityService : AccessibilityService() {
     @Inject lateinit var preferencesRepository: UserPreferencesRepository
     @Inject lateinit var quickPanelOverlay: QuickPanelOverlay
     @Inject lateinit var resumeOverlay: ResumeOverlay
+    @Inject lateinit var backgroundGames: BackgroundGames
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
     private val handler = Handler(Looper.getMainLooper())
@@ -53,6 +58,12 @@ class FocusAccessibilityService : AccessibilityService() {
     @Volatile private var systemHotkeys = SystemHotkeyConfig.DISABLED
     private var homeRoutedToGame = false
     private var homeClosedResume = false
+    private var homeTakenFromGame = false
+    private var homeHoldFired = false
+    private val homeHold = Runnable {
+        homeHoldFired = true
+        openRunningScreen()
+    }
     private val foreground by lazy {
         ForegroundAppTracker(
             ownPackage = packageName,
@@ -122,6 +133,7 @@ class FocusAccessibilityService : AccessibilityService() {
 
     override fun onDestroy() {
         instance = null
+        handler.removeCallbacks(homeHold)
         keyFilter.reset()
         scope.cancel()
         Log.d(TAG, "Accessibility service destroyed")
@@ -131,8 +143,48 @@ class FocusAccessibilityService : AccessibilityService() {
     override fun onKeyEvent(event: KeyEvent): Boolean {
         if (event.keyCode in HOME_KEYS && closesResumeOverlay(event)) return true
         if (event.keyCode in HOME_KEYS && routesHomeToGame(event)) return true
+        if (event.keyCode == KeyEvent.KEYCODE_HOME && takesHomeFromExternalGame(event)) return true
         return keyFilter.onKey(event.keyCode, event.action, event.repeatCount)
     }
+
+    private fun takesHomeFromExternalGame(event: KeyEvent): Boolean = when (event.action) {
+        KeyEvent.ACTION_DOWN -> {
+            if (event.repeatCount == 0) {
+                homeTakenFromGame = externalGameHoldsHome()
+                homeHoldFired = false
+                handler.removeCallbacks(homeHold)
+                if (homeTakenFromGame) handler.postDelayed(homeHold, SystemHotkeyDetector.GUIDE_HOLD_MS)
+            }
+            homeTakenFromGame
+        }
+        KeyEvent.ACTION_UP -> homeTakenFromGame.also { taken ->
+            homeTakenFromGame = false
+            handler.removeCallbacks(homeHold)
+            if (taken && !homeHoldFired) showArgosyWithoutTransition()
+            homeHoldFired = false
+        }
+        else -> false
+    }
+
+    private fun externalGameHoldsHome(): Boolean {
+        if (!RootShell.isAvailable) return false
+        if (!foreground.otherAppInFront || !externalSessionInFront()) return false
+        if (gameDisplayId() != Display.DEFAULT_DISPLAY) return false
+        if (getSystemService(KeyguardManager::class.java)?.isKeyguardLocked != false) return false
+        return SecondaryHomeComponent.isDefaultHome(this)
+    }
+
+    private fun showArgosyWithoutTransition() {
+        scope.launch {
+            val shown = backgroundGames.withTransitionsOff { startArgosy(openRunning = false) }
+            if (!shown) performGlobalAction(GLOBAL_ACTION_HOME)
+        }
+    }
+
+    private fun startArgosy(openRunning: Boolean): Boolean =
+        runCatching { startActivity(ArgosyHomeIntent.create(this, openRunning)) }
+            .onFailure { Log.w(TAG, "Argosy could not be shown: ${it.message}") }
+            .isSuccess
 
     private fun closesResumeOverlay(event: KeyEvent): Boolean = when (event.action) {
         KeyEvent.ACTION_DOWN -> {
@@ -159,21 +211,22 @@ class FocusAccessibilityService : AccessibilityService() {
     }
 
     private fun performSystemHotkey(action: SystemHotkeyAction) {
-        val globalAction = when (action) {
-            SystemHotkeyAction.HOME -> GLOBAL_ACTION_HOME
-            SystemHotkeyAction.BACK -> GLOBAL_ACTION_BACK
+        when (action) {
+            SystemHotkeyAction.HOME ->
+                if (externalGameHoldsHome()) showArgosyWithoutTransition() else performGlobalAction(GLOBAL_ACTION_HOME)
+            SystemHotkeyAction.BACK -> performGlobalAction(GLOBAL_ACTION_BACK)
         }
-        performGlobalAction(globalAction)
     }
 
     private fun openRunningScreen() {
         if (resumeOverlay.show(gameDisplayId())) return
-        runCatching { startActivity(ArgosyHomeIntent.create(this, openRunning = true)) }
-            .onFailure { Log.w(TAG, "Argosy running screen could not be shown: ${it.message}") }
+        scope.launch { backgroundGames.withTransitionsOff { startArgosy(openRunning = true) } }
     }
 
-    private fun filtersBack(): Boolean {
-        if (!quickPanelEnabled || quickPanelOverlay.isOpen.value || resumeOverlay.isOpen.value) return false
+    private fun filtersBack(): Boolean = quickPanelEnabled && externalSessionInFront()
+
+    private fun externalSessionInFront(): Boolean {
+        if (quickPanelOverlay.isOpen.value || resumeOverlay.isOpen.value) return false
         val session = playSessionTracker.activeSession.value ?: return false
         if (session.emulatorPackage == EmulatorRegistry.BUILTIN_PACKAGE) return false
         return foreground.foregroundPackage == session.emulatorPackage

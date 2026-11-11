@@ -3982,6 +3982,17 @@ open class LibretroActivity : ComponentActivity() {
         finish()
     }
 
+    @Suppress("DEPRECATION")
+    override fun finish() {
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+            overrideActivityTransition(OVERRIDE_TRANSITION_CLOSE, 0, 0)
+            super.finish()
+        } else {
+            super.finish()
+            overridePendingTransition(0, 0)
+        }
+    }
+
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
         when (intent.action) {

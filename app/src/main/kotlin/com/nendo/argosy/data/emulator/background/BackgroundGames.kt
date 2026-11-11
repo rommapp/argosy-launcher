@@ -271,7 +271,7 @@ class BackgroundGames @Inject constructor(
         val activityManager = application.getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager
         val own = ownTask(activityManager, taskId)
         if (own != null && startWithoutTransition(own, taskId)) return@withContext true
-        if (own == null && RootShell.isAvailable) return@withContext moveWithTransitionsOff(activityManager, taskId)
+        if (own == null) return@withContext withTransitionsOff { moveTaskToFront(activityManager, taskId) }
         moveTaskToFront(activityManager, taskId)
     }
 
@@ -283,21 +283,22 @@ class BackgroundGames @Inject constructor(
         false
     }
 
-    private fun moveWithTransitionsOff(activityManager: ActivityManager, taskId: Int): Boolean {
+    suspend fun <T> withTransitionsOff(switch: () -> T): T = withContext(Dispatchers.IO) {
+        if (!RootShell.isAvailable) return@withContext switch()
         val result = RootShell.run(
             application,
             "settings get global $TRANSITION_SCALE && settings put global $TRANSITION_SCALE 0"
         )
-        if (result?.succeeded != true) return moveTaskToFront(activityManager, taskId)
+        if (result?.succeeded != true) return@withContext switch()
         val previous = result.output.firstOrNull()?.trim()?.toFloatOrNull() ?: DEFAULT_TRANSITION_SCALE
-        if (previous == 0f) return moveTaskToFront(activityManager, taskId)
+        if (previous == 0f) return@withContext switch()
         if (!transitionScaleRestore.exists()) transitionScaleRestore.writeText(previous.toString())
-        val moved = moveTaskToFront(activityManager, taskId)
+        val outcome = switch()
         scope.launch {
             delay(TRANSITION_RESTORE_DELAY_MS)
             restoreTransitionScale()
         }
-        return moved
+        outcome
     }
 
     private val transitionScaleRestore: File get() = File(application.filesDir, TRANSITION_RESTORE_FILE)

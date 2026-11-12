@@ -39,6 +39,7 @@ import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.nendo.argosy.core.input.SoundType
 import com.nendo.argosy.ui.components.FocusedScroll
+import com.nendo.argosy.ui.components.markdown.ReleaseNotesBody
 import com.nendo.argosy.ui.input.InputHandler
 import com.nendo.argosy.ui.input.InputResult
 import com.nendo.argosy.ui.input.LocalInputDispatcher
@@ -256,7 +257,7 @@ fun ReleaseChangelogModal(
                         color = theme.textPrimary
                     )
                     Spacer(modifier = Modifier.height(Dimens.spacingSm))
-                    ChangelogBody(body = shownRelease.body)
+                    ReleaseNotesBody(body = shownRelease.body)
                 } else {
                     Text(
                         text = if (state.isLoading) {
@@ -344,60 +345,6 @@ private fun LoadMoreRow(
             style = MaterialTheme.typography.bodySmall,
             color = if (focused) theme.textPrimary else theme.textDim
         )
-    }
-}
-
-@Composable
-private fun ChangelogBody(body: String?) {
-    val theme = LocalArgosyTheme.current
-    val lines = remember(body) { parseLogLines(body.orEmpty()) }
-    Column(verticalArrangement = Arrangement.spacedBy(Dimens.spacingXs)) {
-        lines.forEach { line ->
-            when (line) {
-                is LogLine.Heading -> Text(
-                    text = line.text,
-                    style = MaterialTheme.typography.titleSmall,
-                    color = theme.textPrimary
-                )
-                is LogLine.Bullet -> Row {
-                    Text(
-                        text = "•  ",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = theme.textDim
-                    )
-                    Text(
-                        text = line.text,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = theme.textDim
-                    )
-                }
-                is LogLine.Body -> Text(
-                    text = line.text,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = theme.textDim
-                )
-                LogLine.Blank -> Spacer(modifier = Modifier.height(Dimens.spacingXs))
-            }
-        }
-    }
-}
-
-private sealed class LogLine {
-    data class Heading(val text: String) : LogLine()
-    data class Bullet(val text: String) : LogLine()
-    data class Body(val text: String) : LogLine()
-    data object Blank : LogLine()
-}
-
-private fun stripMarkers(text: String): String = text.replace("**", "").replace("`", "")
-
-private fun parseLogLines(body: String): List<LogLine> = body.lines().map { raw ->
-    val line = raw.trim()
-    when {
-        line.isEmpty() -> LogLine.Blank
-        line.startsWith("#") -> LogLine.Heading(stripMarkers(line.trimStart('#').trim()))
-        line.startsWith("- ") || line.startsWith("* ") -> LogLine.Bullet(stripMarkers(line.substring(2).trim()))
-        else -> LogLine.Body(stripMarkers(line))
     }
 }
 

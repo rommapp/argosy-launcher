@@ -725,7 +725,7 @@
     <string name="settings_about_update_subtitle_current">Actualizado</string>
     <string name="settings_about_update_subtitle_on_prerelease">Ejecutando una versión preliminar</string>
     <string name="settings_about_update_subtitle_idle">Buscar nuevas versiones</string>
-    <string name="settings_about_update_action_download">Descargar</string>
+    <string name="settings_about_update_action_install">Instalar</string>
     <string name="settings_about_update_action_check">Comprobar</string>
     <string name="settings_about_update_action_changelog">Registro de cambios</string>
     <string name="settings_about_changelog_preview_title">Novedades - %1$s</string>

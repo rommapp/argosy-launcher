@@ -1,6 +1,5 @@
 package com.nendo.argosy.ui.screens.settings
 
-import android.util.Log
 import androidx.lifecycle.viewModelScope
 import com.nendo.argosy.data.preferences.AppLanguage
 import com.nendo.argosy.core.notification.NotificationDuration
@@ -9,18 +8,14 @@ import com.nendo.argosy.core.notification.NotificationType
 import com.nendo.argosy.core.notification.showError
 import com.nendo.argosy.data.preferences.SettingsExportResult
 import com.nendo.argosy.data.preferences.SettingsImportResult
+import com.nendo.argosy.data.model.AppUpdateDownload
 import com.nendo.argosy.data.remote.github.UpdateState
+import com.nendo.argosy.ui.screens.settings.sections.aboutUpdateActions
 import com.nendo.argosy.util.LogLevel
 import com.nendo.argosy.R
-import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
-import okhttp3.OkHttpClient
-import okhttp3.Request
-import java.io.File
-
-private const val TAG = "SettingsAboutRouter"
 
 internal fun routeSetBetaUpdatesEnabled(vm: SettingsViewModel, enabled: Boolean) {
     vm.viewModelScope.launch {
@@ -158,59 +153,75 @@ internal fun routeSetSaveDebugLoggingEnabled(vm: SettingsViewModel, enabled: Boo
     vm._uiState.update { it.copy(saveDebugLoggingEnabled = enabled) }
 }
 
-internal fun routeCheckForUpdates(vm: SettingsViewModel) {
-    if (com.nendo.argosy.BuildConfig.DEBUG) return
-
+internal fun routeSetDebugUpdateChecksEnabled(vm: SettingsViewModel, enabled: Boolean) {
     vm.viewModelScope.launch {
-        vm._uiState.update { it.copy(updateCheck = it.updateCheck.copy(isChecking = true, error = null)) }
+        vm.preferencesRepository.setDebugUpdateChecksEnabled(enabled)
+        vm._uiState.update { it.copy(debugUpdateChecksEnabled = enabled) }
+    }
+}
 
-        when (val state = vm.updateRepository.checkForUpdates()) {
-            is UpdateState.UpdateAvailable -> {
-                vm._uiState.update {
-                    it.copy(
-                        updateCheck = UpdateCheckState(
-                            isChecking = false,
-                            updateAvailable = true,
-                            latestVersion = state.release.tagName,
-                            latestName = state.release.name,
-                            latestBody = state.release.body,
-                            downloadUrl = state.apkAsset.downloadUrl
+internal fun routeObserveAppUpdate(vm: SettingsViewModel) {
+    val manager = vm.appUpdateManager
+    vm.viewModelScope.launch {
+        combine(manager.stored, manager.download) { stored, download -> stored to download }
+            .collect { (stored, download) ->
+                val latest = manager.availableIn(stored)
+                val isStored = latest != null && manager.isStored(latest)
+                val tag = latest?.tag
+                vm._uiState.update { state ->
+                    state.copy(
+                        updateCheck = state.updateCheck.copy(
+                            latest = latest,
+                            isSkipped = tag != null && tag == stored.skippedTag,
+                            isStored = isStored,
+                            isDownloading = download is AppUpdateDownload.Downloading && download.tag == tag,
+                            downloadProgress = (download as? AppUpdateDownload.Downloading)
+                                ?.takeIf { it.tag == tag }?.progress ?: 0,
+                            error = when (download) {
+                                is AppUpdateDownload.Failed -> download.message.takeIf { download.tag == tag }
+                                is AppUpdateDownload.Downloading, is AppUpdateDownload.HandedOff -> null
+                                AppUpdateDownload.Idle -> state.updateCheck.error
+                            }
                         )
                     )
                 }
             }
-            is UpdateState.UpToDate -> {
-                vm._uiState.update {
-                    it.copy(updateCheck = UpdateCheckState(isChecking = false, hasChecked = true, updateAvailable = false))
-                }
-            }
-            is UpdateState.Error -> {
-                vm._uiState.update {
-                    it.copy(updateCheck = UpdateCheckState(isChecking = false, error = state.message))
-                }
-            }
-            else -> {
-                vm._uiState.update { it.copy(updateCheck = UpdateCheckState(isChecking = false)) }
-            }
+    }
+}
+
+internal fun routeCheckForUpdates(vm: SettingsViewModel) {
+    if (vm._uiState.value.updateCheck.isChecking) return
+    vm.viewModelScope.launch {
+        vm._uiState.update { it.copy(updateCheck = it.updateCheck.copy(isChecking = true, error = null)) }
+        val result = vm.appUpdateManager.check()
+        vm._uiState.update { state ->
+            state.copy(
+                updateCheck = state.updateCheck.copy(
+                    isChecking = false,
+                    hasChecked = result is UpdateState.UpdateAvailable || result is UpdateState.UpToDate,
+                    error = (result as? UpdateState.Error)?.message
+                )
+            )
         }
     }
 }
 
 internal fun routeMoveUpdateActionFocus(vm: SettingsViewModel, delta: Int) {
     vm._uiState.update {
-        it.copy(aboutUpdateActionIndex = (it.aboutUpdateActionIndex + delta).coerceIn(0, 1))
+        val last = (aboutUpdateActions(it.updateCheck).size - 1).coerceAtLeast(0)
+        it.copy(aboutUpdateActionIndex = (it.aboutUpdateActionIndex + delta).coerceIn(0, last))
     }
 }
 
 internal fun routeOpenChangelog(vm: SettingsViewModel) {
-    val check = vm._uiState.value.updateCheck
-    val seed = if (check.updateAvailable && check.latestVersion != null) {
+    val latest = vm._uiState.value.updateCheck.latest
+    val seed = if (latest != null) {
         listOf(
             ChangelogRelease(
-                tag = check.latestVersion,
-                name = check.latestName ?: check.latestVersion,
-                body = check.latestBody,
-                prerelease = check.latestVersion.contains("-"),
+                tag = latest.tag,
+                name = latest.name.ifBlank { latest.tag },
+                body = latest.notes,
+                prerelease = latest.tag.contains("-"),
                 publishedAt = null
             )
         )
@@ -264,72 +275,18 @@ internal fun routeLoadChangelogPage(vm: SettingsViewModel) {
     }
 }
 
-internal fun routeDownloadAndInstallUpdate(vm: SettingsViewModel, context: android.content.Context) {
+internal fun routeInstallUpdate(vm: SettingsViewModel, fresh: Boolean) {
     val state = vm._uiState.value.updateCheck
-    val url = state.downloadUrl ?: return
-    val version = state.latestVersion ?: return
-
+    val latest = state.latest ?: return
     if (state.isDownloading) return
-
-    vm.viewModelScope.launch {
-        vm._uiState.update { it.copy(updateCheck = it.updateCheck.copy(isDownloading = true, downloadProgress = 0, error = null)) }
-
-        try {
-            val apkFile = withContext(Dispatchers.IO) {
-                routeDownloadApk(vm, context, url, version) { progress ->
-                    vm._uiState.update { it.copy(updateCheck = it.updateCheck.copy(downloadProgress = progress)) }
-                }
-            }
-
-            vm._uiState.update {
-                it.copy(updateCheck = it.updateCheck.copy(isDownloading = false, readyToInstall = true))
-            }
-
-            vm.appInstaller.installApk(context, apkFile)
-        } catch (e: Exception) {
-            Log.e(TAG, "Failed to download update", e)
-            vm._uiState.update {
-                it.copy(updateCheck = it.updateCheck.copy(isDownloading = false, error = e.message ?: "Download failed"))
-            }
-        }
-    }
+    vm.appUpdateManager.install(latest, fresh = fresh)
 }
 
-private fun routeDownloadApk(
-    vm: SettingsViewModel,
-    context: android.content.Context,
-    url: String,
-    version: String,
-    onProgress: (Int) -> Unit
-): File {
-    val client = OkHttpClient.Builder().build()
-    val request = Request.Builder().url(url).build()
-    val response = client.newCall(request).execute()
-
-    if (!response.isSuccessful) {
-        throw Exception("Download failed: ${response.code}")
+internal fun routeUpdateAction(vm: SettingsViewModel, action: AboutUpdateAction) {
+    val check = vm._uiState.value.updateCheck
+    when (action) {
+        AboutUpdateAction.PRIMARY -> if (check.updateAvailable) routeInstallUpdate(vm, fresh = false) else routeCheckForUpdates(vm)
+        AboutUpdateAction.REDOWNLOAD -> routeInstallUpdate(vm, fresh = true)
+        AboutUpdateAction.CHANGELOG -> routeOpenChangelog(vm)
     }
-
-    val body = response.body ?: throw Exception("Empty response")
-    val contentLength = body.contentLength()
-    val apkFile = vm.appInstaller.getApkCacheFile(context, version)
-
-    apkFile.outputStream().use { output ->
-        body.byteStream().use { input ->
-            val buffer = ByteArray(8192)
-            var bytesRead: Long = 0
-            var read: Int
-
-            while (input.read(buffer).also { read = it } != -1) {
-                output.write(buffer, 0, read)
-                bytesRead += read
-                if (contentLength > 0) {
-                    val progress = ((bytesRead * 100) / contentLength).toInt()
-                    onProgress(progress)
-                }
-            }
-        }
-    }
-
-    return apkFile
 }

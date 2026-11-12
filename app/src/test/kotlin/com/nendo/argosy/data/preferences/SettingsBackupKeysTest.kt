@@ -98,7 +98,8 @@ class SettingsBackupKeysTest {
     )
 
     private val diagnostics = setOf(
-        "file_logging_enabled", "file_log_level", "save_debug_logging_enabled"
+        "file_logging_enabled", "file_log_level", "save_debug_logging_enabled",
+        "debug_update_checks_enabled"
     )
 
     private val installPermissions = setOf("allow_remote_installs")

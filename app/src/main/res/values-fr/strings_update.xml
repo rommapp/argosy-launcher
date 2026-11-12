@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="settings_about_update_action_redownload">Retélécharger</string>
+    <string name="settings_about_update_subtitle_skipped">%1$s (Ignorée)</string>
+    <string name="settings_about_update_subtitle_stored">%1$s est téléchargée et prête à être installée</string>
+
+    <string name="settings_about_debug_update_checks_title">Recherche de mises à jour</string>
+    <string name="settings_about_debug_update_checks_subtitle_on">Cette version de débogage recherche les mises à jour et affiche l\'invite de mise à jour</string>
+    <string name="settings_about_debug_update_checks_subtitle_off">Les versions de débogage ne recherchent pas de mises à jour</string>
+
+    <string name="update_prompt_title">Argosy %1$s est disponible</string>
+    <string name="update_prompt_action_install">Installer</string>
+    <string name="update_prompt_action_skip">Ignorer cette version</string>
+    <string name="update_prompt_action_later">Plus tard</string>
+    <string name="update_prompt_downloading">Téléchargement... %1$d%%</string>
+    <string name="update_prompt_download_failed">Le téléchargement n\'a pas abouti. Choisissez Installer pour réessayer.</string>
+    <string name="update_prompt_notes_empty">Cette version n\'a pas de notes.</string>
+    <string name="update_prompt_hint_scroll">Défiler</string>
+</resources>

@@ -1385,8 +1385,8 @@
     <string name="settings_about_update_subtitle_on_prerelease">Running pre-release build</string>
     <!-- Second line of that row before any check has run. Verb phrase. -->
     <string name="settings_about_update_subtitle_idle">Check for new versions</string>
-    <!-- Button that fetches the new version. Verb. -->
-    <string name="settings_about_update_action_download">Download</string>
+    <!-- Button that installs the new version, fetching it first when it is not stored yet. Verb. -->
+    <string name="settings_about_update_action_install">Install</string>
     <!-- Button that asks the update server. Verb. -->
     <string name="settings_about_update_action_check">Check</string>
     <!-- Button that opens the list of what changed. Noun. -->

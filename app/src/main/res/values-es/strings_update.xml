@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="settings_about_update_action_redownload">Volver a descargar</string>
+    <string name="settings_about_update_subtitle_skipped">%1$s (Omitida)</string>
+    <string name="settings_about_update_subtitle_stored">%1$s está descargada y lista para instalar</string>
+
+    <string name="settings_about_debug_update_checks_title">Búsqueda de actualizaciones</string>
+    <string name="settings_about_debug_update_checks_subtitle_on">Esta compilación de depuración busca actualizaciones y muestra el aviso de actualización</string>
+    <string name="settings_about_debug_update_checks_subtitle_off">Las compilaciones de depuración no buscan actualizaciones</string>
+
+    <string name="update_prompt_title">Argosy %1$s está disponible</string>
+    <string name="update_prompt_action_install">Instalar</string>
+    <string name="update_prompt_action_skip">Omitir esta versión</string>
+    <string name="update_prompt_action_later">Más tarde</string>
+    <string name="update_prompt_downloading">Descargando... %1$d%%</string>
+    <string name="update_prompt_download_failed">La descarga no se completó. Elige Instalar para volver a intentarlo.</string>
+    <string name="update_prompt_notes_empty">Esta versión no tiene notas.</string>
+    <string name="update_prompt_hint_scroll">Desplazar</string>
+</resources>

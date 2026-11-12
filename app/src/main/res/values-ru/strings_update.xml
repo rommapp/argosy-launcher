@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="settings_about_update_action_redownload">Скачать заново</string>
+    <string name="settings_about_update_subtitle_skipped">%1$s (Пропущена)</string>
+    <string name="settings_about_update_subtitle_stored">%1$s скачана и готова к установке</string>
+
+    <string name="settings_about_debug_update_checks_title">Проверка обновлений</string>
+    <string name="settings_about_debug_update_checks_subtitle_on">Эта отладочная сборка проверяет обновления и показывает окно обновления</string>
+    <string name="settings_about_debug_update_checks_subtitle_off">Отладочные сборки не проверяют обновления</string>
+
+    <string name="update_prompt_title">Доступна Argosy %1$s</string>
+    <string name="update_prompt_action_install">Установить</string>
+    <string name="update_prompt_action_skip">Пропустить эту версию</string>
+    <string name="update_prompt_action_later">Позже</string>
+    <string name="update_prompt_downloading">Загрузка... %1$d%%</string>
+    <string name="update_prompt_download_failed">Загрузка не завершилась. Выберите «Установить», чтобы повторить.</string>
+    <string name="update_prompt_notes_empty">У этого релиза нет описания.</string>
+    <string name="update_prompt_hint_scroll">Прокрутка</string>
+</resources>

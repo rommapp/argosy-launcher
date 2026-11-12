@@ -58,14 +58,6 @@ class AppInstaller @Inject constructor() {
             ?.activityInfo
             ?.packageName
 
-    fun getApkCacheFile(context: Context, version: String): File {
-        return File(context.cacheDir, "argosy-$version.apk")
-    }
-
-    fun clearCachedApks(context: Context) {
-        context.cacheDir.listFiles()?.filter { it.name.startsWith("argosy-") && it.name.endsWith(".apk") }?.forEach { it.delete() }
-    }
-
     private companion object {
         const val APK_MIME_TYPE = "application/vnd.android.package-archive"
     }

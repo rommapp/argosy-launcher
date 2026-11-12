@@ -929,6 +929,7 @@ internal fun routeLoadSettings(vm: SettingsViewModel) {
         vm._uiState.update {
             it.copy(
                 betaUpdatesEnabled = prefs.betaUpdatesEnabled,
+                debugUpdateChecksEnabled = prefs.debugUpdateChecksEnabled,
                 appLanguage = prefs.appLanguage,
                 fileLoggingEnabled = prefs.fileLoggingEnabled,
                 fileLoggingPath = prefs.fileLoggingPath,

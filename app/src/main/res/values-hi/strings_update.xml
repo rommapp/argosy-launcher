@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="settings_about_update_action_redownload">फिर से डाउनलोड करें</string>
+    <string name="settings_about_update_subtitle_skipped">%1$s (छोड़ा गया)</string>
+    <string name="settings_about_update_subtitle_stored">%1$s डाउनलोड हो चुका है और इंस्टॉल के लिए तैयार है</string>
+
+    <string name="settings_about_debug_update_checks_title">अपडेट जाँच</string>
+    <string name="settings_about_debug_update_checks_subtitle_on">यह डीबग बिल्ड अपडेट जाँचता है और अपडेट प्रॉम्प्ट दिखाता है</string>
+    <string name="settings_about_debug_update_checks_subtitle_off">डीबग बिल्ड अपडेट नहीं जाँचते</string>
+
+    <string name="update_prompt_title">Argosy %1$s उपलब्ध है</string>
+    <string name="update_prompt_action_install">इंस्टॉल करें</string>
+    <string name="update_prompt_action_skip">यह वर्ज़न छोड़ें</string>
+    <string name="update_prompt_action_later">बाद में</string>
+    <string name="update_prompt_downloading">डाउनलोड हो रहा है... %1$d%%</string>
+    <string name="update_prompt_download_failed">डाउनलोड पूरा नहीं हुआ। फिर से कोशिश करने के लिए इंस्टॉल करें चुनें।</string>
+    <string name="update_prompt_notes_empty">इस रिलीज़ में कोई नोट्स नहीं हैं।</string>
+    <string name="update_prompt_hint_scroll">स्क्रॉल करें</string>
+</resources>

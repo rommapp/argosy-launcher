@@ -700,7 +700,7 @@
     <string name="settings_about_update_subtitle_current">अप टू डेट</string>
     <string name="settings_about_update_subtitle_on_prerelease">प्री-रिलीज़ बिल्ड चल रहा है</string>
     <string name="settings_about_update_subtitle_idle">नए वर्शन जाँचें</string>
-    <string name="settings_about_update_action_download">डाउनलोड करें</string>
+    <string name="settings_about_update_action_install">इंस्टॉल करें</string>
     <string name="settings_about_update_action_check">जाँचें</string>
     <string name="settings_about_update_action_changelog">चेंजलॉग</string>
     <string name="settings_about_changelog_preview_title">नया क्या है - %1$s</string>

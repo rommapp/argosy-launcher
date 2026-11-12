@@ -654,7 +654,7 @@
     <string name="settings_about_update_subtitle_current">已是最新版本</string>
     <string name="settings_about_update_subtitle_on_prerelease">目前執行搶先版</string>
     <string name="settings_about_update_subtitle_idle">檢查是否有新版本</string>
-    <string name="settings_about_update_action_download">下載</string>
+    <string name="settings_about_update_action_install">安裝</string>
     <string name="settings_about_update_action_check">檢查</string>
     <string name="settings_about_update_action_changelog">更新日誌</string>
     <string name="settings_about_changelog_preview_title">新功能 - %1$s</string>

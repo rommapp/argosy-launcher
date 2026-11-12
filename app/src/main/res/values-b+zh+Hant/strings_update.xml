@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="settings_about_update_action_redownload">重新下載</string>
+    <string name="settings_about_update_subtitle_skipped">%1$s（已略過）</string>
+    <string name="settings_about_update_subtitle_stored">%1$s已下載，可以安裝</string>
+
+    <string name="settings_about_debug_update_checks_title">檢查更新</string>
+    <string name="settings_about_debug_update_checks_subtitle_on">此偵錯版本會檢查更新並顯示更新提示</string>
+    <string name="settings_about_debug_update_checks_subtitle_off">偵錯版本不會檢查更新</string>
+
+    <string name="update_prompt_title">Argosy %1$s 現已推出</string>
+    <string name="update_prompt_action_install">安裝</string>
+    <string name="update_prompt_action_skip">略過此版本</string>
+    <string name="update_prompt_action_later">稍後</string>
+    <string name="update_prompt_downloading">正在下載… %1$d%%</string>
+    <string name="update_prompt_download_failed">下載未完成。選擇「安裝」即可重試。</string>
+    <string name="update_prompt_notes_empty">此版本沒有更新說明。</string>
+    <string name="update_prompt_hint_scroll">捲動</string>
+</resources>

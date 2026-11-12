@@ -1652,16 +1652,17 @@ data class JellyfinState(
 data class UpdateCheckState(
     val isChecking: Boolean = false,
     val hasChecked: Boolean = false,
-    val updateAvailable: Boolean = false,
-    val latestVersion: String? = null,
-    val latestName: String? = null,
-    val latestBody: String? = null,
-    val downloadUrl: String? = null,
+    val latest: com.nendo.argosy.data.model.AppUpdateRelease? = null,
+    val isSkipped: Boolean = false,
+    val isStored: Boolean = false,
     val error: String? = null,
     val isDownloading: Boolean = false,
-    val downloadProgress: Int = 0,
-    val readyToInstall: Boolean = false
-)
+    val downloadProgress: Int = 0
+) {
+    val updateAvailable: Boolean get() = latest != null
+}
+
+enum class AboutUpdateAction { PRIMARY, REDOWNLOAD, CHANGELOG }
 
 data class ChangelogRelease(
     val tag: String,
@@ -2023,6 +2024,7 @@ data class SettingsUiState(
     val changelog: ChangelogState = ChangelogState(),
     val aboutUpdateActionIndex: Int = 0,
     val betaUpdatesEnabled: Boolean = false,
+    val debugUpdateChecksEnabled: Boolean = false,
     val appLanguage: AppLanguage = AppLanguage.SYSTEM,
     val fileLoggingEnabled: Boolean = false,
     val fileLoggingPath: String? = null,

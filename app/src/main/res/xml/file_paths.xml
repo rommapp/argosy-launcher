@@ -3,6 +3,7 @@
     <root-path name="storage" path="storage" />
     <root-path name="mnt" path="mnt" />
     <external-files-path name="external_files" path="." />
+    <files-path name="updates" path="updates/" />
     <files-path name="internal" path="." />
     <cache-path name="cache" path="." />
 </paths>

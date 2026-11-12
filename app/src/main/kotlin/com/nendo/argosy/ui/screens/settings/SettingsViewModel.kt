@@ -38,7 +38,6 @@ import com.nendo.argosy.data.social.SocialAuthManager
 import com.nendo.argosy.data.social.SocialConnectionState
 import com.nendo.argosy.data.social.SocialRepository
 import com.nendo.argosy.data.social.discord.DiscordPresenceManager
-import com.nendo.argosy.data.update.AppInstaller
 import com.nendo.argosy.domain.usecase.game.ConfigureEmulatorUseCase
 import com.nendo.argosy.domain.usecase.sync.SyncLibraryUseCase
 import com.nendo.argosy.libretro.LibretroCoreManager
@@ -127,7 +126,7 @@ class SettingsViewModel @Inject constructor(
     internal val platformSyncQueue: com.nendo.argosy.data.sync.PlatformSyncQueue,
     internal val configureEmulatorUseCase: ConfigureEmulatorUseCase,
     internal val updateRepository: UpdateRepository,
-    internal val appInstaller: AppInstaller,
+    internal val appUpdateManager: com.nendo.argosy.data.update.AppUpdateManager,
     internal val soundManager: SoundFeedbackManager,
     internal val saveCacheDao: SaveCacheDao,
     internal val retroArchConfigParser: RetroArchConfigParser,
@@ -226,9 +225,6 @@ class SettingsViewModel @Inject constructor(
     internal val _openUrlEvent = MutableSharedFlow<String>()
     val openUrlEvent: SharedFlow<String> = _openUrlEvent.asSharedFlow()
 
-    internal val _downloadUpdateEvent = MutableSharedFlow<Unit>()
-    val downloadUpdateEvent: SharedFlow<Unit> = _downloadUpdateEvent.asSharedFlow()
-
     internal val _requestStoragePermissionEvent = MutableSharedFlow<Unit>()
     val requestStoragePermissionEvent: SharedFlow<Unit> = _requestStoragePermissionEvent.asSharedFlow()
 
@@ -320,6 +316,7 @@ class SettingsViewModel @Inject constructor(
         routeObservePlatforms(this)
         syncDelegate.observeSaveSync(viewModelScope)
         routeObserveControllerOrder(this)
+        routeObserveAppUpdate(this)
         loadSettings()
         driversDelegate.loadGpuInfo()
         raDelegate.initialize(viewModelScope)
@@ -1560,6 +1557,7 @@ class SettingsViewModel @Inject constructor(
     fun setSoundEnabled(enabled: Boolean) = soundsDelegate.setSoundEnabled(viewModelScope, enabled)
 
     fun setBetaUpdatesEnabled(enabled: Boolean) = routeSetBetaUpdatesEnabled(this, enabled)
+    fun setDebugUpdateChecksEnabled(enabled: Boolean) = routeSetDebugUpdateChecksEnabled(this, enabled)
     fun setAppLanguage(tag: String) = routeSetAppLanguage(this, tag)
     fun cycleAppLanguage(direction: Int = 1) = routeCycleAppLanguage(this, direction)
 
@@ -2122,7 +2120,7 @@ class SettingsViewModel @Inject constructor(
     fun syncRomm() = routeSyncRomm(this)
 
     fun checkForUpdates() = routeCheckForUpdates(this)
-    fun downloadAndInstallUpdate(context: android.content.Context) = routeDownloadAndInstallUpdate(this, context)
+    fun runUpdateAction(action: AboutUpdateAction) = routeUpdateAction(this, action)
     fun moveUpdateActionFocus(delta: Int) = routeMoveUpdateActionFocus(this, delta)
     fun openChangelog() = routeOpenChangelog(this)
     fun closeChangelog() = routeCloseChangelog(this)

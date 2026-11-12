@@ -106,6 +106,9 @@ class ArgosyApp : Application(), Configuration.Provider, ImageLoaderFactory {
     lateinit var apkInstallManager: ApkInstallManager
 
     @Inject
+    lateinit var appUpdateManager: com.nendo.argosy.data.update.AppUpdateManager
+
+    @Inject
     lateinit var downloadServiceController: DownloadServiceController
 
     @Inject
@@ -248,6 +251,7 @@ class ArgosyApp : Application(), Configuration.Provider, ImageLoaderFactory {
                 .collect { rooted -> if (rooted) com.nendo.argosy.hardware.pad.PadDriverLauncher.ensureRunning(this@ArgosyApp) }
         }
         UpdateCheckWorker.schedule(this)
+        appUpdateManager.startupPass()
         SaveSyncWorker.schedule(this)
         SocialSyncWorker.schedule(this)
         CoreUpdateCheckWorker.schedule(this)

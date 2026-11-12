@@ -57,7 +57,8 @@ data class GitHubAsset(
     @Json(name = "name") val name: String,
     @Json(name = "browser_download_url") val downloadUrl: String,
     @Json(name = "size") val size: Long,
-    @Json(name = "content_type") val contentType: String? = null
+    @Json(name = "content_type") val contentType: String? = null,
+    @Json(name = "digest") val digest: String? = null
 )
 
 @JsonClass(generateAdapter = true)

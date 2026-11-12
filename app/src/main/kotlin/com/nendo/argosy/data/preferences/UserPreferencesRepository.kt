@@ -165,6 +165,7 @@ class UserPreferencesRepository @Inject constructor(
             libraryDefaultPlayers = display.libraryDefaultPlayers,
             soundConfigs = controls.soundConfigs,
             betaUpdatesEnabled = app.betaUpdatesEnabled,
+            debugUpdateChecksEnabled = app.debugUpdateChecksEnabled,
             closeEmulatorOnSessionEnd = app.closeEmulatorOnSessionEnd,
             appLanguage = app.appLanguage,
             preLaunchRecapsEnabled = app.preLaunchRecapsEnabled,
@@ -592,6 +593,7 @@ class UserPreferencesRepository @Inject constructor(
     // --- App delegates ---
 
     suspend fun setBetaUpdatesEnabled(enabled: Boolean) = appPrefs.setBetaUpdatesEnabled(enabled)
+    suspend fun setDebugUpdateChecksEnabled(enabled: Boolean) = appPrefs.setDebugUpdateChecksEnabled(enabled)
     suspend fun setCloseEmulatorOnSessionEnd(enabled: Boolean) = appPrefs.setCloseEmulatorOnSessionEnd(enabled)
     suspend fun setHiddenApps(apps: Set<String>) = appPrefs.setHiddenApps(apps)
     suspend fun toggleDockPin(packageName: String) = appPrefs.toggleDockPin(packageName)
@@ -964,6 +966,7 @@ data class UserPreferences(
     val libraryDefaultPlayers: com.nendo.argosy.domain.model.PlayerCountBucket? = null,
     val soundConfigs: Map<SoundType, SoundConfig> = emptyMap(),
     val betaUpdatesEnabled: Boolean = false,
+    val debugUpdateChecksEnabled: Boolean = false,
     val closeEmulatorOnSessionEnd: Boolean = false,
     val appLanguage: AppLanguage = AppLanguage.SYSTEM,
     val preLaunchRecapsEnabled: Boolean = true,

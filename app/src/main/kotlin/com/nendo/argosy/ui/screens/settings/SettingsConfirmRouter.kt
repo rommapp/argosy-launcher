@@ -64,6 +64,7 @@ import com.nendo.argosy.ui.screens.settings.sections.themeSoundsItemAtFocusIndex
 import com.nendo.argosy.ui.screens.settings.sections.themeSoundsMaxFocusIndex
 import com.nendo.argosy.ui.screens.settings.sections.aboutHasChangelog
 import com.nendo.argosy.ui.screens.settings.sections.aboutItemAtFocusIndex
+import com.nendo.argosy.ui.screens.settings.sections.aboutUpdateActions
 import com.nendo.argosy.ui.screens.settings.sections.boxArtItemAtFocusIndex
 import com.nendo.argosy.ui.screens.settings.sections.audioItemAtFocusIndex
 import com.nendo.argosy.ui.screens.settings.sections.audioMaxFocusIndex
@@ -1195,17 +1196,17 @@ private fun routeAboutConfirm(vm: SettingsViewModel, state: SettingsUiState): In
     val hasChangelog = aboutHasChangelog(state.updateCheck)
     when (aboutItemAtFocusIndex(state.focusedIndex, hasLogPath, hasChangelog)) {
         AboutItem.CheckUpdates -> {
-            if (state.aboutUpdateActionIndex == 1) {
-                vm.openChangelog()
-            } else if (state.updateCheck.updateAvailable) {
-                vm.viewModelScope.launch { vm._downloadUpdateEvent.emit(Unit) }
-            } else {
-                vm.checkForUpdates()
-            }
+            val actions = aboutUpdateActions(state.updateCheck)
+            actions.getOrNull(state.aboutUpdateActionIndex.coerceIn(0, actions.lastIndex))
+                ?.let { vm.runUpdateAction(it) }
         }
         AboutItem.ChangelogPreview -> vm.openChangelog()
         AboutItem.BetaUpdates -> {
             vm.setBetaUpdatesEnabled(!state.betaUpdatesEnabled)
+            return InputResult.handled(SoundType.TOGGLE)
+        }
+        AboutItem.DebugUpdateChecks -> {
+            vm.setDebugUpdateChecksEnabled(!state.debugUpdateChecksEnabled)
             return InputResult.handled(SoundType.TOGGLE)
         }
         AboutItem.FileLogging -> {

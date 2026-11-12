@@ -418,6 +418,8 @@ internal class LightSectionsInput(
                 return stepOption(LogLevel.entries, state.fileLogLevel, direction, viewModel::setFileLogLevel)
             AboutItem.BetaUpdates ->
                 return toggleLeftRight(direction, state.betaUpdatesEnabled) { viewModel.setBetaUpdatesEnabled(it) }
+            AboutItem.DebugUpdateChecks ->
+                return toggleLeftRight(direction, state.debugUpdateChecksEnabled) { viewModel.setDebugUpdateChecksEnabled(it) }
             AboutItem.FileLogging -> if (hasLogPath) {
                 return toggleLeftRight(direction, state.fileLoggingEnabled) { viewModel.toggleFileLogging(it) }
             }

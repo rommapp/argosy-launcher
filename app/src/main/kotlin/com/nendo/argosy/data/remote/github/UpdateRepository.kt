@@ -141,6 +141,17 @@ class UpdateRepository @Inject constructor(
                 }
                 ?: apks.firstOrNull()
         }
+
+        /**
+         * The abi a release asset was built for, read from its `-<suffix>.apk` ending, or
+         * [UNIVERSAL_ABI] for an asset carrying no known suffix.
+         */
+        fun abiLabelOf(assetName: String): String =
+            ABI_SUFFIX_BY_VERSION_CODE_PREFIX.values
+                .firstOrNull { assetName.endsWith("-$it.apk") }
+                ?: UNIVERSAL_ABI
+
+        const val UNIVERSAL_ABI = "universal"
     }
 
     private val api: GitHubApi by lazy { createApi() }
@@ -166,9 +177,8 @@ class UpdateRepository @Inject constructor(
             .create(GitHubApi::class.java)
     }
 
-    suspend fun checkForUpdates(): UpdateState {
+    suspend fun checkForUpdates(betaEnabled: Boolean): UpdateState {
         _updateState.value = UpdateState.Checking
-        val betaEnabled = userPreferencesRepository.userPreferences.first().betaUpdatesEnabled
         Log.d(TAG, "Checking for updates, current version: $currentVersion, beta enabled: $betaEnabled")
 
         return try {

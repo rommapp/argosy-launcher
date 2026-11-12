@@ -1342,7 +1342,7 @@
     <!-- Second line of that row before any check has run. Verb phrase. -->
     <string name="settings_about_update_subtitle_idle">Verificar novas versões</string>
     <!-- Button that fetches the new version. Verb. -->
-    <string name="settings_about_update_action_download">Baixar</string>
+    <string name="settings_about_update_action_install">Instalar</string>
     <!-- Button that asks the update server. Verb. -->
     <string name="settings_about_update_action_check">Verificar</string>
     <!-- Button that opens the list of what changed. Noun. -->

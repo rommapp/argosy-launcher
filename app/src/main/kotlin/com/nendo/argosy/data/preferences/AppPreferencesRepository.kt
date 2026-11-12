@@ -23,6 +23,7 @@ data class AppPreferences(
     val setupFlowFinished: Boolean = false,
     val setupPagesSeen: Set<String> = emptySet(),
     val betaUpdatesEnabled: Boolean = false,
+    val debugUpdateChecksEnabled: Boolean = false,
     val closeEmulatorOnSessionEnd: Boolean = false,
     val hiddenApps: Set<String> = emptySet(),
     val secondaryHomeApps: List<String> = emptyList(),
@@ -61,6 +62,7 @@ class AppPreferencesRepository @Inject constructor(
         val SETUP_FLOW_FINISHED = booleanPreferencesKey("setup_flow_finished")
         val SETUP_PAGES_SEEN = stringPreferencesKey("setup_pages_seen")
         val BETA_UPDATES_ENABLED = booleanPreferencesKey("beta_updates_enabled")
+        val DEBUG_UPDATE_CHECKS_ENABLED = booleanPreferencesKey("debug_update_checks_enabled")
         val CLOSE_EMULATOR_ON_SESSION_END = booleanPreferencesKey("close_emulator_on_session_end")
         val HIDDEN_APPS = stringPreferencesKey("hidden_apps")
         val SECONDARY_HOME_APPS = stringPreferencesKey("secondary_home_apps")
@@ -100,6 +102,7 @@ class AppPreferencesRepository @Inject constructor(
             setupFlowFinished = prefs[Keys.SETUP_FLOW_FINISHED] ?: false,
             setupPagesSeen = parseTokens(prefs[Keys.SETUP_PAGES_SEEN]),
             betaUpdatesEnabled = prefs[Keys.BETA_UPDATES_ENABLED] ?: false,
+            debugUpdateChecksEnabled = prefs[Keys.DEBUG_UPDATE_CHECKS_ENABLED] ?: false,
             closeEmulatorOnSessionEnd = prefs[Keys.CLOSE_EMULATOR_ON_SESSION_END] ?: false,
             hiddenApps = prefs[Keys.HIDDEN_APPS]
                 ?.split(",")
@@ -210,6 +213,10 @@ class AppPreferencesRepository @Inject constructor(
 
     suspend fun setBetaUpdatesEnabled(enabled: Boolean) {
         dataStore.edit { it[Keys.BETA_UPDATES_ENABLED] = enabled }
+    }
+
+    suspend fun setDebugUpdateChecksEnabled(enabled: Boolean) {
+        dataStore.edit { it[Keys.DEBUG_UPDATE_CHECKS_ENABLED] = enabled }
     }
 
     suspend fun setCloseEmulatorOnSessionEnd(enabled: Boolean) {

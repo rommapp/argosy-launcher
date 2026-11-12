@@ -1367,6 +1367,19 @@ fun ArgosyApp(
 
             com.nendo.argosy.ui.components.recap.MonthlyRecapOverlay()
 
+            val updatePromptKeyboard by com.nendo.argosy.ui.components.keyboard.ControllerKeyboard.active.collectAsState()
+            com.nendo.argosy.ui.components.update.UpdatePromptOverlay(
+                idle = !setupActive &&
+                    !isEmulatorRunning &&
+                    !hasCapturingOverlay &&
+                    !isDrawerOpen &&
+                    !isQuickSettingsOpen &&
+                    !quickMenuState.isVisible &&
+                    !appPromptShowing &&
+                    !com.nendo.argosy.ui.components.recap.monthlyRecapShowing() &&
+                    updatePromptKeyboard == null
+            )
+
             com.nendo.argosy.ui.components.LaunchOverlay(appPromptShowing = appPromptShowing)
 
             val mutedNotificationKeys = if (currentRoute == Screen.SyncMonitor.route) {

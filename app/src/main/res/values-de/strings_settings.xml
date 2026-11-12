@@ -710,7 +710,7 @@
     <string name="settings_about_update_subtitle_current">Aktuell</string>
     <string name="settings_about_update_subtitle_on_prerelease">Vorabversion wird ausgeführt</string>
     <string name="settings_about_update_subtitle_idle">Nach neuen Versionen suchen</string>
-    <string name="settings_about_update_action_download">Herunterladen</string>
+    <string name="settings_about_update_action_install">Installieren</string>
     <string name="settings_about_update_action_check">Prüfen</string>
     <string name="settings_about_update_action_changelog">Änderungsprotokoll</string>
     <string name="settings_about_changelog_preview_title">Neu in %1$s</string>

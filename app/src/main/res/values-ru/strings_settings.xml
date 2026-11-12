@@ -729,7 +729,7 @@
     <string name="settings_about_update_subtitle_current">Актуальная версия</string>
     <string name="settings_about_update_subtitle_on_prerelease">Используется пре-релизная сборка</string>
     <string name="settings_about_update_subtitle_idle">Проверить наличие новых версий</string>
-    <string name="settings_about_update_action_download">Скачать</string>
+    <string name="settings_about_update_action_install">Установить</string>
     <string name="settings_about_update_action_check">Проверить</string>
     <string name="settings_about_update_action_changelog">Список изменений</string>
     <string name="settings_about_changelog_preview_title">Что нового - %1$s</string>

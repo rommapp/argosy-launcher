@@ -339,12 +339,6 @@ fun SettingsScreen(
         }
     }
 
-    LaunchedEffect(Unit) {
-        viewModel.downloadUpdateEvent.collect {
-            viewModel.downloadAndInstallUpdate(context)
-        }
-    }
-
     val requestStorageAccess = rememberStorageAccessRequest(onResult = {
         viewModel.checkStoragePermission()
         viewModel.refreshPermissions()

@@ -47,12 +47,12 @@ class Armsx2TextureProvisioner @Inject constructor(
     }
 
     private fun isArmsx2App(pkg: String): Boolean =
-        pkg == ARMSX2_PACKAGE || pkg.startsWith("$ARMSX2_PACKAGE.")
+        ARMSX2_PACKAGES.any { pkg == it || pkg.startsWith("$it.") }
 
     private companion object {
         const val PS2_SLUG = "ps2"
         const val BUILTIN_CORE_ID = "armsx2"
-        const val ARMSX2_PACKAGE = "com.armsx2"
+        val ARMSX2_PACKAGES = listOf("com.armsx2", "come.nanodata.armsx2")
     }
 }
 

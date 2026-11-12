@@ -59,7 +59,8 @@ class TexturePackExtractor @Inject constructor() {
         gameFileId: Long,
         fileAccessLayer: FileAccessLayer? = null,
         isCancelled: (() -> Boolean)? = null,
-        onProgress: ((fraction: Float?) -> Unit)? = null
+        onProgress: ((fraction: Float?) -> Unit)? = null,
+        onCommitted: (suspend (File) -> Unit)? = null
     ): File? {
         val isRestricted = fileAccessLayer?.isRestrictedPath(cacheDir.absolutePath) == true
         if (isRestricted) {
@@ -155,6 +156,7 @@ class TexturePackExtractor @Inject constructor() {
             } else {
                 manifestFile.writeBytes(manifestBytes)
             }
+            onCommitted?.invoke(manifestFile)
             manifestCommitted = true
             onProgress?.invoke(1f)
             return manifestFile
@@ -193,7 +195,8 @@ class TexturePackExtractor @Inject constructor() {
         stagingBaseDir: File? = null,
         fileAccessLayer: FileAccessLayer? = null,
         isCancelled: (() -> Boolean)? = null,
-        onProgress: ((fraction: Float?) -> Unit)? = null
+        onProgress: ((fraction: Float?) -> Unit)? = null,
+        onCommitted: (suspend (File) -> Unit)? = null
     ): File? {
         return extractZipEntries(
             zipFile = zipFile,
@@ -203,7 +206,8 @@ class TexturePackExtractor @Inject constructor() {
             stagingBaseDir = stagingBaseDir,
             fileAccessLayer = fileAccessLayer,
             isCancelled = isCancelled,
-            onProgress = onProgress
+            onProgress = onProgress,
+            onCommitted = onCommitted
         )
     }
 
@@ -216,7 +220,8 @@ class TexturePackExtractor @Inject constructor() {
         fileAccessLayer: FileAccessLayer? = null,
         isCancelled: (() -> Boolean)? = null,
         onProgress: ((fraction: Float?) -> Unit)? = null,
-        packSubdir: String? = null
+        packSubdir: String? = null,
+        onCommitted: (suspend (File) -> Unit)? = null
     ): File? {
         var stripPrefix: String? = null
         return extractZipEntries(
@@ -243,7 +248,8 @@ class TexturePackExtractor @Inject constructor() {
             stagingBaseDir = stagingBaseDir,
             fileAccessLayer = fileAccessLayer,
             isCancelled = isCancelled,
-            onProgress = onProgress
+            onProgress = onProgress,
+            onCommitted = onCommitted
         )
     }
 
@@ -256,7 +262,8 @@ class TexturePackExtractor @Inject constructor() {
         stagingBaseDir: File? = null,
         fileAccessLayer: FileAccessLayer? = null,
         isCancelled: (() -> Boolean)? = null,
-        onProgress: ((fraction: Float?) -> Unit)? = null
+        onProgress: ((fraction: Float?) -> Unit)? = null,
+        onCommitted: (suspend (File) -> Unit)? = null
     ): File? {
         val isRestricted = fileAccessLayer?.isRestrictedPath(targetDir.absolutePath) == true
         val isDirectlyWritable = !isRestricted && (targetDir.canWrite() || targetDir.parentFile?.canWrite() == true || targetDir.mkdirs())
@@ -387,6 +394,7 @@ class TexturePackExtractor @Inject constructor() {
 
                     val manifestFile = manifestFileFor(targetDir, gameFileId)
                     manifestFile.writeText(extractedRelativePaths.joinToString("\n"))
+                    onCommitted?.invoke(manifestFile)
                     commitSucceeded = true
                     onProgress?.invoke(1f)
                     return manifestFile
@@ -433,6 +441,7 @@ class TexturePackExtractor @Inject constructor() {
                     } else {
                         manifestFile.writeBytes(manifestBytes)
                     }
+                    onCommitted?.invoke(manifestFile)
                     commitSucceeded = true
                     onProgress?.invoke(1f)
                     return manifestFile

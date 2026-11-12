@@ -718,14 +718,9 @@ class TexturePackInstaller(
                 gameFileId = gameFile.id,
                 fileAccessLayer = fileAccessLayer,
                 isCancelled = isCancelled,
-                onProgress = onProgress
+                onProgress = onProgress,
+                onCommitted = { gameFileDao.updateLocalPath(gameFile.id, it.absolutePath, Instant.now()) }
             ) ?: return@withContext ModInstallOutcome.Failed("Failed to install HTC/HTS file")
-            try {
-                gameFileDao.updateLocalPath(gameFile.id, manifest.absolutePath, Instant.now())
-            } catch (e: Throwable) {
-                TexturePackExtractor.uninstallFromManifestFile(manifest, fileAccessLayer)
-                throw e
-            }
             if (sourceFile.exists() && sourceFile.canonicalPath != manifest.canonicalPath) {
                 TexturePackExtractor.deleteSourceAndPruneEmptyModParent(sourceFile)
             }
@@ -757,14 +752,9 @@ class TexturePackInstaller(
                 stagingBaseDir = this@TexturePackInstaller.cacheDir,
                 fileAccessLayer = fileAccessLayer,
                 isCancelled = isCancelled,
-                onProgress = onProgress
+                onProgress = onProgress,
+                onCommitted = { gameFileDao.updateLocalPath(gameFile.id, it.absolutePath, Instant.now()) }
             ) ?: return@withContext ModInstallOutcome.Failed("Failed to extract HTC/HTS archive")
-            try {
-                gameFileDao.updateLocalPath(gameFile.id, manifest.absolutePath, Instant.now())
-            } catch (e: Throwable) {
-                TexturePackExtractor.uninstallFromManifestFile(manifest, fileAccessLayer)
-                throw e
-            }
             if (sourceFile.exists() && sourceFile.canonicalPath != manifest.canonicalPath) {
                 TexturePackExtractor.deleteSourceAndPruneEmptyModParent(sourceFile)
             }
@@ -784,14 +774,9 @@ class TexturePackInstaller(
             fileAccessLayer = fileAccessLayer,
             isCancelled = isCancelled,
             onProgress = onProgress,
-            packSubdir = targetResolution.packSubdir
+            packSubdir = targetResolution.packSubdir,
+            onCommitted = { gameFileDao.updateLocalPath(gameFile.id, it.absolutePath, Instant.now()) }
         ) ?: return@withContext ModInstallOutcome.Failed("Failed to extract texture zip")
-        try {
-            gameFileDao.updateLocalPath(gameFile.id, manifest.absolutePath, Instant.now())
-        } catch (e: Throwable) {
-            TexturePackExtractor.uninstallFromManifestFile(manifest, fileAccessLayer)
-            throw e
-        }
 
         if (targetResolution.isDolphin) {
             enableDolphinTextures(targetDir, gameFile)

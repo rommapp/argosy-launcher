@@ -95,6 +95,15 @@ class DiagnosticsRedactorTest {
     }
 
     @Test
+    fun `a user name inside a package or dotted id is left alone, and at a sentence end is removed`() {
+        val redacted = DiagnosticsRedactor.redactText(
+            "com.nightowl.argosy started for nightowl. nightowl.cfg stays",
+            setOf("nightowl")
+        )
+        assertEquals("com.nightowl.argosy started for ${DiagnosticsRedactor.REDACTED}. nightowl.cfg stays", redacted)
+    }
+
+    @Test
     fun `secrets carry the host of each url setting`() {
         val secrets = DiagnosticsRedactor.secretsIn(settings)
         assertTrue("romm.example.com" in secrets)

@@ -43,8 +43,8 @@
     <string name="about_tools_display_loading">正在讀取螢幕...</string>
     <string name="about_tools_display_empty">未偵測到螢幕</string>
     <string name="about_tools_display_entry_title">螢幕 %1$d：%2$s</string>
-    <string name="about_tools_display_physical">實體 ID：%1$s</string>
-    <string name="about_tools_display_physical_none">實體 ID：無</string>
+    <string name="about_tools_display_physical">螢幕鍵：%1$s</string>
+    <string name="about_tools_display_physical_none">螢幕鍵：無</string>
     <string name="about_tools_display_size">%1$d x %2$d px，%3$d x %4$d dp</string>
     <string name="about_tools_display_density">%1$d dpi，%2$.1f Hz</string>
     <string name="about_tools_display_kind_role">%1$s，角色：%2$s</string>

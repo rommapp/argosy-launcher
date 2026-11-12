@@ -43,8 +43,8 @@
     <string name="about_tools_display_loading">Чтение экранов...</string>
     <string name="about_tools_display_empty">Экраны не обнаружены</string>
     <string name="about_tools_display_entry_title">Экран %1$d: %2$s</string>
-    <string name="about_tools_display_physical">Физический ID: %1$s</string>
-    <string name="about_tools_display_physical_none">Физический ID: нет</string>
+    <string name="about_tools_display_physical">Ключ экрана: %1$s</string>
+    <string name="about_tools_display_physical_none">Ключ экрана: нет</string>
     <string name="about_tools_display_size">%1$d x %2$d px, %3$d x %4$d dp</string>
     <string name="about_tools_display_density">%1$d dpi, %2$.1f Гц</string>
     <string name="about_tools_display_kind_role">%1$s, роль: %2$s</string>

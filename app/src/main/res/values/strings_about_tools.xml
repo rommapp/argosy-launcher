@@ -88,9 +88,9 @@
     <!-- One display's heading. %1$d is its logical display id, %2$s its name. -->
     <string name="about_tools_display_entry_title">Display %1$d: %2$s</string>
     <!-- The stable id of the panel. %1$s is a technical identifier and stays as written. -->
-    <string name="about_tools_display_physical">Physical id: %1$s</string>
+    <string name="about_tools_display_physical">Screen key: %1$s</string>
     <!-- Shown for a display that has no stable panel id. -->
-    <string name="about_tools_display_physical_none">Physical id: none</string>
+    <string name="about_tools_display_physical_none">Screen key: none</string>
     <!-- Panel size. %1$d x %2$d is the size in pixels, %3$d x %4$d in density-independent pixels. -->
     <string name="about_tools_display_size">%1$d x %2$d px, %3$d x %4$d dp</string>
     <!-- %1$d is the pixel density in dots per inch, %2$.1f the refresh rate in hertz. -->

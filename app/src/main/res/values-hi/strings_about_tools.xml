@@ -43,8 +43,8 @@
     <string name="about_tools_display_loading">डिस्प्ले पढ़े जा रहे हैं...</string>
     <string name="about_tools_display_empty">कोई डिस्प्ले नहीं मिला</string>
     <string name="about_tools_display_entry_title">डिस्प्ले %1$d: %2$s</string>
-    <string name="about_tools_display_physical">भौतिक आईडी: %1$s</string>
-    <string name="about_tools_display_physical_none">भौतिक आईडी: कोई नहीं</string>
+    <string name="about_tools_display_physical">स्क्रीन कुंजी: %1$s</string>
+    <string name="about_tools_display_physical_none">स्क्रीन कुंजी: कोई नहीं</string>
     <string name="about_tools_display_size">%1$d x %2$d px, %3$d x %4$d dp</string>
     <string name="about_tools_display_density">%1$d dpi, %2$.1f Hz</string>
     <string name="about_tools_display_kind_role">%1$s, भूमिका: %2$s</string>

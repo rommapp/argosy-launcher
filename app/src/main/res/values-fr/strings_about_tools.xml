@@ -43,8 +43,8 @@
     <string name="about_tools_display_loading">Lecture des écrans...</string>
     <string name="about_tools_display_empty">Aucun écran signalé</string>
     <string name="about_tools_display_entry_title">Écran %1$d : %2$s</string>
-    <string name="about_tools_display_physical">Id. physique : %1$s</string>
-    <string name="about_tools_display_physical_none">Id. physique : aucun</string>
+    <string name="about_tools_display_physical">Clé d\'écran : %1$s</string>
+    <string name="about_tools_display_physical_none">Clé d\'écran : aucune</string>
     <string name="about_tools_display_size">%1$d x %2$d px, %3$d x %4$d dp</string>
     <string name="about_tools_display_density">%1$d ppp, %2$.1f Hz</string>
     <string name="about_tools_display_kind_role">%1$s, rôle : %2$s</string>

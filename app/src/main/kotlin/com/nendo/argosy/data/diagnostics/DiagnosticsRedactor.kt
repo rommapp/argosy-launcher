@@ -67,7 +67,7 @@ object DiagnosticsRedactor {
     }
 
     private fun literalPattern(secret: String): Regex =
-        Regex("(?<![A-Za-z0-9])" + Regex.escape(secret) + "(?![A-Za-z0-9])")
+        Regex("(?<![A-Za-z0-9]|[A-Za-z0-9]\\.)" + Regex.escape(secret) + "(?![A-Za-z0-9]|\\.[A-Za-z0-9])")
 
     private fun hostOf(value: String): String? {
         if (SCHEME_SEPARATOR !in value) return null

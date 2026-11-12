@@ -43,8 +43,8 @@
     <string name="about_tools_display_loading">Displays werden gelesen...</string>
     <string name="about_tools_display_empty">Keine Displays gemeldet</string>
     <string name="about_tools_display_entry_title">Display %1$d: %2$s</string>
-    <string name="about_tools_display_physical">Physische ID: %1$s</string>
-    <string name="about_tools_display_physical_none">Physische ID: keine</string>
+    <string name="about_tools_display_physical">Bildschirmschlüssel: %1$s</string>
+    <string name="about_tools_display_physical_none">Bildschirmschlüssel: keiner</string>
     <string name="about_tools_display_size">%1$d x %2$d px, %3$d x %4$d dp</string>
     <string name="about_tools_display_density">%1$d dpi, %2$.1f Hz</string>
     <string name="about_tools_display_kind_role">%1$s, Rolle: %2$s</string>

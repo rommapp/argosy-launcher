@@ -208,7 +208,10 @@ class AboutToolsDelegate @Inject constructor(
             closeDisplayInfo()
             return InputResult.handled(SoundType.CLOSE_MODAL)
         }
-        override fun onConfirm(): InputResult = InputResult.handled(SoundType.SILENT)
+        override fun onConfirm(): InputResult {
+            closeDisplayInfo()
+            return InputResult.handled(SoundType.CLOSE_MODAL)
+        }
         override fun onLeft(): InputResult = InputResult.HANDLED
         override fun onRight(): InputResult = InputResult.HANDLED
         override fun onMenu(): InputResult = InputResult.HANDLED

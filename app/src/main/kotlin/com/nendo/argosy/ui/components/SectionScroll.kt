@@ -164,6 +164,7 @@ fun FocusedScroll(
     val footerPx = footerOverlapPx()
 
     LaunchedEffect(focusedIndex, footerPx) {
+        if (focusedIndex < 0) return@LaunchedEffect
         val layoutInfo = listState.layoutInfo
         val visibleItems = layoutInfo.visibleItemsInfo
 

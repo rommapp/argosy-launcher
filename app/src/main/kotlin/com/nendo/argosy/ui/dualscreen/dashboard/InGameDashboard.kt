@@ -25,7 +25,7 @@ import androidx.compose.material.icons.automirrored.filled.MenuBook
 import androidx.compose.material.icons.filled.EmojiEvents
 import androidx.compose.material.icons.filled.Map
 import androidx.compose.material.icons.filled.Save
-import androidx.compose.material.icons.filled.Timer
+import androidx.compose.material.icons.filled.SportsEsports
 import androidx.compose.material.icons.filled.Tune
 import androidx.compose.material.icons.filled.AutoFixHigh
 import androidx.compose.material3.Icon
@@ -60,6 +60,7 @@ import com.nendo.argosy.R
 import com.nendo.argosy.core.game.AchievementUi
 import com.nendo.argosy.hardware.CompanionInGameState
 import com.nendo.argosy.hardware.CompanionSessionTimer
+import com.nendo.argosy.ui.components.SystemStatusBar
 import com.nendo.argosy.ui.common.rememberFileImageModel
 import com.nendo.argosy.ui.dualscreen.COVER_ASPECT
 import com.nendo.argosy.ui.screens.gamedetail.GameDocument
@@ -69,12 +70,13 @@ import com.nendo.argosy.ui.theme.ALauncherColors
 import com.nendo.argosy.ui.theme.Dimens
 import com.nendo.argosy.ui.theme.LocalArgosyTheme
 import com.nendo.argosy.ui.theme.Motion
+import com.nendo.argosy.ui.theme.generated.ComponentDefaults
 import com.nendo.argosy.ui.theme.generated.DimensionTokens
 import com.nendo.argosy.ui.util.touchOnly
 import kotlinx.coroutines.delay
 
 enum class DashboardSection(@StringRes val labelRes: Int, val icon: ImageVector) {
-    SESSION(R.string.dual_dashboard_rail_session, Icons.Filled.Timer),
+    SESSION(R.string.dual_dashboard_rail_session, Icons.Filled.SportsEsports),
     STATES(R.string.dual_dashboard_rail_states, Icons.Filled.Save),
     TROPHIES(R.string.dual_dashboard_rail_trophies, Icons.Filled.EmojiEvents),
     MANUAL(R.string.dual_dashboard_rail_manual, Icons.AutoMirrored.Filled.MenuBook),
@@ -105,6 +107,7 @@ private const val SCRIM_ALPHA = 0.35f
 private const val PANEL_ALPHA = 0.78f
 private const val SELECTED_ALPHA = 0.16f
 private const val CONFIRM_WINDOW_MS = 3000L
+private const val MINUTE_MS = 60_000L
 
 /**
  * The touch-only dashboard shown on the screen the game is not on: a rail of sections over
@@ -126,13 +129,14 @@ fun InGameDashboard(
     val readerOpen = readerState != null
     var section by remember(state.gameId) { mutableStateOf(DashboardSection.SESSION) }
     var quitArmedUntil by remember(state.gameId) { mutableLongStateOf(0L) }
+    ClearAt(quitArmedUntil) { quitArmedUntil = 0L }
     var sessionMillis by remember { mutableLongStateOf(sessionTimer?.getActiveMillis() ?: 0L) }
 
     LaunchedEffect(sessionTimer) {
         if (sessionTimer == null) return@LaunchedEffect
         while (true) {
             sessionMillis = sessionTimer.getActiveMillis()
-            delay(1000)
+            delay(untilNextMinute(sessionMillis))
         }
     }
     LaunchedEffect(readerOpen) {
@@ -205,11 +209,24 @@ fun InGameDashboard(
                 }
             )
             Box(modifier = Modifier.weight(1f).fillMaxHeight()) {
-                when (section) {
-                    DashboardSection.SESSION -> SessionSection(content, wide)
-                    DashboardSection.STATES -> StatesSection(content, wide)
-                    DashboardSection.TROPHIES -> TrophiesSection(content)
-                    DashboardSection.MANUAL, DashboardSection.GUIDE -> Unit
+                Column(modifier = Modifier.fillMaxSize()) {
+                    SystemStatusBar(
+                        modifier = Modifier
+                            .align(Alignment.End)
+                            .padding(
+                                top = Dimens.spacingSm,
+                                end = Dimens.spacingLg - ComponentDefaults.OverlayLegibility.scrimPaddingHorizDp.dp
+                            ),
+                        scrim = false
+                    )
+                    Box(modifier = Modifier.weight(1f).fillMaxWidth()) {
+                        when (section) {
+                            DashboardSection.SESSION -> SessionSection(content, wide)
+                            DashboardSection.STATES -> StatesSection(content, wide)
+                            DashboardSection.TROPHIES -> TrophiesSection(content)
+                            DashboardSection.MANUAL, DashboardSection.GUIDE -> Unit
+                        }
+                    }
                 }
                 if (wide && readerOpen) {
                     DashboardReader(reader, Modifier.fillMaxSize().padding(bottom = footerHeight))
@@ -224,6 +241,8 @@ fun InGameDashboard(
         if (!wide && readerOpen) DashboardReader(reader, Modifier.fillMaxSize())
     }
 }
+
+internal fun untilNextMinute(activeMillis: Long): Long = MINUTE_MS - activeMillis % MINUTE_MS
 
 /**
  * The data and callbacks every section reads, gathered once per composition.

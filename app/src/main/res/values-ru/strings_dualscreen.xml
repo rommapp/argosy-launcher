@@ -31,6 +31,7 @@
     <string name="dual_dashboard_state_just_now">Только что</string>
     <string name="dual_dashboard_state_latest">Новое</string>
     <string name="dual_dashboard_total_play">всего %1$s</string>
+    <string name="dual_dashboard_session_play">%1$s за этот сеанс</string>
     <string name="dual_dashboard_manual_resume">Продолжить со страницы %1$d</string>
     <string name="dual_dashboard_guide_progress">Прочитано %1$d%%</string>
     <string name="dual_dashboard_document_open">Открыть</string>

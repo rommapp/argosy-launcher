@@ -17,7 +17,7 @@ class StateSerialResolver @Inject constructor(
     private val gameDiscDao: GameDiscDao,
     private val titleIdExtractor: TitleIdExtractor
 ) {
-    private val reads = ConcurrentHashMap<FileIdentity, CachedRead>()
+    private val reads = ConcurrentHashMap<FileIdentity, TitleIdResult>()
 
     suspend fun serialsFor(gameId: Long, emulatorId: String): Set<String> {
         if (StatePathRegistry.serialPatternFor(emulatorId) == null) return emptySet()
@@ -53,21 +53,19 @@ class StateSerialResolver @Inject constructor(
     private fun binaryRead(file: File, platformSlug: String): TitleIdResult? {
         if (!file.isFile) return null
         val identity = FileIdentity(file.absolutePath, platformSlug, file.length(), file.lastModified())
-        reads[identity]?.let { return it.result }
+        reads[identity]?.let { return it }
         val result = try {
             titleIdExtractor.extractTitleIdWithSource(file, platformSlug)
         } catch (e: Exception) {
             Logger.warn(TAG, "Sigil could not read ${file.name}", e)
             return null
-        }?.takeIf { it.fromBinary && it.titleId.isNotBlank() }
+        }?.takeIf { it.fromBinary && it.titleId.isNotBlank() } ?: return null
         reads.keys.removeAll { it.path == identity.path && it.platformSlug == platformSlug }
-        reads[identity] = CachedRead(result)
+        reads[identity] = result
         return result
     }
 
     private data class FileIdentity(val path: String, val platformSlug: String, val length: Long, val modified: Long)
-
-    private class CachedRead(val result: TitleIdResult?)
 
     private companion object {
         const val TAG = "StateSerialResolver"

@@ -160,13 +160,24 @@ class StateSerialResolverTest {
     }
 
     @Test
-    fun `a failed read is retried on the next call`() = runTest {
+    fun `a read that found no serial is tried again on the next call`() = runTest {
         coEvery { gameDao.getById(GAME_ID) } returns game()
-        every { extractor.extractTitleIdWithSource(rom, "psx", any()) } throws IllegalStateException("io") andThen
+        every { extractor.extractTitleIdWithSource(rom, "psx", any()) } returns null andThen
             TitleIdResult(titleId = "SLUS-00001", fromBinary = true)
 
         assertEquals(emptySet<String>(), resolver.serialsFor(GAME_ID, "duckstation"))
         assertEquals(setOf("SLUS-00001"), resolver.serialsFor(GAME_ID, "duckstation"))
+        verify(exactly = 2) { extractor.extractTitleIdWithSource(rom, "psx", any()) }
+    }
+
+    @Test
+    fun `a filename-only answer is not kept and the disc is read again`() = runTest {
+        coEvery { gameDao.getById(GAME_ID) } returns game()
+        sigil(rom, "SLUS-00001", fromBinary = false)
+
+        repeat(2) { resolver.serialsFor(GAME_ID, "duckstation") }
+
+        verify(exactly = 2) { extractor.extractTitleIdWithSource(rom, "psx", any()) }
     }
 
     @Test

@@ -58,7 +58,6 @@ import com.nendo.argosy.ui.screens.settings.SettingsViewModel
 import com.nendo.argosy.ui.screens.settings.UpdateCheckState
 import com.nendo.argosy.ui.screens.settings.AboutUpdateAction
 import com.nendo.argosy.data.update.BuildChannel
-import com.nendo.argosy.data.update.UpdatePromptRules
 import com.nendo.argosy.ui.screens.settings.components.SectionHeader
 import com.nendo.argosy.ui.screens.settings.dialogs.LicensesDialog
 import com.nendo.argosy.ui.screens.settings.menu.SettingsLayout
@@ -199,8 +198,6 @@ fun AboutSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
         aboutLayout.buildSections(layoutState, context)
     }
 
-    val checksOff = !UpdatePromptRules.checksAllowed(isDebug, uiState.debugUpdateChecksEnabled)
-
     LaunchedEffect(Unit) {
         if (!updateCheck.isChecking && !updateCheck.isDownloading) {
             viewModel.checkForUpdates()
@@ -241,7 +238,7 @@ fun AboutSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
                     val checkTitle = stringResource(R.string.settings_about_update_title_check)
                     val latestVersion = updateCheck.latest?.displayVersion.orEmpty()
                     val (title, subtitle) = when {
-                        checksOff && !updateCheck.updateAvailable -> checkTitle to
+                        isDebug && !updateCheck.updateAvailable -> checkTitle to
                             stringResource(R.string.settings_about_update_subtitle_debug)
                         updateCheck.isDownloading ->
                             stringResource(R.string.settings_about_update_title_downloading) to
@@ -292,7 +289,7 @@ fun AboutSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
                         },
                         enabledFor = { action ->
                             when (action) {
-                                AboutUpdateAction.PRIMARY -> !busy && (updateCheck.updateAvailable || !checksOff)
+                                AboutUpdateAction.PRIMARY -> !busy && (updateCheck.updateAvailable || !isDebug)
                                 AboutUpdateAction.REDOWNLOAD -> !busy
                                 AboutUpdateAction.CHANGELOG -> true
                             }

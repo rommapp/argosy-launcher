@@ -190,7 +190,7 @@ internal fun routeObserveAppUpdate(vm: SettingsViewModel) {
 }
 
 internal fun routeCheckForUpdates(vm: SettingsViewModel) {
-    if (vm._uiState.value.updateCheck.isChecking) return
+    if (com.nendo.argosy.BuildConfig.DEBUG || vm._uiState.value.updateCheck.isChecking) return
     vm.viewModelScope.launch {
         vm._uiState.update { it.copy(updateCheck = it.updateCheck.copy(isChecking = true, error = null)) }
         val result = vm.appUpdateManager.check()

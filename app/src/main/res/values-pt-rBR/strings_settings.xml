@@ -4155,5 +4155,27 @@
         <item quantity="other">%1$d jogos neste dispositivo que o RomM não possui</item>
         <item quantity="many">%1$d jogos neste dispositivo que o RomM não possui</item>
     </plurals>
-
+    <string name="settings_client_cert_row_title">Certificado de cliente</string>
+    <string name="settings_client_cert_row_subtitle_none">Entre em servidores que exigem um certificado de cliente (mTLS)</string>
+    <string name="settings_client_cert_row_subtitle_active">%1$s · válido até %2$s</string>
+    <string name="settings_client_cert_modal_header">Certificado de cliente</string>
+    <string name="settings_client_cert_modal_title_none">Nenhum certificado de cliente importado</string>
+    <string name="settings_client_cert_modal_title_active">%1$s · válido até %2$s</string>
+    <string name="settings_client_cert_use_romm_title">Usar no RomM</string>
+    <string name="settings_client_cert_use_romm_subtitle">Apresentar este certificado ao conectar ao seu servidor RomM</string>
+    <string name="settings_client_cert_use_jellyfin_title">Usar no Jellyfin</string>
+    <string name="settings_client_cert_use_jellyfin_subtitle">Apresentar este certificado ao conectar ao seu servidor Jellyfin</string>
+    <string name="settings_client_cert_import_subtitle">Escolha um arquivo .p12 ou .pfx que contenha o certificado e a chave privada</string>
+    <string name="settings_client_cert_replace_subtitle">Importar outro arquivo .p12 ou .pfx no lugar deste</string>
+    <string name="settings_client_cert_remove_subtitle">Apagar o certificado e a chave privada deste dispositivo</string>
+    <string name="settings_client_cert_import">Importar certificado…</string>
+    <string name="settings_client_cert_replace">Substituir certificado…</string>
+    <string name="settings_client_cert_remove">Remover certificado</string>
+    <string name="settings_client_cert_remove_title">Remover o certificado de cliente?</string>
+    <string name="settings_client_cert_remove_message">O certificado e a chave privada serão apagados deste dispositivo. Servidores que o exigem deixarão de aceitar conexões até você importar o arquivo novamente.</string>
+    <string name="settings_client_cert_remove_confirm">Remover</string>
+    <string name="settings_client_cert_filebrowser_title">Escolher certificado de cliente</string>
+    <string name="settings_romm_config_error_client_certificate_required">O servidor exige um certificado de cliente. Importe um em Certificado de cliente ou ative Usar no RomM lá.</string>
+    <string name="settings_accounts_pairing_error_client_certificate_required">O servidor exige um certificado de cliente. Importe um em Certificado de cliente ou ative Usar no RomM lá.</string>
+    <string name="settings_jellyfin_error_client_certificate_required">O servidor exige um certificado de cliente. Ative Usar no Jellyfin em Certificado de cliente.</string>
 </resources>

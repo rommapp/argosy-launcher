@@ -1111,4 +1111,17 @@
     <string name="gamelist_row_running">執行中</string>
     <string name="gamelist_row_running_in">正在 %1$s 中執行</string>
     <string name="gamelist_row_saving">正在儲存</string>
+    <string name="ui_client_cert_password_title">憑證密碼</string>
+    <string name="ui_client_cert_password_label">密碼</string>
+    <string name="ui_client_cert_password_message">請輸入 %1$s 的密碼。若檔案沒有密碼，請留空。</string>
+    <string name="ui_client_cert_password_import">匯入</string>
+    <string name="ui_client_cert_password_import_busy">正在匯入…</string>
+    <string name="ui_client_cert_password_cancel">取消</string>
+    <string name="ui_client_cert_password_status_importing">正在匯入憑證…</string>
+    <string name="ui_client_cert_password_error_not_a_file">無法開啟該檔案。</string>
+    <string name="ui_client_cert_password_error_wrong_password">此憑證檔案的密碼錯誤。</string>
+    <string name="ui_client_cert_password_error_no_private_key">此檔案不含私密金鑰。請將憑證連同金鑰一起匯出。</string>
+    <string name="ui_client_cert_password_error_unreadable">該檔案不是可讀取的 .p12 或 .pfx 憑證。</string>
+    <string name="ui_client_cert_password_error_expired">此憑證已過期。</string>
+    <string name="ui_client_cert_password_error_unsupported_key">此裝置無法儲存此類型的金鑰。請使用 RSA 或 EC 金鑰。</string>
 </resources>

@@ -80,7 +80,8 @@ class ImageCacheManagerTest {
             platformDao,
             achievementDao,
             volumeHealth,
-            fileAccessLayer
+            fileAccessLayer,
+            mockk(relaxed = true)
         )
     }
 

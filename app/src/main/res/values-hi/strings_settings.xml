@@ -2780,4 +2780,27 @@
     <string name="settings_builtin_gpu_driver_reason_core_system_only">%1$s सिस्टम ड्राइवर इस्तेमाल करता है</string>
     <string name="settings_builtin_gpu_driver_reason_backend">बैकएंड Vulkan होने पर लागू होता है</string>
     <string name="settings_builtin_gpu_driver_reason_device">कस्टम ड्राइवर के लिए Adreno GPU चाहिए</string>
+    <string name="settings_client_cert_row_title">क्लाइंट प्रमाणपत्र</string>
+    <string name="settings_client_cert_row_subtitle_none">उन सर्वरों के लिए जिन्हें क्लाइंट प्रमाणपत्र चाहिए (mTLS)</string>
+    <string name="settings_client_cert_row_subtitle_active">%1$s · %2$s तक मान्य</string>
+    <string name="settings_client_cert_modal_header">क्लाइंट प्रमाणपत्र</string>
+    <string name="settings_client_cert_modal_title_none">कोई क्लाइंट प्रमाणपत्र आयात नहीं किया गया</string>
+    <string name="settings_client_cert_modal_title_active">%1$s · %2$s तक मान्य</string>
+    <string name="settings_client_cert_use_romm_title">RomM के लिए उपयोग करें</string>
+    <string name="settings_client_cert_use_romm_subtitle">अपने RomM सर्वर से कनेक्ट करते समय यह प्रमाणपत्र दें</string>
+    <string name="settings_client_cert_use_jellyfin_title">Jellyfin के लिए उपयोग करें</string>
+    <string name="settings_client_cert_use_jellyfin_subtitle">अपने Jellyfin सर्वर से कनेक्ट करते समय यह प्रमाणपत्र दें</string>
+    <string name="settings_client_cert_import_subtitle">प्रमाणपत्र और उसकी निजी कुंजी वाली .p12 या .pfx फ़ाइल चुनें</string>
+    <string name="settings_client_cert_replace_subtitle">इसकी जगह कोई दूसरी .p12 या .pfx फ़ाइल आयात करें</string>
+    <string name="settings_client_cert_remove_subtitle">इस डिवाइस से प्रमाणपत्र और उसकी निजी कुंजी हटाएं</string>
+    <string name="settings_client_cert_import">प्रमाणपत्र आयात करें…</string>
+    <string name="settings_client_cert_replace">प्रमाणपत्र बदलें…</string>
+    <string name="settings_client_cert_remove">प्रमाणपत्र हटाएं</string>
+    <string name="settings_client_cert_remove_title">क्लाइंट प्रमाणपत्र हटाएं?</string>
+    <string name="settings_client_cert_remove_message">प्रमाणपत्र और उसकी निजी कुंजी इस डिवाइस से हटा दी जाएगी। जिन सर्वरों को इसकी ज़रूरत है, वे फ़ाइल दोबारा इंपोर्ट करने तक कनेक्शन अस्वीकार करेंगे।</string>
+    <string name="settings_client_cert_remove_confirm">हटाएं</string>
+    <string name="settings_client_cert_filebrowser_title">क्लाइंट प्रमाणपत्र चुनें</string>
+    <string name="settings_romm_config_error_client_certificate_required">सर्वर को क्लाइंट प्रमाणपत्र चाहिए। क्लाइंट प्रमाणपत्र में एक आयात करें, या वहाँ RomM के लिए उपयोग करें चालू करें।</string>
+    <string name="settings_accounts_pairing_error_client_certificate_required">सर्वर को क्लाइंट प्रमाणपत्र चाहिए। क्लाइंट प्रमाणपत्र में एक आयात करें, या वहाँ RomM के लिए उपयोग करें चालू करें।</string>
+    <string name="settings_jellyfin_error_client_certificate_required">सर्वर को क्लाइंट प्रमाणपत्र चाहिए। क्लाइंट प्रमाणपत्र में Jellyfin के लिए उपयोग चालू करें।</string>
 </resources>

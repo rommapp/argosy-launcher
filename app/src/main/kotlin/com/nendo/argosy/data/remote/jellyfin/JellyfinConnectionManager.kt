@@ -8,6 +8,7 @@ import android.os.Build
 import android.os.SystemClock
 import android.provider.Settings
 import com.nendo.argosy.data.preferences.UserPreferencesRepository
+import com.nendo.argosy.data.remote.ssl.isClientCertificateRejection
 import com.nendo.argosy.util.Logger
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CancellationException
@@ -40,6 +41,7 @@ private const val HTTP_FORBIDDEN = 403
 private const val HTTP_NOT_FOUND = 404
 private const val SIGN_IN_EXPIRED_MESSAGE = "Sign in to Jellyfin again"
 private const val UNREACHABLE_MESSAGE = "Could not reach the server"
+const val JELLYFIN_CLIENT_CERTIFICATE_REQUIRED = "client_certificate_required"
 
 sealed class JellyfinConnectionState {
     data object Disconnected : JellyfinConnectionState()
@@ -139,14 +141,14 @@ class JellyfinConnectionManager @Inject constructor(
      * failed rather than clearing the credentials: a server that is merely unreachable must not cost
      * the user their sign-in.
      */
-    suspend fun initialize() {
+    suspend fun initialize(force: Boolean = false) {
         val prefs = userPreferencesRepository.preferences.first()
         deviceId = prefs.jellyfinDeviceId ?: ensureDeviceId()
         val server = prefs.jellyfinServerUrl
         if (server.isNullOrBlank()) return
         adoptStoredIdentity(server, prefs.jellyfinUserId)
         registerNetworkCallback()
-        connect(server, prefs.jellyfinAccessToken, prefs.jellyfinUserId)
+        connect(server, prefs.jellyfinAccessToken, prefs.jellyfinUserId, force)
     }
 
     /**
@@ -232,12 +234,16 @@ class JellyfinConnectionManager @Inject constructor(
 
         val initiated = try {
             val response = client.initiateQuickConnect()
+            if (response.rejectedClientCertificate()) {
+                return failQuickConnect(callbacks, JELLYFIN_CLIENT_CERTIFICATE_REQUIRED)
+            }
             response.body().takeIf { response.isSuccessful }
                 ?: return failQuickConnect(callbacks, "Quick Connect is not available on this server")
         } catch (e: CancellationException) {
             throw e
         } catch (e: Exception) {
-            return failQuickConnect(callbacks, e.message ?: "Could not start Quick Connect")
+            val reason = e.failureReason(normalized, "Could not start Quick Connect")
+            return failQuickConnect(callbacks, reason)
         }
 
         _quickConnectState.value = JellyfinQuickConnectState.AwaitingApproval(initiated.code)
@@ -268,8 +274,11 @@ class JellyfinConnectionManager @Inject constructor(
             )
             val body = response.body()?.takeIf { !it.accessToken.isNullOrBlank() }
             if (!response.isSuccessful || body == null) {
-                val reason = if (response.code() == HTTP_UNAUTHORIZED) "Wrong username or password"
-                             else "Sign-in was refused by the server"
+                val reason = when {
+                    response.code() == HTTP_UNAUTHORIZED -> "Wrong username or password"
+                    response.rejectedClientCertificate() -> JELLYFIN_CLIENT_CERTIFICATE_REQUIRED
+                    else -> "Sign-in was refused by the server"
+                }
                 callbacks.onFailed(reason)
                 JellyfinSignInResult.Failed(reason)
             } else {
@@ -278,11 +287,21 @@ class JellyfinConnectionManager @Inject constructor(
         } catch (e: CancellationException) {
             throw e
         } catch (e: Exception) {
-            val reason = e.message ?: UNREACHABLE_MESSAGE
+            val reason = e.failureReason(normalized, UNREACHABLE_MESSAGE)
             callbacks.onFailed(reason)
             JellyfinSignInResult.Failed(reason)
         }
     }
+
+    private fun Throwable.failureReason(url: String, fallback: String): String =
+        if (isClientCertificateRejection(apiFactory.requestedClientCertificate(url))) {
+            JELLYFIN_CLIENT_CERTIFICATE_REQUIRED
+        } else {
+            message ?: fallback
+        }
+
+    private fun retrofit2.Response<*>.rejectedClientCertificate(): Boolean =
+        !isSuccessful && isClientCertificateRejection(code(), runCatching { errorBody()?.string() }.getOrNull())
 
     suspend fun signOut() {
         connectMutex.withLock {
@@ -412,14 +431,18 @@ class JellyfinConnectionManager @Inject constructor(
      * from a revoked one - without it a token the server has forgotten reads as connected while every
      * request behind it is refused.
      */
-    private suspend fun connect(serverUrl: String, token: String?, signedInUserId: String?) =
-        withContext(Dispatchers.IO) { connectOnIo(serverUrl, token, signedInUserId) }
+    private suspend fun connect(
+        serverUrl: String,
+        token: String?,
+        signedInUserId: String?,
+        force: Boolean = false
+    ) = withContext(Dispatchers.IO) { connectOnIo(serverUrl, token, signedInUserId, force) }
 
-    private suspend fun connectOnIo(serverUrl: String, token: String?, signedInUserId: String?) {
+    private suspend fun connectOnIo(serverUrl: String, token: String?, signedInUserId: String?, force: Boolean) {
         connectMutex.withLock {
             val normalized = normalizeServerUrl(serverUrl)
             val recent = lastConnect
-            if (isConnected() && recent != null && recent.serverUrl == normalized && recent.token == token &&
+            if (!force && isConnected() && recent != null && recent.serverUrl == normalized && recent.token == token &&
                 SystemClock.elapsedRealtime() - recent.at < RECENT_CONNECT_MS
             ) {
                 return

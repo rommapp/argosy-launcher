@@ -2853,4 +2853,27 @@
     <string name="settings_builtin_gpu_driver_reason_core_system_only">%1$s utilise le pilote système</string>
     <string name="settings_builtin_gpu_driver_reason_backend">S\'applique quand le moteur de rendu est Vulkan</string>
     <string name="settings_builtin_gpu_driver_reason_device">Les pilotes personnalisés exigent un GPU Adreno</string>
+    <string name="settings_client_cert_row_title">Certificat client</string>
+    <string name="settings_client_cert_row_subtitle_none">Pour les serveurs qui exigent un certificat client (mTLS)</string>
+    <string name="settings_client_cert_row_subtitle_active">%1$s · valide jusqu\'au %2$s</string>
+    <string name="settings_client_cert_modal_header">Certificat client</string>
+    <string name="settings_client_cert_modal_title_none">Aucun certificat client importé</string>
+    <string name="settings_client_cert_modal_title_active">%1$s · valide jusqu\'au %2$s</string>
+    <string name="settings_client_cert_use_romm_title">Utiliser pour RomM</string>
+    <string name="settings_client_cert_use_romm_subtitle">Présenter ce certificat lors de la connexion à votre serveur RomM</string>
+    <string name="settings_client_cert_use_jellyfin_title">Utiliser pour Jellyfin</string>
+    <string name="settings_client_cert_use_jellyfin_subtitle">Présenter ce certificat lors de la connexion à votre serveur Jellyfin</string>
+    <string name="settings_client_cert_import_subtitle">Choisissez un fichier .p12 ou .pfx contenant le certificat et sa clé privée</string>
+    <string name="settings_client_cert_replace_subtitle">Importer un autre fichier .p12 ou .pfx à la place de celui-ci</string>
+    <string name="settings_client_cert_remove_subtitle">Effacer le certificat et sa clé privée de cet appareil</string>
+    <string name="settings_client_cert_import">Importer un certificat…</string>
+    <string name="settings_client_cert_replace">Remplacer le certificat…</string>
+    <string name="settings_client_cert_remove">Supprimer le certificat</string>
+    <string name="settings_client_cert_remove_title">Supprimer le certificat client ?</string>
+    <string name="settings_client_cert_remove_message">Le certificat et sa clé privée sont effacés de cet appareil. Les serveurs qui l\'exigent refuseront les connexions jusqu\'à ce que vous importiez à nouveau le fichier.</string>
+    <string name="settings_client_cert_remove_confirm">Supprimer</string>
+    <string name="settings_client_cert_filebrowser_title">Choisir le certificat client</string>
+    <string name="settings_romm_config_error_client_certificate_required">Le serveur exige un certificat client. Importez-en un sous Certificat client, ou activez-y Utiliser pour RomM.</string>
+    <string name="settings_accounts_pairing_error_client_certificate_required">Le serveur exige un certificat client. Importez-en un sous Certificat client, ou activez-y Utiliser pour RomM.</string>
+    <string name="settings_jellyfin_error_client_certificate_required">Le serveur exige un certificat client. Activez Utiliser pour Jellyfin sous Certificat client.</string>
 </resources>

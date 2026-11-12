@@ -1,6 +1,7 @@
 package com.nendo.argosy.data.remote.romm
 
 import com.nendo.argosy.BuildConfig
+import com.nendo.argosy.data.remote.ssl.ROMM_CLIENT_CERT_SCOPE
 import com.nendo.argosy.data.remote.ssl.UserCertTrustManager.withUserCertTrust
 import com.squareup.moshi.Moshi
 import okhttp3.Interceptor
@@ -19,8 +20,12 @@ private const val READ_WRITE_TIMEOUT_SECONDS = 60L
 @Singleton
 class RomMApiFactory @Inject constructor(
     private val userCertStore: com.nendo.argosy.data.remote.ssl.UserCertStore,
+    private val clientCertStore: com.nendo.argosy.data.remote.ssl.ClientCertStore,
     val reachability: RomMReachability
 ) {
+
+    fun requestedClientCertificate(url: String): Boolean =
+        clientCertStore.requestedWithoutCertificate(url)
 
     fun create(
         baseUrl: String,
@@ -66,7 +71,7 @@ class RomMApiFactory @Inject constructor(
             .writeTimeout(probeTimeoutSeconds ?: READ_WRITE_TIMEOUT_SECONDS, TimeUnit.SECONDS)
             .callTimeout(probeTimeoutSeconds ?: 0L, TimeUnit.SECONDS)
             .dns(okhttp3.Dns.SYSTEM)
-            .withUserCertTrust(userCertStore)
+            .withUserCertTrust(userCertStore, clientCertStore, ROMM_CLIENT_CERT_SCOPE)
             .build()
 
         return Retrofit.Builder()

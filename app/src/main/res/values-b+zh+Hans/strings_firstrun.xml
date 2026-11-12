@@ -40,4 +40,7 @@
     </plurals>
     <string name="firstrun_platform_select_button_select_all">全选</string>
     <string name="firstrun_platform_select_button_deselect_all">取消全选</string>
+    <string name="firstrun_romm_client_certificate_button">添加客户端证书</string>
+    <string name="firstrun_romm_client_certificate_button_active">客户端证书：%1$s</string>
+    <string name="firstrun_romm_error_client_certificate_required">服务器需要客户端证书。请添加后再连接。</string>
 </resources>

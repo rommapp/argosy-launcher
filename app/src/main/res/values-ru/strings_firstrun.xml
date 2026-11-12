@@ -49,4 +49,7 @@
     </plurals>
     <string name="firstrun_platform_select_button_select_all">Выбрать все</string>
     <string name="firstrun_platform_select_button_deselect_all">Снять выбор со всех</string>
+    <string name="firstrun_romm_client_certificate_button">Добавить клиентский сертификат</string>
+    <string name="firstrun_romm_client_certificate_button_active">Клиентский сертификат: %1$s</string>
+    <string name="firstrun_romm_error_client_certificate_required">Сервер требует клиентский сертификат. Добавьте его, чтобы подключиться.</string>
 </resources>

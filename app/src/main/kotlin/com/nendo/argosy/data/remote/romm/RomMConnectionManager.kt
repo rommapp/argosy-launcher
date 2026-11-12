@@ -33,6 +33,7 @@ import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import com.nendo.argosy.data.remote.ssl.isCertificateTrustFailure
+import com.nendo.argosy.data.remote.ssl.isClientCertificateRejection
 import okhttp3.Interceptor
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
@@ -372,7 +373,7 @@ class RomMConnectionManager @Inject constructor(
                 val response = createProbeApi(normalizedUrl).heartbeat()
                 if (!response.isSuccessful) {
                     lastError = "Server returned ${response.code()}"
-                    lastKind = null
+                    lastKind = response.failureKind() ?: lastKind
                     continue
                 }
                 if (identifiesStoredUser(normalizedUrl, account)) return RomMResult.Success(normalizedUrl)
@@ -380,7 +381,7 @@ class RomMConnectionManager @Inject constructor(
                 lastKind = null
             } catch (e: Exception) {
                 lastError = e.message ?: "Connection failed"
-                lastKind = if (e.isCertificateTrustFailure()) RomMErrorKind.UNTRUSTED_CERTIFICATE else null
+                lastKind = e.failureKind(normalizedUrl) ?: lastKind
             }
         }
         return RomMResult.Error(lastError ?: "Connection failed", kind = lastKind)
@@ -427,14 +428,10 @@ class RomMConnectionManager @Inject constructor(
                     return RomMResult.Success(response.body()?.version ?: "unknown")
                 }
                 lastError = "Server returned ${response.code()}"
-                lastKind = null
+                lastKind = response.failureKind() ?: lastKind
             } catch (e: Exception) {
                 lastError = e.message ?: "Connection failed"
-                lastKind = if (e.isCertificateTrustFailure()) {
-                    RomMErrorKind.UNTRUSTED_CERTIFICATE
-                } else {
-                    null
-                }
+                lastKind = e.failureKind(normalizedUrl) ?: lastKind
             }
         }
         return RomMResult.Error(lastError ?: "Connection failed", kind = lastKind)
@@ -467,7 +464,8 @@ class RomMConnectionManager @Inject constructor(
                         }
                         return outcome
                     }
-                    is RomMResult.Error -> lastFailure = outcome
+                    is RomMResult.Error ->
+                        if (outcome.kind != null || lastFailure?.kind == null) lastFailure = outcome
                 }
             }
         }
@@ -484,7 +482,7 @@ class RomMConnectionManager @Inject constructor(
             val response = createProbeApi(normalizedUrl).heartbeat()
             if (!response.isSuccessful) {
                 Logger.info(TAG, "connect: heartbeat failed at $normalizedUrl with ${response.code()}")
-                return RomMResult.Error("Server returned ${response.code()}")
+                return RomMResult.Error("Server returned ${response.code()}", kind = response.failureKind())
             }
             apiFactory.reachability.recordReachable(normalizedUrl)
             val newApi = createApi(normalizedUrl, token)
@@ -520,8 +518,7 @@ class RomMConnectionManager @Inject constructor(
             return RomMResult.Success(normalizedUrl)
         } catch (e: Exception) {
             Logger.info(TAG, "connect: exception at $normalizedUrl: ${e.message}")
-            val kind = if (e.isCertificateTrustFailure()) RomMErrorKind.UNTRUSTED_CERTIFICATE else null
-            return RomMResult.Error(e.message ?: "Connection failed", kind = kind)
+            return RomMResult.Error(e.message ?: "Connection failed", kind = e.failureKind(normalizedUrl))
         }
     }
 
@@ -550,6 +547,7 @@ class RomMConnectionManager @Inject constructor(
     suspend fun exchangePairingCode(url: String, code: String): RomMResult<String> {
         val urlsToTry = buildUrlsToTry(url)
         var lastError: String? = null
+        var lastKind: RomMErrorKind? = null
 
         for (candidateUrl in urlsToTry) {
             val normalizedUrl = candidateUrl.trimEnd('/') + "/"
@@ -558,6 +556,7 @@ class RomMConnectionManager @Inject constructor(
                 val hb = tempApi.heartbeat()
                 if (!hb.isSuccessful) {
                     lastError = "Server returned ${hb.code()}"
+                    lastKind = hb.failureKind() ?: lastKind
                     continue
                 }
                 val response = tempApi.exchangePairingCode(RomMPairingExchangeRequest(code))
@@ -574,15 +573,17 @@ class RomMConnectionManager @Inject constructor(
                 }
             } catch (e: Exception) {
                 lastError = e.message ?: "Connection failed"
+                lastKind = e.failureKind(normalizedUrl) ?: lastKind
             }
         }
 
-        return RomMResult.Error(lastError ?: "Pairing failed")
+        return RomMResult.Error(lastError ?: "Pairing failed", kind = lastKind)
     }
 
     suspend fun beginDeviceAuth(url: String): RomMResult<RomMDeviceAuthInitResponse> {
         val urlsToTry = buildUrlsToTry(url)
         var lastError: String? = null
+        var lastKind: RomMErrorKind? = null
 
         for (candidateUrl in urlsToTry) {
             val normalizedUrl = candidateUrl.trimEnd('/') + "/"
@@ -591,6 +592,7 @@ class RomMConnectionManager @Inject constructor(
                 val hb = tempApi.heartbeat()
                 if (!hb.isSuccessful) {
                     lastError = "Server returned ${hb.code()}"
+                    lastKind = hb.failureKind() ?: lastKind
                     continue
                 }
                 val version = hb.body()?.version ?: "unknown"
@@ -627,11 +629,12 @@ class RomMConnectionManager @Inject constructor(
                 }
             } catch (e: Exception) {
                 lastError = e.message ?: "Connection failed"
+                lastKind = e.failureKind(normalizedUrl) ?: lastKind
                 Logger.info(TAG, "beginDeviceAuth: exception at $normalizedUrl: ${e.message}")
             }
         }
 
-        return RomMResult.Error(lastError ?: "Pairing failed")
+        return RomMResult.Error(lastError ?: "Pairing failed", kind = lastKind)
     }
 
     /**
@@ -982,6 +985,18 @@ class RomMConnectionManager @Inject constructor(
         if (value.isBlank()) return value
         if (value.startsWith("http://") || value.startsWith("https://")) return value
         return base.trimEnd('/') + "/" + value.trimStart('/')
+    }
+
+    private fun retrofit2.Response<*>.failureKind(): RomMErrorKind? {
+        val body = runCatching { errorBody()?.string() }.getOrNull()
+        return if (isClientCertificateRejection(code(), body)) RomMErrorKind.CLIENT_CERTIFICATE_REQUIRED else null
+    }
+
+    private fun Throwable.failureKind(url: String): RomMErrorKind? = when {
+        isClientCertificateRejection(apiFactory.requestedClientCertificate(url)) ->
+            RomMErrorKind.CLIENT_CERTIFICATE_REQUIRED
+        isCertificateTrustFailure() -> RomMErrorKind.UNTRUSTED_CERTIFICATE
+        else -> null
     }
 
     private fun buildUrlsToTry(url: String): List<String> {

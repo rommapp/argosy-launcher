@@ -4,6 +4,8 @@ import android.content.Context
 import android.net.ConnectivityManager
 import android.net.NetworkCapabilities
 import android.os.SystemClock
+import com.nendo.argosy.data.remote.ssl.ClientCertStore
+import com.nendo.argosy.data.remote.ssl.ROMM_CLIENT_CERT_SCOPE
 import com.nendo.argosy.data.remote.ssl.UserCertStore
 import com.nendo.argosy.data.remote.ssl.UserCertTrustManager.withUserCertTrust
 import com.nendo.argosy.util.Logger
@@ -43,7 +45,8 @@ internal fun heartbeatGotAnyResponse(callFactory: Call.Factory, root: String): B
 @Singleton
 class RomMReachability @Inject constructor(
     @ApplicationContext private val context: Context,
-    private val userCertStore: UserCertStore
+    private val userCertStore: UserCertStore,
+    private val clientCertStore: ClientCertStore
 ) {
     private val reprobeExecutor = Executors.newSingleThreadExecutor { runnable ->
         Thread(runnable, "RomMReprobe").apply { isDaemon = true }
@@ -64,7 +67,7 @@ class RomMReachability @Inject constructor(
             .connectTimeout(PROBE_TIMEOUT_SECONDS, TimeUnit.SECONDS)
             .readTimeout(PROBE_TIMEOUT_SECONDS, TimeUnit.SECONDS)
             .callTimeout(PROBE_TIMEOUT_SECONDS, TimeUnit.SECONDS)
-            .withUserCertTrust(userCertStore)
+            .withUserCertTrust(userCertStore, clientCertStore, ROMM_CLIENT_CERT_SCOPE)
             .build()
             .also {
                 cachedProbeClient = it

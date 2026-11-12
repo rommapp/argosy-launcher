@@ -5357,4 +5357,50 @@
     <string name="settings_builtin_gpu_driver_reason_backend">Applies when Backend is Vulkan</string>
     <!-- Second line of a read-only GPU Driver row on a device that cannot load custom drivers. -->
     <string name="settings_builtin_gpu_driver_reason_device">Custom drivers need an Adreno GPU</string>
+    <!-- Row title. Noun: a TLS client certificate (mTLS) the app presents to a server. -->
+    <string name="settings_client_cert_row_title">Client Certificate</string>
+    <!-- Second line of that row when no client certificate is imported. -->
+    <string name="settings_client_cert_row_subtitle_none">Sign in to servers that require a client certificate (mTLS)</string>
+    <!-- Second line once a certificate is imported. %1$s is the certificate's name, %2$s the date it expires. -->
+    <string name="settings_client_cert_row_subtitle_active">%1$s · valid until %2$s</string>
+    <!-- Header of the client certificate menu. Noun. -->
+    <string name="settings_client_cert_modal_header">Client Certificate</string>
+    <!-- Line under that header when no certificate is imported. -->
+    <string name="settings_client_cert_modal_title_none">No client certificate imported</string>
+    <!-- Line under that header once imported. %1$s is the certificate's name, %2$s the date it expires. -->
+    <string name="settings_client_cert_modal_title_active">%1$s · valid until %2$s</string>
+    <!-- Switch label in the client certificate dialog. -->
+    <string name="settings_client_cert_use_romm_title">Use for RomM</string>
+    <!-- Switch description: the certificate is sent to the RomM server during the TLS handshake. -->
+    <string name="settings_client_cert_use_romm_subtitle">Present this certificate when connecting to your RomM server</string>
+    <!-- Switch label in the client certificate dialog. -->
+    <string name="settings_client_cert_use_jellyfin_title">Use for Jellyfin</string>
+    <!-- Switch description: the certificate is sent to the Jellyfin server during the TLS handshake. -->
+    <string name="settings_client_cert_use_jellyfin_subtitle">Present this certificate when connecting to your Jellyfin server</string>
+    <!-- Action description under Import Certificate. -->
+    <string name="settings_client_cert_import_subtitle">Choose a .p12 or .pfx file that holds the certificate and its private key</string>
+    <!-- Action description under Replace Certificate. -->
+    <string name="settings_client_cert_replace_subtitle">Import a different .p12 or .pfx file in place of this one</string>
+    <!-- Action description under Remove Certificate. -->
+    <string name="settings_client_cert_remove_subtitle">Delete the certificate and its private key from this device</string>
+    <!-- Menu entry. Verb: pick a .p12/.pfx file to import. -->
+    <string name="settings_client_cert_import">Import Certificate…</string>
+    <!-- Menu entry. Verb: import a different file in place of the current certificate. -->
+    <string name="settings_client_cert_replace">Replace Certificate…</string>
+    <!-- Menu entry. Verb: delete the imported certificate and its key from this device. -->
+    <string name="settings_client_cert_remove">Remove Certificate</string>
+    <!-- Confirmation dialog title before deleting the imported client certificate. -->
+    <string name="settings_client_cert_remove_title">Remove client certificate?</string>
+    <!-- Confirmation dialog body before deleting the imported client certificate. -->
+    <string name="settings_client_cert_remove_message">The certificate and its private key are deleted from this device. Servers that require it stop accepting connections until you import the file again.</string>
+    <!-- Confirmation dialog button. Verb: delete the certificate. -->
+    <string name="settings_client_cert_remove_confirm">Remove</string>
+    <!-- File browser title. Verb: choose the .p12/.pfx file. -->
+    <string name="settings_client_cert_filebrowser_title">Choose Client Certificate</string>
+    <!-- Error shown when the server demanded a client certificate the app did not present. Names the remedy, the Client Certificate row. -->
+    <string name="settings_romm_config_error_client_certificate_required">The server requires a client certificate. Import one under Client Certificate, or turn on Use for RomM there.</string>
+    <!-- Error when adding another RomM account: the server rejected the connection for lack of a client certificate. -->
+    <string name="settings_accounts_pairing_error_client_certificate_required">The server requires a client certificate. Import one under Client Certificate, or turn on Use for RomM there.</string>
+    <!-- Sign-in error when the Jellyfin server demanded a client certificate this app did not present. Names the remedy in the Client Certificate menu. -->
+    <string name="settings_jellyfin_error_client_certificate_required">The server requires a client certificate. Turn on Use for Jellyfin under Client Certificate.</string>
 </resources>

@@ -49,6 +49,8 @@ import com.nendo.argosy.ui.screens.settings.menu.SettingsLayout
 import com.nendo.argosy.ui.theme.Dimens
 import com.nendo.argosy.ui.theme.LocalArgosyTheme
 import com.nendo.argosy.util.formatClockDateTime
+import com.nendo.argosy.ui.screens.settings.components.ClientCertificatePreference
+import com.nendo.argosy.data.remote.ssl.ClientCertTarget
 
 internal data class JellyfinLayoutState(
     val hasServer: Boolean,
@@ -102,6 +104,7 @@ internal sealed class JellyfinItem(
         "jellyfinPasswordSignIn", "server",
         { it.showPasswordFallback }
     )
+    data object ClientCertificate : JellyfinItem("jellyfinClientCertificate", "server")
 
     data object SyncLibrary : JellyfinItem("jellyfinSyncLibrary", "library", { it.hasServer })
 
@@ -130,7 +133,7 @@ internal sealed class JellyfinItem(
         val ALL: List<JellyfinItem>
             get() = listOf(
                 Header("jellyfinServerHeader", "server", R.string.settings_jellyfin_section_server),
-                MediaServer, Account, QuickConnectCode, SignInError, PasswordSignIn,
+                MediaServer, Account, QuickConnectCode, SignInError, PasswordSignIn, ClientCertificate,
                 Header("jellyfinLibraryHeader", "library", R.string.settings_jellyfin_section_library, { it.hasServer }),
                 SyncLibrary,
                 Header("jellyfinPlaybackHeader", "playback", R.string.settings_jellyfin_section_playback, { it.hasServer }),
@@ -357,6 +360,15 @@ private fun JellyfinContent(uiState: SettingsUiState, viewModel: SettingsViewMod
                 isFocused = isFocused(item),
                 onClick = { viewModel.showJellyfinLoginForm() }
             )
+
+            JellyfinItem.ClientCertificate ->
+                ClientCertificatePreference(
+                    summary = uiState.clientCert.summary,
+                    isFocused = isFocused(item),
+                    onClick = {
+                        viewModel.openClientCertManager(ClientCertTarget.JELLYFIN)
+                    }
+                )
 
             JellyfinItem.SyncLibrary -> {
                 val progress = viewModel.mediaSyncProgress.collectAsState().value

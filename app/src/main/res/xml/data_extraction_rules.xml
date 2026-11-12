@@ -2,12 +2,14 @@
 <data-extraction-rules>
     <cloud-backup>
         <exclude domain="file" path="datastore/" />
+        <exclude domain="file" path="client_cert/" />
         <exclude domain="database" path="alauncher.db" />
         <exclude domain="database" path="alauncher.db-wal" />
         <exclude domain="database" path="alauncher.db-shm" />
     </cloud-backup>
     <device-transfer>
         <exclude domain="file" path="datastore/" />
+        <exclude domain="file" path="client_cert/" />
         <exclude domain="database" path="alauncher.db" />
         <exclude domain="database" path="alauncher.db-wal" />
         <exclude domain="database" path="alauncher.db-shm" />

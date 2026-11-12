@@ -69,6 +69,7 @@ import com.nendo.argosy.util.LogLevel
 import com.nendo.argosy.util.PlatformFilterLogic
 import com.nendo.argosy.BuildConfig
 import com.nendo.argosy.data.social.discord.DiscordPresenceState
+import com.nendo.argosy.ui.screens.common.ClientCertState
 
 enum class BuiltinPathType { SAVE, STATE }
 
@@ -2006,6 +2007,7 @@ data class SettingsUiState(
     val steam: SteamSettingsState = SteamSettingsState(),
     val jellyfin: JellyfinState = JellyfinState(),
     val retroAchievements: RASettingsState = RASettingsState(),
+    val clientCert: ClientCertState = ClientCertState(),
     val accounts: AccountsState = AccountsState(),
     val bios: BiosState = BiosState(),
     val drivers: DriversState = DriversState(),

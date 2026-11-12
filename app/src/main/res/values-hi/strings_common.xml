@@ -1150,4 +1150,17 @@
     <string name="gamelist_row_running">चल रहा है</string>
     <string name="gamelist_row_running_in">%1$s में चल रहा है</string>
     <string name="gamelist_row_saving">सेव हो रहा है</string>
+    <string name="ui_client_cert_password_title">प्रमाणपत्र पासवर्ड</string>
+    <string name="ui_client_cert_password_label">पासवर्ड</string>
+    <string name="ui_client_cert_password_message">%1$s का पासवर्ड दर्ज करें। अगर फ़ाइल में पासवर्ड नहीं है तो खाली छोड़ दें।</string>
+    <string name="ui_client_cert_password_import">आयात करें</string>
+    <string name="ui_client_cert_password_import_busy">आयात हो रहा है…</string>
+    <string name="ui_client_cert_password_cancel">रद्द करें</string>
+    <string name="ui_client_cert_password_status_importing">प्रमाणपत्र आयात हो रहा है…</string>
+    <string name="ui_client_cert_password_error_not_a_file">वह फ़ाइल खोली नहीं जा सकी।</string>
+    <string name="ui_client_cert_password_error_wrong_password">इस प्रमाणपत्र फ़ाइल के लिए गलत पासवर्ड।</string>
+    <string name="ui_client_cert_password_error_no_private_key">इस फ़ाइल में निजी कुंजी नहीं है। प्रमाणपत्र को उसकी कुंजी के साथ निर्यात करें।</string>
+    <string name="ui_client_cert_password_error_unreadable">वह फ़ाइल पढ़ने योग्य .p12 या .pfx प्रमाणपत्र नहीं है।</string>
+    <string name="ui_client_cert_password_error_expired">इस प्रमाणपत्र की अवधि समाप्त हो गई है।</string>
+    <string name="ui_client_cert_password_error_unsupported_key">यह डिवाइस इस प्रकार की कुंजी संग्रहीत नहीं कर सकता। RSA या EC कुंजी का उपयोग करें।</string>
 </resources>

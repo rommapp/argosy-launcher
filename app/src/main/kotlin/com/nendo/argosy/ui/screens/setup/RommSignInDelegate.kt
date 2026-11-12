@@ -12,6 +12,7 @@ import com.nendo.argosy.data.remote.romm.RomMRepository
 import com.nendo.argosy.data.remote.romm.RomMResult
 import com.nendo.argosy.data.remote.romm.pollDeviceAuthUntilResolved
 import com.nendo.argosy.data.remote.ssl.UserCertStore
+import com.nendo.argosy.ui.screens.common.ClientCertDelegate
 import com.nendo.argosy.ui.screens.settings.components.PAIRING_CODE_LENGTH
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
@@ -29,17 +30,25 @@ import javax.inject.Inject
 private fun RomMResult.Error.toProbeError(): SetupError = when (kind) {
     RomMErrorKind.UNTRUSTED_CERTIFICATE ->
         SetupError(textRes = R.string.firstrun_romm_error_untrusted_certificate, certificate = true)
+    RomMErrorKind.CLIENT_CERTIFICATE_REQUIRED -> CLIENT_CERTIFICATE_REQUIRED_ERROR
     null -> SetupError(textRes = R.string.setup_library_address_error_unreachable)
 }
 
+private fun RomMResult.Error.toSignInError(): SetupError =
+    if (kind == RomMErrorKind.CLIENT_CERTIFICATE_REQUIRED) CLIENT_CERTIFICATE_REQUIRED_ERROR else SetupError(serverMessage = message)
+
+private val CLIENT_CERTIFICATE_REQUIRED_ERROR =
+    SetupError(textRes = R.string.firstrun_romm_error_client_certificate_required, clientCertificate = true)
+
 /**
  * The RomM sign-in on the library page: server probe, device approval polling, pairing code
- * exchange and certificate import.
+ * exchange, and the import of a server certificate or a client certificate.
  */
 class RommSignInDelegate @Inject constructor(
     private val application: Application,
     private val romMRepository: RomMRepository,
-    private val userCertStore: UserCertStore
+    private val userCertStore: UserCertStore,
+    val clientCert: ClientCertDelegate
 ) {
     private val _state = MutableStateFlow(RommSignInState())
     val state: StateFlow<RommSignInState> = _state.asStateFlow()
@@ -52,6 +61,16 @@ class RommSignInDelegate @Inject constructor(
         this.scope = scope
         scope.launch {
             userCertStore.certs.collect { certs -> _state.update { it.copy(importedCertCount = certs.size) } }
+        }
+        clientCert.start(scope)
+        scope.launch {
+            clientCert.state.collect { clientCertState ->
+                _state.update { state ->
+                    val summary = clientCertState.summary
+                    val imported = summary != null && summary != state.clientCert.summary
+                    state.copy(clientCert = clientCertState, error = if (imported) null else state.error)
+                }
+            }
         }
     }
 
@@ -172,7 +191,7 @@ class RommSignInDelegate @Inject constructor(
             when (val result = romMRepository.exchangePairingCode(current.url, code)) {
                 is RomMResult.Success -> onAuthSuccess()
                 is RomMResult.Error -> _state.update {
-                    it.copy(isConnecting = false, error = SetupError(serverMessage = result.message), pairingCode = "")
+                    it.copy(isConnecting = false, error = result.toSignInError(), pairingCode = "")
                 }
             }
         }
@@ -230,7 +249,7 @@ class RommSignInDelegate @Inject constructor(
                     it.copy(
                         isConnecting = false,
                         view = LibraryView.ADDRESS,
-                        error = SetupError(serverMessage = init.message)
+                        error = init.toSignInError()
                     )
                 }
             }

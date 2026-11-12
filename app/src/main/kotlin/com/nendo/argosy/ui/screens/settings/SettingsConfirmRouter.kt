@@ -152,6 +152,7 @@ import com.nendo.argosy.ui.screens.settings.sections.libraryMaxFocusIndex
 import com.nendo.argosy.ui.screens.settings.sections.libraryItemAtFocusIndex
 import com.nendo.argosy.ui.screens.settings.sections.LibraryItem
 import com.nendo.argosy.ui.screens.settings.sections.LibraryLayoutState
+import com.nendo.argosy.data.remote.ssl.ClientCertTarget
 
 private fun nextRommAuthMethod(current: RomMAuthMethod): RomMAuthMethod = when (current) {
     RomMAuthMethod.DEVICE -> RomMAuthMethod.PAIRING_CODE
@@ -411,6 +412,10 @@ private fun routeRomMConfirm(vm: SettingsViewModel, state: SettingsUiState): Inp
             }
             indices.connectIndex -> vm.connectToRomm()
             indices.certificateIndex -> vm.requestCertificatePicker()
+            indices.clientCertificateIndex -> {
+                vm.openClientCertManager(ClientCertTarget.ROMM)
+                return InputResult.handled(SoundType.OPEN_MODAL)
+            }
             indices.cancelIndex -> vm.cancelRommConfig()
             else -> vm._uiState.update { it.copy(server = it.server.copy(rommFocusField = state.focusedIndex)) }
         }
@@ -461,6 +466,10 @@ private fun routeJellyfinConfirm(vm: SettingsViewModel, state: SettingsUiState):
             else -> vm.requestJellyfinSignIn()
         }
         JellyfinItem.PasswordSignIn -> vm.showJellyfinLoginForm()
+        JellyfinItem.ClientCertificate -> {
+            vm.openClientCertManager(ClientCertTarget.JELLYFIN)
+            return InputResult.handled(SoundType.OPEN_MODAL)
+        }
         JellyfinItem.SyncLibrary -> if (state.jellyfin.isSignedIn) vm.syncJellyfinLibrary()
         JellyfinItem.StreamingQuality -> return InputResult.handled(SoundType.SILENT)
         JellyfinItem.AudioLanguage, JellyfinItem.Subtitles,
@@ -1300,6 +1309,8 @@ private fun routeDismissTopOverlay(vm: SettingsViewModel): Boolean {
         vm.shaderChainManager.shaderStack.isReordering -> { vm.cancelShaderLift(); true }
         state.accounts.pairing.active -> { vm.cancelAddAccount(); true }
         state.accounts.switchInProgress -> true
+        state.clientCert.passwordEntry != null -> { vm.closeClientCertPassword(); true }
+        state.clientCert.managerOpenFor != null -> { vm.closeClientCertManager(); true }
         state.server.rommAddressVerifyPrompt != null -> { vm.cancelUnverifiedRommAddress(); true }
         state.server.rommAddressEditor != null -> { vm.closeRommAddressEditor(); true }
         state.server.rommAddressMenu != null -> { vm.closeRommAddressMenu(); true }

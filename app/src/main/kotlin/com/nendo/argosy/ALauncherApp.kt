@@ -69,6 +69,12 @@ class ArgosyApp : Application(), Configuration.Provider, ImageLoaderFactory {
     lateinit var userCertStore: com.nendo.argosy.data.remote.ssl.UserCertStore
 
     @Inject
+    lateinit var clientCertStore: com.nendo.argosy.data.remote.ssl.ClientCertStore
+
+    @Inject
+    lateinit var clientCertCoordinator: com.nendo.argosy.data.remote.ssl.ClientCertCoordinator
+
+    @Inject
     lateinit var rommConnectionManager: com.nendo.argosy.data.remote.romm.RomMConnectionManager
 
     @Inject
@@ -227,6 +233,7 @@ class ArgosyApp : Application(), Configuration.Provider, ImageLoaderFactory {
     override fun onCreate() {
         super.onCreate()
         appScope.launch { userCertStore.initialize() }
+        appScope.launch { clientCertStore.initialize() }
         appScope.launch { com.nendo.argosy.hardware.pad.MutedPadDevices.watch(filesDir) }
         if (com.nendo.argosy.libretro.slot.GameSlots.isSlotProcess) {
             appScope.launch { applyStoredAbiOverride() }
@@ -266,6 +273,7 @@ class ArgosyApp : Application(), Configuration.Provider, ImageLoaderFactory {
         batteryNoticePoster.get().start()
         controllerNoticePoster.get().start()
         savedPadSeatsPublisher.get().start()
+        clientCertCoordinator.start()
         siblingGroupRepository.start()
         lidSleepGuard.start()
         backgroundGames.start()
@@ -375,7 +383,7 @@ class ArgosyApp : Application(), Configuration.Provider, ImageLoaderFactory {
             .addInterceptor(
                 com.nendo.argosy.data.remote.romm.RomMImageAuthInterceptor(rommConnectionManager)
             )
-            .withUserCertTrust(userCertStore)
+            .withUserCertTrust(userCertStore, clientCertStore)
             .build()
 
         return ImageLoader.Builder(this)

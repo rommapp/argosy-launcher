@@ -325,8 +325,13 @@ private fun SetupActionRow(
 @Composable
 private fun SetupActionButton(action: SetupAction, onClick: () -> Unit, modifier: Modifier = Modifier) {
     val count = action.labelCount
+    val arg = action.labelArg
     ActionButton(
-        label = if (count != null) stringResource(action.label, count) else stringResource(action.label),
+        label = when {
+            count != null -> stringResource(action.label, count)
+            arg != null -> stringResource(action.label, arg)
+            else -> stringResource(action.label)
+        },
         onClick = onClick,
         modifier = modifier,
         focused = action.focused,

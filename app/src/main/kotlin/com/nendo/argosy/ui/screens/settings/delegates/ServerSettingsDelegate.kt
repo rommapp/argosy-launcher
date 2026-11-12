@@ -68,6 +68,8 @@ class ServerSettingsDelegate @Inject constructor(
     private fun RomMResult.Error.describe(): String = when (kind) {
         com.nendo.argosy.data.remote.romm.RomMErrorKind.UNTRUSTED_CERTIFICATE ->
             context.getString(R.string.settings_romm_config_error_untrusted_certificate)
+        com.nendo.argosy.data.remote.romm.RomMErrorKind.CLIENT_CERTIFICATE_REQUIRED ->
+            context.getString(R.string.settings_romm_config_error_client_certificate_required)
         null -> message
     }
 

@@ -14,7 +14,9 @@ import com.nendo.argosy.domain.model.PermissionAvailability
 import com.nendo.argosy.domain.model.ScreenRole
 import com.nendo.argosy.domain.setup.SetupRouter
 import com.nendo.argosy.ui.input.HapticPattern
+import com.nendo.argosy.ui.input.InputHandler
 import com.nendo.argosy.ui.input.InputResult
+import com.nendo.argosy.ui.screens.common.ClientCertPasswordInputHandler
 import com.nendo.argosy.ui.screens.settings.screenAssignmentsOf
 import com.nendo.argosy.ui.screens.settings.screenLayoutWithRole
 import com.nendo.argosy.ui.screens.settings.storeScreenLayout
@@ -51,6 +53,7 @@ sealed interface SetupEffect {
     data object PickRomFolder : SetupEffect
     data object PickCoverFolder : SetupEffect
     data object PickCertificate : SetupEffect
+    data object PickClientCertificate : SetupEffect
     data class OpenBrowser(val url: String) : SetupEffect
     data object RequestHomeRole : SetupEffect
     data object Finish : SetupEffect
@@ -126,7 +129,7 @@ class SetupViewModel @Inject constructor(
             }
         }
         viewModelScope.launch {
-            signIn.state.map { it.view to (it.error?.certificate == true) }
+            signIn.state.map { Triple(it.view, it.error?.certificate == true, it.error?.clientCertificate == true) }
                 .distinctUntilChanged()
                 .drop(1)
                 .collect {
@@ -513,6 +516,7 @@ class SetupViewModel @Inject constructor(
         when (id) {
             SetupActionId.PRIMARY -> activatePrimary(state)
             SetupActionId.IMPORT_CERTIFICATE -> _effects.tryEmit(SetupEffect.PickCertificate)
+            SetupActionId.IMPORT_CLIENT_CERTIFICATE -> _effects.tryEmit(SetupEffect.PickClientCertificate)
             SetupActionId.USE_PAIRING_CODE -> {
                 signIn.useManualPairingCode()
                 resetFocus()
@@ -621,6 +625,16 @@ class SetupViewModel @Inject constructor(
     }
 
     fun onCertificatePicked(path: String) = signIn.importCertificate(path)
+
+    fun onClientCertificatePicked(path: String) = signIn.clientCert.onFilePicked(path)
+
+    fun setClientCertPassword(draft: String) = signIn.clientCert.setPasswordDraft(draft)
+
+    fun submitClientCertPassword() = signIn.clientCert.submitPassword(viewModelScope)
+
+    fun closeClientCertPassword() = signIn.clientCert.closePasswordEntry()
+
+    val clientCertPasswordInput: InputHandler by lazy { ClientCertPasswordInputHandler(signIn.clientCert, viewModelScope) }
 
     fun onRomFolderPicked(path: String) = folders.setCustomPath(path)
 

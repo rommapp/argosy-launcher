@@ -24,7 +24,6 @@
     <string name="firstrun_romm_url_keyboard_submit">Continuer</string>
     <string name="firstrun_pairing_code_button_connecting">Connexion...</string>
     <string name="firstrun_pairing_code_button_edit_url">Modifier l\'URL</string>
-    <string name="firstrun_pairing_code_button_scan">Scanner le code QR</string>
     <string name="firstrun_pairing_code_button_device_pairing">Utiliser le jumelage par QR à la place</string>
     <string name="firstrun_pairing_code_error_incomplete">Entrez le code de jumelage complet à 8 caractères</string>
 

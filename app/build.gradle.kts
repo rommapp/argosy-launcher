@@ -287,9 +287,8 @@ dependencies {
     implementation(libs.coil.compose)
     implementation(libs.coil.svg)
 
-    // QR code generation + scanning
+    // QR code generation
     implementation("com.google.zxing:core:3.5.4")
-    implementation(libs.bundles.camerax)
 
     // Discord Social SDK (optional AAR -- place in app/libs/)
     implementation(fileTree(mapOf("dir" to "libs", "include" to listOf("*.aar"))))

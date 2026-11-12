@@ -440,6 +440,7 @@
 
     <string name="ingame_libretro_disc_swap_inserted">%1$s eingelegt</string>
     <string name="ingame_libretro_sun_level">Sonnenlicht %1$d/%2$d</string>
+    <string name="ingame_libretro_microphone_request_reason">DS-Spiele können das Mikrofon nutzen. Erlaube es hier, dann funktioniert es ab dem nächsten Start.</string>
     <string name="ingame_libretro_disc_swap_fallback_name">Disc %1$d</string>
 
     <string name="ingame_libretro_speedrun_default_category_name">Übung</string>

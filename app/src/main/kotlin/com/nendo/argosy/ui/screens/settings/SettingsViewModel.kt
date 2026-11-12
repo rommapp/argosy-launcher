@@ -32,6 +32,8 @@ import com.nendo.argosy.data.remote.jellyfin.JellyfinSignInCallbacks
 import com.nendo.argosy.data.remote.romm.RomMRepository
 import com.nendo.argosy.data.repository.GameRepository
 import com.nendo.argosy.domain.model.CustomGridShape
+import com.nendo.argosy.domain.model.ArgosyPermission
+import com.nendo.argosy.data.permissions.PermissionGrant
 import com.nendo.argosy.data.social.SocialAuthManager
 import com.nendo.argosy.data.social.SocialConnectionState
 import com.nendo.argosy.data.social.SocialRepository
@@ -224,8 +226,8 @@ class SettingsViewModel @Inject constructor(
     internal val _requestStoragePermissionEvent = MutableSharedFlow<Unit>()
     val requestStoragePermissionEvent: SharedFlow<Unit> = _requestStoragePermissionEvent.asSharedFlow()
 
-    internal val _requestNotificationPermissionEvent = MutableSharedFlow<Unit>()
-    val requestNotificationPermissionEvent: SharedFlow<Unit> = _requestNotificationPermissionEvent.asSharedFlow()
+    internal val _grantPermissionEvent = MutableSharedFlow<ArgosyPermission>()
+    val grantPermissionEvent: SharedFlow<ArgosyPermission> = _grantPermissionEvent.asSharedFlow()
 
     internal val _requestBlePermissionEvent = MutableSharedFlow<Unit>()
     val requestBlePermissionEvent: SharedFlow<Unit> = _requestBlePermissionEvent.asSharedFlow()
@@ -310,6 +312,7 @@ class SettingsViewModel @Inject constructor(
         observeAvatarPreferences()
         routeObservePlatformLibretroSettings(this)
         routeObservePlatforms(this)
+        syncDelegate.observeSaveSync(viewModelScope)
         routeObserveControllerOrder(this)
         loadSettings()
         driversDelegate.loadGpuInfo()
@@ -1208,7 +1211,7 @@ class SettingsViewModel @Inject constructor(
         displayDelegate.setQuickPanelInEmulators(
             viewModelScope,
             enabled,
-            permissionsDelegate.state.value.hasAccessibilityService
+            permissionsDelegate.isAccessibilityEnabled()
         )
     }
     fun dismissAccessibilityPrompt() = displayDelegate.dismissAccessibilityPrompt()
@@ -1683,12 +1686,21 @@ class SettingsViewModel @Inject constructor(
         installerDelegate.selectVariantAt(viewModelScope, index)
     fun openInstallerImeSettings() = installerDelegate.openImeSettings()
     fun showInstallerImePicker() = installerDelegate.showImePicker()
-    fun openNotificationSettings() = permissionsDelegate.openNotificationSettings()
-    fun openWriteSettings() = permissionsDelegate.openWriteSettings()
-    fun openDisplayOverlaySettings() = permissionsDelegate.openDisplayOverlaySettings()
     fun openAccessibilitySettings() = permissionsDelegate.openAccessibilitySettings()
 
-    fun openLiveWallpaperPicker() = permissionsDelegate.openLiveWallpaperPicker()
+    fun actOnPermission(permission: ArgosyPermission) = permissionsDelegate.act(permission)
+
+    fun dismissPermissionSyncWarning() = permissionsDelegate.dismissSaveSyncWarning()
+
+    fun confirmPermissionSyncWarning() {
+        val permission = permissionsDelegate.takeSaveSyncWarning() ?: return
+        syncDelegate.turnSaveSyncOff(viewModelScope)
+        permissionsDelegate.grant(permission)
+    }
+
+    fun permissionGrantFor(permission: ArgosyPermission): PermissionGrant = permissionsDelegate.grantFor(permission)
+
+    fun grantPermissionOnRoot(permission: ArgosyPermission) = permissionsDelegate.grantOnRoot(permission)
 
     fun enablePrivilegedAccess() = permissionsDelegate.enablePrivilegedAccess()
 
@@ -1831,7 +1843,6 @@ class SettingsViewModel @Inject constructor(
 
     fun onStoragePermissionResult(granted: Boolean) = routeOnStoragePermissionResult(this, granted)
 
-    fun onNotificationPermissionResult(granted: Boolean) = syncDelegate.onNotificationPermissionResult(viewModelScope, granted)
     fun runSaveSyncNow() = syncDelegate.runSaveSyncNow(viewModelScope)
 
     fun requestResetSaveCache() = syncDelegate.requestResetSaveCache(viewModelScope)
@@ -2181,9 +2192,6 @@ class SettingsViewModel @Inject constructor(
 
     fun importCertificate(path: String) = serverDelegate.importCertificate(viewModelScope, path)
 
-    fun showRommScanner() = serverDelegate.showScanner()
-    fun dismissRommScanner() = serverDelegate.dismissScanner()
-    fun handleRommScanResult(origin: String, code: String) = serverDelegate.handleScanResult(origin, code, viewModelScope) { loadSettings() }
     fun clearRommFocusField() = serverDelegate.clearRommFocusField()
 
     fun requestRommSignOut() =

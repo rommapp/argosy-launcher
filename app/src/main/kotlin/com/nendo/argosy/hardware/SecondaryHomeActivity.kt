@@ -836,7 +836,7 @@ class SecondaryHomeActivity :
         } catch (_: Exception) { null }
         val coveredDisplays = setOfNotNull(ownDisplay, android.view.Display.DEFAULT_DISPLAY)
         if (emulatorDisplay != null && emulatorDisplay !in coveredDisplays) return false
-        return PermissionHelper().isPackageOnScreenOrRecent(this, emulatorPackage)
+        return PermissionHelper().isPackageOnScreenOrRecent(this, emulatorPackage) ?: true
     }
 
     private fun awaitSessionEnd() {

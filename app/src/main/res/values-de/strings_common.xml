@@ -314,7 +314,6 @@
     <string name="ui_section_breadcrumb_next">Nächster Abschnitt</string>
 
     <string name="ui_qr_code_description">QR-Code für %1$s</string>
-    <string name="ui_qr_scanner_hint">Richten Sie die Kamera auf den RomM-Pairing-QR-Code</string>
 
     <string name="ui_custom_tile_menu_header">KACHEL</string>
 

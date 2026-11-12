@@ -30,7 +30,6 @@
     <string name="firstrun_romm_url_keyboard_submit">जारी रखें</string>
     <string name="firstrun_pairing_code_button_connecting">कनेक्ट हो रहा है...</string>
     <string name="firstrun_pairing_code_button_edit_url">URL संपादित करें</string>
-    <string name="firstrun_pairing_code_button_scan">QR कोड स्कैन करें</string>
     <string name="firstrun_pairing_code_button_device_pairing">इसके बजाय QR पेयरिंग इस्तेमाल करें</string>
     <string name="firstrun_pairing_code_error_incomplete">पूरा 8-अक्षर वाला पेयरिंग कोड दर्ज करें</string>
 

@@ -938,6 +938,8 @@
     <string name="ingame_libretro_disc_swap_inserted">Inserted %1$s</string>
     <!-- Toast after a hotkey changes the simulated sunlight that solar-sensor cartridges (Boktai) read. %1$d is the level, %2$d the maximum. -->
     <string name="ingame_libretro_sun_level">Sunlight %1$d/%2$d</string>
+    <!-- Notice shown with the system microphone prompt the first time a DS game starts. "DS" is the Nintendo DS console; leave it untranslated. Access granted now applies from the next time a game starts. -->
+    <string name="ingame_libretro_microphone_request_reason">DS games can use the microphone. Allow it here and it works from the next launch.</string>
     <!-- Fallback disc name when the disc has no usable file name. %1$d is a 1-based disc
          number. -->
     <string name="ingame_libretro_disc_swap_fallback_name">Disc %1$d</string>

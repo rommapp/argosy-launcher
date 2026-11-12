@@ -214,15 +214,14 @@ internal fun routeUpdateSteamState(vm: SettingsViewModel, steam: SteamSettingsSt
 
 internal fun routeObserveDelegateEvents(vm: SettingsViewModel) {
     merge(
-        vm.syncDelegate.requestStoragePermissionEvent,
         vm.steamDelegate.requestStoragePermissionEvent,
         vm.storageDelegate.requestStoragePermissionEvent
     ).onEach {
         vm._requestStoragePermissionEvent.emit(Unit)
     }.launchIn(vm.viewModelScope)
 
-    vm.syncDelegate.requestNotificationPermissionEvent.onEach {
-        vm._requestNotificationPermissionEvent.emit(Unit)
+    vm.permissionsDelegate.grantRequests.onEach { permission ->
+        vm._grantPermissionEvent.emit(permission)
     }.launchIn(vm.viewModelScope)
 
     vm.emulatorDelegate.openUrlEvent.onEach { url ->
@@ -915,7 +914,6 @@ internal fun routeLoadSettings(vm: SettingsViewModel) {
         vm.syncDelegate.updateState(SyncSettingsState(
             syncFilters = prefs.syncFilters,
             regionPriority = prefs.regionPriority,
-            saveSyncEnabled = prefs.saveSyncEnabled,
             secureSaves = prefs.secureSaves,
             stateCacheEnabled = prefs.stateCacheEnabled,
             saveCacheLimit = prefs.saveCacheLimit,

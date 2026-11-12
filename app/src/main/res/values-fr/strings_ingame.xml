@@ -450,6 +450,7 @@
 
     <string name="ingame_libretro_disc_swap_inserted">%1$s inséré</string>
     <string name="ingame_libretro_sun_level">Ensoleillement %1$d/%2$d</string>
+    <string name="ingame_libretro_microphone_request_reason">Les jeux DS peuvent utiliser le micro. Autorisez-le ici, il fonctionnera dès le prochain lancement.</string>
     <string name="ingame_libretro_disc_swap_fallback_name">Disque %1$d</string>
 
     <string name="ingame_libretro_speedrun_default_category_name">Entraînement</string>

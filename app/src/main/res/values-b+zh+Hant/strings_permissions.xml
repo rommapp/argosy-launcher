@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="permissions_all_files_title">儲存遊戲、存檔和封面</string>
+    <string name="permissions_all_files_android_name">所有檔案存取權</string>
+    <string name="permissions_all_files_loss">無法讀取或寫入遊戲、存檔和封面。</string>
+    <string name="permissions_usage_title">追蹤遊戲工作階段</string>
+    <string name="permissions_usage_android_name">使用情況存取權</string>
+    <string name="permissions_usage_loss">外部模擬器的遊玩時間統計和當機復原將停止。</string>
+    <string name="permissions_notifications_title">讓 Argosy 保持執行</string>
+    <string name="permissions_notifications_android_name">通知</string>
+    <string name="permissions_notifications_loss">Android 可能會在遊玩時關閉 Argosy，存檔同步也無法執行。</string>
+    <string name="permissions_overlay_title">在遊戲上方顯示提示</string>
+    <string name="permissions_overlay_android_name">在其他應用程式上層顯示</string>
+    <string name="permissions_overlay_loss">提示和快速面板只會在 Argosy 顯示時出現。</string>
+    <string name="permissions_accessibility_title">從任何應用程式回到 Argosy</string>
+    <string name="permissions_accessibility_android_name">無障礙</string>
+    <string name="permissions_accessibility_loss">開啟其他應用程式時，主畫面鍵和組合鍵將無法使用。</string>
+    <string name="permissions_battery_title">遊玩時保持活躍</string>
+    <string name="permissions_battery_android_name">電池：不受限制</string>
+    <string name="permissions_battery_loss">長時間遊玩時，Android 可能會暫停下載並關閉 Argosy。</string>
+    <string name="permissions_write_settings_title">調整亮度和風扇</string>
+    <string name="permissions_write_settings_android_name">修改系統設定</string>
+    <string name="permissions_screen_capture_title">讓燈光配合螢幕</string>
+    <string name="permissions_screen_capture_android_name">螢幕擷取</string>
+    <string name="permissions_live_wallpaper_title">動態鎖定畫面</string>
+    <string name="permissions_live_wallpaper_android_name">動態桌布</string>
+
+    <string name="permissions_settings_intro">Argosy 需要這些權限來執行你的遊戲庫並保護你的存檔。</string>
+    <string name="permissions_sync_warning_title">要關閉存檔同步嗎？</string>
+    <string name="permissions_sync_warning_message">存檔同步需要%1$s。如果關閉它，同步會停止，直到你在設定中重新開啟。</string>
+    <string name="permissions_sync_warning_confirm">開啟 Android 設定</string>
+    <string name="permissions_sync_warning_keep">保持開啟</string>
+
+    <string name="permissions_sheet_launch_title">部分權限已關閉</string>
+    <string name="permissions_sheet_launch_body">自你上次遊玩以來，Argosy 發現了以下變更。</string>
+    <string name="permissions_sheet_launch_continue">繼續</string>
+    <string name="permissions_sheet_launch_play">開始遊戲</string>
+    <string name="permissions_sheet_sync_title">存檔同步需要權限</string>
+    <string name="permissions_sheet_sync_body">請允許這些權限，然後開啟同步。</string>
+    <string name="permissions_sheet_sync_cancel">取消</string>
+    <string name="permissions_sheet_sync_allow_all_files">允許所有檔案存取權</string>
+    <string name="permissions_sheet_sync_allow_usage">允許使用情況存取權</string>
+    <string name="permissions_sheet_sync_allow_notifications">允許通知</string>
+    <string name="permissions_sheet_sync_turn_on">開啟存檔同步</string>
+    <string name="permissions_sheet_row_allow">允許</string>
+
+    <string name="notif_permissions_sync_off_title">存檔同步已關閉</string>
+    <string name="notif_permissions_sync_off_body_all_files">所有檔案存取權已被關閉。允許後，請在設定中重新開啟同步。</string>
+    <string name="notif_permissions_sync_off_body_usage">使用情況存取權已被關閉。允許後，請在設定中重新開啟同步。</string>
+    <string name="notif_permissions_sync_off_body_notifications">通知已被關閉。允許後，請在設定中重新開啟同步。</string>
+    <string name="notif_permissions_revoked_title">部分權限已關閉</string>
+    <string name="notif_permissions_revoked_body_usage">外部模擬器的遊玩時間統計和當機復原將停止。</string>
+    <string name="notif_permissions_revoked_body_notifications">Android 可能會在遊玩時關閉 Argosy。</string>
+    <string name="notif_permissions_revoked_body_overlay">提示和快速面板只會在 Argosy 顯示時出現。</string>
+    <string name="notif_permissions_revoked_body_accessibility">開啟其他應用程式時，主畫面鍵和組合鍵將無法使用。</string>
+    <string name="notif_permissions_revoked_body_battery">長時間遊玩時，Android 可能會暫停下載並關閉 Argosy。</string>
+</resources>

@@ -206,7 +206,8 @@ class ArgosyViewModel @Inject constructor(
     val apkInstallManager: com.nendo.argosy.data.update.ApkInstallManager,
     val privilegedAccess: com.nendo.argosy.data.access.PrivilegedAccess,
     private val runningGames: com.nendo.argosy.data.emulator.background.RunningGames,
-    private val setupStateRepository: com.nendo.argosy.data.setup.SetupStateRepository
+    private val setupStateRepository: com.nendo.argosy.data.setup.SetupStateRepository,
+    val permissionSheets: com.nendo.argosy.data.permissions.PermissionSheetController
 ) : ViewModel() {
 
     val runningGamesUi: StateFlow<com.nendo.argosy.ui.common.RunningGamesUi> = runningGames.state

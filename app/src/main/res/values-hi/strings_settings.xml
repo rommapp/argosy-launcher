@@ -670,23 +670,6 @@
 
     <!-- ===== Permissions section ===== -->
 
-    <string name="settings_permissions_intro">पूरी कार्यक्षमता के लिए Argosy को कुछ अनुमतियाँ चाहिए। एक्सेस देने के लिए हर अनुमति पर टैप करें।</string>
-    <string name="settings_permissions_storage_title">स्टोरेज एक्सेस</string>
-    <string name="settings_permissions_storage_description">गेम डाउनलोड करने, सेव फ़ाइलें सिंक करने और डिवाइस पर ROM फ़ाइलों तक पहुँचने के लिए आवश्यक।</string>
-    <string name="settings_permissions_usage_stats_title">यूसेज स्टैट्स एक्सेस</string>
-    <string name="settings_permissions_usage_stats_description">सटीक प्ले टाइम ट्रैकिंग और ऐप बदलते समय गेम सेशन का बिना रुकावट रिज़्यूम सक्षम करता है।</string>
-    <string name="settings_permissions_notifications_title">नोटिफ़िकेशन</string>
-    <string name="settings_permissions_notifications_description">बैकग्राउंड में गेम डाउनलोड होते समय डाउनलोड प्रगति दिखाता है।</string>
-    <string name="settings_permissions_write_settings_title">सिस्टम सेटिंग्स एक्सेस</string>
-    <string name="settings_permissions_write_settings_description">क्विक सेटिंग्स पैनल से डिवाइस के परफ़ॉर्मेंस मोड और फ़ैन सेटिंग्स नियंत्रित करने देता है।</string>
-    <string name="settings_permissions_screen_capture_title">स्क्रीन कैप्चर</string>
-    <string name="settings_permissions_screen_capture_description">गेम खेलते समय स्क्रीन के रंग पढ़ने के लिए एम्बिएंट LED लाइटिंग सक्षम करता है।</string>
-    <string name="settings_permissions_display_overlay_title">अन्य ऐप्स के ऊपर दिखाएँ</string>
-    <string name="settings_permissions_display_overlay_description">बाहरी एमुलेटर में गेम खेलते समय सेव पहचान नोटिफ़िकेशन दिखाता है।</string>
-    <string name="settings_permissions_accessibility_title">एक्सेसिबिलिटी सेवा</string>
-    <string name="settings_permissions_accessibility_description">क्विक पैनल को अन्य एमुलेटर के ऊपर खोलने देता है, और बिना आवाज़ के सेव स्क्रीनशॉट लेता है</string>
-    <string name="settings_permissions_live_wallpaper_title">एनिमेटेड लॉक स्क्रीन</string>
-    <string name="settings_permissions_live_wallpaper_description">Argosy को एनिमेटेड लॉक स्क्रीन लागू करने की अनुमति दें।</string>
     <!-- %1$s is a root or system-access app name, such as Magisk or Shizuku -->
     <string name="settings_permissions_privileged_title">%1$s एक्सेस</string>
     <string name="settings_permissions_privileged_description_off">Argosy को Android/data में एमुलेटर सेव फ़ोल्डरों तक पहुँचने दें।</string>
@@ -697,7 +680,6 @@
     <string name="settings_permissions_privileged_description_refused">एक्सेस नहीं दिया गया। फिर से पूछने के लिए चुनें।</string>
     <string name="settings_lock_screen_wallpaper_label">Argosy लाइब्रेरी</string>
     <string name="settings_lock_screen_wallpaper_description">Argosy को एनिमेटेड लॉक स्क्रीन लागू करने की अनुमति दें।</string>
-    <string name="settings_permissions_status_footer">स्थिति: %1$d/%2$d अनुमतियाँ दी गईं</string>
 
     <!-- ===== About section ===== -->
 
@@ -2136,8 +2118,6 @@
     <string name="settings_romm_config_connect_title">कनेक्ट करें</string>
     <string name="settings_romm_config_connect_device_subtitle">पेयरिंग QR कोड बनाएँ</string>
     <string name="settings_romm_config_connect_subtitle">RomM सर्वर से कनेक्ट करें</string>
-    <string name="settings_romm_config_scan_title">QR कोड स्कैन करें</string>
-    <string name="settings_romm_config_scan_subtitle">RomM वेब UI से पेयरिंग QR स्कैन करें</string>
     <string name="settings_romm_config_certificate_title">प्रमाणपत्र जोड़ें</string>
     <string name="settings_romm_config_certificate_subtitle">निजी प्रमाणपत्र प्राधिकरण वाले सर्वर पर भरोसा करें</string>
     <plurals name="settings_romm_config_certificate_subtitle_count">

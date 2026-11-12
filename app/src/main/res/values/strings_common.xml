@@ -650,9 +650,6 @@
 
     <!-- Description of a rendered QR code. %1$s is the address the code encodes. -->
     <string name="ui_qr_code_description">QR Code for %1$s</string>
-    <!-- Instruction over the camera view while scanning a pairing code. "RomM" is the name of
-         the server software; leave it untranslated. -->
-    <string name="ui_qr_scanner_hint">Point at the RomM pairing QR code</string>
 
     <!-- Heading of the menu that opens over a tile on the curated home grid. Noun, singular,
          rendered in caps in English. -->

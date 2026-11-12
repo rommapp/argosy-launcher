@@ -40,6 +40,7 @@ import com.nendo.argosy.data.repository.SaveCacheManager
 import com.nendo.argosy.DualScreenManagerHolder
 import com.nendo.argosy.util.Logger
 import com.nendo.argosy.util.PermissionHelper
+import com.nendo.argosy.util.UsageStatsAvailability
 import dagger.hilt.android.AndroidEntryPoint
 import com.nendo.argosy.util.SafeCoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -257,7 +258,11 @@ class GameSessionService : Service() {
         stopPresenceWatch()
         if (emulatorPackage == null || emulatorPackage == EmulatorRegistry.BUILTIN_PACKAGE) return
         if (android.os.Build.VERSION.SDK_INT < android.os.Build.VERSION_CODES.Q) return
-        if (!permissionHelper.hasUsageStatsPermission(this)) return
+        val usageStats = permissionHelper.usageStatsAvailability(this)
+        if (usageStats != UsageStatsAvailability.AVAILABLE) {
+            Logger.info(TAG, "Presence watch off, usage stats $usageStats | session ends on launcher focus")
+            return
+        }
         val tracker = playSessionTracker.get()
         if (tracker.activeSession.value?.isNetplayGuest == true) return
         val emulator = EmulatorIdentity(emulatorPackage)

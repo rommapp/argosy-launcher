@@ -24,7 +24,6 @@
     <string name="firstrun_romm_url_keyboard_submit">Continuar</string>
     <string name="firstrun_pairing_code_button_connecting">Conectando...</string>
     <string name="firstrun_pairing_code_button_edit_url">Editar URL</string>
-    <string name="firstrun_pairing_code_button_scan">Escanear código QR</string>
     <string name="firstrun_pairing_code_button_device_pairing">Usar emparejamiento por QR</string>
     <string name="firstrun_pairing_code_error_incomplete">Escribe el código de emparejamiento completo de 8 caracteres</string>
 

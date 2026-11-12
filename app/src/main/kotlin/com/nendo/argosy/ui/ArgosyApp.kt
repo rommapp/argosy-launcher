@@ -1533,6 +1533,8 @@ fun ArgosyApp(
                 onDismiss = { viewModel.privilegedAccess.answerPrompt(enable = false) }
             )
 
+            com.nendo.argosy.ui.components.permissions.PermissionSheetHost(controller = viewModel.permissionSheets)
+
             netplayInvitePrompt?.let { invite ->
                 NetplayInviteModal(
                     invite = invite,

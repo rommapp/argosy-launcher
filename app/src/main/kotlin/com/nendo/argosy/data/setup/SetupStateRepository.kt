@@ -1,29 +1,27 @@
 package com.nendo.argosy.data.setup
 
-import android.Manifest
 import android.content.Context
-import android.content.pm.PackageManager
-import android.os.Build
-import androidx.core.content.ContextCompat
 import androidx.lifecycle.DefaultLifecycleObserver
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.ProcessLifecycleOwner
 import com.nendo.argosy.data.model.SetupAccess
+import com.nendo.argosy.data.permissions.PermissionRegistry
+import com.nendo.argosy.data.permissions.SaveSyncGate
 import com.nendo.argosy.data.preferences.AppPreferences
 import com.nendo.argosy.data.preferences.AppPreferencesRepository
 import com.nendo.argosy.data.preferences.StoragePreferences
 import com.nendo.argosy.data.preferences.StoragePreferencesRepository
 import com.nendo.argosy.data.preferences.SyncPreferences
 import com.nendo.argosy.data.preferences.SyncPreferencesRepository
+import com.nendo.argosy.domain.model.ArgosyPermission
+import com.nendo.argosy.domain.model.PermissionAvailability
 import com.nendo.argosy.domain.model.SetupFacts
 import com.nendo.argosy.domain.model.SetupState
 import com.nendo.argosy.domain.setup.SetupRouter
 import com.nendo.argosy.util.DisplayAffinityHelper
 import com.nendo.argosy.util.Logger
-import com.nendo.argosy.util.PermissionHelper
 import com.nendo.argosy.util.SafeCoroutineScope
 import com.nendo.argosy.util.SecondaryHomeComponent
-import com.nendo.argosy.util.StorageAccess
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineStart
@@ -52,7 +50,8 @@ class SetupStateRepository @Inject constructor(
     private val storagePreferences: StoragePreferencesRepository,
     private val appPreferences: AppPreferencesRepository,
     private val legacyMigration: LegacySetupMigration,
-    private val permissionHelper: PermissionHelper,
+    private val permissionRegistry: PermissionRegistry,
+    private val saveSyncGate: SaveSyncGate,
     private val displayAffinityHelper: DisplayAffinityHelper
 ) {
     private val scope = SafeCoroutineScope(Dispatchers.IO, TAG)
@@ -94,7 +93,15 @@ class SetupStateRepository @Inject constructor(
 
     suspend fun confirmRomFolder(path: String) = storagePreferences.confirmRomStoragePath(path)
 
-    suspend fun answerSaveSync(enabled: Boolean) = syncPreferences.answerSaveSync(enabled)
+    /**
+     * Records the save sync answer. An answer of on goes through [SaveSyncGate] first and is not
+     * recorded, returning false, while the person leaves a sync-required permission missing.
+     */
+    suspend fun answerSaveSync(enabled: Boolean): Boolean {
+        if (enabled && !saveSyncGate.clearToEnable()) return false
+        syncPreferences.answerSaveSync(enabled)
+        return true
+    }
 
     private suspend fun migrateLegacySetup() {
         try {
@@ -106,19 +113,19 @@ class SetupStateRepository @Inject constructor(
         }
     }
 
-    private fun readAccess(): SetupAccess = SetupAccess(
-        allFiles = StorageAccess.isGranted(context),
-        usageAccess = permissionHelper.hasUsageStatsPermission(context),
-        usageAccessGrantable = permissionHelper.canRequestUsageStats(context),
-        notifications = notificationsGranted(),
-        dualScreenDevice = displayAffinityHelper.hasPhysicalSecondaryDisplay,
-        defaultHome = SecondaryHomeComponent.isDefaultHome(context)
-    )
-
-    private fun notificationsGranted(): Boolean =
-        Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU ||
-            ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) ==
-            PackageManager.PERMISSION_GRANTED
+    private fun readAccess(): SetupAccess {
+        val usage = permissionRegistry.availabilityOf(ArgosyPermission.USAGE_ACCESS)
+        return SetupAccess(
+            allFiles = permissionRegistry.availabilityOf(ArgosyPermission.ALL_FILES_ACCESS) ==
+                PermissionAvailability.GRANTED,
+            usageAccess = usage == PermissionAvailability.GRANTED,
+            usageAccessGrantable = usage != PermissionAvailability.UNAVAILABLE,
+            notifications = permissionRegistry.availabilityOf(ArgosyPermission.NOTIFICATIONS) ==
+                PermissionAvailability.GRANTED,
+            dualScreenDevice = displayAffinityHelper.hasPhysicalSecondaryDisplay,
+            defaultHome = SecondaryHomeComponent.isDefaultHome(context)
+        )
+    }
 
     private companion object {
         const val TAG = "SetupState"

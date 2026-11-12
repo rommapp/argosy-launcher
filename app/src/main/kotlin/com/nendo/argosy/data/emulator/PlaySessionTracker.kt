@@ -114,6 +114,7 @@ class PlaySessionTracker @Inject constructor(
         private const val TAG = "PlaySessionTracker"
         private const val MIN_PLAY_SECONDS_FOR_COMPLETION = 20
         private const val MAX_SESSION_RECOVERY_ATTEMPTS = 3
+        private const val RESUME_RECENCY_MS = 300_000L
     }
     private val scope = SafeCoroutineScope(Dispatchers.IO, "PlaySessionTracker")
     private val sessionStateStore by lazy { SessionStateStore(application) }
@@ -336,17 +337,16 @@ class PlaySessionTracker @Inject constructor(
         }
     }
 
-    /**
-     * Whether the session written to disk still has its emulator on a screen.
-     *
-     * This is the one question that separates a launcher process that died under a running game
-     * from a player who put the game down: both come back with every in-memory signal cleared and
-     * the same record on disk, and only the emulator's own windows say which happened. Silence -
-     * no usage access, no events - answers false, so a session that cannot be observed is still
-     * treated as ended and its save is still recovered.
-     */
-    private fun isSessionStillOnScreen(persisted: PersistedSession): Boolean =
-        permissionHelper.isPackageOnScreenOrRecent(application, persisted.emulatorPackage)
+    private fun isSessionStillOnScreen(persisted: PersistedSession): Boolean {
+        val onScreen = permissionHelper.isPackageOnScreenOrRecent(application, persisted.emulatorPackage)
+        if (onScreen == null) {
+            Logger.info(
+                TAG,
+                "[SaveSync] ORPHAN gameId=${persisted.gameId} | Usage stats unavailable, keeping the session open until the launcher takes focus"
+            )
+        }
+        return onScreen ?: true
+    }
 
     /**
      * Adopts a persisted session back into memory rather than closing it out.
@@ -1087,10 +1087,13 @@ class PlaySessionTracker @Inject constructor(
             Logger.debug(TAG, "canResumeSession($gameId): variant mismatch (active=${session.variantFileId}, requested=$variantFileId)")
             return false
         }
-        val inForeground = permissionHelper.isPackageOnScreen(application, session.emulatorPackage)
-            ?: permissionHelper.isPackageInForeground(application, session.emulatorPackage, withinMs = 300_000)
-        Logger.debug(TAG, "canResumeSession($gameId): emulator=${session.emulatorPackage}, inForeground=$inForeground")
-        return inForeground
+        val onScreen = permissionHelper.isPackageOnScreenOrRecent(
+            application,
+            session.emulatorPackage,
+            recencyMs = RESUME_RECENCY_MS
+        )
+        Logger.debug(TAG, "canResumeSession($gameId): emulator=${session.emulatorPackage}, onScreen=$onScreen")
+        return onScreen ?: true
     }
 
 }

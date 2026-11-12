@@ -369,6 +369,7 @@
     <string name="ingame_libretro_casual_save_in_hardcore">Continuando salva casual no Hardcore</string>
     <string name="ingame_libretro_disc_swap_inserted">Inserido %1$s</string>
     <string name="ingame_libretro_sun_level">Luz solar %1$d/%2$d</string>
+    <string name="ingame_libretro_microphone_request_reason">Jogos de DS podem usar o microfone. Permita aqui e ele funcionará a partir da próxima abertura.</string>
     <string name="ingame_libretro_disc_swap_fallback_name">Disco %1$d</string>
     <string name="ingame_libretro_speedrun_default_category_name">Prática</string>
     <string name="ingame_libretro_speedrun_default_segment_name">Segmento %1$d</string>

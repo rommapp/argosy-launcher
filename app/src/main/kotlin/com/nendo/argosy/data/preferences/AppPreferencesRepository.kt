@@ -5,6 +5,8 @@ import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
+import com.nendo.argosy.domain.model.ArgosyPermission
+import com.nendo.argosy.domain.permissions.PermissionRecord
 import com.nendo.argosy.util.LogLevel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
@@ -84,6 +86,8 @@ class AppPreferencesRepository @Inject constructor(
         val NOTIFY_BATTERY = booleanPreferencesKey("notify_battery")
         val NOTIFY_CHARGING = booleanPreferencesKey("notify_charging")
         val NOTIFY_CONTROLLERS = booleanPreferencesKey("notify_controllers")
+        val PERMISSIONS_ACKNOWLEDGED = stringPreferencesKey("permissions_acknowledged")
+        val PERMISSIONS_REVOCATIONS_NOTICED = stringPreferencesKey("permissions_revocations_noticed")
     }
 
     val preferences: Flow<AppPreferences> = dataStore.data.map { prefs ->
@@ -150,6 +154,33 @@ class AppPreferencesRepository @Inject constructor(
             it[Keys.LEGACY_SETUP_MIGRATED] = true
         }
     }
+
+    suspend fun permissionRecord(): PermissionRecord {
+        val prefs = dataStore.data.first()
+        return PermissionRecord(
+            acknowledged = prefs[Keys.PERMISSIONS_ACKNOWLEDGED]?.let(::parsePermissionTokens),
+            noticed = parsePermissionTokens(prefs[Keys.PERMISSIONS_REVOCATIONS_NOTICED])
+        )
+    }
+
+    suspend fun setPermissionRecord(record: PermissionRecord) {
+        dataStore.edit { prefs ->
+            val acknowledged = record.acknowledged
+            if (acknowledged == null) {
+                prefs.remove(Keys.PERMISSIONS_ACKNOWLEDGED)
+            } else {
+                prefs[Keys.PERMISSIONS_ACKNOWLEDGED] = acknowledged.joinToString(",") { it.token }
+            }
+            if (record.noticed.isEmpty()) {
+                prefs.remove(Keys.PERMISSIONS_REVOCATIONS_NOTICED)
+            } else {
+                prefs[Keys.PERMISSIONS_REVOCATIONS_NOTICED] = record.noticed.joinToString(",") { it.token }
+            }
+        }
+    }
+
+    private fun parsePermissionTokens(raw: String?): Set<ArgosyPermission> =
+        raw?.split(",")?.mapNotNull { ArgosyPermission.fromToken(it.trim()) }?.toSet().orEmpty()
 
     suspend fun setBetaUpdatesEnabled(enabled: Boolean) {
         dataStore.edit { it[Keys.BETA_UPDATES_ENABLED] = enabled }

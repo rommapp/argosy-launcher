@@ -22,6 +22,8 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
@@ -220,6 +222,48 @@ class PlaySessionTrackerNoticesTest {
         tracker.endSession(stopService = false)
 
         coVerify(exactly = 1) { notices.sessionSaveSynced(gameId, uploaded) }
+    }
+
+    @Test
+    fun `an orphan check with usage stats unavailable keeps the session open and archives nothing`() = runTest {
+        coEvery { preferencesRepository.getPersistedSession() } returns persisted
+        every { permissionHelper.isPackageOnScreenOrRecent(any(), any(), any()) } returns null
+        val tracker = tracker()
+
+        tracker.checkOrphanedSession()
+
+        assertEquals(gameId, tracker.activeSession.value?.gameId)
+        coVerify(exactly = 0) { sessionSaveFinalizer.finalize(any()) }
+        coVerify(exactly = 0) { notices.orphanSaveRecovered(any(), any()) }
+    }
+
+    @Test
+    fun `an orphan check whose emulator is reported gone recovers the save`() = runTest {
+        coEvery { sessionSaveFinalizer.finalize(any()) } returns SessionSaveOutcome.NothingToSave
+        coEvery { preferencesRepository.getPersistedSession() } returns persisted
+        every { permissionHelper.isPackageOnScreenOrRecent(any(), any(), any()) } returns false
+        val tracker = tracker()
+
+        tracker.checkOrphanedSession()
+
+        assertNull(tracker.activeSession.value)
+        coVerify(exactly = 1) { sessionSaveFinalizer.finalize(any()) }
+    }
+
+    @Test
+    fun `a matching session resumes when usage stats cannot answer`() = runTest {
+        val tracker = trackerWithLiveSession()
+        every { permissionHelper.isPackageOnScreenOrRecent(any(), any(), any()) } returns null
+
+        assertTrue(tracker.canResumeSession(gameId))
+    }
+
+    @Test
+    fun `a matching session does not resume once usage stats report the emulator gone`() = runTest {
+        val tracker = trackerWithLiveSession()
+        every { permissionHelper.isPackageOnScreenOrRecent(any(), any(), any()) } returns false
+
+        assertFalse(tracker.canResumeSession(gameId))
     }
 
     @Test

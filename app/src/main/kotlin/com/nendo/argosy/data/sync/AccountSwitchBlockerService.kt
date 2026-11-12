@@ -85,6 +85,11 @@ class AccountSwitchBlockerService @Inject constructor(
      * so it is a courtesy check only -- the guarantee is the re-hash immediately before removal.
      */
     private fun recentlyForegroundEmulator(): AccountSwitchBlocker? {
+        val usageStats = permissionHelper.usageStatsAvailability(context)
+        if (usageStats != com.nendo.argosy.util.UsageStatsAvailability.AVAILABLE) {
+            Logger.debug(TAG, "Usage stats $usageStats for emulator foreground check; relying on pre-removal re-hash")
+            return null
+        }
         val packages = EmulatorRegistry.getAll().map { it.packageName }.toSet()
         val stamps = permissionHelper.lastForegroundTimestamps(context, packages)
         if (stamps.isEmpty()) {

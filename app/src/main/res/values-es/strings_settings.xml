@@ -695,23 +695,6 @@
 
     <!-- ===== Permissions section ===== -->
 
-    <string name="settings_permissions_intro">Argosy necesita ciertos permisos para funcionar por completo. Toca cada permiso para concederlo.</string>
-    <string name="settings_permissions_storage_title">Acceso al almacenamiento</string>
-    <string name="settings_permissions_storage_description">Necesario para descargar juegos, sincronizar archivos de guardado y acceder a los archivos ROM de tu dispositivo.</string>
-    <string name="settings_permissions_usage_stats_title">Acceso a estadísticas de uso</string>
-    <string name="settings_permissions_usage_stats_description">Permite un seguimiento preciso del tiempo de juego y reanudar la sesión sin interrupciones al cambiar entre aplicaciones.</string>
-    <string name="settings_permissions_notifications_title">Notificaciones</string>
-    <string name="settings_permissions_notifications_description">Muestra el progreso de la descarga al descargar juegos en segundo plano.</string>
-    <string name="settings_permissions_write_settings_title">Acceso a los ajustes del sistema</string>
-    <string name="settings_permissions_write_settings_description">Permite controlar el modo de rendimiento del dispositivo y los ajustes del ventilador desde el panel de Ajustes rápidos.</string>
-    <string name="settings_permissions_screen_capture_title">Captura de pantalla</string>
-    <string name="settings_permissions_screen_capture_description">Permite la iluminación LED ambiental para tomar muestras de los colores de la pantalla mientras juegas.</string>
-    <string name="settings_permissions_display_overlay_title">Mostrar sobre otras aplicaciones</string>
-    <string name="settings_permissions_display_overlay_description">Muestra notificaciones de detección de guardado al jugar con emuladores externos.</string>
-    <string name="settings_permissions_accessibility_title">Servicio de accesibilidad</string>
-    <string name="settings_permissions_accessibility_description">Permite abrir el panel rápido sobre otros emuladores y tomar capturas de guardado en silencio</string>
-    <string name="settings_permissions_live_wallpaper_title">Pantalla de bloqueo animada</string>
-    <string name="settings_permissions_live_wallpaper_description">Permite que Argosy aplique una pantalla de bloqueo animada.</string>
     <!-- %1$s is a root or system-access app name, such as Magisk or Shizuku -->
     <string name="settings_permissions_privileged_title">Acceso de %1$s</string>
     <string name="settings_permissions_privileged_description_off">Permite que Argosy acceda a las carpetas de guardado de los emuladores en Android/data.</string>
@@ -722,7 +705,6 @@
     <string name="settings_permissions_privileged_description_refused">No se concedió el acceso. Selecciona para volver a pedirlo.</string>
     <string name="settings_lock_screen_wallpaper_label">Biblioteca de Argosy</string>
     <string name="settings_lock_screen_wallpaper_description">Permite que Argosy aplique una pantalla de bloqueo animada.</string>
-    <string name="settings_permissions_status_footer">Estado: %1$d/%2$d permisos concedidos</string>
 
     <!-- ===== About section ===== -->
 
@@ -2203,8 +2185,6 @@
     <string name="settings_romm_config_connect_title">Conectar</string>
     <string name="settings_romm_config_connect_device_subtitle">Generar un código QR de vinculación</string>
     <string name="settings_romm_config_connect_subtitle">Conectar al servidor RomM</string>
-    <string name="settings_romm_config_scan_title">Escanear código QR</string>
-    <string name="settings_romm_config_scan_subtitle">Escanea el QR de vinculación desde la interfaz web de RomM</string>
     <string name="settings_romm_config_certificate_title">Añadir certificado</string>
     <string name="settings_romm_config_certificate_subtitle">Confiar en un servidor con una autoridad certificadora privada</string>
     <plurals name="settings_romm_config_certificate_subtitle_count">

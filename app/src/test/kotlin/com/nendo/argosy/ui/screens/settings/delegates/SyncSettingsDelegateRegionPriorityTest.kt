@@ -29,7 +29,8 @@ class SyncSettingsDelegateRegionPriorityTest {
         imageCacheManager = mockk(relaxed = true),
         notificationManager = mockk(relaxed = true),
         attributionRepository = mockk(relaxed = true),
-        retroAchievementsRepository = mockk(relaxed = true)
+        retroAchievementsRepository = mockk(relaxed = true),
+        saveSyncGate = mockk(relaxed = true)
     ).apply {
         updateState(SyncSettingsState(regionPriority = known))
         showRegionPriority()

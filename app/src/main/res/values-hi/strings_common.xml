@@ -314,7 +314,6 @@
     <string name="ui_section_breadcrumb_next">अगला सेक्शन</string>
 
     <string name="ui_qr_code_description">%1$s के लिए QR कोड</string>
-    <string name="ui_qr_scanner_hint">RomM पेयरिंग QR कोड पर पॉइंट करें</string>
 
     <string name="ui_custom_tile_menu_header">टाइल</string>
 

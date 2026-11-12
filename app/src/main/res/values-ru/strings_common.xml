@@ -336,7 +336,6 @@
     <string name="ui_section_breadcrumb_next">Следующий раздел</string>
 
     <string name="ui_qr_code_description">QR-код для %1$s</string>
-    <string name="ui_qr_scanner_hint">Наведите на QR-код сопряжения RomM</string>
 
     <string name="ui_custom_tile_menu_header">ПЛИТКА</string>
 

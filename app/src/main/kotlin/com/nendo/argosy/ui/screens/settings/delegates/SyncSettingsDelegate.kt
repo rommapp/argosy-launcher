@@ -1,11 +1,8 @@
 package com.nendo.argosy.ui.screens.settings.delegates
 
-import android.Manifest
 import android.app.Application
-import android.content.pm.PackageManager
-import android.os.Build
-import androidx.core.content.ContextCompat
 import com.nendo.argosy.data.cache.ImageCacheManager
+import com.nendo.argosy.data.permissions.SaveSyncGate
 import com.nendo.argosy.data.repository.PlatformRepository
 import com.nendo.argosy.data.preferences.RegionFilterMode
 import com.nendo.argosy.data.preferences.SyncFilterPreferences
@@ -40,6 +37,7 @@ import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -56,16 +54,11 @@ class SyncSettingsDelegate @Inject constructor(
     private val imageCacheManager: ImageCacheManager,
     private val notificationManager: NotificationManager,
     private val attributionRepository: StorageAttributionRepository,
-    private val retroAchievementsRepository: RetroAchievementsRepository
+    private val retroAchievementsRepository: RetroAchievementsRepository,
+    private val saveSyncGate: SaveSyncGate
 ) {
     private val _state = MutableStateFlow(SyncSettingsState())
     val state: StateFlow<SyncSettingsState> = _state.asStateFlow()
-
-    private val _requestStoragePermissionEvent = MutableSharedFlow<Unit>()
-    val requestStoragePermissionEvent: SharedFlow<Unit> = _requestStoragePermissionEvent.asSharedFlow()
-
-    private val _requestNotificationPermissionEvent = MutableSharedFlow<Unit>()
-    val requestNotificationPermissionEvent: SharedFlow<Unit> = _requestNotificationPermissionEvent.asSharedFlow()
 
     private val _openImageCachePickerEvent = MutableSharedFlow<Unit>()
     val openImageCachePickerEvent: SharedFlow<Unit> = _openImageCachePickerEvent.asSharedFlow()
@@ -76,6 +69,7 @@ class SyncSettingsDelegate @Inject constructor(
     fun updateState(newState: SyncSettingsState) {
         _state.update { current ->
             newState.copy(
+                saveSyncEnabled = current.saveSyncEnabled,
                 platformFiltersAllPlatforms = current.platformFiltersAllPlatforms,
                 platformFiltersList = current.platformFiltersList,
                 enabledPlatformCount = current.enabledPlatformCount,
@@ -110,6 +104,15 @@ class SyncSettingsDelegate @Inject constructor(
         }
     }
 
+    fun observeSaveSync(scope: CoroutineScope) {
+        scope.launch {
+            preferencesRepository.preferences
+                .map { it.saveSyncEnabled }
+                .distinctUntilChanged()
+                .collect { enabled -> _state.update { it.copy(saveSyncEnabled = enabled) } }
+        }
+    }
+
     fun setDownloadCategoryDefault(scope: CoroutineScope, categoryKey: String, include: Boolean) {
         _state.update {
             it.copy(downloadDefaults = it.downloadDefaults + (categoryKey to include))
@@ -131,7 +134,6 @@ class SyncSettingsDelegate @Inject constructor(
         scope.launch {
             val prefs = preferencesRepository.preferences.first()
             val hasStoragePermission = checkStoragePermission()
-            val hasNotificationPermission = checkNotificationPermission()
             val pendingCounts = saveCacheRepository.getPendingSyncCounts()
             val cacheCounts = saveCacheRepository.getCounts()
             val downloadDefaults = preferencesRepository.getGlobalDownloadDefaults()
@@ -140,12 +142,10 @@ class SyncSettingsDelegate @Inject constructor(
                     downloadDefaults = downloadDefaults,
                     syncFilters = prefs.syncFilters,
                     regionPriority = prefs.regionPriority,
-                    saveSyncEnabled = prefs.saveSyncEnabled,
                     secureSaves = prefs.secureSaves,
                     stateCacheEnabled = prefs.stateCacheEnabled,
                     saveCacheLimit = prefs.saveCacheLimit,
                     hasStoragePermission = hasStoragePermission,
-                    hasNotificationPermission = hasNotificationPermission,
                     pendingUploadsCount = pendingCounts.pendingUploads,
                     imageCachePath = prefs.imageCachePath,
                     defaultImageCachePath = imageCacheManager.getDefaultCachePath(),
@@ -159,17 +159,6 @@ class SyncSettingsDelegate @Inject constructor(
     }
 
     fun checkStoragePermission(): Boolean = StorageAccess.isGranted(application)
-
-    fun checkNotificationPermission(): Boolean {
-        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            ContextCompat.checkSelfPermission(
-                application,
-                Manifest.permission.POST_NOTIFICATIONS
-            ) == PackageManager.PERMISSION_GRANTED
-        } else {
-            true
-        }
-    }
 
     fun showSyncFiltersModal() {
         _state.update { it.copy(showSyncFiltersModal = true, syncFiltersModalFocusIndex = 0) }
@@ -438,40 +427,27 @@ class SyncSettingsDelegate @Inject constructor(
     }
 
     fun enableSaveSync(scope: CoroutineScope) {
-        scope.launch {
-            val currentState = _state.value
-            if (!currentState.hasStoragePermission) {
-                _requestStoragePermissionEvent.emit(Unit)
-                return@launch
-            }
-            if (!currentState.hasNotificationPermission) {
-                _requestNotificationPermissionEvent.emit(Unit)
-                return@launch
-            }
-
-            preferencesRepository.setSaveSyncEnabled(true)
-            _state.update { it.copy(saveSyncEnabled = true) }
-            runSaveSyncNow(scope)
-        }
+        scope.launch { turnSaveSyncOn(scope) }
     }
 
     fun toggleSaveSync(scope: CoroutineScope) {
         scope.launch {
-            val currentState = _state.value
-            val newValue = !currentState.saveSyncEnabled
-
-            if (newValue && !currentState.hasNotificationPermission) {
-                _requestNotificationPermissionEvent.emit(Unit)
+            if (!_state.value.saveSyncEnabled) {
+                turnSaveSyncOn(scope)
                 return@launch
             }
-
-            preferencesRepository.setSaveSyncEnabled(newValue)
-            _state.update { it.copy(saveSyncEnabled = newValue) }
-
-            if (newValue) {
-                runSaveSyncNow(scope)
-            }
+            preferencesRepository.setSaveSyncEnabled(false)
         }
+    }
+
+    fun turnSaveSyncOff(scope: CoroutineScope) {
+        scope.launch { preferencesRepository.setSaveSyncEnabled(false) }
+    }
+
+    private suspend fun turnSaveSyncOn(scope: CoroutineScope) {
+        if (!saveSyncGate.clearToEnable()) return
+        preferencesRepository.setSaveSyncEnabled(true)
+        runSaveSyncNow(scope)
     }
 
     fun toggleSecureSaves(scope: CoroutineScope) {
@@ -526,22 +502,6 @@ class SyncSettingsDelegate @Inject constructor(
                 enableSaveSync(scope)
             }
         }
-    }
-
-    fun onNotificationPermissionResult(scope: CoroutineScope, granted: Boolean) {
-        scope.launch {
-            _state.update { it.copy(hasNotificationPermission = granted) }
-            if (granted && _state.value.hasStoragePermission) {
-                preferencesRepository.setSaveSyncEnabled(true)
-                _state.update { it.copy(saveSyncEnabled = true) }
-                runSaveSyncNow(scope)
-            }
-        }
-    }
-
-    fun refreshNotificationPermission() {
-        val hasPermission = checkNotificationPermission()
-        _state.update { it.copy(hasNotificationPermission = hasPermission) }
     }
 
     fun runSaveSyncNow(scope: CoroutineScope) {

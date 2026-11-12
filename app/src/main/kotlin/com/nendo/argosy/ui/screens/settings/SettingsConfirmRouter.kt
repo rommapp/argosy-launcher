@@ -410,7 +410,6 @@ private fun routeRomMConfirm(vm: SettingsViewModel, state: SettingsUiState): Inp
                 return InputResult.handled(SoundType.OPEN_MODAL)
             }
             indices.connectIndex -> vm.connectToRomm()
-            indices.scanIndex -> vm.showRommScanner()
             indices.certificateIndex -> vm.requestCertificatePicker()
             indices.cancelIndex -> vm.cancelRommConfig()
             else -> vm._uiState.update { it.copy(server = it.server.copy(rommFocusField = state.focusedIndex)) }

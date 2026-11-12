@@ -253,16 +253,7 @@ fun FirstRunScreen(
                     isFocused = true,
                     onGetStarted = { viewModel.nextStep() }
                 )
-                FirstRunStep.ROMM_LOGIN -> if (uiState.rommShowScanner) {
-                    Box(modifier = Modifier.fillMaxSize()) {
-                        com.nendo.argosy.ui.components.QrScannerWithPermission(
-                            onResult = { result ->
-                                viewModel.handleScanResult(result.origin, result.code)
-                            },
-                            onDismiss = { viewModel.dismissScanner() }
-                        )
-                    }
-                } else RommLoginStep(
+                FirstRunStep.ROMM_LOGIN -> RommLoginStep(
                     url = uiState.rommUrl,
                     urlCommitted = uiState.rommUrlCommitted,
                     pairingCode = uiState.rommPairingCode,
@@ -271,7 +262,6 @@ fun FirstRunScreen(
                     deviceVerificationUrl = uiState.rommDeviceVerificationUrl,
                     supportsDeviceAuth = uiState.rommSupportsDeviceAuth,
                     browserMissing = uiState.rommBrowserMissing,
-                    hasCamera = uiState.rommHasCamera,
                     isConnecting = uiState.isConnecting,
                     error = firstRunErrorText(uiState.connectionError),
                     focusedIndex = uiState.focusedIndex,
@@ -285,7 +275,6 @@ fun FirstRunScreen(
                     onCommitUrl = { viewModel.commitUrl() },
                     onEditUrl = { viewModel.editUrl() },
                     onConnect = { viewModel.connectToRomm() },
-                    onScan = { viewModel.showScanner() },
                     onCancelPairing = { viewModel.cancelDevicePairing() },
                     onOpenVerificationUrl = openVerificationUrl,
                     onUseManualCode = { viewModel.useManualPairingCode() },
@@ -504,7 +493,6 @@ private fun RommLoginStep(
     deviceVerificationUrl: String?,
     supportsDeviceAuth: Boolean,
     browserMissing: Boolean,
-    hasCamera: Boolean,
     isConnecting: Boolean,
     error: String?,
     focusedIndex: Int,
@@ -518,7 +506,6 @@ private fun RommLoginStep(
     onCommitUrl: () -> Unit,
     onEditUrl: () -> Unit,
     onConnect: () -> Unit,
-    onScan: () -> Unit,
     onCancelPairing: () -> Unit,
     onOpenVerificationUrl: () -> Unit,
     onUseManualCode: () -> Unit,
@@ -903,23 +890,11 @@ private fun RommLoginStep(
                 horizontalAlignment = Alignment.CenterHorizontally,
                 modifier = Modifier.fillMaxWidth()
             ) {
-                var nextIndex = 3
-                if (hasCamera) {
-                    Spacer(modifier = Modifier.height(Dimens.spacingSm))
-                    FocusableOutlinedButton(
-                        text = stringResource(R.string.firstrun_pairing_code_button_scan),
-                        isFocused = focusedIndex == nextIndex,
-                        enabled = !isConnecting,
-                        onClick = onScan
-                    )
-                    nextIndex++
-                }
-
                 if (supportsDeviceAuth) {
                     Spacer(modifier = Modifier.height(Dimens.spacingSm))
                     FocusableOutlinedButton(
                         text = stringResource(R.string.firstrun_pairing_code_button_device_pairing),
-                        isFocused = focusedIndex == nextIndex,
+                        isFocused = focusedIndex == 3,
                         enabled = !isConnecting,
                         onClick = onUseDevicePairing
                     )

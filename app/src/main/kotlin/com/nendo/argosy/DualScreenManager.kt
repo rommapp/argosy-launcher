@@ -1860,13 +1860,19 @@ class DualScreenManager(
         Log.d(TAG, "HDMI disconnected: cleaned up swapped state")
     }
 
-    private fun isEmulatorStillOnScreen(context: Context): Boolean {
+    private fun isEmulatorStillOnScreen(context: Context, launcherDisplay: Int): Boolean {
         val emulatorPackage = sessionStateStore.getEmulatorPackage() ?: return false
         if (emulatorPackage == com.nendo.argosy.data.emulator.EmulatorRegistry.BUILTIN_PACKAGE) {
             return isBuiltInGameAlive(context)
         }
         return permissionHelper.isPackageOnScreenOrRecent(context, emulatorPackage)
+            ?: (expectedGameDisplay() != launcherDisplay)
     }
+
+    private fun expectedGameDisplay(): Int =
+        emulatorDisplayId
+            ?: sessionStateStore.getEmulatorDisplayId()
+            ?: displayAffinityHelper.getEmulatorDisplayId(_isRolesSwapped.value)
 
     private fun isBuiltInGameAlive(context: Context): Boolean {
         val activityManager = context.getSystemService(android.app.ActivityManager::class.java)
@@ -1883,6 +1889,7 @@ class DualScreenManager(
      */
     suspend fun emulatorLeftScreen(
         context: Context,
+        launcherDisplay: Int,
         onGameDisplay: Boolean,
         launcherStillInFront: () -> Boolean
     ): Boolean {
@@ -1893,7 +1900,7 @@ class DualScreenManager(
             return true
         }
         return awaitEmulatorLeft(
-            stillOnScreen = { isEmulatorStillOnScreen(context) },
+            stillOnScreen = { isEmulatorStillOnScreen(context, launcherDisplay) },
             launcherStillInFront = launcherStillInFront,
             checks = EMULATOR_SETTLE_CHECKS,
             intervalMs = EMULATOR_SETTLE_MS
@@ -1972,7 +1979,12 @@ class DualScreenManager(
                 preferencesRepository.getPersistedSession() == null
             ) return@launch
             closeBackgroundedBuiltInGame(activity)
-            if (!emulatorLeftScreen(activity, onGameDisplay = gameDisplay == ownDisplay) { activity.hasWindowFocus() }) {
+            val left = emulatorLeftScreen(
+                activity,
+                launcherDisplay = ownDisplay,
+                onGameDisplay = gameDisplay == ownDisplay
+            ) { activity.hasWindowFocus() }
+            if (!left) {
                 return@launch
             }
             if (launchProgressTracker.launchLive.value) return@launch

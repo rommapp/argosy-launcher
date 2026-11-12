@@ -60,6 +60,8 @@ import androidx.lifecycle.LifecycleEventObserver
 import com.nendo.argosy.libretro.frame.FrameRegistry
 import androidx.compose.ui.text.input.KeyboardType
 import com.nendo.argosy.ui.common.rememberStorageAccessRequest
+import com.nendo.argosy.ui.components.permissions.rememberPermissionGrantLauncher
+import com.nendo.argosy.ui.common.androidNameRes
 import com.nendo.argosy.ui.components.CustomTileMenuModal
 import com.nendo.argosy.ui.components.FooterHints
 import com.nendo.argosy.ui.screens.settings.components.ControllerOrderModal
@@ -247,12 +249,6 @@ fun SettingsScreen(
     var showCertBrowser by remember { mutableStateOf(false) }
     var showCustomFrameBrowser by remember { mutableStateOf(false) }
 
-    val notificationPermissionLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.RequestPermission()
-    ) { granted ->
-        viewModel.onNotificationPermissionResult(granted)
-    }
-
     val blePermissionLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestMultiplePermissions()
     ) { results ->
@@ -358,14 +354,15 @@ fun SettingsScreen(
         viewModel.requestStoragePermissionEvent.collect { requestStorageAccess() }
     }
 
-    LaunchedEffect(Unit) {
-        viewModel.requestNotificationPermissionEvent.collect {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                notificationPermissionLauncher.launch(android.Manifest.permission.POST_NOTIFICATIONS)
-            } else {
-                viewModel.onNotificationPermissionResult(true)
-            }
-        }
+    val grantPermission = rememberPermissionGrantLauncher(
+        grantFor = viewModel::permissionGrantFor,
+        onRootGrant = viewModel::grantPermissionOnRoot,
+        onPrivilegedEnable = viewModel::enablePrivilegedAccess,
+        onResult = viewModel::refreshPermissions
+    )
+
+    LaunchedEffect(grantPermission) {
+        viewModel.grantPermissionEvent.collect { permission -> grantPermission(permission) }
     }
 
     LaunchedEffect(Unit) {
@@ -906,6 +903,19 @@ fun SettingsScreen(
         confirmLabel = stringResource(R.string.settings_shell_modal_import_settings_confirm),
         onConfirm = { viewModel.confirmImportSettings() },
         onDismiss = { viewModel.cancelImportSettings() }
+    )
+
+    val syncWarning = uiState.permissions.saveSyncWarning
+    val syncWarningName = syncWarning?.androidNameRes?.let { stringResource(it) }.orEmpty()
+    ArgosyConfirmModalHost(
+        visible = syncWarning != null,
+        title = stringResource(R.string.permissions_sync_warning_title),
+        message = stringResource(R.string.permissions_sync_warning_message, syncWarningName),
+        confirmLabel = stringResource(R.string.permissions_sync_warning_confirm),
+        cancelLabel = stringResource(R.string.permissions_sync_warning_keep),
+        destructive = true,
+        onConfirm = { viewModel.confirmPermissionSyncWarning() },
+        onDismiss = { viewModel.dismissPermissionSyncWarning() }
     )
 
     ArgosyConfirmModalHost(

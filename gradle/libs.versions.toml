@@ -24,7 +24,6 @@ mockk = "1.13.14"
 tvFoundation = "1.0.0-alpha11"
 tvMaterial = "1.0.0"
 palette = "1.0.0"
-camerax = "1.4.1"
 commonsCompress = "1.27.1"
 xz = "1.12"
 zstdJni = "1.5.6-8"
@@ -97,12 +96,6 @@ media3-datasource-okhttp = { group = "androidx.media3", name = "media3-datasourc
 coil-compose = { group = "io.coil-kt", name = "coil-compose", version.ref = "coil" }
 coil-svg = { group = "io.coil-kt", name = "coil-svg", version.ref = "coil" }
 
-# CameraX
-camerax-core = { group = "androidx.camera", name = "camera-core", version.ref = "camerax" }
-camerax-camera2 = { group = "androidx.camera", name = "camera-camera2", version.ref = "camerax" }
-camerax-lifecycle = { group = "androidx.camera", name = "camera-lifecycle", version.ref = "camerax" }
-camerax-view = { group = "androidx.camera", name = "camera-view", version.ref = "camerax" }
-
 # Color extraction
 androidx-palette = { group = "androidx.palette", name = "palette-ktx", version.ref = "palette" }
 
@@ -161,5 +154,4 @@ lifecycle = [
 ]
 room = ["room-runtime", "room-ktx"]
 network = ["retrofit", "retrofit-moshi", "okhttp", "okhttp-logging", "moshi"]
-camerax = ["camerax-core", "camerax-camera2", "camerax-lifecycle", "camerax-view"]
 steam = ["javasteam", "spongycastle", "protobuf-java"]

@@ -24,7 +24,6 @@
     <string name="firstrun_romm_url_keyboard_submit">Продолжить</string>
     <string name="firstrun_pairing_code_button_connecting">Подключение...</string>
     <string name="firstrun_pairing_code_button_edit_url">Изменить URL</string>
-    <string name="firstrun_pairing_code_button_scan">Сканировать QR-код</string>
     <string name="firstrun_pairing_code_button_device_pairing">Использовать сопряжение по QR-коду</string>
     <string name="firstrun_pairing_code_error_incomplete">Введите полный 8-значный код сопряжения</string>
 

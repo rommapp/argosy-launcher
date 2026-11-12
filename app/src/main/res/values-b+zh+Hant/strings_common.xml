@@ -301,7 +301,6 @@
     <string name="ui_section_breadcrumb_next">下一個區段</string>
 
     <string name="ui_qr_code_description">%1$s的QR Code</string>
-    <string name="ui_qr_scanner_hint">將鏡頭對準RomM的配對QR Code</string>
 
     <string name="ui_custom_tile_menu_header">圖塊</string>
 

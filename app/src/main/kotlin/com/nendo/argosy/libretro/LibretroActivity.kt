@@ -301,6 +301,26 @@ open class LibretroActivity : ComponentActivity() {
     private var platformId: Long = -1L
     private var platformSlug: String = ""
     private val gyroAim by lazy { GyroAim(this, { retroView }) }
+    private val microphonePermissionLauncher = registerForActivityResult(
+        androidx.activity.result.contract.ActivityResultContracts.RequestPermission()
+    ) { granted ->
+        Log.i(TAG, "[Startup] Microphone permission answered | granted=$granted core=$resolvedCoreId")
+    }
+
+    private fun isMicrophoneGranted(): Boolean =
+        androidx.core.content.ContextCompat.checkSelfPermission(this, android.Manifest.permission.RECORD_AUDIO) ==
+            android.content.pm.PackageManager.PERMISSION_GRANTED
+
+    private fun requestMicrophoneOnFirstUse(granted: Boolean) {
+        if (granted || isGuestJoinedSession || !MicrophoneCores.usesHostMicrophone(resolvedCoreId)) return
+        lifecycleScope.launch {
+            val alreadyAsked = preferencesRepository.isBuiltinMicPermissionAsked().first()
+            if (!MicrophoneCores.shouldRequest(resolvedCoreId, granted, alreadyAsked)) return@launch
+            preferencesRepository.setBuiltinMicPermissionAsked()
+            showNotice(NotificationSeverity.INFO, R.string.ingame_libretro_microphone_request_reason)
+            microphonePermissionLauncher.launch(android.Manifest.permission.RECORD_AUDIO)
+        }
+    }
 
     private fun gyroAimWanted(): Boolean =
         videoSettings.currentMotionEnabled &&
@@ -663,7 +683,9 @@ open class LibretroActivity : ComponentActivity() {
         }
         loadCoreOptionOverrides()
         loadControllerTypes()
-        createRetroView(corePath, systemDir, savesDir, settings, restoredSram)
+        val microphoneGranted = isMicrophoneGranted()
+        createRetroView(corePath, systemDir, savesDir, settings, restoredSram, microphoneGranted)
+        requestMicrophoneOnFirstUse(microphoneGranted)
         achievementBridge = LibretroAchievementBridge(
             gameDao = gameDao,
             overlayWriter = gameOverlayWriter,
@@ -1156,7 +1178,8 @@ open class LibretroActivity : ComponentActivity() {
         systemDir: File,
         savesDir: File,
         settings: com.nendo.argosy.data.preferences.BuiltinEmulatorSettings,
-        existingSram: ByteArray?
+        existingSram: ByteArray?,
+        microphoneGranted: Boolean
     ) {
         val effectiveShader = if (settings.shader == "Custom") videoSettings.resolvedCustomShader else settings.shaderConfig
         Log.d(TAG, "[Startup] Creating GLRetroView: core=$coreName, effectiveShader=${effectiveShader::class.simpleName}")
@@ -1176,6 +1199,7 @@ open class LibretroActivity : ComponentActivity() {
                 timingFollowsGeometry = coreName == "dolphin"
                 preferLowLatencyAudio = settings.lowLatencyAudio
                 forceSoftwareTiming = settings.forceSoftwareTiming
+                enableMicrophone = microphoneGranted
                 rumbleEventsEnabled = settings.rumbleEnabled
                 motionSensorsEnabled = settings.motionEnabled
                 coreAccelerometerScale = CoreSensorUnits.accelerometerScale(coreName)

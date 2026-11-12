@@ -685,23 +685,6 @@
 
     <!-- ===== Section Autorisations ===== -->
 
-    <string name="settings_permissions_intro">Argosy nécessite certaines autorisations pour fonctionner pleinement. Appuyez sur chaque autorisation pour l\'accorder.</string>
-    <string name="settings_permissions_storage_title">Accès au stockage</string>
-    <string name="settings_permissions_storage_description">Nécessaire pour télécharger les jeux, synchroniser les fichiers de sauvegarde et accéder aux fichiers ROM sur votre appareil.</string>
-    <string name="settings_permissions_usage_stats_title">Accès aux statistiques d\'utilisation</string>
-    <string name="settings_permissions_usage_stats_description">Permet un suivi précis du temps de jeu et une reprise fluide de la session en changeant d\'application.</string>
-    <string name="settings_permissions_notifications_title">Notifications</string>
-    <string name="settings_permissions_notifications_description">Affiche la progression du téléchargement lors du téléchargement de jeux en arrière-plan.</string>
-    <string name="settings_permissions_write_settings_title">Accès aux paramètres système</string>
-    <string name="settings_permissions_write_settings_description">Permet de contrôler le mode de performance et les paramètres du ventilateur de l\'appareil depuis le panneau Paramètres rapides.</string>
-    <string name="settings_permissions_screen_capture_title">Capture d\'écran</string>
-    <string name="settings_permissions_screen_capture_description">Permet l\'éclairage LED ambiant en échantillonnant les couleurs de l\'écran pendant le jeu.</string>
-    <string name="settings_permissions_display_overlay_title">Affichage par-dessus les autres applications</string>
-    <string name="settings_permissions_display_overlay_description">Affiche des notifications de détection de sauvegarde en jouant avec des émulateurs externes.</string>
-    <string name="settings_permissions_accessibility_title">Service d\'accessibilité</string>
-    <string name="settings_permissions_accessibility_description">Permet d\'ouvrir le panneau rapide par-dessus les autres émulateurs et de prendre des captures de sauvegarde en silence</string>
-    <string name="settings_permissions_live_wallpaper_title">Écran de verrouillage animé</string>
-    <string name="settings_permissions_live_wallpaper_description">Autorisez Argosy à appliquer un écran de verrouillage animé.</string>
     <!-- %1$s is a root or system-access app name, such as Magisk or Shizuku -->
     <string name="settings_permissions_privileged_title">Accès %1$s</string>
     <string name="settings_permissions_privileged_description_off">Autorisez Argosy à accéder aux dossiers de sauvegarde des émulateurs dans Android/data.</string>
@@ -712,7 +695,6 @@
     <string name="settings_permissions_privileged_description_refused">L\'accès n\'a pas été accordé. Sélectionnez pour redemander.</string>
     <string name="settings_lock_screen_wallpaper_label">Bibliothèque Argosy</string>
     <string name="settings_lock_screen_wallpaper_description">Autorisez Argosy à appliquer un écran de verrouillage animé.</string>
-    <string name="settings_permissions_status_footer">État : %1$d/%2$d autorisations accordées</string>
 
     <!-- ===== Section A propos ===== -->
 
@@ -2193,8 +2175,6 @@
     <string name="settings_romm_config_connect_title">Connecter</string>
     <string name="settings_romm_config_connect_device_subtitle">Générer un code QR d\'appairage</string>
     <string name="settings_romm_config_connect_subtitle">Se connecter au serveur RomM</string>
-    <string name="settings_romm_config_scan_title">Scanner un code QR</string>
-    <string name="settings_romm_config_scan_subtitle">Scanner le code QR d\'appairage depuis l\'interface web de RomM</string>
     <string name="settings_romm_config_certificate_title">Ajouter un certificat</string>
     <string name="settings_romm_config_certificate_subtitle">Faire confiance à un serveur doté d\'une autorité de certification privée</string>
     <plurals name="settings_romm_config_certificate_subtitle_count">

@@ -56,6 +56,9 @@ import com.nendo.argosy.data.preferences.ThemeMode
 import com.nendo.argosy.data.preferences.AmbientLedColorMode
 import com.nendo.argosy.data.preferences.DisplayRoleOverride
 import com.nendo.argosy.domain.model.ScreenRole
+import com.nendo.argosy.domain.model.ArgosyPermission
+import com.nendo.argosy.domain.model.PermissionAvailability
+import com.nendo.argosy.domain.model.PermissionSnapshot
 import com.nendo.argosy.data.preferences.EmulatorDisplayTarget
 import com.nendo.argosy.core.input.SoundConfig
 import com.nendo.argosy.ui.input.SoundPreset
@@ -1376,8 +1379,6 @@ data class ServerState(
     val rommAddressVerifyPrompt: RomMAddressVerifyPrompt? = null,
     val rommAddressVerifyFocusIndex: Int = 0,
     val rommConfigPairingCode: String = "",
-    val rommShowScanner: Boolean = false,
-    val rommHasCamera: Boolean = false,
     val rommConnecting: Boolean = false,
     val rommConfigError: String? = null,
     val rommFocusField: Int? = null,
@@ -1514,7 +1515,6 @@ data class SyncSettingsState(
     val saveCacheLimit: Int = 10,
     val pendingUploadsCount: Int = 0,
     val hasStoragePermission: Boolean = false,
-    val hasNotificationPermission: Boolean = false,
     val isSyncing: Boolean = false,
     val imageCachePath: String? = null,
     val defaultImageCachePath: String? = null,
@@ -1679,33 +1679,18 @@ data class ChangelogState(
 )
 
 data class PermissionsState(
-    val hasStorageAccess: Boolean = false,
-    val hasUsageStats: Boolean = false,
-    val hasNotificationPermission: Boolean = false,
-    val hasWriteSettings: Boolean = false,
-    val isWriteSettingsRelevant: Boolean = false,
-    val hasScreenCapture: Boolean = false,
-    val isScreenCaptureRelevant: Boolean = false,
-    val hasDisplayOverlay: Boolean = false,
-    val hasAccessibilityService: Boolean = false,
-    val hasLiveWallpaper: Boolean = false,
-    val isLiveWallpaperRelevant: Boolean = false,
+    val snapshot: PermissionSnapshot = PermissionSnapshot(),
     val privilegedRoute: PrivilegedRoute? = null,
-    val privilegedReach: PrivilegedReach = PrivilegedReach.NONE
+    val privilegedReach: PrivilegedReach = PrivilegedReach.NONE,
+    val saveSyncWarning: ArgosyPermission? = null
 ) {
-    private val relevantGrants: List<Boolean>
-        get() = listOfNotNull(
-            hasStorageAccess,
-            hasUsageStats,
-            hasNotificationPermission,
-            hasWriteSettings.takeIf { isWriteSettingsRelevant },
-            hasScreenCapture.takeIf { isScreenCaptureRelevant },
-            hasDisplayOverlay,
-            hasLiveWallpaper.takeIf { isLiveWallpaperRelevant }
-        )
-    val allGranted: Boolean get() = relevantGrants.all { it }
-    val grantedCount: Int get() = relevantGrants.count { it }
-    val totalCount: Int get() = relevantGrants.size
+    private val counted: List<ArgosyPermission>
+        get() = ArgosyPermission.entries.filter {
+            it in snapshot.relevant && snapshot.of(it) != PermissionAvailability.UNAVAILABLE
+        }
+    val grantedCount: Int get() = counted.count { snapshot.isGranted(it) }
+    val totalCount: Int get() = counted.size
+    val allGranted: Boolean get() = grantedCount == totalCount
 }
 
 const val RA_PROXY_TOGGLE_INDEX = 1

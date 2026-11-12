@@ -13,6 +13,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import com.nendo.argosy.R
+import com.nendo.argosy.domain.model.ArgosyPermission
 import com.nendo.argosy.data.preferences.ControlsPreferences
 import com.nendo.argosy.data.preferences.MenuWrapMode
 import com.nendo.argosy.data.preferences.SelectSwapMode
@@ -396,7 +397,7 @@ fun NavigationSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
                 title = stringResource(R.string.settings_navigation_system_hotkeys_access_title),
                 subtitle = stringResource(R.string.settings_navigation_system_hotkeys_access_subtitle),
                 isFocused = isFocused(item),
-                trailingText = if (uiState.permissions.hasAccessibilityService) {
+                trailingText = if (uiState.permissions.snapshot.isGranted(ArgosyPermission.ACCESSIBILITY)) {
                     stringResource(R.string.settings_navigation_system_hotkeys_access_on)
                 } else {
                     stringResource(R.string.settings_navigation_system_hotkeys_access_needed)

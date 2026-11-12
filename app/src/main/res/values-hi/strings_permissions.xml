@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="permissions_all_files_title">गेम, सेव और कवर संग्रहित करें</string>
+    <string name="permissions_all_files_android_name">सभी फ़ाइलों का ऐक्सेस</string>
+    <string name="permissions_all_files_loss">गेम, सेव और कवर पढ़े या लिखे नहीं जा सकते।</string>
+    <string name="permissions_usage_title">गेम सत्रों पर नज़र रखें</string>
+    <string name="permissions_usage_android_name">इस्तेमाल का ऐक्सेस</string>
+    <string name="permissions_usage_loss">बाहरी एमुलेटर के लिए खेलने का समय और क्रैश के बाद बहाली रुक जाती है।</string>
+    <string name="permissions_notifications_title">Argosy को चालू रखें</string>
+    <string name="permissions_notifications_android_name">सूचनाएं</string>
+    <string name="permissions_notifications_loss">खेलते समय Android, Argosy को बंद कर सकता है, और सेव सिंक नहीं चल सकता।</string>
+    <string name="permissions_overlay_title">गेम के ऊपर सूचनाएं दिखाएं</string>
+    <string name="permissions_overlay_android_name">दूसरे ऐप्लिकेशन के ऊपर दिखाएं</string>
+    <string name="permissions_overlay_loss">सूचनाएं और क्विक पैनल केवल तभी दिखते हैं जब Argosy स्क्रीन पर हो।</string>
+    <string name="permissions_accessibility_title">किसी भी ऐप से Argosy तक पहुंचें</string>
+    <string name="permissions_accessibility_android_name">सुलभता</string>
+    <string name="permissions_accessibility_loss">कोई दूसरा ऐप खुला होने पर होम और बटन कॉम्बो काम नहीं करते।</string>
+    <string name="permissions_battery_title">खेलते समय सक्रिय रहें</string>
+    <string name="permissions_battery_android_name">बैटरी: बिना पाबंदी</string>
+    <string name="permissions_battery_loss">लंबे सत्रों में Android डाउनलोड रोक सकता है और Argosy को बंद कर सकता है।</string>
+    <string name="permissions_write_settings_title">चमक और पंखा बदलें</string>
+    <string name="permissions_write_settings_android_name">सिस्टम सेटिंग में बदलाव करें</string>
+    <string name="permissions_screen_capture_title">रोशनी को स्क्रीन से मिलाएं</string>
+    <string name="permissions_screen_capture_android_name">स्क्रीन कैप्चर</string>
+    <string name="permissions_live_wallpaper_title">एनिमेटेड लॉक स्क्रीन</string>
+    <string name="permissions_live_wallpaper_android_name">लाइव वॉलपेपर</string>
+
+    <string name="permissions_settings_intro">आपकी लाइब्रेरी चलाने और आपके सेव सुरक्षित रखने के लिए Argosy को इनकी ज़रूरत है।</string>
+    <string name="permissions_sync_warning_title">सेव सिंक बंद करें?</string>
+    <string name="permissions_sync_warning_message">सेव सिंक को %1$s की ज़रूरत है। अगर आप इसे बंद करते हैं, तो सिंक तब तक रुका रहेगा जब तक आप इसे सेटिंग में फिर से चालू नहीं करते।</string>
+    <string name="permissions_sync_warning_confirm">Android सेटिंग खोलें</string>
+    <string name="permissions_sync_warning_keep">चालू रहने दें</string>
+
+    <string name="permissions_sheet_launch_title">कुछ ऐक्सेस बंद कर दिए गए</string>
+    <string name="permissions_sheet_launch_body">आपके पिछली बार खेलने के बाद से Argosy को ये बदलाव मिले।</string>
+    <string name="permissions_sheet_launch_continue">जारी रखें</string>
+    <string name="permissions_sheet_launch_play">खेलें</string>
+    <string name="permissions_sheet_sync_title">सेव सिंक को ऐक्सेस चाहिए</string>
+    <string name="permissions_sheet_sync_body">इन्हें अनुमति दें, फिर सिंक चालू करें।</string>
+    <string name="permissions_sheet_sync_cancel">रद्द करें</string>
+    <string name="permissions_sheet_sync_allow_all_files">सभी फ़ाइलों के ऐक्सेस की अनुमति दें</string>
+    <string name="permissions_sheet_sync_allow_usage">इस्तेमाल के ऐक्सेस की अनुमति दें</string>
+    <string name="permissions_sheet_sync_allow_notifications">सूचनाओं की अनुमति दें</string>
+    <string name="permissions_sheet_sync_turn_on">सेव सिंक चालू करें</string>
+    <string name="permissions_sheet_row_allow">अनुमति दें</string>
+
+    <string name="notif_permissions_sync_off_title">सेव सिंक बंद है</string>
+    <string name="notif_permissions_sync_off_body_all_files">सभी फ़ाइलों का ऐक्सेस बंद कर दिया गया। इसकी अनुमति देने के बाद सेटिंग में सिंक फिर से चालू करें।</string>
+    <string name="notif_permissions_sync_off_body_usage">इस्तेमाल का ऐक्सेस बंद कर दिया गया। इसकी अनुमति देने के बाद सेटिंग में सिंक फिर से चालू करें।</string>
+    <string name="notif_permissions_sync_off_body_notifications">सूचनाएं बंद कर दी गईं। इनकी अनुमति देने के बाद सेटिंग में सिंक फिर से चालू करें।</string>
+    <string name="notif_permissions_revoked_title">कुछ ऐक्सेस बंद कर दिए गए</string>
+    <string name="notif_permissions_revoked_body_usage">बाहरी एमुलेटर के लिए खेलने का समय और क्रैश के बाद बहाली रुक जाती है।</string>
+    <string name="notif_permissions_revoked_body_notifications">खेलते समय Android, Argosy को बंद कर सकता है।</string>
+    <string name="notif_permissions_revoked_body_overlay">सूचनाएं और क्विक पैनल केवल तभी दिखते हैं जब Argosy स्क्रीन पर हो।</string>
+    <string name="notif_permissions_revoked_body_accessibility">कोई दूसरा ऐप खुला होने पर होम और बटन कॉम्बो काम नहीं करते।</string>
+    <string name="notif_permissions_revoked_body_battery">लंबे सत्रों में Android डाउनलोड रोक सकता है और Argosy को बंद कर सकता है।</string>
+</resources>

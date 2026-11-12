@@ -2,11 +2,9 @@ package com.nendo.argosy.ui.screens.settings.components
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -54,7 +52,6 @@ import com.nendo.argosy.ui.components.keyboard.ControllerKeyboardSession
 import com.nendo.argosy.ui.components.keyboard.ControllerKeyboardTapTarget
 import com.nendo.argosy.ui.components.keyboard.KeyboardFieldType
 import com.nendo.argosy.ui.components.QrCodeWithOverlay
-import com.nendo.argosy.ui.components.QrScannerWithPermission
 import com.nendo.argosy.ui.components.preferenceContentColor
 import com.nendo.argosy.ui.components.preferenceModifier
 import com.nendo.argosy.ui.components.preferenceSecondaryColor
@@ -83,7 +80,6 @@ internal data class RomMConfigIndices(
     val authMethodIndex: Int,
     val pairingCodeIndex: Int?,
     val connectIndex: Int,
-    val scanIndex: Int?,
     val certificateIndex: Int,
     val cancelIndex: Int
 ) {
@@ -102,7 +98,6 @@ internal fun rommConfigIndices(server: ServerState): RomMConfigIndices {
     val authMethod = next++
     val code = if (pairingCode) next++ else null
     val connect = next++
-    val scan = if (pairingCode && server.rommHasCamera) next++ else null
     val certificate = next++
     val cancel = next
     return RomMConfigIndices(
@@ -112,7 +107,6 @@ internal fun rommConfigIndices(server: ServerState): RomMConfigIndices {
         authMethodIndex = authMethod,
         pairingCodeIndex = code,
         connectIndex = connect,
-        scanIndex = scan,
         certificateIndex = certificate,
         cancelIndex = cancel
     )
@@ -134,18 +128,6 @@ private fun cycleAuthMethod(current: RomMAuthMethod, direction: Int): RomMAuthMe
 
 @Composable
 fun RomMConfigForm(uiState: SettingsUiState, viewModel: SettingsViewModel) {
-    if (uiState.server.rommShowScanner) {
-        Box(modifier = Modifier.fillMaxSize()) {
-            QrScannerWithPermission(
-                onResult = { result ->
-                    viewModel.handleRommScanResult(result.origin, result.code)
-                },
-                onDismiss = { viewModel.dismissRommScanner() }
-            )
-        }
-        return
-    }
-
     if (uiState.server.rommDevicePairing) {
         DevicePairingScreen(uiState, viewModel)
         return
@@ -333,15 +315,6 @@ fun RomMConfigForm(uiState: SettingsUiState, viewModel: SettingsViewModel) {
             isFocused = uiState.focusedIndex == indices.connectIndex,
             onClick = { viewModel.connectToRomm() }
         )
-
-        if (indices.scanIndex != null) {
-            ActionPreference(
-                title = stringResource(R.string.settings_romm_config_scan_title),
-                subtitle = stringResource(R.string.settings_romm_config_scan_subtitle),
-                isFocused = uiState.focusedIndex == indices.scanIndex,
-                onClick = { viewModel.showRommScanner() }
-            )
-        }
 
         ActionPreference(
             title = stringResource(R.string.settings_romm_config_certificate_title),

@@ -131,7 +131,8 @@ class GameLaunchDelegate @Inject constructor(
     private val resolveSnapshotConflict: com.nendo.argosy.domain.usecase.savechannel.ResolveSnapshotConflictUseCase,
     private val connectedControllerTracker: com.nendo.argosy.core.input.ConnectedControllerTracker,
     private val preLaunchRecapStep: PreLaunchRecapStep,
-    private val backgroundGameLaunch: BackgroundGameLaunch
+    private val backgroundGameLaunch: BackgroundGameLaunch,
+    private val permissionWatch: com.nendo.argosy.data.permissions.PermissionWatch
 ) {
     companion object {
         private const val EMULATOR_KILL_DELAY_MS = 500L
@@ -311,6 +312,10 @@ class GameLaunchDelegate @Inject constructor(
                 return@launch
             }
             try {
+                if (!permissionWatch.clearForLaunch()) {
+                    onLaunchFailed()
+                    return@launch
+                }
                 if (isSessionEnding || playSessionTracker.pendingSessionConflict.value != null) {
                     ticket.step(LaunchStep.Save(SyncProgress.PreLaunch.CheckingSave(channelName)))
                     combine(
@@ -817,6 +822,10 @@ class GameLaunchDelegate @Inject constructor(
                 return@launch
             }
             try {
+                if (!permissionWatch.clearForLaunch()) {
+                    callbacks.onLaunchFailed()
+                    return@launch
+                }
                 val continuesPickedLaunch = selectedDiscPath != null || variantFileId != null || skipVariantPrompt
                 if (game != null && !continuesPickedLaunch && !preLaunchRecapStep.run(ticket, gameId, game.title)) {
                     callbacks.onLaunchFailed()

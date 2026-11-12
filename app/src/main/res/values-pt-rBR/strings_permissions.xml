@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="permissions_all_files_title">Guardar jogos, saves e capas</string>
+    <string name="permissions_all_files_android_name">Acesso a todos os arquivos</string>
+    <string name="permissions_all_files_loss">Jogos, saves e capas não podem ser lidos nem gravados.</string>
+    <string name="permissions_usage_title">Acompanhar sessões de jogo</string>
+    <string name="permissions_usage_android_name">Acesso ao uso</string>
+    <string name="permissions_usage_loss">O tempo de jogo e a recuperação após falhas param de funcionar para emuladores externos.</string>
+    <string name="permissions_notifications_title">Manter o Argosy em execução</string>
+    <string name="permissions_notifications_android_name">Notificações</string>
+    <string name="permissions_notifications_loss">O Android pode fechar o Argosy durante o jogo, e a sincronização de saves não pode funcionar.</string>
+    <string name="permissions_overlay_title">Mostrar avisos sobre os jogos</string>
+    <string name="permissions_overlay_android_name">Sobrepor a outros apps</string>
+    <string name="permissions_overlay_loss">Os avisos e o painel rápido só aparecem enquanto o Argosy está na tela.</string>
+    <string name="permissions_accessibility_title">Chegar ao Argosy de qualquer app</string>
+    <string name="permissions_accessibility_android_name">Acessibilidade</string>
+    <string name="permissions_accessibility_loss">Início e as combinações de botões param de funcionar enquanto outro app está aberto.</string>
+    <string name="permissions_battery_title">Ficar ativo durante o jogo</string>
+    <string name="permissions_battery_android_name">Bateria: Sem restrições</string>
+    <string name="permissions_battery_loss">O Android pode pausar downloads e fechar o Argosy em sessões longas.</string>
+    <string name="permissions_write_settings_title">Mudar o brilho e a ventoinha</string>
+    <string name="permissions_write_settings_android_name">Modificar configurações do sistema</string>
+    <string name="permissions_screen_capture_title">Ajustar as luzes à tela</string>
+    <string name="permissions_screen_capture_android_name">Captura de tela</string>
+    <string name="permissions_live_wallpaper_title">Tela de bloqueio animada</string>
+    <string name="permissions_live_wallpaper_android_name">Plano de fundo animado</string>
+
+    <string name="permissions_settings_intro">O Argosy precisa destes acessos para gerenciar sua biblioteca e proteger seus saves.</string>
+    <string name="permissions_sync_warning_title">Desativar a sincronização de saves?</string>
+    <string name="permissions_sync_warning_message">A sincronização de saves precisa de %1$s. Se você desativar, a sincronização para até você reativá-la em Configurações.</string>
+    <string name="permissions_sync_warning_confirm">Abrir configurações do Android</string>
+    <string name="permissions_sync_warning_keep">Manter ativada</string>
+
+    <string name="permissions_sheet_launch_title">Alguns acessos foram desativados</string>
+    <string name="permissions_sheet_launch_body">O Argosy encontrou estas mudanças desde a última vez que você jogou.</string>
+    <string name="permissions_sheet_launch_continue">Continuar</string>
+    <string name="permissions_sheet_launch_play">Jogar</string>
+    <string name="permissions_sheet_sync_title">A sincronização de saves precisa de acesso</string>
+    <string name="permissions_sheet_sync_body">Permita estes acessos e depois ative a sincronização.</string>
+    <string name="permissions_sheet_sync_cancel">Cancelar</string>
+    <string name="permissions_sheet_sync_allow_all_files">Permitir acesso a todos os arquivos</string>
+    <string name="permissions_sheet_sync_allow_usage">Permitir acesso ao uso</string>
+    <string name="permissions_sheet_sync_allow_notifications">Permitir notificações</string>
+    <string name="permissions_sheet_sync_turn_on">Ativar sincronização de saves</string>
+    <string name="permissions_sheet_row_allow">Permitir</string>
+
+    <string name="notif_permissions_sync_off_title">A sincronização de saves está desativada</string>
+    <string name="notif_permissions_sync_off_body_all_files">O acesso a todos os arquivos foi desativado. Reative a sincronização em Configurações depois de permiti-lo.</string>
+    <string name="notif_permissions_sync_off_body_usage">O acesso ao uso foi desativado. Reative a sincronização em Configurações depois de permiti-lo.</string>
+    <string name="notif_permissions_sync_off_body_notifications">As notificações foram desativadas. Reative a sincronização em Configurações depois de permiti-las.</string>
+    <string name="notif_permissions_revoked_title">Alguns acessos foram desativados</string>
+    <string name="notif_permissions_revoked_body_usage">O tempo de jogo e a recuperação após falhas param de funcionar para emuladores externos.</string>
+    <string name="notif_permissions_revoked_body_notifications">O Android pode fechar o Argosy durante o jogo.</string>
+    <string name="notif_permissions_revoked_body_overlay">Os avisos e o painel rápido só aparecem enquanto o Argosy está na tela.</string>
+    <string name="notif_permissions_revoked_body_accessibility">Início e as combinações de botões param de funcionar enquanto outro app está aberto.</string>
+    <string name="notif_permissions_revoked_body_battery">O Android pode pausar downloads e fechar o Argosy em sessões longas.</string>
+</resources>

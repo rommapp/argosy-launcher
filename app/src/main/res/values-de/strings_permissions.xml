@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="permissions_all_files_title">Spiele, Spielstände und Cover speichern</string>
+    <string name="permissions_all_files_android_name">Zugriff auf alle Dateien</string>
+    <string name="permissions_all_files_loss">Spiele, Spielstände und Cover können weder gelesen noch geschrieben werden.</string>
+    <string name="permissions_usage_title">Spielsitzungen verfolgen</string>
+    <string name="permissions_usage_android_name">Zugriff auf Nutzungsdaten</string>
+    <string name="permissions_usage_loss">Spielzeit und Absturzwiederherstellung funktionieren bei externen Emulatoren nicht mehr.</string>
+    <string name="permissions_notifications_title">Argosy aktiv halten</string>
+    <string name="permissions_notifications_android_name">Benachrichtigungen</string>
+    <string name="permissions_notifications_loss">Android kann Argosy während des Spielens beenden, und die Spielstand-Synchronisierung kann nicht laufen.</string>
+    <string name="permissions_overlay_title">Hinweise über Spielen anzeigen</string>
+    <string name="permissions_overlay_android_name">Über anderen Apps einblenden</string>
+    <string name="permissions_overlay_loss">Hinweise und das Schnellmenü erscheinen nur, solange Argosy angezeigt wird.</string>
+    <string name="permissions_accessibility_title">Argosy aus jeder App erreichen</string>
+    <string name="permissions_accessibility_android_name">Bedienungshilfen</string>
+    <string name="permissions_accessibility_loss">Home und Tastenkombinationen funktionieren nicht, solange eine andere App geöffnet ist.</string>
+    <string name="permissions_battery_title">Beim Spielen aktiv bleiben</string>
+    <string name="permissions_battery_android_name">Akku: Nicht eingeschränkt</string>
+    <string name="permissions_battery_loss">Android kann Downloads pausieren und Argosy bei langen Sitzungen beenden.</string>
+    <string name="permissions_write_settings_title">Helligkeit und Lüfter steuern</string>
+    <string name="permissions_write_settings_android_name">Systemeinstellungen ändern</string>
+    <string name="permissions_screen_capture_title">Licht an den Bildschirm anpassen</string>
+    <string name="permissions_screen_capture_android_name">Bildschirmaufnahme</string>
+    <string name="permissions_live_wallpaper_title">Animierter Sperrbildschirm</string>
+    <string name="permissions_live_wallpaper_android_name">Live-Hintergrund</string>
+
+    <string name="permissions_settings_intro">Argosy braucht diese Berechtigungen, um deine Bibliothek zu betreiben und deine Spielstände zu schützen.</string>
+    <string name="permissions_sync_warning_title">Spielstand-Synchronisierung ausschalten?</string>
+    <string name="permissions_sync_warning_message">Die Spielstand-Synchronisierung braucht %1$s. Wenn du das ausschaltest, pausiert die Synchronisierung, bis du sie in den Einstellungen wieder einschaltest.</string>
+    <string name="permissions_sync_warning_confirm">Android-Einstellungen öffnen</string>
+    <string name="permissions_sync_warning_keep">Eingeschaltet lassen</string>
+
+    <string name="permissions_sheet_launch_title">Einige Zugriffe wurden ausgeschaltet</string>
+    <string name="permissions_sheet_launch_body">Argosy hat diese Änderungen seit deinem letzten Spiel gefunden.</string>
+    <string name="permissions_sheet_launch_continue">Weiter</string>
+    <string name="permissions_sheet_launch_play">Spielen</string>
+    <string name="permissions_sheet_sync_title">Spielstand-Synchronisierung braucht Zugriff</string>
+    <string name="permissions_sheet_sync_body">Erlaube diese Zugriffe und schalte dann die Synchronisierung ein.</string>
+    <string name="permissions_sheet_sync_cancel">Abbrechen</string>
+    <string name="permissions_sheet_sync_allow_all_files">Zugriff auf alle Dateien erlauben</string>
+    <string name="permissions_sheet_sync_allow_usage">Zugriff auf Nutzungsdaten erlauben</string>
+    <string name="permissions_sheet_sync_allow_notifications">Benachrichtigungen erlauben</string>
+    <string name="permissions_sheet_sync_turn_on">Spielstand-Synchronisierung einschalten</string>
+    <string name="permissions_sheet_row_allow">Erlauben</string>
+
+    <string name="notif_permissions_sync_off_title">Spielstand-Synchronisierung ist aus</string>
+    <string name="notif_permissions_sync_off_body_all_files">Der Zugriff auf alle Dateien wurde ausgeschaltet. Schalte die Synchronisierung in den Einstellungen wieder ein, nachdem du ihn erlaubt hast.</string>
+    <string name="notif_permissions_sync_off_body_usage">Der Zugriff auf Nutzungsdaten wurde ausgeschaltet. Schalte die Synchronisierung in den Einstellungen wieder ein, nachdem du ihn erlaubt hast.</string>
+    <string name="notif_permissions_sync_off_body_notifications">Benachrichtigungen wurden ausgeschaltet. Schalte die Synchronisierung in den Einstellungen wieder ein, nachdem du sie erlaubt hast.</string>
+    <string name="notif_permissions_revoked_title">Einige Zugriffe wurden ausgeschaltet</string>
+    <string name="notif_permissions_revoked_body_usage">Spielzeit und Absturzwiederherstellung funktionieren bei externen Emulatoren nicht mehr.</string>
+    <string name="notif_permissions_revoked_body_notifications">Android kann Argosy während des Spielens beenden.</string>
+    <string name="notif_permissions_revoked_body_overlay">Hinweise und das Schnellmenü erscheinen nur, solange Argosy angezeigt wird.</string>
+    <string name="notif_permissions_revoked_body_accessibility">Home und Tastenkombinationen funktionieren nicht, solange eine andere App geöffnet ist.</string>
+    <string name="notif_permissions_revoked_body_battery">Android kann Downloads pausieren und Argosy bei langen Sitzungen beenden.</string>
+</resources>

@@ -24,7 +24,6 @@
     <string name="firstrun_romm_url_keyboard_submit">继续</string>
     <string name="firstrun_pairing_code_button_connecting">正在连接...</string>
     <string name="firstrun_pairing_code_button_edit_url">编辑地址</string>
-    <string name="firstrun_pairing_code_button_scan">扫描二维码</string>
     <string name="firstrun_pairing_code_button_device_pairing">改用二维码配对</string>
     <string name="firstrun_pairing_code_error_incomplete">请输入完整的8位配对码</string>
 

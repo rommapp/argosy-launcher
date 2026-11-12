@@ -431,6 +431,7 @@
 
     <string name="ingame_libretro_disc_swap_inserted">已插入%1$s</string>
     <string name="ingame_libretro_sun_level">阳光 %1$d/%2$d</string>
+    <string name="ingame_libretro_microphone_request_reason">DS 游戏可以使用麦克风。在此允许后，下次启动游戏时即可使用。</string>
     <string name="ingame_libretro_disc_swap_fallback_name">光盘%1$d</string>
 
     <string name="ingame_libretro_speedrun_default_category_name">练习</string>

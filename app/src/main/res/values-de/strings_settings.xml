@@ -680,23 +680,6 @@
 
     <!-- ===== Permissions section ===== -->
 
-    <string name="settings_permissions_intro">Argosy benötigt bestimmte Berechtigungen für den vollen Funktionsumfang. Tippen Sie auf eine Berechtigung, um sie zu erteilen.</string>
-    <string name="settings_permissions_storage_title">Speicherzugriff</string>
-    <string name="settings_permissions_storage_description">Erforderlich zum Herunterladen von Spielen, Synchronisieren von Spielstanddateien und Zugriff auf ROM-Dateien auf Ihrem Gerät.</string>
-    <string name="settings_permissions_usage_stats_title">Nutzungsdatenzugriff</string>
-    <string name="settings_permissions_usage_stats_description">Ermöglicht genaue Spielzeiterfassung und nahtlose Fortsetzung von Spielsitzungen beim Wechseln zwischen Apps.</string>
-    <string name="settings_permissions_notifications_title">Benachrichtigungen</string>
-    <string name="settings_permissions_notifications_description">Zeigt den Downloadfortschritt beim Herunterladen von Spielen im Hintergrund an.</string>
-    <string name="settings_permissions_write_settings_title">Systemeinstellungszugriff</string>
-    <string name="settings_permissions_write_settings_description">Ermöglicht die Steuerung von Geräteleistungsmodus und Lüftereinstellungen über das Schnelleinstellungen-Panel.</string>
-    <string name="settings_permissions_screen_capture_title">Bildschirmaufnahme</string>
-    <string name="settings_permissions_screen_capture_description">Ermöglicht Ambient-LED-Beleuchtung, die Bildschirmfarben während des Spielens abtastet.</string>
-    <string name="settings_permissions_display_overlay_title">Über anderen Apps anzeigen</string>
-    <string name="settings_permissions_display_overlay_description">Zeigt Benachrichtigungen zur Spielstanderkennung beim Spielen in externen Emulatoren an.</string>
-    <string name="settings_permissions_accessibility_title">Bedienungshilfendienst</string>
-    <string name="settings_permissions_accessibility_description">Lässt die Schnellleiste über anderen Emulatoren öffnen und ermöglicht stille Spielstand-Screenshots</string>
-    <string name="settings_permissions_live_wallpaper_title">Animierter Sperrbildschirm</string>
-    <string name="settings_permissions_live_wallpaper_description">Erlaube Argosy, einen animierten Sperrbildschirm einzurichten.</string>
     <!-- %1$s is a root or system-access app name, such as Magisk or Shizuku -->
     <string name="settings_permissions_privileged_title">%1$s-Zugriff</string>
     <string name="settings_permissions_privileged_description_off">Argosy den Zugriff auf Spielstandordner von Emulatoren in Android/data erlauben.</string>
@@ -707,7 +690,6 @@
     <string name="settings_permissions_privileged_description_refused">Zugriff wurde nicht gewährt. Auswählen, um erneut zu fragen.</string>
     <string name="settings_lock_screen_wallpaper_label">Argosy-Bibliothek</string>
     <string name="settings_lock_screen_wallpaper_description">Erlaube Argosy, einen animierten Sperrbildschirm einzurichten.</string>
-    <string name="settings_permissions_status_footer">Status: %1$d/%2$d Berechtigungen erteilt</string>
 
     <!-- ===== About section ===== -->
 
@@ -2146,8 +2128,6 @@
     <string name="settings_romm_config_connect_title">Verbinden</string>
     <string name="settings_romm_config_connect_device_subtitle">Einen Pairing-QR-Code generieren</string>
     <string name="settings_romm_config_connect_subtitle">Mit RomM-Server verbinden</string>
-    <string name="settings_romm_config_scan_title">QR-Code scannen</string>
-    <string name="settings_romm_config_scan_subtitle">Pairing-QR-Code aus der RomM-Weboberfläche scannen</string>
     <string name="settings_romm_config_certificate_title">Zertifikat hinzufügen</string>
     <string name="settings_romm_config_certificate_subtitle">Einem Server mit privater Zertifizierungsstelle vertrauen</string>
     <plurals name="settings_romm_config_certificate_subtitle_count">

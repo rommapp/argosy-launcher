@@ -695,6 +695,8 @@ class UserPreferencesRepository @Inject constructor(
     suspend fun setPs2StandalonePinDone() = builtinPrefs.setPs2StandalonePinDone()
     fun isBuiltinPriorityPinDone(): Flow<Boolean> = builtinPrefs.isBuiltinPriorityPinDone()
     suspend fun setBuiltinPriorityPinDone() = builtinPrefs.setBuiltinPriorityPinDone()
+    fun isBuiltinMicPermissionAsked(): Flow<Boolean> = builtinPrefs.isBuiltinMicPermissionAsked()
+    suspend fun setBuiltinMicPermissionAsked() = builtinPrefs.setBuiltinMicPermissionAsked()
 
     // --- Session delegates ---
 

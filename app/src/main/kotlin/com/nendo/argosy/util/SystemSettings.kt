@@ -37,6 +37,13 @@ class SystemSettings @Inject constructor(
             .coerceIn(0, maxBrightness)
     }
 
+    /**
+     * True when [setScreenBrightness] has no privileged settings channel and writes through the
+     * WRITE_SETTINGS permission. Blocks on a shell probe the first time it is read.
+     */
+    val brightnessUsesWriteSettings: Boolean
+        get() = !PServerExecutor.isAvailable && !XsuExecutor.isAvailable
+
     fun screenBrightness(): Float? {
         val stored = readBrightness() ?: return null
         return (stored.toFloat() / maxBrightness.toFloat()).coerceIn(0f, 1f)

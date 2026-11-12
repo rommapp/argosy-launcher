@@ -655,23 +655,6 @@
 
     <!-- ===== Permissions section ===== -->
 
-    <string name="settings_permissions_intro">Argosy需要一些权限才能提供完整功能。点按每项权限即可授予访问权限。</string>
-    <string name="settings_permissions_storage_title">存储访问权限</string>
-    <string name="settings_permissions_storage_description">下载游戏、同步存档文件以及访问设备上的ROM文件都需要此权限。</string>
-    <string name="settings_permissions_usage_stats_title">使用情况访问权限</string>
-    <string name="settings_permissions_usage_stats_description">可实现精确的游戏时长统计，并在应用间切换时无缝恢复游戏会话。</string>
-    <string name="settings_permissions_notifications_title">通知</string>
-    <string name="settings_permissions_notifications_description">在后台下载游戏时显示下载进度。</string>
-    <string name="settings_permissions_write_settings_title">系统设置访问权限</string>
-    <string name="settings_permissions_write_settings_description">允许在快捷设置面板中控制设备性能模式与风扇设置。</string>
-    <string name="settings_permissions_screen_capture_title">屏幕捕获</string>
-    <string name="settings_permissions_screen_capture_description">使氛围LED灯光能够在游戏过程中采集屏幕颜色。</string>
-    <string name="settings_permissions_display_overlay_title">悬浮在其他应用上层</string>
-    <string name="settings_permissions_display_overlay_description">在外部模拟器中游戏时显示存档检测通知。</string>
-    <string name="settings_permissions_accessibility_title">无障碍服务</string>
-    <string name="settings_permissions_accessibility_description">让快捷面板可在其他模拟器上方打开，并可静默截取存档截图</string>
-    <string name="settings_permissions_live_wallpaper_title">动态锁屏</string>
-    <string name="settings_permissions_live_wallpaper_description">允许 Argosy 应用动态锁屏。</string>
     <!-- %1$s is a root or system-access app name, such as Magisk or Shizuku -->
     <string name="settings_permissions_privileged_title">%1$s 访问权限</string>
     <string name="settings_permissions_privileged_description_off">允许 Argosy 访问 Android/data 中的模拟器存档文件夹。</string>
@@ -682,7 +665,6 @@
     <string name="settings_permissions_privileged_description_refused">未获得访问权限。选择以重新请求。</string>
     <string name="settings_lock_screen_wallpaper_label">Argosy 游戏库</string>
     <string name="settings_lock_screen_wallpaper_description">允许 Argosy 应用动态锁屏。</string>
-    <string name="settings_permissions_status_footer">状态：已授予%1$d/%2$d项权限</string>
 
     <!-- ===== About section ===== -->
 
@@ -2083,8 +2065,6 @@
     <string name="settings_romm_config_connect_title">连接</string>
     <string name="settings_romm_config_connect_device_subtitle">生成配对二维码</string>
     <string name="settings_romm_config_connect_subtitle">连接到RomM服务器</string>
-    <string name="settings_romm_config_scan_title">扫描二维码</string>
-    <string name="settings_romm_config_scan_subtitle">扫描RomM网页界面上的配对二维码</string>
     <string name="settings_romm_config_certificate_title">添加证书</string>
     <string name="settings_romm_config_certificate_subtitle">信任使用私有证书颁发机构的服务器</string>
     <plurals name="settings_romm_config_certificate_subtitle_count">

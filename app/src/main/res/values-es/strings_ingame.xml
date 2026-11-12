@@ -450,6 +450,7 @@
 
     <string name="ingame_libretro_disc_swap_inserted">%1$s insertado</string>
     <string name="ingame_libretro_sun_level">Luz solar %1$d/%2$d</string>
+    <string name="ingame_libretro_microphone_request_reason">Los juegos de DS pueden usar el micrófono. Permítelo aquí y funcionará desde el próximo inicio.</string>
     <string name="ingame_libretro_disc_swap_fallback_name">Disco %1$d</string>
 
     <string name="ingame_libretro_speedrun_default_category_name">Práctica</string>

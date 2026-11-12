@@ -78,7 +78,8 @@ class SettingsBackupKeysTest {
         "builtin_architecture_override", "builtin_gpu_driver", "grip_auto_controllers",
         "screen_layouts", "screen_layouts_unreadable", "lock_screen_art_applied", "live_wallpaper_offered", "home_app_available",
         "games_display_target", "apps_display_target", "performance_saved_mode",
-        "performance_root_granted", "shizuku_access_enabled", "privileged_access_prompt_answered"
+        "performance_root_granted", "shizuku_access_enabled", "privileged_access_prompt_answered",
+        "builtin_mic_permission_asked"
     )
 
     private val perDeviceScreenChoices = setOf(
@@ -106,11 +107,16 @@ class SettingsBackupKeysTest {
         "default_home_declined", "legacy_setup_migrated"
     )
 
+    private val recordedPermissionState = setOf(
+        "permissions_acknowledged", "permissions_revocations_noticed"
+    )
+
     private val excluded: Set<String> =
         credentialsAndIdentity + presenceSharingAndServiceAccounts + syncWatermarksAndResume +
             oneShotAndVersionMarkers + liveSessionState + saveAndStateSafetyGates +
             filesystemLocations + hardwareAndUnit + perDeviceScreenChoices + localRowIdsAndSets +
-            derivedAndGenerated + diagnostics + installPermissions + setupConfirmations
+            derivedAndGenerated + diagnostics + installPermissions + setupConfirmations +
+            recordedPermissionState
 
     private val credentialShapes = listOf(
         "token", "credential", "password", "api_key", "username", "user_name", "user_id", "device_id",

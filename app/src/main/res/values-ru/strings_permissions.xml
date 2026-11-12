@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="permissions_all_files_title">Хранить игры, сохранения и обложки</string>
+    <string name="permissions_all_files_android_name">Доступ ко всем файлам</string>
+    <string name="permissions_all_files_loss">Игры, сохранения и обложки нельзя прочитать или записать.</string>
+    <string name="permissions_usage_title">Отслеживать игровые сессии</string>
+    <string name="permissions_usage_android_name">Доступ к истории использования</string>
+    <string name="permissions_usage_loss">Учёт игрового времени и восстановление после сбоя перестают работать для внешних эмуляторов.</string>
+    <string name="permissions_notifications_title">Не давать Argosy закрываться</string>
+    <string name="permissions_notifications_android_name">Уведомления</string>
+    <string name="permissions_notifications_loss">Android может закрыть Argosy во время игры, а синхронизация сохранений не сможет работать.</string>
+    <string name="permissions_overlay_title">Показывать уведомления поверх игр</string>
+    <string name="permissions_overlay_android_name">Поверх других приложений</string>
+    <string name="permissions_overlay_loss">Уведомления и быстрая панель появляются, только пока Argosy на экране.</string>
+    <string name="permissions_accessibility_title">Открывать Argosy из любого приложения</string>
+    <string name="permissions_accessibility_android_name">Специальные возможности</string>
+    <string name="permissions_accessibility_loss">Кнопка «Домой» и сочетания кнопок не работают, пока открыто другое приложение.</string>
+    <string name="permissions_battery_title">Оставаться активным во время игры</string>
+    <string name="permissions_battery_android_name">Батарея: без ограничений</string>
+    <string name="permissions_battery_loss">Android может приостанавливать загрузки и закрывать Argosy во время долгих сессий.</string>
+    <string name="permissions_write_settings_title">Менять яркость и вентилятор</string>
+    <string name="permissions_write_settings_android_name">Изменение системных настроек</string>
+    <string name="permissions_screen_capture_title">Подстраивать подсветку под экран</string>
+    <string name="permissions_screen_capture_android_name">Запись экрана</string>
+    <string name="permissions_live_wallpaper_title">Анимированный экран блокировки</string>
+    <string name="permissions_live_wallpaper_android_name">Живые обои</string>
+
+    <string name="permissions_settings_intro">Argosy нужны эти разрешения, чтобы работала ваша библиотека и сохранения были в безопасности.</string>
+    <string name="permissions_sync_warning_title">Выключить синхронизацию сохранений?</string>
+    <string name="permissions_sync_warning_message">Синхронизации сохранений нужно разрешение «%1$s». Если его выключить, синхронизация остановится, пока вы снова не включите её в настройках.</string>
+    <string name="permissions_sync_warning_confirm">Открыть настройки Android</string>
+    <string name="permissions_sync_warning_keep">Оставить включённой</string>
+
+    <string name="permissions_sheet_launch_title">Часть доступа была отключена</string>
+    <string name="permissions_sheet_launch_body">Argosy обнаружил эти изменения с вашей последней игры.</string>
+    <string name="permissions_sheet_launch_continue">Продолжить</string>
+    <string name="permissions_sheet_launch_play">Играть</string>
+    <string name="permissions_sheet_sync_title">Синхронизации сохранений нужен доступ</string>
+    <string name="permissions_sheet_sync_body">Разрешите доступ, затем включите синхронизацию.</string>
+    <string name="permissions_sheet_sync_cancel">Отмена</string>
+    <string name="permissions_sheet_sync_allow_all_files">Разрешить доступ ко всем файлам</string>
+    <string name="permissions_sheet_sync_allow_usage">Разрешить доступ к истории использования</string>
+    <string name="permissions_sheet_sync_allow_notifications">Разрешить уведомления</string>
+    <string name="permissions_sheet_sync_turn_on">Включить синхронизацию сохранений</string>
+    <string name="permissions_sheet_row_allow">Разрешить</string>
+
+    <string name="notif_permissions_sync_off_title">Синхронизация сохранений выключена</string>
+    <string name="notif_permissions_sync_off_body_all_files">Доступ ко всем файлам был отключён. Снова включите синхронизацию в настройках, когда разрешите его.</string>
+    <string name="notif_permissions_sync_off_body_usage">Доступ к истории использования был отключён. Снова включите синхронизацию в настройках, когда разрешите его.</string>
+    <string name="notif_permissions_sync_off_body_notifications">Уведомления были отключены. Снова включите синхронизацию в настройках, когда разрешите их.</string>
+    <string name="notif_permissions_revoked_title">Часть доступа была отключена</string>
+    <string name="notif_permissions_revoked_body_usage">Учёт игрового времени и восстановление после сбоя перестают работать для внешних эмуляторов.</string>
+    <string name="notif_permissions_revoked_body_notifications">Android может закрыть Argosy во время игры.</string>
+    <string name="notif_permissions_revoked_body_overlay">Уведомления и быстрая панель появляются, только пока Argosy на экране.</string>
+    <string name="notif_permissions_revoked_body_accessibility">Кнопка «Домой» и сочетания кнопок не работают, пока открыто другое приложение.</string>
+    <string name="notif_permissions_revoked_body_battery">Android может приостанавливать загрузки и закрывать Argosy во время долгих сессий.</string>
+</resources>

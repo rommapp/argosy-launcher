@@ -430,6 +430,7 @@
 
     <string name="ingame_libretro_disc_swap_inserted">已放入%1$s</string>
     <string name="ingame_libretro_sun_level">陽光 %1$d/%2$d</string>
+    <string name="ingame_libretro_microphone_request_reason">DS 遊戲可以使用麥克風。在此允許後，下次啟動遊戲時即可使用。</string>
     <string name="ingame_libretro_disc_swap_fallback_name">光碟%1$d</string>
 
     <string name="ingame_libretro_speedrun_default_category_name">練習</string>

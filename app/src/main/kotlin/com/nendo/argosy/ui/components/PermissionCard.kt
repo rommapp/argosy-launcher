@@ -37,6 +37,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.nendo.argosy.R
+import com.nendo.argosy.domain.model.PermissionTier
 import com.nendo.argosy.ui.primitives.ArgosyIndeterminateProgressBar
 import com.nendo.argosy.ui.primitives.FocusIndicators
 import com.nendo.argosy.ui.primitives.PanelSectionHeader
@@ -115,8 +116,6 @@ fun PermissionCard(
 }
 
 enum class PermissionRowState { MISSING, CHECKING, GRANTED, UNAVAILABLE }
-
-enum class PermissionTier { REQUIRED, RECOMMENDED, OTHER }
 
 @StringRes
 private fun PermissionTier.labelRes(): Int = when (this) {

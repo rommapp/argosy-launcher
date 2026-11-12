@@ -1,0 +1,134 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!--
+      Owner: the permission registry labels in ui/common/ArgosyPermissionUi.kt and the screens that
+      show them: Settings > Permissions, the permission sheet in ui/components/permissions, and the
+      permission notices posted by data/permissions/PermissionWatch.kt (key prefix notif_permissions_).
+      Keys are named for the usage site, never for the English text, and identical English is never
+      shared between two usage sites.
+    -->
+
+    <!-- ===== Permission rows ===== -->
+
+    <!-- Row title for Android's All files access permission, named by what it does in Argosy.
+         "Saves" is a noun: game save files. -->
+    <string name="permissions_all_files_title">Store games, saves and covers</string>
+    <!-- Android's own name for the permission, as shown in Android's settings. -->
+    <string name="permissions_all_files_android_name">All files access</string>
+    <!-- What stops working while the permission is off. -->
+    <string name="permissions_all_files_loss">Games, saves and covers can\'t be read or written.</string>
+    <!-- Row title for Android's Usage access permission. "Sessions" are play sessions in an
+         emulator app. -->
+    <string name="permissions_usage_title">Follow game sessions</string>
+    <!-- Android's own name for the permission. -->
+    <string name="permissions_usage_android_name">Usage access</string>
+    <!-- What stops working while the permission is off. -->
+    <string name="permissions_usage_loss">Play time and crash recovery stop for external emulators.</string>
+    <!-- Row title for Android's notification permission, which keeps Argosy's background service
+         alive. -->
+    <string name="permissions_notifications_title">Keep Argosy running</string>
+    <!-- Android's own name for the permission. -->
+    <string name="permissions_notifications_android_name">Notifications</string>
+    <!-- What stops working while the permission is off. "Save sync" is the feature that copies
+         game saves to the server. -->
+    <string name="permissions_notifications_loss">Android may close Argosy during play, and save sync can\'t run.</string>
+    <!-- Row title for Android's Display over other apps permission. -->
+    <string name="permissions_overlay_title">Show notices over games</string>
+    <!-- Android's own name for the permission. -->
+    <string name="permissions_overlay_android_name">Display over other apps</string>
+    <!-- What stops working while the permission is off. "Quick panel" is Argosy's small settings
+         overlay. -->
+    <string name="permissions_overlay_loss">Notices and the quick panel only appear while Argosy is on screen.</string>
+    <!-- Row title for Argosy's accessibility service. -->
+    <string name="permissions_accessibility_title">Reach Argosy from any app</string>
+    <!-- Android's own name for the setting. -->
+    <string name="permissions_accessibility_android_name">Accessibility</string>
+    <!-- What stops working while the service is off. "Home" is the controller's home button;
+         "button combos" are shortcuts made of several buttons pressed together. -->
+    <string name="permissions_accessibility_loss">Home and button combos stop working while another app is open.</string>
+    <!-- Row title for exempting Argosy from Android's battery optimization. -->
+    <string name="permissions_battery_title">Stay active during play</string>
+    <!-- Android's own name for the battery setting, "Unrestricted" being the option to choose. -->
+    <string name="permissions_battery_android_name">Battery: Unrestricted</string>
+    <!-- What stops working while the exemption is off. -->
+    <string name="permissions_battery_loss">Android may pause downloads and close Argosy during long sessions.</string>
+    <!-- Row title for Android's Modify system settings permission. -->
+    <string name="permissions_write_settings_title">Change brightness and fan</string>
+    <!-- Android's own name for the permission. -->
+    <string name="permissions_write_settings_android_name">Modify system settings</string>
+    <!-- Row title for the screen capture permission used by the handheld's light strip. -->
+    <string name="permissions_screen_capture_title">Match lights to the screen</string>
+    <!-- Android's own name for the permission. -->
+    <string name="permissions_screen_capture_android_name">Screen capture</string>
+    <!-- Row title for applying Argosy's animated lock screen. -->
+    <string name="permissions_live_wallpaper_title">Animated lock screen</string>
+    <!-- Android's own name for the feature. -->
+    <string name="permissions_live_wallpaper_android_name">Live wallpaper</string>
+
+    <!-- ===== Settings > Permissions ===== -->
+
+    <!-- Paragraph at the top of the permissions list. "Argosy" is this app's name. -->
+    <string name="permissions_settings_intro">Argosy needs these to run your library and keep your saves safe.</string>
+    <!-- Title of the warning shown before opening Android's screen for a permission save sync
+         depends on. "Save sync" is the feature that copies game saves to the server. -->
+    <string name="permissions_sync_warning_title">Turn off save sync?</string>
+    <!-- Body of that warning. %1$s is Android's name for the permission, for example
+         Usage access. -->
+    <string name="permissions_sync_warning_message">Save sync needs %1$s. If you turn it off, sync stops until you turn it back on in Settings.</string>
+    <!-- Button that turns save sync off and opens Android's settings screen. -->
+    <string name="permissions_sync_warning_confirm">Open Android settings</string>
+    <!-- Button that closes the warning and keeps save sync on. -->
+    <string name="permissions_sync_warning_keep">Keep it on</string>
+
+    <!-- ===== Permission sheet ===== -->
+
+    <!-- Title of the sheet shown before a game launches when permissions were turned off in
+         Android's settings. -->
+    <string name="permissions_sheet_launch_title">Some access was turned off</string>
+    <!-- Line under that title. -->
+    <string name="permissions_sheet_launch_body">Argosy found these changes since you last played.</string>
+    <!-- Button that goes on with the launch while some permissions are still off. -->
+    <string name="permissions_sheet_launch_continue">Continue</string>
+    <!-- The same button once every permission is back on. Verb: start the game. -->
+    <string name="permissions_sheet_launch_play">Play</string>
+    <!-- Title of the sheet shown when save sync is turned on with a permission it needs missing. -->
+    <string name="permissions_sheet_sync_title">Save sync needs access</string>
+    <!-- Line under that title. -->
+    <string name="permissions_sheet_sync_body">Allow these, then turn sync on.</string>
+    <!-- Button that closes the sheet and leaves save sync off. -->
+    <string name="permissions_sheet_sync_cancel">Cancel</string>
+    <!-- Main button while All files access is missing; opens Android's screen for it. -->
+    <string name="permissions_sheet_sync_allow_all_files">Allow all files access</string>
+    <!-- Main button while Usage access is missing; opens Android's screen for it. -->
+    <string name="permissions_sheet_sync_allow_usage">Allow usage access</string>
+    <!-- Main button while the notification permission is missing; asks Android for it. -->
+    <string name="permissions_sheet_sync_allow_notifications">Allow notifications</string>
+    <!-- Main button once every permission save sync needs is granted. -->
+    <string name="permissions_sheet_sync_turn_on">Turn on save sync</string>
+    <!-- Button beside a missing permission in the sheet; grants that permission. Verb. -->
+    <string name="permissions_sheet_row_allow">Allow</string>
+
+    <!-- ===== Notices ===== -->
+
+    <!-- Notice title when Argosy turned save sync off because a permission it needs was turned
+         off in Android's settings. -->
+    <string name="notif_permissions_sync_off_title">Save sync is off</string>
+    <!-- Notice body for that case when All files access was turned off. -->
+    <string name="notif_permissions_sync_off_body_all_files">All files access was turned off. Turn sync back on in Settings after allowing it.</string>
+    <!-- Notice body for that case when Usage access was turned off. -->
+    <string name="notif_permissions_sync_off_body_usage">Usage access was turned off. Turn sync back on in Settings after allowing it.</string>
+    <!-- Notice body for that case when notifications were turned off. -->
+    <string name="notif_permissions_sync_off_body_notifications">Notifications were turned off. Turn sync back on in Settings after allowing them.</string>
+    <!-- Notice title when a permission was turned off in Android's settings. -->
+    <string name="notif_permissions_revoked_title">Some access was turned off</string>
+    <!-- Notice body when Usage access was turned off. -->
+    <string name="notif_permissions_revoked_body_usage">Play time and crash recovery stop for external emulators.</string>
+    <!-- Notice body when the notification permission was turned off. -->
+    <string name="notif_permissions_revoked_body_notifications">Android may close Argosy during play.</string>
+    <!-- Notice body when Display over other apps was turned off. -->
+    <string name="notif_permissions_revoked_body_overlay">Notices and the quick panel only appear while Argosy is on screen.</string>
+    <!-- Notice body when Argosy's accessibility service was turned off. -->
+    <string name="notif_permissions_revoked_body_accessibility">Home and button combos stop working while another app is open.</string>
+    <!-- Notice body when Argosy lost its battery optimization exemption. -->
+    <string name="notif_permissions_revoked_body_battery">Android may pause downloads and close Argosy during long sessions.</string>
+</resources>

@@ -1289,41 +1289,6 @@
 
     <!-- ===== Permissions section ===== -->
 
-    <!-- Paragraph at the top of the permissions list. "Argosy" is this app's name. -->
-    <string name="settings_permissions_intro">O Argosy requer certas permissões para fornecer funcionalidade completa. Toque em cada permissão para conceder acesso.</string>
-    <!-- Card title. Noun phrase naming the permission to read and write files. -->
-    <string name="settings_permissions_storage_title">Acesso ao Armazenamento</string>
-    <!-- Body of that card. "ROM" is the usual term for a game file dumped from a cartridge or
-          disc; leave it untranslated. -->
-    <string name="settings_permissions_storage_description">Necessário para baixar jogos, sincronizar arquivos de save e acessar arquivos ROM no seu dispositivo.</string>
-    <!-- Card title. Noun phrase naming Android's permission to see which app is in front. -->
-    <string name="settings_permissions_usage_stats_title">Acesso às Estatísticas de Uso</string>
-    <!-- Body of that card. -->
-    <string name="settings_permissions_usage_stats_description">Permite rastreamento preciso do tempo de jogo e retomada perfeita da sessão ao alternar entre aplicativos.</string>
-    <!-- Card title. Noun, plural, naming the permission to post notifications. -->
-    <string name="settings_permissions_notifications_title">Notificações</string>
-    <!-- Body of that card. -->
-    <string name="settings_permissions_notifications_description">Mostra o progresso do download ao baixar jogos em segundo plano.</string>
-    <!-- Card title. Noun phrase naming the permission to change device settings. -->
-    <string name="settings_permissions_write_settings_title">Acesso às Configurações do Sistema</string>
-    <!-- Body of that card. "Quick Settings panel" is Argosy's own small settings overlay. -->
-    <string name="settings_permissions_write_settings_description">Permite controlar o modo de desempenho e configurações do ventilador a partir do painel de Configurações Rápidas.</string>
-    <!-- Card title. Noun phrase naming the permission to read what is on screen. -->
-    <string name="settings_permissions_screen_capture_title">Captura de Tela</string>
-    <!-- Body of that card. "LED" is the light strip on some handhelds. -->
-    <string name="settings_permissions_screen_capture_description">Ativa iluminação LED ambiente para amostrar cores da tela enquanto joga.</string>
-    <!-- Card title. Noun phrase naming Android's permission to draw on top of other apps. -->
-    <string name="settings_permissions_display_overlay_title">Sobreposição de Tela sobre Outros Aplicativos</string>
-    <!-- Body of that card. -->
-    <string name="settings_permissions_display_overlay_description">Mostra notificações de detecção de save enquanto joga em emuladores externos.</string>
-    <!-- Card title. Names Android's accessibility service setting for Argosy. -->
-    <string name="settings_permissions_accessibility_title">Serviço de Acessibilidade</string>
-    <!-- Body of that card. "Silent" means taken without a sound or visible capture prompt. -->
-    <string name="settings_permissions_accessibility_description">Permite abrir o painel rápido sobre outros emuladores e capturas de save silenciosas</string>
-    <!-- Card title. Noun phrase naming Argosy's animated wallpaper, which Android asks the user to apply once. -->
-    <string name="settings_permissions_live_wallpaper_title">Tela de Bloqueio Animada</string>
-    <!-- Body of that card. -->
-    <string name="settings_permissions_live_wallpaper_description">Permitir que o Argosy aplique uma tela de bloqueio animada.</string>
     <!-- %1$s is a root or system-access app name, such as Magisk or Shizuku -->
     <string name="settings_permissions_privileged_title">Acesso via %1$s</string>
     <string name="settings_permissions_privileged_description_off">Permitir que o Argosy acesse as pastas de save dos emuladores em Android/data.</string>
@@ -1336,8 +1301,6 @@
     <string name="settings_lock_screen_wallpaper_label">Biblioteca Argosy</string>
     <!-- Description of that wallpaper in Android's wallpaper picker, which Argosy opens on startup while Lock Screen Art is on. -->
     <string name="settings_lock_screen_wallpaper_description">Permitir que o Argosy aplique uma tela de bloqueio animada.</string>
-    <!-- Line under the list. %1$d is how many permissions were given, %2$d how many there are. -->
-    <string name="settings_permissions_status_footer">Status: %1$d/%2$d permissões concedidas</string>
 
     <!-- ===== About section ===== -->
 
@@ -3573,8 +3536,6 @@
     <string name="settings_romm_config_connect_title">Conectar</string>
     <string name="settings_romm_config_connect_device_subtitle">Gerar um código QR de emparelhamento</string>
     <string name="settings_romm_config_connect_subtitle">Conectar ao servidor RomM</string>
-    <string name="settings_romm_config_scan_title">Escanear código QR</string>
-    <string name="settings_romm_config_scan_subtitle">Escanear o código QR de emparelhamento na interface web do RomM</string>
     <string name="settings_romm_config_certificate_title">Adicionar certificado</string>
     <string name="settings_romm_config_certificate_subtitle">Confiar em um servidor com autoridade de certificação privada</string>
     <string name="settings_romm_config_certificate_import_failed">Esse arquivo não é um certificado legível.</string>

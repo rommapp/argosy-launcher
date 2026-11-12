@@ -66,6 +66,7 @@ class BuiltinEmulatorPreferencesRepository @Inject constructor(
         val BUILTIN_MIGRATION_V1 = booleanPreferencesKey("builtin_migration_v2")
         val BUILTIN_PS2_STANDALONE_PIN_DONE = booleanPreferencesKey("builtin_ps2_standalone_pin_done")
         val BUILTIN_PRIORITY_PIN_DONE = booleanPreferencesKey("builtin_priority_pin_done")
+        val BUILTIN_MIC_PERMISSION_ASKED = booleanPreferencesKey("builtin_mic_permission_asked")
         val BUILTIN_ARCHITECTURE_OVERRIDE = stringPreferencesKey("builtin_architecture_override")
         val BUILTIN_GPU_DRIVER = stringPreferencesKey("builtin_gpu_driver")
         val TOUCH_SHOW_WHEN_NO_GAMEPAD = booleanPreferencesKey("builtin_touch_show_when_no_gamepad")
@@ -403,6 +404,14 @@ class BuiltinEmulatorPreferencesRepository @Inject constructor(
 
     suspend fun setBuiltinPriorityPinDone() {
         dataStore.edit { it[Keys.BUILTIN_PRIORITY_PIN_DONE] = true }
+    }
+
+    fun isBuiltinMicPermissionAsked(): Flow<Boolean> = dataStore.data.map { prefs ->
+        prefs[Keys.BUILTIN_MIC_PERMISSION_ASKED] ?: false
+    }
+
+    suspend fun setBuiltinMicPermissionAsked() {
+        dataStore.edit { it[Keys.BUILTIN_MIC_PERMISSION_ASKED] = true }
     }
 
     suspend fun setTouchControlsShowWhenNoGamepad(enabled: Boolean) {

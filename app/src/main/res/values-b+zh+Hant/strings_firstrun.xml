@@ -24,7 +24,6 @@
     <string name="firstrun_romm_url_keyboard_submit">繼續</string>
     <string name="firstrun_pairing_code_button_connecting">連線中...</string>
     <string name="firstrun_pairing_code_button_edit_url">編輯網址</string>
-    <string name="firstrun_pairing_code_button_scan">掃描QR Code</string>
     <string name="firstrun_pairing_code_button_device_pairing">改用QR Code配對</string>
     <string name="firstrun_pairing_code_error_incomplete">請輸入完整的8碼配對代碼</string>
 

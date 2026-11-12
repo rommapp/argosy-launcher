@@ -1036,8 +1036,7 @@ internal fun routeSyncRomm(vm: SettingsViewModel) {
 // --- Server / RA connection ---
 
 internal fun routeStartRommConfig(vm: SettingsViewModel) {
-    val hasCamera = com.nendo.argosy.ui.components.deviceHasCamera(vm.context)
-    vm.serverDelegate.startRommConfig(vm.viewModelScope, hasCamera) { vm._uiState.update { it.copy(focusedIndex = 0) } }
+    vm.serverDelegate.startRommConfig(vm.viewModelScope) { vm._uiState.update { it.copy(focusedIndex = 0) } }
 }
 
 internal fun routeCancelRommConfig(vm: SettingsViewModel) {

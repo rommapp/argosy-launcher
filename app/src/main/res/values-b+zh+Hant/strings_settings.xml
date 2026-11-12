@@ -626,23 +626,6 @@
         <item quantity="other">%1$d個版本，最新為%2$s</item>
     </plurals>
 
-    <string name="settings_permissions_intro">Argosy需要特定權限才能提供完整功能，點選各項權限即可授予存取權。</string>
-    <string name="settings_permissions_storage_title">儲存空間存取權</string>
-    <string name="settings_permissions_storage_description">下載遊戲、同步存檔，以及存取裝置上的ROM檔案都需要此權限。</string>
-    <string name="settings_permissions_usage_stats_title">使用狀況存取權</string>
-    <string name="settings_permissions_usage_stats_description">可精確追蹤遊玩時間，並在切換應用程式時順暢地繼續遊戲工作階段。</string>
-    <string name="settings_permissions_notifications_title">通知</string>
-    <string name="settings_permissions_notifications_description">在背景下載遊戲時顯示下載進度。</string>
-    <string name="settings_permissions_write_settings_title">系統設定存取權</string>
-    <string name="settings_permissions_write_settings_description">允許從快速設定面板控制裝置效能模式與風扇設定。</string>
-    <string name="settings_permissions_screen_capture_title">螢幕擷取</string>
-    <string name="settings_permissions_screen_capture_description">讓環境LED燈光能在遊玩時擷取螢幕色彩。</string>
-    <string name="settings_permissions_display_overlay_title">顯示在其他應用程式上層</string>
-    <string name="settings_permissions_display_overlay_description">在外部模擬器中遊玩時顯示存檔偵測通知。</string>
-    <string name="settings_permissions_accessibility_title">無障礙服務</string>
-    <string name="settings_permissions_accessibility_description">讓快速面板可在其他模擬器上層開啟，並可靜默擷取存檔截圖</string>
-    <string name="settings_permissions_live_wallpaper_title">動態鎖定畫面</string>
-    <string name="settings_permissions_live_wallpaper_description">允許 Argosy 套用動態鎖定畫面。</string>
     <!-- %1$s is a root or system-access app name, such as Magisk or Shizuku -->
     <string name="settings_permissions_privileged_title">%1$s 存取權</string>
     <string name="settings_permissions_privileged_description_off">允許 Argosy 存取 Android/data 中的模擬器存檔資料夾。</string>
@@ -653,7 +636,6 @@
     <string name="settings_permissions_privileged_description_refused">未取得存取權。選取以再次要求。</string>
     <string name="settings_lock_screen_wallpaper_label">Argosy 遊戲庫</string>
     <string name="settings_lock_screen_wallpaper_description">允許 Argosy 套用動態鎖定畫面。</string>
-    <string name="settings_permissions_status_footer">狀態：已授予%1$d／%2$d項權限</string>
 
     <string name="settings_about_section_version">版本</string>
     <string name="settings_about_section_backup">備份</string>
@@ -1991,8 +1973,6 @@
     <string name="settings_romm_config_connect_title">連線</string>
     <string name="settings_romm_config_connect_device_subtitle">產生配對用QR Code</string>
     <string name="settings_romm_config_connect_subtitle">連線至RomM伺服器</string>
-    <string name="settings_romm_config_scan_title">掃描QR Code</string>
-    <string name="settings_romm_config_scan_subtitle">掃描RomM網頁介面上的配對QR Code</string>
     <string name="settings_romm_config_certificate_title">新增憑證</string>
     <string name="settings_romm_config_certificate_subtitle">信任使用私有憑證授權單位的伺服器</string>
     <plurals name="settings_romm_config_certificate_subtitle_count">

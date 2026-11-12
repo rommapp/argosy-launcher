@@ -440,6 +440,7 @@
 
     <string name="ingame_libretro_disc_swap_inserted">%1$s डाला गया</string>
     <string name="ingame_libretro_sun_level">धूप %1$d/%2$d</string>
+    <string name="ingame_libretro_microphone_request_reason">DS गेम माइक्रोफ़ोन का उपयोग कर सकते हैं। यहाँ अनुमति दें, यह अगली बार गेम शुरू होने से काम करेगा।</string>
     <string name="ingame_libretro_disc_swap_fallback_name">डिस्क %1$d</string>
 
     <string name="ingame_libretro_speedrun_default_category_name">प्रैक्टिस</string>

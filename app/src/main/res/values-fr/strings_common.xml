@@ -338,7 +338,6 @@
     <string name="ui_section_breadcrumb_next">Section suivante</string>
 
     <string name="ui_qr_code_description">Code QR pour %1$s</string>
-    <string name="ui_qr_scanner_hint">Visez le code QR d\'appairage RomM</string>
 
     <string name="ui_custom_tile_menu_header">TUILE</string>
 

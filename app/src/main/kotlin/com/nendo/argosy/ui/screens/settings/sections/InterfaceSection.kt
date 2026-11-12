@@ -18,6 +18,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import com.nendo.argosy.R
+import com.nendo.argosy.domain.model.ArgosyPermission
 import com.nendo.argosy.data.preferences.AppLanguage
 import com.nendo.argosy.data.preferences.ScreenOrientationMode
 import com.nendo.argosy.ui.components.CyclePreference
@@ -299,7 +300,7 @@ fun InterfaceSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
 
                 InterfaceItem.QuickPanelInEmulators -> {
                     val serviceOff = display.quickPanelInEmulators &&
-                        !uiState.permissions.hasAccessibilityService
+                        !uiState.permissions.snapshot.isGranted(ArgosyPermission.ACCESSIBILITY)
                     SwitchPreference(
                         title = stringResource(R.string.settings_interface_quick_panel_in_emulators_title),
                         subtitle = if (serviceOff) {

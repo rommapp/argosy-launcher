@@ -86,9 +86,6 @@
     <string name="firstrun_pairing_code_button_connecting">Connecting...</string>
     <!-- Button that goes back to the server address field to change it. Verb phrase. -->
     <string name="firstrun_pairing_code_button_edit_url">Edit URL</string>
-    <!-- Button that opens the camera to read a pairing QR code instead of typing it.
-         Verb phrase, imperative. -->
-    <string name="firstrun_pairing_code_button_scan">Scan QR Code</string>
     <!-- Button that switches away from typing a code, over to the QR pairing flow where the
          user approves this device from a phone. Verb phrase. -->
     <string name="firstrun_pairing_code_button_device_pairing">Use QR pairing instead</string>

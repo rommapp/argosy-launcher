@@ -24,7 +24,6 @@
     <string name="firstrun_romm_url_keyboard_submit">Weiter</string>
     <string name="firstrun_pairing_code_button_connecting">Wird verbunden...</string>
     <string name="firstrun_pairing_code_button_edit_url">URL bearbeiten</string>
-    <string name="firstrun_pairing_code_button_scan">QR-Code scannen</string>
     <string name="firstrun_pairing_code_button_device_pairing">Stattdessen QR-Kopplung verwenden</string>
     <string name="firstrun_pairing_code_error_incomplete">Geben Sie den vollständigen 8-stelligen Kopplungscode ein</string>
 

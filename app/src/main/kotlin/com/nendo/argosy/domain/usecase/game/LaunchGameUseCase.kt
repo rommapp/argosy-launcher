@@ -9,6 +9,7 @@ import com.nendo.argosy.data.emulator.LaunchResult
 import com.nendo.argosy.data.emulator.PlaySessionTracker
 import com.nendo.argosy.data.emulator.startExternal
 import com.nendo.argosy.data.local.entity.GameEntity
+import com.nendo.argosy.data.permissions.PermissionWatch
 import com.nendo.argosy.data.repository.GameRepository
 import com.nendo.argosy.data.repository.LibraryPointerRepair
 import com.nendo.argosy.data.sync.CrossEmulatorSaveMigrator
@@ -29,7 +30,8 @@ class LaunchGameUseCase @Inject constructor(
     private val lockScreenArtManager: LockScreenArtManager,
     private val launchProgressTracker: LaunchProgressTracker,
     private val gameRepository: GameRepository,
-    private val crossEmulatorSaveMigrator: CrossEmulatorSaveMigrator
+    private val crossEmulatorSaveMigrator: CrossEmulatorSaveMigrator,
+    private val permissionWatch: PermissionWatch
 ) {
     suspend operator fun invoke(
         gameId: Long,
@@ -73,6 +75,7 @@ class LaunchGameUseCase @Inject constructor(
         sessionAtWindow: Boolean
     ): LaunchResult {
         libraryPointerRepair.await()
+        if (!forResume && !permissionWatch.clearForLaunch()) return LaunchResult.Cancelled
         if (!forResume && !savesPrepared) crossEmulatorSaveMigrator.migrateBeforeLaunch(gameId)
         val result = gameLauncher.launch(gameId, discId, forResume, selectedDiscPath, variantFileId, skipVariantPrompt, allowVariantPrompt, prefetchedGame)
         if (ticket.isCancelled) return LaunchResult.Cancelled

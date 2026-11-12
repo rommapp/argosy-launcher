@@ -64,6 +64,9 @@ class GameLaunchDelegateTest {
     private val trackerSessionEnding = MutableStateFlow(false)
     private val sessionConflict = MutableStateFlow<SaveConflictEvent?>(null)
     private val sessionEndCoordinator: SessionEndCoordinator = mockk(relaxed = true)
+    private val permissionWatch: com.nendo.argosy.data.permissions.PermissionWatch = mockk {
+        coEvery { clearForLaunch() } returns true
+    }
 
     @Before
     fun setUp() {
@@ -127,7 +130,8 @@ class GameLaunchDelegateTest {
             coEvery { findLive(any(), any(), any()) } returns null
             coEvery { keepsAlive(any()) } returns false
             coEvery { clearForLaunch(any(), any()) } returns BackgroundGameLaunch.Clear.NOT_RUNNING
-        }
+        },
+        permissionWatch = permissionWatch
     )
 
     private fun callbacks(onFailure: (Throwable) -> Unit = {}, onLaunchFailed: () -> Unit = {}) =

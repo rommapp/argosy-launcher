@@ -124,7 +124,7 @@ class ServerSettingsDelegate @Inject constructor(
      * pairing form. The first row is the address the session is on, so a second stored address
      * lands in the second row whichever column it came from.
      */
-    fun startRommConfig(scope: CoroutineScope, hasCamera: Boolean, onFocusReset: () -> Unit) {
+    fun startRommConfig(scope: CoroutineScope, onFocusReset: () -> Unit) {
         scope.launch {
             val account = accountRepository.activeAccount()
             val rows = account?.let { addressRowsFrom(it) }.orEmpty()
@@ -140,7 +140,6 @@ class ServerSettingsDelegate @Inject constructor(
                     rommAddressVerifyPrompt = null,
                     rommAddressVerifyFocusIndex = 0,
                     rommConfigPairingCode = "",
-                    rommHasCamera = hasCamera,
                     rommConfigError = null,
                     rommDevicePairing = false,
                     rommDeviceUserCode = null,
@@ -527,26 +526,6 @@ class ServerSettingsDelegate @Inject constructor(
                 rommDeviceVerificationUrl = null
             )
         }
-    }
-
-    fun showScanner() {
-        _state.update { it.copy(rommShowScanner = true) }
-    }
-
-    fun dismissScanner() {
-        _state.update { it.copy(rommShowScanner = false) }
-    }
-
-    fun handleScanResult(origin: String, code: String, scope: CoroutineScope, onSuccess: suspend () -> Unit) {
-        _state.update {
-            it.copy(
-                rommShowScanner = false,
-                rommConfigUrl = origin,
-                rommConfigPairingCode = code,
-                rommAuthMethod = RomMAuthMethod.PAIRING_CODE
-            )
-        }
-        connectToRomm(scope, onSuccess)
     }
 
     fun clearRommFocusField() {

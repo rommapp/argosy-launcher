@@ -12,6 +12,8 @@ import com.nendo.argosy.data.emulator.PresenceEventKind
 import javax.inject.Inject
 import javax.inject.Singleton
 
+enum class UsageStatsAvailability { AVAILABLE, UNAVAILABLE_ON_DEVICE, DENIED }
+
 @Singleton
 class PermissionHelper @Inject constructor() {
 
@@ -27,6 +29,9 @@ class PermissionHelper @Inject constructor() {
 
     fun canRequestUsageStats(context: Context): Boolean =
         Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS).resolveActivity(context.packageManager) != null
+
+    fun usageStatsAvailability(context: Context): UsageStatsAvailability =
+        availabilityOf(granted = hasUsageStatsPermission(context), settingsScreenExists = canRequestUsageStats(context))
 
     fun openUsageStatsSettings(context: Context) {
         val intent = Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS).apply {
@@ -129,14 +134,15 @@ class PermissionHelper @Inject constructor() {
      * Whether [packageName] still holds a screen, falling back to how recently it was used when the
      * window-level answer is unavailable. Anything asking "is that game still up" wants both halves:
      * [isPackageOnScreen] is the accurate answer and frequently has none, while recency alone reports
-     * a perfectly live app on a second display as gone. Without usage access neither half can answer
-     * and the result is false, so a caller that must not act on silence checks the permission itself.
+     * a perfectly live app on a second display as gone. Null when [usageStatsAvailability] is not
+     * [UsageStatsAvailability.AVAILABLE]; a null answer never means "gone".
      */
     fun isPackageOnScreenOrRecent(
         context: Context,
         packageName: String,
         recencyMs: Long = RECENT_USE_WINDOW_MS
-    ): Boolean {
+    ): Boolean? {
+        if (usageStatsAvailability(context) != UsageStatsAvailability.AVAILABLE) return null
         isPackageOnScreen(context, packageName)?.let { return it }
         return isPackageInForeground(context, packageName, recencyMs)
     }
@@ -296,6 +302,12 @@ class PermissionHelper @Inject constructor() {
         private val ON_SCREEN_LOOKBACKS_MS = listOf(10 * 60 * 1000L, 12 * 60 * 60 * 1000L)
 
         private const val SPAN_SEED_LOOKBACK_MS = 12 * 60 * 60 * 1000L
+
+        fun availabilityOf(granted: Boolean, settingsScreenExists: Boolean): UsageStatsAvailability = when {
+            granted -> UsageStatsAvailability.AVAILABLE
+            !settingsScreenExists -> UsageStatsAvailability.UNAVAILABLE_ON_DEVICE
+            else -> UsageStatsAvailability.DENIED
+        }
 
         /**
          * Spans within [fromMs]..[toMs] when at least one activity was resumed, from time-ordered

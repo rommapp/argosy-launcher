@@ -1333,41 +1333,6 @@
 
     <!-- ===== Permissions section ===== -->
 
-    <!-- Paragraph at the top of the permissions list. "Argosy" is this app's name. -->
-    <string name="settings_permissions_intro">Argosy requires certain permissions to provide full functionality. Tap each permission to grant access.</string>
-    <!-- Card title. Noun phrase naming the permission to read and write files. -->
-    <string name="settings_permissions_storage_title">Storage Access</string>
-    <!-- Body of that card. "ROM" is the usual term for a game file dumped from a cartridge or
-         disc; leave it untranslated. -->
-    <string name="settings_permissions_storage_description">Required for downloading games, syncing save files, and accessing ROM files on your device.</string>
-    <!-- Card title. Noun phrase naming Android's permission to see which app is in front. -->
-    <string name="settings_permissions_usage_stats_title">Usage Stats Access</string>
-    <!-- Body of that card. -->
-    <string name="settings_permissions_usage_stats_description">Enables accurate play time tracking and seamless game session resume when switching between apps.</string>
-    <!-- Card title. Noun, plural, naming the permission to post notifications. -->
-    <string name="settings_permissions_notifications_title">Notifications</string>
-    <!-- Body of that card. -->
-    <string name="settings_permissions_notifications_description">Shows download progress when downloading games in the background.</string>
-    <!-- Card title. Noun phrase naming the permission to change device settings. -->
-    <string name="settings_permissions_write_settings_title">System Settings Access</string>
-    <!-- Body of that card. "Quick Settings panel" is Argosy's own small settings overlay. -->
-    <string name="settings_permissions_write_settings_description">Allows control of device performance mode and fan settings from the Quick Settings panel.</string>
-    <!-- Card title. Noun phrase naming the permission to read what is on screen. -->
-    <string name="settings_permissions_screen_capture_title">Screen Capture</string>
-    <!-- Body of that card. "LED" is the light strip on some handhelds. -->
-    <string name="settings_permissions_screen_capture_description">Enables ambient LED lighting to sample screen colors while playing games.</string>
-    <!-- Card title. Noun phrase naming Android's permission to draw on top of other apps. -->
-    <string name="settings_permissions_display_overlay_title">Display Over Other Apps</string>
-    <!-- Body of that card. -->
-    <string name="settings_permissions_display_overlay_description">Shows save detection notifications while playing games in external emulators.</string>
-    <!-- Card title. Names Android's accessibility service setting for Argosy. -->
-    <string name="settings_permissions_accessibility_title">Accessibility Service</string>
-    <!-- Body of that card. "Silent" means taken without a sound or visible capture prompt. -->
-    <string name="settings_permissions_accessibility_description">Lets the quick panel open over other emulators, and silent save screenshots</string>
-    <!-- Card title. Noun phrase naming Argosy's animated wallpaper, which Android asks the user to apply once. -->
-    <string name="settings_permissions_live_wallpaper_title">Animated Lock Screen</string>
-    <!-- Body of that card. -->
-    <string name="settings_permissions_live_wallpaper_description">Allow Argosy to apply an animated lock screen.</string>
     <!-- %1$s is a root or system-access app name, such as Magisk or Shizuku -->
     <string name="settings_permissions_privileged_title">%1$s access</string>
     <string name="settings_permissions_privileged_description_off">Let Argosy reach emulator save folders in Android/data.</string>
@@ -1380,8 +1345,6 @@
     <string name="settings_lock_screen_wallpaper_label">Argosy Library</string>
     <!-- Description of that wallpaper in Android's wallpaper picker, which Argosy opens on startup while Lock Screen Art is on. -->
     <string name="settings_lock_screen_wallpaper_description">Allow Argosy to apply an animated lock screen.</string>
-    <!-- Line under the list. %1$d is how many permissions were given, %2$d how many there are. -->
-    <string name="settings_permissions_status_footer">Status: %1$d/%2$d permissions granted</string>
 
     <!-- ===== About section ===== -->
 
@@ -4122,10 +4085,6 @@
     <string name="settings_romm_config_connect_device_subtitle">Generate a pairing QR code</string>
     <!-- Second line of the connect button while Pairing Code is selected. -->
     <string name="settings_romm_config_connect_subtitle">Connect to RomM server</string>
-    <!-- Button title. Verb phrase: open the camera to scan a pairing QR code. -->
-    <string name="settings_romm_config_scan_title">Scan QR Code</string>
-    <!-- Second line of that button. -->
-    <string name="settings_romm_config_scan_subtitle">Scan pairing QR from the RomM web UI</string>
     <!-- Button title. Verb: pick a certificate file for a server whose issuer this device does
          not recognise. -->
     <string name="settings_romm_config_certificate_title">Add Certificate</string>

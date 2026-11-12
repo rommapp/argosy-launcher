@@ -297,7 +297,6 @@
     <string name="ui_section_breadcrumb_next">下一个分区</string>
 
     <string name="ui_qr_code_description">%1$s的二维码</string>
-    <string name="ui_qr_scanner_hint">对准RomM配对二维码</string>
 
     <string name="ui_custom_tile_menu_header">磁贴</string>
 

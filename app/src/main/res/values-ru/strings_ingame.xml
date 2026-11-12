@@ -460,6 +460,7 @@
 
     <string name="ingame_libretro_disc_swap_inserted">Вставлен %1$s</string>
     <string name="ingame_libretro_sun_level">Солнечный свет %1$d/%2$d</string>
+    <string name="ingame_libretro_microphone_request_reason">Игры DS могут использовать микрофон. Разрешите доступ, и он заработает при следующем запуске.</string>
     <string name="ingame_libretro_disc_swap_fallback_name">Диск %1$d</string>
 
     <string name="ingame_libretro_speedrun_default_category_name">Тренировка</string>

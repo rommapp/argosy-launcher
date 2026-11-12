@@ -7,6 +7,7 @@ import com.nendo.argosy.data.emulator.LaunchOrigin
 import com.nendo.argosy.data.emulator.LaunchProgressTracker
 import com.nendo.argosy.data.emulator.LaunchResult
 import com.nendo.argosy.data.emulator.PlaySessionTracker
+import com.nendo.argosy.data.permissions.PermissionWatch
 import com.nendo.argosy.data.repository.LibraryPointerRepair
 import com.nendo.argosy.data.sync.CrossEmulatorSaveMigrator
 import com.nendo.argosy.data.wallpaper.LockScreenArtManager
@@ -33,6 +34,7 @@ class LaunchGameUseCaseTest {
     private lateinit var lockScreenArtManager: LockScreenArtManager
     private lateinit var tracker: LaunchProgressTracker
     private lateinit var migrator: CrossEmulatorSaveMigrator
+    private lateinit var permissionWatch: PermissionWatch
     private lateinit var useCase: LaunchGameUseCase
 
     @Before
@@ -43,6 +45,8 @@ class LaunchGameUseCaseTest {
         lockScreenArtManager = mockk(relaxed = true)
         migrator = mockk(relaxed = true)
         coEvery { migrator.migrateBeforeLaunch(any()) } returns CrossEmulatorSaveMigrator.Outcome.Untouched
+        permissionWatch = mockk(relaxed = true)
+        coEvery { permissionWatch.clearForLaunch() } returns true
         tracker = LaunchProgressTracker(CoroutineScope(UnconfinedTestDispatcher()))
         useCase = LaunchGameUseCase(
             gameLauncher,
@@ -51,8 +55,29 @@ class LaunchGameUseCaseTest {
             lockScreenArtManager,
             tracker,
             mockk(relaxed = true),
-            migrator
+            migrator,
+            permissionWatch
         )
+    }
+
+    @Test
+    fun `a fresh launch the permission sheet closes resolves nothing`() = runTest {
+        coEvery { permissionWatch.clearForLaunch() } returns false
+
+        val result = useCase(123L)
+
+        assertEquals(LaunchResult.Cancelled, result)
+        coVerify(exactly = 0) { migrator.migrateBeforeLaunch(any()) }
+        coVerify(exactly = 0) { gameLauncher.launch(any(), any(), any(), any(), any(), any(), any(), any()) }
+    }
+
+    @Test
+    fun `a resume skips the permission check`() = runTest {
+        coEvery { gameLauncher.launch(123L, null, true, any(), any(), any(), any(), any()) } returns LaunchResult.NoEmulator("nes")
+
+        useCase(123L, forResume = true)
+
+        coVerify(exactly = 0) { permissionWatch.clearForLaunch() }
     }
 
     @Test

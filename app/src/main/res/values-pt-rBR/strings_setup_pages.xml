@@ -35,7 +35,7 @@
     <string name="setup_controller_nintendo_detail">Confirmar à direita</string>
 
     <string name="setup_check_title">Teste seus botões</string>
-    <string name="setup_check_purpose">Aperte qualquer botão para ver onde ele cai. Nada acontece enquanto você testa.</string>
+    <string name="setup_check_purpose">Comece um teste para conferir se cada botão cai onde você espera e troque os que não caírem.</string>
     <string name="setup_check_purpose_testing">Testando. Segure qualquer botão para terminar.</string>
     <string name="setup_check_test_row">Testar botões</string>
     <string name="setup_check_testing_hint">Segure qualquer botão para terminar</string>

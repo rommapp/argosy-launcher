@@ -35,7 +35,7 @@
     <string name="setup_controller_nintendo_detail">確認鍵在右側</string>
 
     <string name="setup_check_title">檢查按鍵</string>
-    <string name="setup_check_purpose">按下任一按鍵，看看它對應哪裡。測試時不會觸發任何操作。</string>
+    <string name="setup_check_purpose">開始測試，確認每個按鍵都對應到你預期的位置，不對的就交換。</string>
     <string name="setup_check_purpose_testing">測試中。按住任意按鍵結束。</string>
     <string name="setup_check_test_row">測試按鍵</string>
     <string name="setup_check_testing_hint">按住任意按鍵結束</string>

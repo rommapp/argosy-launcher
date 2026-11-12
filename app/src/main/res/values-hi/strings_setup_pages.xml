@@ -35,7 +35,7 @@
     <string name="setup_controller_nintendo_detail">पुष्टि दाईं ओर</string>
 
     <string name="setup_check_title">अपने बटन जांचें</string>
-    <string name="setup_check_purpose">कोई भी बटन दबाकर देखें कि वह कहां पड़ता है। जांचते समय कुछ नहीं होता।</string>
+    <string name="setup_check_purpose">टेस्ट शुरू करके जांचें कि हर बटन वहीं पड़ता है जहां आप उम्मीद करते हैं, और जो नहीं पड़ते उन्हें बदलें।</string>
     <string name="setup_check_purpose_testing">परीक्षण जारी है। समाप्त करने के लिए कोई भी बटन दबाए रखें।</string>
     <string name="setup_check_test_row">बटन जांचें</string>
     <string name="setup_check_testing_hint">समाप्त करने के लिए कोई भी बटन दबाए रखें</string>

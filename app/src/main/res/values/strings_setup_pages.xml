@@ -69,7 +69,7 @@
     <!-- ===== Button check ===== -->
 
     <string name="setup_check_title">Check your buttons</string>
-    <string name="setup_check_purpose">Press any button to see where it lands. Nothing happens while you test.</string>
+    <string name="setup_check_purpose">Start a test to check each button lands where you expect, then swap any that don\'t.</string>
     <!-- Shown while testing buttons, before the dual-screen controls list. -->
     <string name="setup_check_purpose_testing">Testing. Hold any button to finish.</string>
     <!-- Row that starts the button test. Verb phrase. -->

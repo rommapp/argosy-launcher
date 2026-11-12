@@ -35,7 +35,7 @@
     <string name="setup_controller_nintendo_detail">Подтверждение справа</string>
 
     <string name="setup_check_title">Проверьте кнопки</string>
-    <string name="setup_check_purpose">Нажмите любую кнопку, чтобы увидеть, куда она попадает. Во время проверки ничего не происходит.</string>
+    <string name="setup_check_purpose">Запустите проверку, чтобы убедиться, что каждая кнопка срабатывает там, где вы ожидаете, и поменяйте местами те, что не совпадают.</string>
     <string name="setup_check_purpose_testing">Идёт проверка. Удерживайте любую кнопку, чтобы закончить.</string>
     <string name="setup_check_test_row">Проверить кнопки</string>
     <string name="setup_check_testing_hint">Удерживайте любую кнопку, чтобы закончить</string>

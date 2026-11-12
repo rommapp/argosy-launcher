@@ -35,7 +35,7 @@
     <string name="setup_controller_nintendo_detail">确认键在右侧</string>
 
     <string name="setup_check_title">检查按键</string>
-    <string name="setup_check_purpose">按任意键，看看它对应哪里。测试时不会触发任何操作。</string>
+    <string name="setup_check_purpose">开始测试，确认每个按键都对应到你预期的位置，不对的就交换。</string>
     <string name="setup_check_purpose_testing">测试中。按住任意键结束。</string>
     <string name="setup_check_test_row">测试按键</string>
     <string name="setup_check_testing_hint">按住任意键结束</string>

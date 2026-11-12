@@ -35,7 +35,7 @@
     <string name="setup_controller_nintendo_detail">Valider à droite</string>
 
     <string name="setup_check_title">Testez vos boutons</string>
-    <string name="setup_check_purpose">Appuyez sur un bouton pour voir où il tombe. Rien ne se passe pendant le test.</string>
+    <string name="setup_check_purpose">Lancez un test pour vérifier que chaque bouton tombe là où vous l\'attendez, puis inversez ceux qui ne correspondent pas.</string>
     <string name="setup_check_purpose_testing">Test en cours. Maintenez un bouton pour terminer.</string>
     <string name="setup_check_test_row">Tester les boutons</string>
     <string name="setup_check_testing_hint">Maintenez un bouton pour terminer</string>

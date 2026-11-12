@@ -35,7 +35,7 @@
     <string name="setup_controller_nintendo_detail">Bestätigen rechts</string>
 
     <string name="setup_check_title">Tasten prüfen</string>
-    <string name="setup_check_purpose">Drück eine beliebige Taste, um zu sehen, wo sie landet. Beim Testen passiert nichts.</string>
+    <string name="setup_check_purpose">Starte einen Test, um zu prüfen, ob jede Taste dort landet, wo du sie erwartest, und tausche die, bei denen es nicht so ist.</string>
     <string name="setup_check_purpose_testing">Test läuft. Halte eine beliebige Taste, um zu beenden.</string>
     <string name="setup_check_test_row">Tasten testen</string>
     <string name="setup_check_testing_hint">Halte eine beliebige Taste zum Beenden</string>

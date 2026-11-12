@@ -43,13 +43,15 @@ class InputConfigCoordinator(
         scope.launch {
             inputConfigRepository.clearAutoDetectedMappings()
 
+            val connectedControllers = inputConfigRepository.getConnectedControllers()
             val controllerOrder = inputConfigRepository.getControllerOrder()
             controllerOrderCount = controllerOrder.size
-            portResolver.setControllerOrder(controllerOrder)
+            portResolver.setControllerOrder(
+                ControllerSeating.presentSeats(controllerOrder, connectedControllers.map { it.controllerId }.toSet())
+            )
             onControllerOrderLoaded(controllerOrder)
 
-            val connectedDevices = inputConfigRepository.getConnectedControllers()
-                .mapNotNull { InputDevice.getDevice(it.deviceId) }
+            val connectedDevices = connectedControllers.mapNotNull { InputDevice.getDevice(it.deviceId) }
             portResolver.addPortClaimedListener { _, _ ->
                 hotkeyManager.setPlayer1ControllerId(portResolver.playerOneControllerId())
             }

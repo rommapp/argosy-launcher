@@ -1,5 +1,6 @@
 package com.nendo.argosy.libretro
 
+import com.nendo.argosy.data.local.entity.ControllerOrderEntity
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -116,5 +117,38 @@ class ControllerSeatingTest {
         )
 
         assertTrue(seats.isEmpty())
+    }
+
+    private fun saved(port: Int, id: String) = ControllerOrderEntity(port = port, controllerId = id, controllerName = id)
+
+    private fun seatsOf(orders: List<ControllerOrderEntity>) = orders.associate { it.controllerId to it.port }
+
+    @Test
+    fun `a missing player one is dropped and the next pad takes its seat`() {
+        val present = ControllerSeating.presentSeats(listOf(saved(0, "ps4"), saved(1, "a")), setOf("a"))
+
+        assertEquals(mapOf("a" to 0), seatsOf(present))
+    }
+
+    @Test
+    fun `seats close up in saved order around every missing pad`() {
+        val present = ControllerSeating.presentSeats(
+            listOf(saved(2, "c"), saved(0, "gone"), saved(3, "d"), saved(1, "b")),
+            setOf("b", "c", "d")
+        )
+
+        assertEquals(mapOf("b" to 0, "c" to 1, "d" to 2), seatsOf(present))
+    }
+
+    @Test
+    fun `seats stay as saved when every pad is connected`() {
+        val present = ControllerSeating.presentSeats(listOf(saved(0, "a"), saved(1, "b")), setOf("a", "b"))
+
+        assertEquals(mapOf("a" to 0, "b" to 1), seatsOf(present))
+    }
+
+    @Test
+    fun `no connected saved pad leaves no seats`() {
+        assertTrue(ControllerSeating.presentSeats(listOf(saved(0, "ps4")), setOf("a")).isEmpty())
     }
 }

@@ -1,5 +1,7 @@
 package com.nendo.argosy.libretro
 
+import com.nendo.argosy.data.local.entity.ControllerOrderEntity
+
 data class SeatedPad(
     val controllerId: String,
     val isBuiltIn: Boolean
@@ -32,6 +34,17 @@ object ControllerSeating {
         while (port in taken) port++
         return mapOf(launchPadId to 0, playerOne to port)
     }
+
+    /**
+     * The saved seats a session starts with: pads that are not connected are dropped and the
+     * remaining pads close up in their saved order, so a missing player one never leaves the
+     * game listening to an empty port. The saved order itself is left as it is, and a pad that
+     * returns later in the session takes the lowest free port.
+     */
+    fun presentSeats(saved: List<ControllerOrderEntity>, connectedIds: Set<String>): List<ControllerOrderEntity> =
+        saved.filter { it.controllerId in connectedIds }
+            .sortedBy { it.port }
+            .mapIndexed { seat, order -> order.copy(port = seat) }
 
     /**
      * Whether a session should ask every pad for a seat before play starts: more than two pads, or

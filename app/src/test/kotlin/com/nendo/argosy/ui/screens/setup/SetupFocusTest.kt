@@ -9,6 +9,7 @@ import com.nendo.argosy.domain.model.ScreenRole
 import com.nendo.argosy.domain.model.SetupFacts
 import com.nendo.argosy.ui.screens.settings.ScreenAssignment
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -202,6 +203,95 @@ class SetupFocusTest {
         val state = SetupUiState(page = SetupPage.FOLDERS, folders = folders)
         assertTrue(SetupTarget.RomFolder(RomFolderKind.SD_CARD) !in contentTargetsFor(state))
         assertTrue(SetupTarget.RomFolder(RomFolderKind.CUSTOM) in contentTargetsFor(state))
+    }
+
+    private val folderConfirmed = SetupFacts(romFolderPresent = true, romFolderConfirmed = true)
+
+    private val customFolders = folderChoicesFrom("/internal/ROMs", null, "/custom/ROMs", null)
+
+    @Test
+    fun `a confirmed game folder opens on next, not on the selected folder row`() {
+        val state = SetupUiState(page = SetupPage.FOLDERS, facts = folderConfirmed, folders = customFolders)
+        assertEquals(RomFolderKind.CUSTOM, state.folders.selectedRom)
+        assertTrue(pageSatisfied(state))
+        assertEquals(primary, focusedTarget(state))
+    }
+
+    @Test
+    fun `an unconfirmed game folder keeps focus on the selected folder row`() {
+        val state = SetupUiState(page = SetupPage.FOLDERS, folders = customFolders)
+        assertFalse(pageSatisfied(state))
+        assertEquals(SetupTarget.RomFolder(RomFolderKind.CUSTOM), focusedTarget(state))
+    }
+
+    @Test
+    fun `a confirmed game folder that cannot be written returns focus to its row`() {
+        val state = SetupUiState(
+            page = SetupPage.FOLDERS,
+            facts = folderConfirmed,
+            folders = customFolders.copy(unwritable = RomFolderKind.CUSTOM)
+        )
+        assertFalse(pageSatisfied(state))
+        assertEquals(SetupTarget.RomFolder(RomFolderKind.CUSTOM), focusedTarget(state))
+    }
+
+    @Test
+    fun `a stored focus on a satisfied page wins over the forward action`() {
+        val state = SetupUiState(
+            page = SetupPage.FOLDERS,
+            facts = folderConfirmed,
+            folders = customFolders,
+            focused = SetupTarget.RomFolder(RomFolderKind.INTERNAL)
+        )
+        assertEquals(SetupTarget.RomFolder(RomFolderKind.INTERNAL), focusedTarget(state))
+    }
+
+    @Test
+    fun `a platforms page already moved past opens on next, a first visit on the first platform`() {
+        val shown = listOf(platform(1), platform(2))
+        val unseen = SetupUiState(
+            page = SetupPage.PLATFORMS,
+            platforms = SetupPlatformsState(all = shown, shown = shown)
+        )
+        assertFalse(pageSatisfied(unseen))
+        assertEquals(SetupTarget.Platform(1), focusedTarget(unseen))
+
+        val seen = unseen.copy(facts = SetupFacts(pagesSeen = setOf("platforms")))
+        assertTrue(pageSatisfied(seen))
+        assertEquals(primary, focusedTarget(seen))
+    }
+
+    @Test
+    fun `an answered save sync opens on next, an unanswered one on the current choice`() {
+        val unanswered = SetupUiState(page = SetupPage.SAVE_SYNC, saveSyncOn = false)
+        assertEquals(SetupTarget.SaveSyncChoice(false), focusedTarget(unanswered))
+
+        val answered = unanswered.copy(facts = SetupFacts(saveSyncAnswered = true))
+        assertEquals(primary, focusedTarget(answered))
+    }
+
+    @Test
+    fun `every optional page with choices opens on next once seen and on its choices before`() {
+        val pads = SetupUiState(gamepadConnected = true)
+        val firstVisit = mapOf(
+            SetupPage.CONTROLLER to SetupTarget.ControllerLayoutChoice(false),
+            SetupPage.THEME to SetupTarget.ThemeMode,
+            SetupPage.HOME_LAYOUT to SetupTarget.HomeLayout,
+            SetupPage.LIBRARY_LOOK to SetupTarget.LibraryLayout
+        )
+        firstVisit.forEach { (page, choice) ->
+            val unseen = pads.copy(page = page)
+            assertEquals(choice, focusedTarget(unseen))
+            val seen = unseen.copy(facts = SetupFacts(pagesSeen = setOfNotNull(page.seenToken)))
+            assertEquals(primary, focusedTarget(seen))
+        }
+    }
+
+    @Test
+    fun `a library still choosing its source keeps focus on the source row`() {
+        val choice = SetupUiState(page = SetupPage.LIBRARY, facts = SetupFacts(librarySignedIn = true, librarySourceConfirmed = true))
+        assertFalse(pageSatisfied(choice))
+        assertEquals(SetupTarget.RommSource, focusedTarget(choice))
     }
 
     private fun builtInScreen(key: String, number: Int, role: ScreenRole) =

@@ -5,6 +5,8 @@ import com.nendo.argosy.R
 import com.nendo.argosy.domain.model.ArgosyPermission
 import com.nendo.argosy.domain.model.PermissionAvailability
 import com.nendo.argosy.domain.model.ScreenRole
+import com.nendo.argosy.domain.model.SetupItem
+import com.nendo.argosy.domain.setup.SetupRouter
 import com.nendo.argosy.ui.screens.settings.ScreenAssignment
 import com.nendo.argosy.ui.screens.setup.components.SetupStepLead
 
@@ -244,9 +246,33 @@ fun targetsFor(state: SetupUiState): List<SetupTarget> =
 fun primaryTarget(state: SetupUiState): SetupTarget? =
     actionsFor(state).lastOrNull { it.primary }?.let { SetupTarget.Action(it.id) }
 
+/**
+ * Whether [state]'s page already holds what it asks for, so it opens on its forward action. A
+ * required page reads its live answer; an optional page holds once a run has moved past it.
+ */
+fun pageSatisfied(state: SetupUiState): Boolean = when (state.page) {
+    SetupPage.WELCOME, SetupPage.DONE -> true
+    SetupPage.LIBRARY -> state.signIn.view == LibraryView.SIGNED_IN
+    SetupPage.PERMISSIONS -> firstUnmetRequired(state.access) == null
+    SetupPage.ACCESSIBILITY -> firstIncompleteStep(state.access) == null
+    SetupPage.FOLDERS -> SetupRouter.isSatisfied(SetupItem.ROM_FOLDER, state.facts) &&
+        state.folders.selectedRomPath != null &&
+        state.folders.unwritable == null
+    SetupPage.SAVE_SYNC -> SetupRouter.isSatisfied(SetupItem.SAVE_SYNC, state.facts)
+    SetupPage.DEFAULT_HOME -> SetupRouter.isSatisfied(SetupItem.DEFAULT_HOME, state.facts)
+    SetupPage.PLATFORMS, SetupPage.SCREENS, SetupPage.CONTROLLER, SetupPage.BUTTON_CHECK,
+    SetupPage.THEME, SetupPage.HOME_LAYOUT, SetupPage.LIBRARY_LOOK ->
+        state.page.seenToken in state.facts.pagesSeen
+}
+
 fun defaultFocus(state: SetupUiState): SetupTarget? {
+    if (pageSatisfied(state)) primaryTarget(state)?.let { return it }
+    return choiceFocus(state) ?: primaryTarget(state)
+}
+
+private fun choiceFocus(state: SetupUiState): SetupTarget? {
     val content = contentTargetsFor(state)
-    val preferred: SetupTarget? = when (state.page) {
+    return when (state.page) {
         SetupPage.LIBRARY -> if (state.signIn.error?.certificate == true && state.signIn.view == LibraryView.ADDRESS) {
             SetupTarget.Action(SetupActionId.IMPORT_CERTIFICATE)
         } else {
@@ -267,7 +293,6 @@ fun defaultFocus(state: SetupUiState): SetupTarget? {
         SetupPage.THEME, SetupPage.HOME_LAYOUT, SetupPage.LIBRARY_LOOK -> content.firstOrNull()
         SetupPage.WELCOME, SetupPage.DONE, SetupPage.DEFAULT_HOME, SetupPage.BUTTON_CHECK -> null
     }
-    return preferred ?: primaryTarget(state)
 }
 
 /**

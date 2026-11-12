@@ -10,9 +10,16 @@ enum class ClientCertTarget(val token: String) {
 }
 
 sealed interface ClientCertScope {
-    data class Dedicated(val target: ClientCertTarget) : ClientCertScope
+    /**
+     * A client that talks to one target's server. It presents the certificate only to
+     * [serverHost] and to the hosts recorded for [target], never to a host a redirect or an
+     * absolute URL from the server points elsewhere.
+     */
+    data class Dedicated(val target: ClientCertTarget, val serverHost: String? = null) : ClientCertScope
     data object ByHost : ClientCertScope
 }
 
-val ROMM_CLIENT_CERT_SCOPE: ClientCertScope = ClientCertScope.Dedicated(ClientCertTarget.ROMM)
+fun ClientCertTarget.scopeFor(serverUrl: String): ClientCertScope =
+    ClientCertScope.Dedicated(this, ClientCertStore.hostOf(serverUrl))
+
 val JELLYFIN_CLIENT_CERT_SCOPE: ClientCertScope = ClientCertScope.Dedicated(ClientCertTarget.JELLYFIN)

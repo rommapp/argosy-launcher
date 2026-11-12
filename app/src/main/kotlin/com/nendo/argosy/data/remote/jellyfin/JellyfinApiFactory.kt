@@ -1,7 +1,8 @@
 package com.nendo.argosy.data.remote.jellyfin
 
 import com.nendo.argosy.BuildConfig
-import com.nendo.argosy.data.remote.ssl.JELLYFIN_CLIENT_CERT_SCOPE
+import com.nendo.argosy.data.remote.ssl.ClientCertTarget
+import com.nendo.argosy.data.remote.ssl.scopeFor
 import com.nendo.argosy.data.remote.ssl.UserCertTrustManager.withUserCertTrust
 import com.squareup.moshi.Moshi
 import okhttp3.Interceptor
@@ -69,7 +70,7 @@ class JellyfinApiFactory @Inject constructor(
             .readTimeout(60, TimeUnit.SECONDS)
             .writeTimeout(60, TimeUnit.SECONDS)
             .dns(okhttp3.Dns.SYSTEM)
-            .withUserCertTrust(userCertStore, clientCertStore, JELLYFIN_CLIENT_CERT_SCOPE)
+            .withUserCertTrust(userCertStore, clientCertStore, ClientCertTarget.JELLYFIN.scopeFor(baseUrl))
             .build()
 
         return Retrofit.Builder()

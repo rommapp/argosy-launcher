@@ -1,7 +1,8 @@
 package com.nendo.argosy.data.remote.romm
 
 import com.nendo.argosy.BuildConfig
-import com.nendo.argosy.data.remote.ssl.ROMM_CLIENT_CERT_SCOPE
+import com.nendo.argosy.data.remote.ssl.ClientCertTarget
+import com.nendo.argosy.data.remote.ssl.scopeFor
 import com.nendo.argosy.data.remote.ssl.UserCertTrustManager.withUserCertTrust
 import com.squareup.moshi.Moshi
 import okhttp3.Interceptor
@@ -71,7 +72,7 @@ class RomMApiFactory @Inject constructor(
             .writeTimeout(probeTimeoutSeconds ?: READ_WRITE_TIMEOUT_SECONDS, TimeUnit.SECONDS)
             .callTimeout(probeTimeoutSeconds ?: 0L, TimeUnit.SECONDS)
             .dns(okhttp3.Dns.SYSTEM)
-            .withUserCertTrust(userCertStore, clientCertStore, ROMM_CLIENT_CERT_SCOPE)
+            .withUserCertTrust(userCertStore, clientCertStore, ClientCertTarget.ROMM.scopeFor(baseUrl))
             .build()
 
         return Retrofit.Builder()

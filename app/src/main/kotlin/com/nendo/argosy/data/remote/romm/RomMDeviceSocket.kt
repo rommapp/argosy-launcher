@@ -1,7 +1,8 @@
 package com.nendo.argosy.data.remote.romm
 
 import com.nendo.argosy.data.remote.ssl.ClientCertStore
-import com.nendo.argosy.data.remote.ssl.ROMM_CLIENT_CERT_SCOPE
+import com.nendo.argosy.data.remote.ssl.ClientCertTarget
+import com.nendo.argosy.data.remote.ssl.scopeFor
 import com.nendo.argosy.data.remote.ssl.UserCertStore
 import com.nendo.argosy.data.remote.ssl.UserCertTrustManager.withUserCertTrust
 import com.nendo.argosy.util.Logger
@@ -90,7 +91,7 @@ class RomMDeviceSocket @Inject constructor(
         val prefix = base.rawPath.orEmpty().trimEnd('/')
         val client = OkHttpClient.Builder()
             .readTimeout(READ_TIMEOUT_SECONDS, TimeUnit.SECONDS)
-            .withUserCertTrust(userCertStore, clientCertStore, ROMM_CLIENT_CERT_SCOPE)
+            .withUserCertTrust(userCertStore, clientCertStore, ClientCertTarget.ROMM.scopeFor(next.baseUrl))
             .build()
         val options = IO.Options().apply {
             path = "$prefix$SOCKET_PATH"

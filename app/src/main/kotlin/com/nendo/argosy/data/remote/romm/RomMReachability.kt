@@ -5,7 +5,8 @@ import android.net.ConnectivityManager
 import android.net.NetworkCapabilities
 import android.os.SystemClock
 import com.nendo.argosy.data.remote.ssl.ClientCertStore
-import com.nendo.argosy.data.remote.ssl.ROMM_CLIENT_CERT_SCOPE
+import com.nendo.argosy.data.remote.ssl.ClientCertTarget
+import com.nendo.argosy.data.remote.ssl.scopeFor
 import com.nendo.argosy.data.remote.ssl.UserCertStore
 import com.nendo.argosy.data.remote.ssl.UserCertTrustManager.withUserCertTrust
 import com.nendo.argosy.util.Logger
@@ -53,26 +54,29 @@ class RomMReachability @Inject constructor(
     }
     private val ledger = ReachabilityLedger(
         now = SystemClock::elapsedRealtime,
-        probe = { root -> heartbeatGotAnyResponse(probeClient(), root) },
+        probe = { root -> heartbeatGotAnyResponse(probeClient(root), root) },
         runInBackground = reprobeExecutor::execute
     )
 
-    private var cachedProbeClient: OkHttpClient? = null
+    private val probeClients = HashMap<String, OkHttpClient>()
     private var probeClientTrust: X509TrustManager? = null
 
-    private fun probeClient(): OkHttpClient {
+    private fun probeClient(root: String): OkHttpClient {
         val trust = userCertStore.trustManager()
-        cachedProbeClient?.takeIf { probeClientTrust === trust }?.let { return it }
-        return OkHttpClient.Builder()
-            .connectTimeout(PROBE_TIMEOUT_SECONDS, TimeUnit.SECONDS)
-            .readTimeout(PROBE_TIMEOUT_SECONDS, TimeUnit.SECONDS)
-            .callTimeout(PROBE_TIMEOUT_SECONDS, TimeUnit.SECONDS)
-            .withUserCertTrust(userCertStore, clientCertStore, ROMM_CLIENT_CERT_SCOPE)
-            .build()
-            .also {
-                cachedProbeClient = it
+        return synchronized(probeClients) {
+            if (probeClientTrust !== trust) {
+                probeClients.clear()
                 probeClientTrust = trust
             }
+            probeClients.getOrPut(root) {
+                OkHttpClient.Builder()
+                    .connectTimeout(PROBE_TIMEOUT_SECONDS, TimeUnit.SECONDS)
+                    .readTimeout(PROBE_TIMEOUT_SECONDS, TimeUnit.SECONDS)
+                    .callTimeout(PROBE_TIMEOUT_SECONDS, TimeUnit.SECONDS)
+                    .withUserCertTrust(userCertStore, clientCertStore, ClientCertTarget.ROMM.scopeFor(root))
+                    .build()
+            }
+        }
     }
 
     val interceptor: Interceptor = Interceptor { chain ->

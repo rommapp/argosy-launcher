@@ -1,6 +1,5 @@
 package com.nendo.argosy.data.remote.ssl
 
-import okhttp3.ConnectionPool
 import okhttp3.OkHttpClient
 import java.net.Socket
 import java.security.KeyStore
@@ -43,14 +42,10 @@ object UserCertTrustManager {
             return sslSocketFactory(sslContext.socketFactory, trustManager)
         }
         val keyManager = ClientCertKeyManager(clientCerts, scope)
-        val pool = ConnectionPool()
         val socketFactory = ClientCertRevisionSocketFactory(clientCerts) {
             SSLContext.getInstance("TLS").apply { init(arrayOf(keyManager), arrayOf(trustManager), null) }
         }
-        val reset = ClientCertPoolReset(clientCerts, pool)
-        return connectionPool(pool)
-            .addInterceptor(reset.application)
-            .addNetworkInterceptor(reset.network)
+        return addInterceptor(ClientCertPoolReset(socketFactory).application)
             .sslSocketFactory(socketFactory, trustManager)
     }
 

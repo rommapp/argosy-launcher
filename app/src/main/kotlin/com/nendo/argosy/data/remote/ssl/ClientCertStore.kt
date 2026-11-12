@@ -12,6 +12,8 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.withContext
 import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import java.io.File
+import java.io.FileOutputStream
+import java.io.IOException
 import java.util.Properties
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicInteger
@@ -50,12 +52,19 @@ class ClientCertStore @Inject constructor(
     val changedFor: SharedFlow<ClientCertTarget> = _changedFor.asSharedFlow()
 
     private val _revision = AtomicInteger()
+    private val _certificateRevision = AtomicInteger()
 
     /**
-     * Increments on every change to the certificate or its targets. A connection or TLS session
-     * opened under an earlier revision is stale.
+     * Increments on every change to the certificate, its targets or the recorded hosts. A TLS
+     * context or session from an earlier revision is stale.
      */
     val revision: Int get() = _revision.get()
+
+    /**
+     * Increments on every change to the certificate or its targets. A connection opened under an
+     * earlier certificate revision is stale.
+     */
+    val certificateRevision: Int get() = _certificateRevision.get()
 
     @Volatile
     private var identity: ClientIdentity? = null
@@ -105,7 +114,7 @@ class ClientCertStore @Inject constructor(
                 alias = nextAlias
                 identity = stored
                 loaded = true
-                _revision.incrementAndGet()
+                certificateChanged()
                 infoOf(stored, targets).also { _info.value = it }
             }
             info.targets.forEach { _changedFor.tryEmit(it) }
@@ -128,7 +137,7 @@ class ClientCertStore @Inject constructor(
                 val targets = if (enabled) current.targets + target else current.targets - target
                 if (targets == current.targets) return@synchronized false
                 writeMeta(currentAlias, targets)
-                _revision.incrementAndGet()
+                certificateChanged()
                 _info.value = current.copy(targets = targets)
                 true
             }
@@ -163,26 +172,31 @@ class ClientCertStore @Inject constructor(
         ensureLoaded()
         val current = identity ?: return null
         val targets = _info.value?.targets ?: return null
-        if (host != null && !UserCertTrustManager.acceptsImportedCertFor(host)) return null
+        if (!UserCertTrustManager.acceptsImportedCertFor(host)) return null
+        val peer = host?.lowercase() ?: return null
         val allowed = when (scope) {
-            is ClientCertScope.Dedicated -> scope.target in targets
-            ClientCertScope.ByHost -> {
-                val peer = host?.lowercase() ?: return null
-                targets.any { peer in hostsByTarget[it].orEmpty() }
-            }
+            is ClientCertScope.Dedicated -> scope.target in targets &&
+                (peer == scope.serverHost || peer in hostsByTarget[scope.target].orEmpty())
+            ClientCertScope.ByHost -> targets.any { peer in hostsByTarget[it].orEmpty() }
         }
         return current.takeIf { allowed }
     }
 
     private fun nowMillis(): Long = System.nanoTime() / 1_000_000
 
+    private fun certificateChanged() {
+        _certificateRevision.incrementAndGet()
+        _revision.incrementAndGet()
+    }
+
     private fun forget() {
         ALIASES.forEach { runCatching { vault.delete(it) } }
         metaFile.delete()
+        File(metaFile.parentFile, "$META_FILE$PENDING_SUFFIX").delete()
         alias = null
         identity = null
         loaded = true
-        _revision.incrementAndGet()
+        certificateChanged()
         _info.value = null
     }
 
@@ -216,7 +230,7 @@ class ClientCertStore @Inject constructor(
         }
         alias = meta.alias
         identity = stored
-        _revision.incrementAndGet()
+        certificateChanged()
         _info.value = infoOf(stored, meta.targets)
         return true
     }
@@ -243,7 +257,15 @@ class ClientCertStore @Inject constructor(
             setProperty(KEY_ALIAS, keyAlias)
             setProperty(KEY_TARGETS, targets.joinToString(",") { it.token })
         }
-        file.outputStream().use { props.store(it, null) }
+        val pending = File(file.parentFile, "$META_FILE$PENDING_SUFFIX")
+        FileOutputStream(pending).use { out ->
+            props.store(out, null)
+            out.fd.sync()
+        }
+        if (!pending.renameTo(file)) {
+            pending.delete()
+            throw IOException("could not replace ${file.name}")
+        }
     }
 
     private fun infoOf(id: ClientIdentity, targets: Set<ClientCertTarget>): ClientCertInfo {
@@ -261,6 +283,7 @@ class ClientCertStore @Inject constructor(
     companion object {
         const val DIR = "client_cert"
         private const val META_FILE = "identity.properties"
+        private const val PENDING_SUFFIX = ".pending"
         private const val KEY_TARGETS = "targets"
         private const val KEY_ALIAS = "alias"
         private val ALIASES = listOf("argosy-client-certificate", "argosy-client-certificate-b")

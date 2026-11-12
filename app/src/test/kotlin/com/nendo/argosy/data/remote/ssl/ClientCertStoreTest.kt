@@ -17,7 +17,10 @@ import org.junit.Before
 import org.junit.Test
 import java.io.File
 import javax.net.ssl.SSLContext
+import javax.net.ssl.SSLEngine
 import kotlin.io.path.createTempDirectory
+
+private val ROMM_LAN = ClientCertTarget.ROMM.scopeFor("https://romm.lan")
 
 class ClientCertStoreTest {
 
@@ -147,7 +150,7 @@ class ClientCertStoreTest {
         assertEquals("argosy-test-rsa", store.info.value?.displayName)
         assertEquals(setOf(ClientCertTarget.ROMM), store.info.value?.targets)
         assertEquals(listOf("RSA"), vault.entries.values.map { it.keyAlgorithm })
-        assertNotNull(store.identityFor(ROMM_CLIENT_CERT_SCOPE, "romm.lan"))
+        assertNotNull(store.identityFor(ROMM_LAN, "romm.lan"))
     }
 
     @Test
@@ -213,11 +216,11 @@ class ClientCertStoreTest {
 
         val reopened = newStore()
         reopened.initialize()
-        assertNull(reopened.identityFor(ROMM_CLIENT_CERT_SCOPE, "romm.lan"))
+        assertNull(reopened.identityFor(ROMM_LAN, "romm.lan"))
         assertTrue(File(tempDir, ClientCertStore.DIR).listFiles().orEmpty().any { it.isFile })
 
         vault.unavailable = false
-        assertNotNull(reopened.identityFor(ROMM_CLIENT_CERT_SCOPE, "romm.lan"))
+        assertNotNull(reopened.identityFor(ROMM_LAN, "romm.lan"))
         assertEquals(setOf(ClientCertTarget.ROMM), reopened.info.value?.targets)
     }
 
@@ -230,7 +233,7 @@ class ClientCertStoreTest {
         val reopened = newStore()
         reopened.initialize()
         assertEquals("argosy-test-ec", reopened.info.value?.displayName)
-        assertEquals("EC", reopened.identityFor(ROMM_CLIENT_CERT_SCOPE, null)?.keyAlgorithm)
+        assertEquals("EC", reopened.identityFor(ROMM_LAN, "romm.lan")?.keyAlgorithm)
     }
 
     @Test
@@ -246,11 +249,15 @@ class ClientCertStoreTest {
     @Test
     fun `the key manager hands out the chain and key of the identity it chose`() = runBlocking {
         store.importFrom(fixture("rsa-aes.p12"), "argosy".toCharArray(), ClientCertTarget.ROMM).getOrThrow()
-        val keyManager = ClientCertKeyManager(store, ROMM_CLIENT_CERT_SCOPE)
-        val rsaAlias = keyManager.chooseClientAlias(arrayOf("RSA", "EC"), null, null)!!
+        val keyManager = ClientCertKeyManager(store, ROMM_LAN)
+        val engine = mockk<SSLEngine> {
+            every { handshakeSession } returns null
+            every { peerHost } returns "romm.lan"
+        }
+        val rsaAlias = keyManager.chooseEngineClientAlias(arrayOf("RSA", "EC"), null, engine)!!
 
         store.importFrom(fixture("ec-aes.p12"), "argosy".toCharArray(), ClientCertTarget.ROMM).getOrThrow()
-        val ecAlias = keyManager.chooseClientAlias(arrayOf("RSA", "EC"), null, null)!!
+        val ecAlias = keyManager.chooseEngineClientAlias(arrayOf("RSA", "EC"), null, engine)!!
 
         assertTrue(rsaAlias != ecAlias)
         assertEquals("RSA", keyManager.getPrivateKey(rsaAlias)?.algorithm)
@@ -277,7 +284,7 @@ class ClientCertStoreTest {
         val reopened = newStore()
         reopened.initialize()
         assertNull(reopened.info.value)
-        assertNull(reopened.identityFor(ROMM_CLIENT_CERT_SCOPE, "romm.home.lan"))
+        assertNull(reopened.identityFor(ROMM_LAN, "romm.lan"))
         assertFalse(File(tempDir, ClientCertStore.DIR).listFiles().orEmpty().any { it.isFile })
     }
 
@@ -296,17 +303,77 @@ class ClientCertStoreTest {
         store.remove()
         assertNull(store.info.value)
         assertTrue(vault.entries.isEmpty())
-        assertNull(store.identityFor(ROMM_CLIENT_CERT_SCOPE, null))
+        assertNull(store.identityFor(ROMM_LAN, "romm.lan"))
     }
 
     @Test
     fun `a dedicated client presents only for an enabled target`() = runBlocking {
         store.importFrom(fixture("rsa-aes.p12"), "argosy".toCharArray(), ClientCertTarget.ROMM).getOrThrow()
-        assertNotNull(store.identityFor(ROMM_CLIENT_CERT_SCOPE, "new-server.example"))
-        assertNull(store.identityFor(JELLYFIN_CLIENT_CERT_SCOPE, "media.example"))
+        val newServer = ClientCertTarget.ROMM.scopeFor("https://New-Server.example:8443/romm")
+        assertNotNull(store.identityFor(newServer, "new-server.example"))
+        assertNull(store.identityFor(ClientCertTarget.JELLYFIN.scopeFor("https://media.example"), "media.example"))
 
         store.setTargetEnabled(ClientCertTarget.ROMM, false)
-        assertNull(store.identityFor(ROMM_CLIENT_CERT_SCOPE, "new-server.example"))
+        assertNull(store.identityFor(newServer, "new-server.example"))
+    }
+
+    @Test
+    fun `a dedicated client presents only to its own server and the recorded hosts`() = runBlocking {
+        store.importFrom(fixture("rsa-aes.p12"), "argosy".toCharArray(), ClientCertTarget.ROMM).getOrThrow()
+        store.setTargetEnabled(ClientCertTarget.JELLYFIN, true)
+        store.updateHosts(ClientCertTarget.ROMM, listOf("https://romm.lan", "https://10.0.0.5"))
+        store.updateHosts(ClientCertTarget.JELLYFIN, listOf("https://media.lan"))
+
+        assertNotNull(store.identityFor(ROMM_LAN, "romm.lan"))
+        assertNotNull(store.identityFor(ROMM_LAN, "10.0.0.5"))
+        assertNull(store.identityFor(ROMM_LAN, "downloads.cdn.example"))
+        assertNull(store.identityFor(ROMM_LAN, "media.lan"))
+        assertNull(store.identityFor(ROMM_LAN, null))
+
+        assertNotNull(store.identityFor(JELLYFIN_CLIENT_CERT_SCOPE, "media.lan"))
+        assertNull(store.identityFor(JELLYFIN_CLIENT_CERT_SCOPE, "transcoder.elsewhere.example"))
+        assertNull(store.identityFor(JELLYFIN_CLIENT_CERT_SCOPE, "romm.lan"))
+    }
+
+    @Test
+    fun `a socket opened before the certificate or its targets changed is closed, busy or not`() = runBlocking {
+        val factory = ClientCertRevisionSocketFactory(store) {
+            SSLContext.getInstance("TLS").apply { init(null, null, null) }
+        }
+        val before = factory.createSocket()
+        factory.closeStale()
+        assertFalse(before.isClosed)
+
+        store.importFrom(fixture("rsa-aes.p12"), "argosy".toCharArray(), ClientCertTarget.ROMM).getOrThrow()
+        val after = factory.createSocket()
+        factory.closeStale()
+        assertTrue(before.isClosed)
+        assertFalse(after.isClosed)
+
+        store.updateHosts(ClientCertTarget.ROMM, listOf("https://romm.lan"))
+        factory.closeStale()
+        assertFalse(after.isClosed)
+
+        store.setTargetEnabled(ClientCertTarget.ROMM, false)
+        factory.closeStale()
+        assertTrue(after.isClosed)
+    }
+
+    @Test
+    fun `an interrupted settings write leaves the saved targets in place`() = runBlocking {
+        store.importFrom(fixture("rsa-aes.p12"), "argosy".toCharArray(), ClientCertTarget.ROMM).getOrThrow()
+        store.setTargetEnabled(ClientCertTarget.JELLYFIN, true)
+        val dir = File(tempDir, ClientCertStore.DIR)
+        assertEquals(listOf("identity.properties"), dir.list()?.toList())
+        File(dir, "identity.properties.pending").writeText("alias=argosy-client-cert")
+
+        val reopened = newStore()
+        reopened.initialize()
+        assertEquals(setOf(ClientCertTarget.ROMM, ClientCertTarget.JELLYFIN), reopened.info.value?.targets)
+
+        reopened.setTargetEnabled(ClientCertTarget.JELLYFIN, false)
+        assertEquals(listOf("identity.properties"), dir.list()?.toList())
+        assertEquals(setOf(ClientCertTarget.ROMM), newStore().apply { initialize() }.info.value?.targets)
     }
 
     @Test
@@ -328,7 +395,7 @@ class ClientCertStoreTest {
         store.importFrom(fixture("rsa-aes.p12"), "argosy".toCharArray(), ClientCertTarget.ROMM).getOrThrow()
         store.updateHosts(ClientCertTarget.ROMM, listOf("https://github.com"))
         assertNull(store.identityFor(ClientCertScope.ByHost, "github.com"))
-        assertNull(store.identityFor(ROMM_CLIENT_CERT_SCOPE, "api.github.com"))
+        assertNull(store.identityFor(ClientCertTarget.ROMM.scopeFor("https://api.github.com"), "api.github.com"))
     }
 
     @Test

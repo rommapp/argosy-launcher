@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="about_tools_controller_title">手柄测试</string>
+    <string name="about_tools_controller_subtitle">按下的每个按键都会亮起，并显示是哪个手柄发出的</string>
+    <string name="about_tools_display_title">显示屏信息</string>
+    <string name="about_tools_display_subtitle">每个显示屏的 ID、尺寸、密度、刷新率和角色</string>
+    <string name="about_tools_export_title">导出诊断信息</string>
+    <string name="about_tools_export_subtitle">将日志、设备信息和设置保存到 Download/Argosy，并移除账号和服务器地址</string>
+    <string name="about_tools_export_subtitle_busy">正在导出...</string>
+    <string name="about_tools_setup_title">重新运行设置</string>
+    <string name="about_tools_setup_subtitle">逐页走完设置流程。你的设置、账号、游戏库和存档保持不变。</string>
+    <string name="about_tools_prompt_title">显示更新提示</string>
+    <string name="about_tools_prompt_subtitle">打开最新版本的更新提示，即使已跳过或已安装</string>
+    <string name="about_tools_prompt_subtitle_busy">正在查找最新版本...</string>
+    <string name="about_tools_reset_title">重置一次性提示</string>
+    <string name="about_tools_reset_subtitle">再次显示 RetroAchievements 登录、存档迁移、权限、月度回顾和已跳过更新的提示</string>
+
+    <string name="about_tools_reset_confirm_title">重置一次性提示？</string>
+    <string name="about_tools_reset_confirm_message">已看过的提示会在下次适用时再次显示。其他内容不变。</string>
+    <string name="about_tools_reset_confirm_action">重置</string>
+    <string name="about_tools_reset_done_title">提示已重置</string>
+    <string name="about_tools_reset_done_subtitle">每条提示会在下次适用时再次显示</string>
+
+    <string name="about_tools_export_done_title">诊断信息已保存</string>
+    <string name="about_tools_export_done_subtitle">已保存到 %1$s</string>
+    <string name="about_tools_export_failed">无法写入诊断文件</string>
+
+    <string name="about_tools_prompt_failed">无法获取最新版本</string>
+    <string name="about_tools_prompt_none">未找到任何版本</string>
+
+    <string name="about_tools_controller_heading">手柄测试</string>
+    <string name="about_tools_controller_companion_title">手柄测试</string>
+    <string name="about_tools_controller_waiting">请按下手柄上的任意按键</string>
+    <string name="about_tools_controller_unnamed">未命名手柄</string>
+    <string name="about_tools_controller_ids">厂商 %1$s，产品 %2$s</string>
+    <string name="about_tools_controller_id">手柄 ID：%1$s</string>
+    <string name="about_tools_controller_seat">已保存位置：玩家 %1$d</string>
+    <string name="about_tools_controller_no_seat">未保存位置</string>
+    <string name="about_tools_controller_hint">按住任意按键结束。按下另一个手柄的按键即可切换到该手柄。</string>
+    <string name="about_tools_controller_close">关闭</string>
+
+    <string name="about_tools_display_heading">显示屏</string>
+    <string name="about_tools_display_loading">正在读取显示屏...</string>
+    <string name="about_tools_display_empty">未检测到显示屏</string>
+    <string name="about_tools_display_entry_title">显示屏 %1$d：%2$s</string>
+    <string name="about_tools_display_physical">物理 ID：%1$s</string>
+    <string name="about_tools_display_physical_none">物理 ID：无</string>
+    <string name="about_tools_display_size">%1$d x %2$d px，%3$d x %4$d dp</string>
+    <string name="about_tools_display_density">%1$d dpi，%2$.1f Hz</string>
+    <string name="about_tools_display_kind_role">%1$s，角色：%2$s</string>
+    <string name="about_tools_display_kind_built_in">内置</string>
+    <string name="about_tools_display_kind_external">外接</string>
+    <string name="about_tools_display_kind_virtual">虚拟</string>
+    <string name="about_tools_display_role_primary">菜单</string>
+    <string name="about_tools_display_role_presentation">展示</string>
+    <string name="about_tools_display_role_app_target">游戏和应用</string>
+    <string name="about_tools_display_role_off">关闭</string>
+    <string name="about_tools_display_role_none">无</string>
+    <string name="about_tools_display_close">关闭</string>
+</resources>

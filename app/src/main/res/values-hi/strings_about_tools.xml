@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="about_tools_controller_title">कंट्रोलर जाँच</string>
+    <string name="about_tools_controller_subtitle">दबाया गया हर बटन चमकता है और दिखता है कि उसे किस कंट्रोलर ने भेजा</string>
+    <string name="about_tools_display_title">डिस्प्ले जानकारी</string>
+    <string name="about_tools_display_subtitle">हर डिस्प्ले की आईडी, आकार, घनत्व, रिफ़्रेश दर और भूमिका</string>
+    <string name="about_tools_export_title">डायग्नोस्टिक्स निर्यात करें</string>
+    <string name="about_tools_export_subtitle">लॉग, डिवाइस विवरण और सेटिंग्स Download/Argosy में सहेजें, खातों और सर्वर पतों के बिना</string>
+    <string name="about_tools_export_subtitle_busy">निर्यात हो रहा है...</string>
+    <string name="about_tools_setup_title">सेटअप फिर से चलाएँ</string>
+    <string name="about_tools_setup_subtitle">सेटअप के हर पेज से गुज़रें। आपकी सेटिंग्स, खाते, लाइब्रेरी और सेव जैसे हैं वैसे ही रहते हैं।</string>
+    <string name="about_tools_prompt_title">अपडेट संकेत दिखाएँ</string>
+    <string name="about_tools_prompt_subtitle">नवीनतम रिलीज़ का अपडेट संकेत खोलें, भले ही वह छोड़ी गई हो या पहले से इंस्टॉल हो</string>
+    <string name="about_tools_prompt_subtitle_busy">नवीनतम रिलीज़ खोजी जा रही है...</string>
+    <string name="about_tools_reset_title">एक-बार की सूचनाएँ रीसेट करें</string>
+    <string name="about_tools_reset_subtitle">RetroAchievements साइन-इन, सेव माइग्रेशन, अनुमति, मासिक सारांश और छोड़े गए अपडेट की सूचनाएँ फिर से दिखाएँ</string>
+
+    <string name="about_tools_reset_confirm_title">एक-बार की सूचनाएँ रीसेट करें?</string>
+    <string name="about_tools_reset_confirm_message">जो सूचनाएँ आप देख चुके हैं, वे अगली बार लागू होने पर फिर दिखेंगी। और कुछ नहीं बदलता।</string>
+    <string name="about_tools_reset_confirm_action">रीसेट करें</string>
+    <string name="about_tools_reset_done_title">सूचनाएँ रीसेट हुईं</string>
+    <string name="about_tools_reset_done_subtitle">हर सूचना अगली बार लागू होने पर फिर दिखेगी</string>
+
+    <string name="about_tools_export_done_title">डायग्नोस्टिक्स सहेजे गए</string>
+    <string name="about_tools_export_done_subtitle">%1$s में सहेजा गया</string>
+    <string name="about_tools_export_failed">डायग्नोस्टिक्स फ़ाइल नहीं लिखी जा सकी</string>
+
+    <string name="about_tools_prompt_failed">नवीनतम रिलीज़ प्राप्त नहीं हो सकी</string>
+    <string name="about_tools_prompt_none">कोई रिलीज़ नहीं मिली</string>
+
+    <string name="about_tools_controller_heading">कंट्रोलर जाँच</string>
+    <string name="about_tools_controller_companion_title">कंट्रोलर जाँच</string>
+    <string name="about_tools_controller_waiting">किसी कंट्रोलर पर कोई बटन दबाएँ</string>
+    <string name="about_tools_controller_unnamed">बिना नाम का कंट्रोलर</string>
+    <string name="about_tools_controller_ids">विक्रेता %1$s, उत्पाद %2$s</string>
+    <string name="about_tools_controller_id">कंट्रोलर आईडी: %1$s</string>
+    <string name="about_tools_controller_seat">सहेजी गई सीट: खिलाड़ी %1$d</string>
+    <string name="about_tools_controller_no_seat">कोई सहेजी गई सीट नहीं</string>
+    <string name="about_tools_controller_hint">समाप्त करने के लिए कोई भी बटन दबाए रखें। दूसरे कंट्रोलर पर जाने के लिए उस पर कोई बटन दबाएँ।</string>
+    <string name="about_tools_controller_close">बंद करें</string>
+
+    <string name="about_tools_display_heading">डिस्प्ले</string>
+    <string name="about_tools_display_loading">डिस्प्ले पढ़े जा रहे हैं...</string>
+    <string name="about_tools_display_empty">कोई डिस्प्ले नहीं मिला</string>
+    <string name="about_tools_display_entry_title">डिस्प्ले %1$d: %2$s</string>
+    <string name="about_tools_display_physical">भौतिक आईडी: %1$s</string>
+    <string name="about_tools_display_physical_none">भौतिक आईडी: कोई नहीं</string>
+    <string name="about_tools_display_size">%1$d x %2$d px, %3$d x %4$d dp</string>
+    <string name="about_tools_display_density">%1$d dpi, %2$.1f Hz</string>
+    <string name="about_tools_display_kind_role">%1$s, भूमिका: %2$s</string>
+    <string name="about_tools_display_kind_built_in">अंतर्निर्मित</string>
+    <string name="about_tools_display_kind_external">बाहरी</string>
+    <string name="about_tools_display_kind_virtual">आभासी</string>
+    <string name="about_tools_display_role_primary">मेनू</string>
+    <string name="about_tools_display_role_presentation">प्रस्तुति</string>
+    <string name="about_tools_display_role_app_target">गेम और ऐप</string>
+    <string name="about_tools_display_role_off">बंद</string>
+    <string name="about_tools_display_role_none">कोई नहीं</string>
+    <string name="about_tools_display_close">बंद करें</string>
+</resources>

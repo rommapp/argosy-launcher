@@ -177,7 +177,11 @@ class UpdateRepository @Inject constructor(
             .create(GitHubApi::class.java)
     }
 
-    suspend fun checkForUpdates(betaEnabled: Boolean): UpdateState {
+    /**
+     * Finds the newest release allowed by [betaEnabled]. With [newerOnly] false that release is
+     * returned as [UpdateState.UpdateAvailable] even when it is not newer than this build.
+     */
+    suspend fun checkForUpdates(betaEnabled: Boolean, newerOnly: Boolean = true): UpdateState {
         _updateState.value = UpdateState.Checking
         Log.d(TAG, "Checking for updates, current version: $currentVersion, beta enabled: $betaEnabled")
 
@@ -231,7 +235,7 @@ class UpdateRepository @Inject constructor(
             val (release, latestVersion) = latestCandidate
             Log.d(TAG, "Version comparison: current=$currentVersionInfo, latest=$latestVersion")
 
-            if (latestVersion > currentVersionInfo) {
+            if (!newerOnly || latestVersion > currentVersionInfo) {
                 val apkAsset = selectApkAsset(release.assets, BuildConfig.VERSION_CODE)
                 if (apkAsset == null) {
                     val error = UpdateState.Error("No APK found in release")

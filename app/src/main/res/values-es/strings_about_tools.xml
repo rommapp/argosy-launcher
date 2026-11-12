@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="about_tools_controller_title">Prueba de mando</string>
+    <string name="about_tools_controller_subtitle">Ilumina cada botón que pulses y muestra qué mando lo envió</string>
+    <string name="about_tools_display_title">Información de pantallas</string>
+    <string name="about_tools_display_subtitle">Identificadores, tamaño, densidad, frecuencia de actualización y función de cada pantalla</string>
+    <string name="about_tools_export_title">Exportar diagnóstico</string>
+    <string name="about_tools_export_subtitle">Guarda registros, datos del dispositivo y ajustes en Download/Argosy, sin cuentas ni direcciones de servidor</string>
+    <string name="about_tools_export_subtitle_busy">Exportando...</string>
+    <string name="about_tools_setup_title">Volver a ejecutar la configuración</string>
+    <string name="about_tools_setup_subtitle">Recorre todas las páginas de configuración. Tus ajustes, cuentas, biblioteca y partidas guardadas no cambian.</string>
+    <string name="about_tools_prompt_title">Mostrar aviso de actualización</string>
+    <string name="about_tools_prompt_subtitle">Abre el aviso de actualización de la última versión, aunque se haya omitido o ya esté instalada</string>
+    <string name="about_tools_prompt_subtitle_busy">Buscando la última versión...</string>
+    <string name="about_tools_reset_title">Restablecer avisos únicos</string>
+    <string name="about_tools_reset_subtitle">Vuelve a mostrar los avisos de inicio de sesión en RetroAchievements, migración de partidas, permisos, resumen mensual y actualización omitida</string>
+
+    <string name="about_tools_reset_confirm_title">¿Restablecer avisos únicos?</string>
+    <string name="about_tools_reset_confirm_message">Los avisos que ya viste volverán a aparecer la próxima vez que correspondan. Nada más cambia.</string>
+    <string name="about_tools_reset_confirm_action">Restablecer</string>
+    <string name="about_tools_reset_done_title">Avisos restablecidos</string>
+    <string name="about_tools_reset_done_subtitle">Cada aviso volverá a aparecer la próxima vez que corresponda</string>
+
+    <string name="about_tools_export_done_title">Diagnóstico guardado</string>
+    <string name="about_tools_export_done_subtitle">Guardado en %1$s</string>
+    <string name="about_tools_export_failed">No se pudo escribir el archivo de diagnóstico</string>
+
+    <string name="about_tools_prompt_failed">No se pudo obtener la última versión</string>
+    <string name="about_tools_prompt_none">No se encontró ninguna versión</string>
+
+    <string name="about_tools_controller_heading">Prueba de mando</string>
+    <string name="about_tools_controller_companion_title">Prueba de mando</string>
+    <string name="about_tools_controller_waiting">Pulsa un botón en un mando</string>
+    <string name="about_tools_controller_unnamed">Mando sin nombre</string>
+    <string name="about_tools_controller_ids">Fabricante %1$s, producto %2$s</string>
+    <string name="about_tools_controller_id">Id. del mando: %1$s</string>
+    <string name="about_tools_controller_seat">Puesto guardado: jugador %1$d</string>
+    <string name="about_tools_controller_no_seat">Sin puesto guardado</string>
+    <string name="about_tools_controller_hint">Mantén pulsado cualquier botón para terminar. Pulsa un botón en otro mando para cambiar a él.</string>
+    <string name="about_tools_controller_close">Cerrar</string>
+
+    <string name="about_tools_display_heading">Pantallas</string>
+    <string name="about_tools_display_loading">Leyendo pantallas...</string>
+    <string name="about_tools_display_empty">No se detectó ninguna pantalla</string>
+    <string name="about_tools_display_entry_title">Pantalla %1$d: %2$s</string>
+    <string name="about_tools_display_physical">Id. físico: %1$s</string>
+    <string name="about_tools_display_physical_none">Id. físico: ninguno</string>
+    <string name="about_tools_display_size">%1$d x %2$d px, %3$d x %4$d dp</string>
+    <string name="about_tools_display_density">%1$d ppp, %2$.1f Hz</string>
+    <string name="about_tools_display_kind_role">%1$s, función: %2$s</string>
+    <string name="about_tools_display_kind_built_in">Integrada</string>
+    <string name="about_tools_display_kind_external">Externa</string>
+    <string name="about_tools_display_kind_virtual">Virtual</string>
+    <string name="about_tools_display_role_primary">Menús</string>
+    <string name="about_tools_display_role_presentation">Presentación</string>
+    <string name="about_tools_display_role_app_target">Juegos y apps</string>
+    <string name="about_tools_display_role_off">Apagada</string>
+    <string name="about_tools_display_role_none">Ninguna</string>
+    <string name="about_tools_display_close">Cerrar</string>
+</resources>

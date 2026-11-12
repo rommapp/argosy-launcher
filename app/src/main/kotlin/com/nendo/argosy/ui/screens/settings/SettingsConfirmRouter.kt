@@ -1205,6 +1205,21 @@ private fun routeAboutConfirm(vm: SettingsViewModel, state: SettingsUiState): In
             vm.setBetaUpdatesEnabled(!state.betaUpdatesEnabled)
             return InputResult.handled(SoundType.TOGGLE)
         }
+        AboutItem.ControllerTest -> {
+            vm.aboutTools.openControllerTest()
+            return InputResult.handled(SoundType.OPEN_MODAL)
+        }
+        AboutItem.DisplayInfo -> {
+            vm.aboutTools.openDisplayInfo()
+            return InputResult.handled(SoundType.OPEN_MODAL)
+        }
+        AboutItem.ExportDiagnostics -> vm.aboutTools.exportDiagnostics()
+        AboutItem.RunSetupAgain -> vm.runSetupAgain()
+        AboutItem.ShowUpdatePrompt -> vm.aboutTools.showUpdatePromptNow()
+        AboutItem.ResetNotices -> {
+            vm.aboutTools.requestResetNotices()
+            return InputResult.handled(SoundType.OPEN_MODAL)
+        }
         AboutItem.DebugUpdateChecks -> {
             vm.setDebugUpdateChecksEnabled(!state.debugUpdateChecksEnabled)
             return InputResult.handled(SoundType.TOGGLE)

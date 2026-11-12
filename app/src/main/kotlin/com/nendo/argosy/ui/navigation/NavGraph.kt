@@ -67,7 +67,7 @@ fun NavGraph(
             SetupScreen(
                 onComplete = {
                     navController.navigate(Screen.Home.route) {
-                        popUpTo(Screen.FirstRun.route) { inclusive = true }
+                        popUpTo(navController.graph.id) { inclusive = true }
                     }
                 }
             )

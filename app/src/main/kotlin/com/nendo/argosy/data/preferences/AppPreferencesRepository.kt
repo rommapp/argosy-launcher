@@ -208,6 +208,17 @@ class AppPreferencesRepository @Inject constructor(
         }
     }
 
+    /**
+     * Forgets the permission revocations already noticed and the last monthly recap shown, so
+     * both notices show again. Acknowledged permissions and every other value are kept.
+     */
+    suspend fun resetOneTimeNotices() {
+        dataStore.edit { prefs ->
+            prefs.remove(Keys.PERMISSIONS_REVOCATIONS_NOTICED)
+            prefs.remove(Keys.LAST_MONTHLY_RECAP_SHOWN)
+        }
+    }
+
     private fun parsePermissionTokens(raw: String?): Set<ArgosyPermission> =
         raw?.split(",")?.mapNotNull { ArgosyPermission.fromToken(it.trim()) }?.toSet().orEmpty()
 

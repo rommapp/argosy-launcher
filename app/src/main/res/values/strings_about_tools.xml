@@ -1,0 +1,118 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- ===== Settings > About, debug section tool rows ===== -->
+    <!-- Row title. Opens a screen that lights up each controller button as it is pressed. Noun phrase. -->
+    <string name="about_tools_controller_title">Controller Test</string>
+    <!-- Second line of that row. -->
+    <string name="about_tools_controller_subtitle">Light up each button you press and see which controller sent it</string>
+    <!-- Row title. Opens a list of the device's displays. Noun phrase. -->
+    <string name="about_tools_display_title">Display Info</string>
+    <!-- Second line of that row. -->
+    <string name="about_tools_display_subtitle">Ids, sizes, density, refresh rate and role of each display</string>
+    <!-- Row title. Writes a zip file of logs and device details for a bug report. Verb phrase. -->
+    <string name="about_tools_export_title">Export Diagnostics</string>
+    <!-- Second line of that row. "Download/Argosy" is a folder path and stays as written. -->
+    <string name="about_tools_export_subtitle">Save logs, device details and settings to Download/Argosy, with accounts and server addresses removed</string>
+    <!-- Second line of that row while the file is being written. -->
+    <string name="about_tools_export_subtitle_busy">Exporting...</string>
+    <!-- Row title. Opens the first-run setup from its first page. Verb phrase. -->
+    <string name="about_tools_setup_title">Run Setup Again</string>
+    <!-- Second line of that row. -->
+    <string name="about_tools_setup_subtitle">Walk through every setup page. Your settings, accounts, library and saves stay as they are.</string>
+    <!-- Row title. Opens the prompt that offers a new Argosy version. Verb phrase. -->
+    <string name="about_tools_prompt_title">Show Update Prompt</string>
+    <!-- Second line of that row. -->
+    <string name="about_tools_prompt_subtitle">Open the update prompt for the latest release, even if it is skipped or already installed</string>
+    <!-- Second line of that row while the latest release is being looked up. -->
+    <string name="about_tools_prompt_subtitle_busy">Looking up the latest release...</string>
+    <!-- Row title. Makes notices that show only once show again. Verb phrase. -->
+    <string name="about_tools_reset_title">Reset One-Time Notices</string>
+    <!-- Second line of that row. -->
+    <string name="about_tools_reset_subtitle">Show the RetroAchievements sign-in, save migration, permission, monthly recap and skipped update notices again</string>
+
+    <!-- ===== Reset one-time notices confirm ===== -->
+    <!-- Confirm modal heading. Question. -->
+    <string name="about_tools_reset_confirm_title">Reset one-time notices?</string>
+    <!-- Confirm modal body. -->
+    <string name="about_tools_reset_confirm_message">Notices you have already seen will show again the next time they apply. Nothing else changes.</string>
+    <!-- Confirm modal button. Verb. -->
+    <string name="about_tools_reset_confirm_action">Reset</string>
+    <!-- Notice title after the reset. -->
+    <string name="about_tools_reset_done_title">Notices reset</string>
+    <!-- Notice body after the reset. -->
+    <string name="about_tools_reset_done_subtitle">Each notice shows again the next time it applies</string>
+
+    <!-- ===== Export diagnostics notices ===== -->
+    <!-- Notice title after the file is written. -->
+    <string name="about_tools_export_done_title">Diagnostics saved</string>
+    <!-- Notice body after the file is written. %1$s is the full path of the zip file. -->
+    <string name="about_tools_export_done_subtitle">Saved to %1$s</string>
+    <!-- Error notice body when the file could not be written. -->
+    <string name="about_tools_export_failed">The diagnostics file could not be written</string>
+
+    <!-- ===== Show update prompt notices ===== -->
+    <!-- Error notice body when the release list could not be fetched. -->
+    <string name="about_tools_prompt_failed">The latest release could not be fetched</string>
+    <!-- Notice title when no release exists to show. -->
+    <string name="about_tools_prompt_none">No release was found</string>
+
+    <!-- ===== Controller test ===== -->
+    <!-- Heading of the controller test. Noun phrase. -->
+    <string name="about_tools_controller_heading">Controller Test</string>
+    <!-- Heading of the controller test on the second screen. Noun phrase. -->
+    <string name="about_tools_controller_companion_title">Controller Test</string>
+    <!-- Shown until a controller sends input. -->
+    <string name="about_tools_controller_waiting">Press a button on a controller</string>
+    <!-- Shown in place of a controller name the system does not report. -->
+    <string name="about_tools_controller_unnamed">Unnamed controller</string>
+    <!-- Hardware ids of the controller. %1$s and %2$s are hexadecimal numbers such as 0x045E. -->
+    <string name="about_tools_controller_ids">Vendor %1$s, product %2$s</string>
+    <!-- Argosy's own id for the controller. %1$s is a technical identifier and stays as written. -->
+    <string name="about_tools_controller_id">Controller id: %1$s</string>
+    <!-- The player seat saved for this controller. %1$d is the player number, starting at 1. -->
+    <string name="about_tools_controller_seat">Saved seat: Player %1$d</string>
+    <!-- Shown when no player seat is saved for this controller. -->
+    <string name="about_tools_controller_no_seat">No saved seat</string>
+    <!-- How to leave the test and switch controllers. -->
+    <string name="about_tools_controller_hint">Hold any button to finish. Press a button on another controller to switch to it.</string>
+    <!-- Button that closes the controller test. Verb. -->
+    <string name="about_tools_controller_close">Close</string>
+
+    <!-- ===== Display info ===== -->
+    <!-- Heading of the display list. Noun, plural. -->
+    <string name="about_tools_display_heading">Displays</string>
+    <!-- Shown while the display list is read. -->
+    <string name="about_tools_display_loading">Reading displays...</string>
+    <!-- Shown when the system reports no display. -->
+    <string name="about_tools_display_empty">No displays reported</string>
+    <!-- One display's heading. %1$d is its logical display id, %2$s its name. -->
+    <string name="about_tools_display_entry_title">Display %1$d: %2$s</string>
+    <!-- The stable id of the panel. %1$s is a technical identifier and stays as written. -->
+    <string name="about_tools_display_physical">Physical id: %1$s</string>
+    <!-- Shown for a display that has no stable panel id. -->
+    <string name="about_tools_display_physical_none">Physical id: none</string>
+    <!-- Panel size. %1$d x %2$d is the size in pixels, %3$d x %4$d in density-independent pixels. -->
+    <string name="about_tools_display_size">%1$d x %2$d px, %3$d x %4$d dp</string>
+    <!-- %1$d is the pixel density in dots per inch, %2$.1f the refresh rate in hertz. -->
+    <string name="about_tools_display_density">%1$d dpi, %2$.1f Hz</string>
+    <!-- %1$s is the display kind (built-in, external or virtual), %2$s the role Argosy gives it. -->
+    <string name="about_tools_display_kind_role">%1$s, role: %2$s</string>
+    <!-- Display kind: the device's own screen. Adjective. -->
+    <string name="about_tools_display_kind_built_in">Built-in</string>
+    <!-- Display kind: a monitor or TV plugged in. Adjective. -->
+    <string name="about_tools_display_kind_external">External</string>
+    <!-- Display kind: a display an app or the system created, not a real panel. Adjective. -->
+    <string name="about_tools_display_kind_virtual">Virtual</string>
+    <!-- Role of the screen that shows Argosy's menus. Noun phrase. -->
+    <string name="about_tools_display_role_primary">Menus</string>
+    <!-- Role of the screen that describes what the menu screen has selected. Noun. -->
+    <string name="about_tools_display_role_presentation">Presentation</string>
+    <!-- Role of the screen that games and apps open on. Noun phrase. -->
+    <string name="about_tools_display_role_app_target">Games and apps</string>
+    <!-- Role of a screen Argosy draws nothing on. Adjective. -->
+    <string name="about_tools_display_role_off">Off</string>
+    <!-- Shown when Argosy gives the display no role. -->
+    <string name="about_tools_display_role_none">None</string>
+    <!-- Button that closes the display list. Verb. -->
+    <string name="about_tools_display_close">Close</string>
+</resources>

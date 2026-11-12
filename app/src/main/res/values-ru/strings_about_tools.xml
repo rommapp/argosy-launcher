@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="about_tools_controller_title">Проверка контроллера</string>
+    <string name="about_tools_controller_subtitle">Каждая нажатая кнопка подсвечивается, и видно, какой контроллер её отправил</string>
+    <string name="about_tools_display_title">Сведения об экранах</string>
+    <string name="about_tools_display_subtitle">Идентификаторы, размер, плотность, частота обновления и роль каждого экрана</string>
+    <string name="about_tools_export_title">Экспорт диагностики</string>
+    <string name="about_tools_export_subtitle">Сохранить журналы, сведения об устройстве и настройки в Download/Argosy без учётных записей и адресов серверов</string>
+    <string name="about_tools_export_subtitle_busy">Экспорт...</string>
+    <string name="about_tools_setup_title">Пройти настройку заново</string>
+    <string name="about_tools_setup_subtitle">Пройти все страницы настройки. Настройки, учётные записи, библиотека и сохранения не меняются.</string>
+    <string name="about_tools_prompt_title">Показать окно обновления</string>
+    <string name="about_tools_prompt_subtitle">Открыть окно обновления для последнего выпуска, даже если он пропущен или уже установлен</string>
+    <string name="about_tools_prompt_subtitle_busy">Поиск последнего выпуска...</string>
+    <string name="about_tools_reset_title">Сбросить одноразовые уведомления</string>
+    <string name="about_tools_reset_subtitle">Снова показать уведомления о входе в RetroAchievements, переносе сохранений, разрешениях, ежемесячном итоге и пропущенном обновлении</string>
+
+    <string name="about_tools_reset_confirm_title">Сбросить одноразовые уведомления?</string>
+    <string name="about_tools_reset_confirm_message">Уже просмотренные уведомления появятся снова, когда станут актуальны. Больше ничего не меняется.</string>
+    <string name="about_tools_reset_confirm_action">Сбросить</string>
+    <string name="about_tools_reset_done_title">Уведомления сброшены</string>
+    <string name="about_tools_reset_done_subtitle">Каждое уведомление появится снова, когда станет актуальным</string>
+
+    <string name="about_tools_export_done_title">Диагностика сохранена</string>
+    <string name="about_tools_export_done_subtitle">Сохранено в %1$s</string>
+    <string name="about_tools_export_failed">Не удалось записать файл диагностики</string>
+
+    <string name="about_tools_prompt_failed">Не удалось получить последний выпуск</string>
+    <string name="about_tools_prompt_none">Выпуски не найдены</string>
+
+    <string name="about_tools_controller_heading">Проверка контроллера</string>
+    <string name="about_tools_controller_companion_title">Проверка контроллера</string>
+    <string name="about_tools_controller_waiting">Нажмите кнопку на контроллере</string>
+    <string name="about_tools_controller_unnamed">Контроллер без названия</string>
+    <string name="about_tools_controller_ids">Производитель %1$s, продукт %2$s</string>
+    <string name="about_tools_controller_id">ID контроллера: %1$s</string>
+    <string name="about_tools_controller_seat">Сохранённое место: игрок %1$d</string>
+    <string name="about_tools_controller_no_seat">Нет сохранённого места</string>
+    <string name="about_tools_controller_hint">Удерживайте любую кнопку, чтобы завершить. Нажмите кнопку на другом контроллере, чтобы переключиться на него.</string>
+    <string name="about_tools_controller_close">Закрыть</string>
+
+    <string name="about_tools_display_heading">Экраны</string>
+    <string name="about_tools_display_loading">Чтение экранов...</string>
+    <string name="about_tools_display_empty">Экраны не обнаружены</string>
+    <string name="about_tools_display_entry_title">Экран %1$d: %2$s</string>
+    <string name="about_tools_display_physical">Физический ID: %1$s</string>
+    <string name="about_tools_display_physical_none">Физический ID: нет</string>
+    <string name="about_tools_display_size">%1$d x %2$d px, %3$d x %4$d dp</string>
+    <string name="about_tools_display_density">%1$d dpi, %2$.1f Гц</string>
+    <string name="about_tools_display_kind_role">%1$s, роль: %2$s</string>
+    <string name="about_tools_display_kind_built_in">Встроенный</string>
+    <string name="about_tools_display_kind_external">Внешний</string>
+    <string name="about_tools_display_kind_virtual">Виртуальный</string>
+    <string name="about_tools_display_role_primary">Меню</string>
+    <string name="about_tools_display_role_presentation">Презентация</string>
+    <string name="about_tools_display_role_app_target">Игры и приложения</string>
+    <string name="about_tools_display_role_off">Выключен</string>
+    <string name="about_tools_display_role_none">Нет</string>
+    <string name="about_tools_display_close">Закрыть</string>
+</resources>

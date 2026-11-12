@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="about_tools_controller_title">Test de manette</string>
+    <string name="about_tools_controller_subtitle">Chaque bouton pressé s\'allume et vous voyez quelle manette l\'a envoyé</string>
+    <string name="about_tools_display_title">Infos écrans</string>
+    <string name="about_tools_display_subtitle">Identifiants, taille, densité, fréquence de rafraîchissement et rôle de chaque écran</string>
+    <string name="about_tools_export_title">Exporter les diagnostics</string>
+    <string name="about_tools_export_subtitle">Enregistrer journaux, infos de l\'appareil et réglages dans Download/Argosy, sans comptes ni adresses de serveur</string>
+    <string name="about_tools_export_subtitle_busy">Exportation...</string>
+    <string name="about_tools_setup_title">Relancer la configuration</string>
+    <string name="about_tools_setup_subtitle">Parcourir toutes les pages de configuration. Vos réglages, comptes, bibliothèque et sauvegardes restent inchangés.</string>
+    <string name="about_tools_prompt_title">Afficher l\'invite de mise à jour</string>
+    <string name="about_tools_prompt_subtitle">Ouvrir l\'invite de mise à jour de la dernière version, même ignorée ou déjà installée</string>
+    <string name="about_tools_prompt_subtitle_busy">Recherche de la dernière version...</string>
+    <string name="about_tools_reset_title">Réinitialiser les avis uniques</string>
+    <string name="about_tools_reset_subtitle">Réafficher les avis de connexion RetroAchievements, de migration des sauvegardes, des autorisations, du récapitulatif mensuel et de mise à jour ignorée</string>
+
+    <string name="about_tools_reset_confirm_title">Réinitialiser les avis uniques ?</string>
+    <string name="about_tools_reset_confirm_message">Les avis déjà vus réapparaîtront la prochaine fois qu\'ils s\'appliquent. Rien d\'autre ne change.</string>
+    <string name="about_tools_reset_confirm_action">Réinitialiser</string>
+    <string name="about_tools_reset_done_title">Avis réinitialisés</string>
+    <string name="about_tools_reset_done_subtitle">Chaque avis réapparaîtra la prochaine fois qu\'il s\'applique</string>
+
+    <string name="about_tools_export_done_title">Diagnostics enregistrés</string>
+    <string name="about_tools_export_done_subtitle">Enregistré dans %1$s</string>
+    <string name="about_tools_export_failed">Le fichier de diagnostics n\'a pas pu être écrit</string>
+
+    <string name="about_tools_prompt_failed">Impossible de récupérer la dernière version</string>
+    <string name="about_tools_prompt_none">Aucune version trouvée</string>
+
+    <string name="about_tools_controller_heading">Test de manette</string>
+    <string name="about_tools_controller_companion_title">Test de manette</string>
+    <string name="about_tools_controller_waiting">Appuyez sur un bouton d\'une manette</string>
+    <string name="about_tools_controller_unnamed">Manette sans nom</string>
+    <string name="about_tools_controller_ids">Fabricant %1$s, produit %2$s</string>
+    <string name="about_tools_controller_id">Id. de la manette : %1$s</string>
+    <string name="about_tools_controller_seat">Place enregistrée : joueur %1$d</string>
+    <string name="about_tools_controller_no_seat">Aucune place enregistrée</string>
+    <string name="about_tools_controller_hint">Maintenez un bouton pour terminer. Appuyez sur un bouton d\'une autre manette pour passer à celle-ci.</string>
+    <string name="about_tools_controller_close">Fermer</string>
+
+    <string name="about_tools_display_heading">Écrans</string>
+    <string name="about_tools_display_loading">Lecture des écrans...</string>
+    <string name="about_tools_display_empty">Aucun écran signalé</string>
+    <string name="about_tools_display_entry_title">Écran %1$d : %2$s</string>
+    <string name="about_tools_display_physical">Id. physique : %1$s</string>
+    <string name="about_tools_display_physical_none">Id. physique : aucun</string>
+    <string name="about_tools_display_size">%1$d x %2$d px, %3$d x %4$d dp</string>
+    <string name="about_tools_display_density">%1$d ppp, %2$.1f Hz</string>
+    <string name="about_tools_display_kind_role">%1$s, rôle : %2$s</string>
+    <string name="about_tools_display_kind_built_in">Intégré</string>
+    <string name="about_tools_display_kind_external">Externe</string>
+    <string name="about_tools_display_kind_virtual">Virtuel</string>
+    <string name="about_tools_display_role_primary">Menus</string>
+    <string name="about_tools_display_role_presentation">Présentation</string>
+    <string name="about_tools_display_role_app_target">Jeux et applis</string>
+    <string name="about_tools_display_role_off">Éteint</string>
+    <string name="about_tools_display_role_none">Aucun</string>
+    <string name="about_tools_display_close">Fermer</string>
+</resources>

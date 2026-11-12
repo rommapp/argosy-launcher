@@ -152,6 +152,7 @@ class SettingsViewModel @Inject constructor(
     val permissionsDelegate: PermissionsSettingsDelegate,
     val biosDelegate: BiosSettingsDelegate,
     val driversDelegate: com.nendo.argosy.ui.screens.settings.delegates.DriversSettingsDelegate,
+    val aboutTools: com.nendo.argosy.ui.screens.settings.delegates.AboutToolsDelegate,
     internal val modalResetSignal: ModalResetSignal,
     internal val gradientColorExtractor: GradientColorExtractor,
     internal val coreManager: LibretroCoreManager,
@@ -305,6 +306,7 @@ class SettingsViewModel @Inject constructor(
     val openDeviceSettingsEvent: SharedFlow<Unit> = _openDeviceSettingsEvent.asSharedFlow()
 
     init {
+        aboutTools.bind(viewModelScope)
         routeObserveDelegateStates(this)
         routeObserveDelegateEvents(this)
         routeObserveModalResetSignal(this)
@@ -2120,6 +2122,11 @@ class SettingsViewModel @Inject constructor(
     fun syncRomm() = routeSyncRomm(this)
 
     fun checkForUpdates() = routeCheckForUpdates(this)
+
+    fun runSetupAgain() {
+        aboutTools.prepareSetupRerun()
+        _navigationEvents.tryEmit(NavigationEvent(com.nendo.argosy.ui.navigation.Screen.FirstRun.route))
+    }
     fun runUpdateAction(action: AboutUpdateAction) = routeUpdateAction(this, action)
     fun moveUpdateActionFocus(delta: Int) = routeMoveUpdateActionFocus(this, delta)
     fun openChangelog() = routeOpenChangelog(this)

@@ -254,6 +254,17 @@ class SyncPreferencesRepository @Inject constructor(
         }
     }
 
+    /**
+     * Forgets that the RetroAchievements sign-in notice and the save migration notices were shown,
+     * so each shows again the next time its condition holds. No other value changes.
+     */
+    suspend fun resetOneTimeNotices() {
+        dataStore.edit { prefs ->
+            prefs.remove(Keys.RA_SIGN_IN_NOTICE_SHOWN)
+            prefs.remove(Keys.SAVE_MIGRATION_NOTICES_SHOWN)
+        }
+    }
+
     private fun shownMigrationNotices(stored: String?): List<Long> =
         stored?.split(",")?.mapNotNull { it.toLongOrNull() }.orEmpty()
 

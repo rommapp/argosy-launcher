@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="about_tools_controller_title">Controller-Test</string>
+    <string name="about_tools_controller_subtitle">Jede gedrückte Taste leuchtet auf, und du siehst, welcher Controller sie gesendet hat</string>
+    <string name="about_tools_display_title">Display-Infos</string>
+    <string name="about_tools_display_subtitle">IDs, Größe, Dichte, Bildwiederholrate und Rolle jedes Displays</string>
+    <string name="about_tools_export_title">Diagnose exportieren</string>
+    <string name="about_tools_export_subtitle">Protokolle, Gerätedaten und Einstellungen in Download/Argosy speichern, ohne Konten und Serveradressen</string>
+    <string name="about_tools_export_subtitle_busy">Wird exportiert...</string>
+    <string name="about_tools_setup_title">Einrichtung erneut ausführen</string>
+    <string name="about_tools_setup_subtitle">Alle Einrichtungsseiten durchgehen. Einstellungen, Konten, Bibliothek und Spielstände bleiben unverändert.</string>
+    <string name="about_tools_prompt_title">Update-Hinweis anzeigen</string>
+    <string name="about_tools_prompt_subtitle">Den Update-Hinweis für das neueste Release öffnen, auch wenn es übersprungen oder schon installiert ist</string>
+    <string name="about_tools_prompt_subtitle_busy">Neuestes Release wird gesucht...</string>
+    <string name="about_tools_reset_title">Einmalige Hinweise zurücksetzen</string>
+    <string name="about_tools_reset_subtitle">Die Hinweise zur RetroAchievements-Anmeldung, Spielstand-Migration, zu Berechtigungen, zum Monatsrückblick und zu übersprungenen Updates erneut anzeigen</string>
+
+    <string name="about_tools_reset_confirm_title">Einmalige Hinweise zurücksetzen?</string>
+    <string name="about_tools_reset_confirm_message">Bereits gesehene Hinweise erscheinen wieder, sobald sie zutreffen. Sonst ändert sich nichts.</string>
+    <string name="about_tools_reset_confirm_action">Zurücksetzen</string>
+    <string name="about_tools_reset_done_title">Hinweise zurückgesetzt</string>
+    <string name="about_tools_reset_done_subtitle">Jeder Hinweis erscheint wieder, sobald er zutrifft</string>
+
+    <string name="about_tools_export_done_title">Diagnose gespeichert</string>
+    <string name="about_tools_export_done_subtitle">Gespeichert unter %1$s</string>
+    <string name="about_tools_export_failed">Die Diagnosedatei konnte nicht geschrieben werden</string>
+
+    <string name="about_tools_prompt_failed">Das neueste Release konnte nicht abgerufen werden</string>
+    <string name="about_tools_prompt_none">Kein Release gefunden</string>
+
+    <string name="about_tools_controller_heading">Controller-Test</string>
+    <string name="about_tools_controller_companion_title">Controller-Test</string>
+    <string name="about_tools_controller_waiting">Drücke eine Taste auf einem Controller</string>
+    <string name="about_tools_controller_unnamed">Unbenannter Controller</string>
+    <string name="about_tools_controller_ids">Hersteller %1$s, Produkt %2$s</string>
+    <string name="about_tools_controller_id">Controller-ID: %1$s</string>
+    <string name="about_tools_controller_seat">Gespeicherter Platz: Spieler %1$d</string>
+    <string name="about_tools_controller_no_seat">Kein gespeicherter Platz</string>
+    <string name="about_tools_controller_hint">Halte eine beliebige Taste, um zu beenden. Drücke eine Taste auf einem anderen Controller, um zu ihm zu wechseln.</string>
+    <string name="about_tools_controller_close">Schließen</string>
+
+    <string name="about_tools_display_heading">Displays</string>
+    <string name="about_tools_display_loading">Displays werden gelesen...</string>
+    <string name="about_tools_display_empty">Keine Displays gemeldet</string>
+    <string name="about_tools_display_entry_title">Display %1$d: %2$s</string>
+    <string name="about_tools_display_physical">Physische ID: %1$s</string>
+    <string name="about_tools_display_physical_none">Physische ID: keine</string>
+    <string name="about_tools_display_size">%1$d x %2$d px, %3$d x %4$d dp</string>
+    <string name="about_tools_display_density">%1$d dpi, %2$.1f Hz</string>
+    <string name="about_tools_display_kind_role">%1$s, Rolle: %2$s</string>
+    <string name="about_tools_display_kind_built_in">Eingebaut</string>
+    <string name="about_tools_display_kind_external">Extern</string>
+    <string name="about_tools_display_kind_virtual">Virtuell</string>
+    <string name="about_tools_display_role_primary">Menüs</string>
+    <string name="about_tools_display_role_presentation">Präsentation</string>
+    <string name="about_tools_display_role_app_target">Spiele und Apps</string>
+    <string name="about_tools_display_role_off">Aus</string>
+    <string name="about_tools_display_role_none">Keine</string>
+    <string name="about_tools_display_close">Schließen</string>
+</resources>

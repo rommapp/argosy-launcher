@@ -61,6 +61,7 @@ class AppUpdateManager @Inject constructor(
     }
 
     private val deferredTags = MutableStateFlow<Set<String>>(emptySet())
+    private val forcedPrompt = MutableStateFlow<AppUpdateRelease?>(null)
     private var installJob: Job? = null
 
     val stored: StateFlow<StoredUpdateState> = store.state
@@ -73,12 +74,13 @@ class AppUpdateManager @Inject constructor(
         deferredTags,
         appPreferences.preferences
             .map { UpdatePromptRules.checksAllowed(BuildConfig.DEBUG, it.debugUpdateChecksEnabled) }
-            .distinctUntilChanged()
-    ) { state, deferred, allowed ->
-        if (allowed) {
-            UpdatePromptRules.promptFor(state.latest, state.skippedTag, deferred, installedVersion)
-        } else {
-            null
+            .distinctUntilChanged(),
+        forcedPrompt
+    ) { state, deferred, allowed, forced ->
+        when {
+            forced != null -> forced
+            allowed -> UpdatePromptRules.promptFor(state.latest, state.skippedTag, deferred, installedVersion)
+            else -> null
         }
     }.stateIn(scope, SharingStarted.Eagerly, null)
 
@@ -127,12 +129,34 @@ class AppUpdateManager @Inject constructor(
         }
     }
 
+    /**
+     * Opens the update prompt once for the newest release under the beta switch, newer than this
+     * build or not, past a skipped or Later tag and the debug-build check switch. Nothing is
+     * persisted. Returns the release lookup's result.
+     */
+    suspend fun showPromptNow(): UpdateState = withContext(Dispatchers.IO) {
+        val prefs = appPreferences.preferences.first()
+        val result = updateRepository.checkForUpdates(prefs.betaUpdatesEnabled, newerOnly = false)
+        if (result is UpdateState.UpdateAvailable) forcedPrompt.value = result.toRelease()
+        result
+    }
+
+    suspend fun clearSkippedTag() {
+        withContext(Dispatchers.IO) { store.update { it.withoutSkippedTag() } }
+    }
+
     fun skip(tag: String) {
+        releaseForced(tag)
         scope.launch { store.update { it.copy(skippedTag = tag) } }
     }
 
     fun later(tag: String) {
+        releaseForced(tag)
         deferredTags.update { it + tag }
+    }
+
+    private fun releaseForced(tag: String) {
+        forcedPrompt.update { if (it?.tag == tag) null else it }
     }
 
     /**
@@ -147,6 +171,7 @@ class AppUpdateManager @Inject constructor(
                 store.update { if (it.skippedTag == release.tag) it.copy(skippedTag = null) else it }
                 withContext(Dispatchers.Main) { appInstaller.installApk(context, apk) }
                 deferredTags.update { it + release.tag }
+                releaseForced(release.tag)
                 _download.value = AppUpdateDownload.HandedOff(release.tag)
             } catch (e: CancellationException) {
                 throw e

@@ -17,7 +17,9 @@ import java.io.File
 data class StoredUpdateState(
     val latest: AppUpdateRelease? = null,
     val skippedTag: String? = null
-)
+) {
+    fun withoutSkippedTag(): StoredUpdateState = copy(skippedTag = null)
+}
 
 /**
  * [StoredUpdateState] kept in one small json file. Every call does blocking file I/O, so callers

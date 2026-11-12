@@ -14,9 +14,15 @@ import com.nendo.argosy.ui.screens.settings.components.SectionPaneLayout
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Description
 import androidx.compose.material.icons.filled.HealthAndSafety
+import androidx.compose.material.icons.filled.Replay
+import androidx.compose.material.icons.filled.Restore
+import androidx.compose.material.icons.filled.Share
+import androidx.compose.material.icons.filled.SportsEsports
 import androidx.compose.material.icons.filled.Sync
+import androidx.compose.material.icons.filled.SystemUpdate
 import androidx.compose.material.icons.outlined.Article
 import androidx.compose.material.icons.outlined.Download
+import androidx.compose.material.icons.outlined.Monitor
 import androidx.compose.material.icons.outlined.RestartAlt
 import androidx.compose.material.icons.outlined.Upload
 import androidx.compose.material3.Icon
@@ -25,6 +31,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -50,6 +57,7 @@ import com.nendo.argosy.ui.screens.settings.SettingsUiState
 import com.nendo.argosy.ui.screens.settings.SettingsViewModel
 import com.nendo.argosy.ui.screens.settings.UpdateCheckState
 import com.nendo.argosy.ui.screens.settings.AboutUpdateAction
+import com.nendo.argosy.data.update.BuildChannel
 import com.nendo.argosy.data.update.UpdatePromptRules
 import com.nendo.argosy.ui.screens.settings.components.SectionHeader
 import com.nendo.argosy.ui.screens.settings.dialogs.LicensesDialog
@@ -85,6 +93,24 @@ internal sealed class AboutItem(
     data object SystemizeHelper : AboutItem("systemizeHelper", "system")
     data object RestartApp : AboutItem("restartApp", "system")
     data object SectionSpacer : AboutItem("spacer", "debug")
+    data object ControllerTest : AboutItem("controllerTest", "debug")
+    data object DisplayInfo : AboutItem("displayInfo", "debug")
+    data object ExportDiagnostics : AboutItem("exportDiagnostics", "debug")
+    data object RunSetupAgain : AboutItem(
+        key = "runSetupAgain",
+        section = "debug",
+        visibleWhen = { BuildChannel.isPrereleaseBuild }
+    )
+    data object ShowUpdatePrompt : AboutItem(
+        key = "showUpdatePrompt",
+        section = "debug",
+        visibleWhen = { BuildChannel.isPrereleaseBuild }
+    )
+    data object ResetNotices : AboutItem(
+        key = "resetNotices",
+        section = "debug",
+        visibleWhen = { BuildChannel.isPrereleaseBuild }
+    )
     data object DebugUpdateChecks : AboutItem(
         key = "debugUpdateChecks",
         section = "debug",
@@ -113,7 +139,9 @@ internal sealed class AboutItem(
                 VersionHeader, VersionInfo, CheckUpdates, ChangelogPreview, BetaUpdates,
                 BackupSpacer, BackupHeader, ExportSettings, ImportSettings,
                 SystemSpacer, SystemHeader, SystemizeHelper, RestartApp,
-                SectionSpacer, DebugHeader, DebugUpdateChecks, FileLogging, LogLevel, SaveDebugLogging
+                SectionSpacer, DebugHeader,
+                ControllerTest, DisplayInfo, ExportDiagnostics, RunSetupAgain, ShowUpdatePrompt, ResetNotices,
+                DebugUpdateChecks, FileLogging, LogLevel, SaveDebugLogging
             )
     }
 }
@@ -158,7 +186,8 @@ internal fun aboutUpdateActions(updateCheck: UpdateCheckState): List<AboutUpdate
 fun AboutSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
     val updateCheck = uiState.updateCheck
     val isDebug = com.nendo.argosy.BuildConfig.DEBUG
-    val isOnBetaVersion = com.nendo.argosy.BuildConfig.VERSION_NAME.contains("-")
+    val isOnBetaVersion = BuildChannel.isPrereleaseBuild
+    val tools by viewModel.aboutTools.state.collectAsState()
     val context = LocalContext.current
     val hasLogPath = uiState.fileLoggingPath != null
     val hasChangelog = aboutHasChangelog(updateCheck)
@@ -333,6 +362,62 @@ fun AboutSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
                 )
 
                 AboutItem.SectionSpacer -> Spacer(modifier = Modifier.height(Dimens.spacingMd))
+
+                AboutItem.ControllerTest -> ActionPreference(
+                    icon = Icons.Default.SportsEsports,
+                    title = stringResource(R.string.about_tools_controller_title),
+                    subtitle = stringResource(R.string.about_tools_controller_subtitle),
+                    isFocused = isFocused(item),
+                    onClick = { viewModel.aboutTools.openControllerTest() }
+                )
+
+                AboutItem.DisplayInfo -> ActionPreference(
+                    icon = Icons.Outlined.Monitor,
+                    title = stringResource(R.string.about_tools_display_title),
+                    subtitle = stringResource(R.string.about_tools_display_subtitle),
+                    isFocused = isFocused(item),
+                    onClick = { viewModel.aboutTools.openDisplayInfo() }
+                )
+
+                AboutItem.ExportDiagnostics -> ActionPreference(
+                    icon = Icons.Default.Share,
+                    title = stringResource(R.string.about_tools_export_title),
+                    subtitle = if (tools.exporting) {
+                        stringResource(R.string.about_tools_export_subtitle_busy)
+                    } else {
+                        stringResource(R.string.about_tools_export_subtitle)
+                    },
+                    isFocused = isFocused(item),
+                    onClick = { viewModel.aboutTools.exportDiagnostics() }
+                )
+
+                AboutItem.RunSetupAgain -> ActionPreference(
+                    icon = Icons.Default.Replay,
+                    title = stringResource(R.string.about_tools_setup_title),
+                    subtitle = stringResource(R.string.about_tools_setup_subtitle),
+                    isFocused = isFocused(item),
+                    onClick = { viewModel.runSetupAgain() }
+                )
+
+                AboutItem.ShowUpdatePrompt -> ActionPreference(
+                    icon = Icons.Default.SystemUpdate,
+                    title = stringResource(R.string.about_tools_prompt_title),
+                    subtitle = if (tools.promptLoading) {
+                        stringResource(R.string.about_tools_prompt_subtitle_busy)
+                    } else {
+                        stringResource(R.string.about_tools_prompt_subtitle)
+                    },
+                    isFocused = isFocused(item),
+                    onClick = { viewModel.aboutTools.showUpdatePromptNow() }
+                )
+
+                AboutItem.ResetNotices -> ActionPreference(
+                    icon = Icons.Default.Restore,
+                    title = stringResource(R.string.about_tools_reset_title),
+                    subtitle = stringResource(R.string.about_tools_reset_subtitle),
+                    isFocused = isFocused(item),
+                    onClick = { viewModel.aboutTools.requestResetNotices() }
+                )
 
                 AboutItem.DebugUpdateChecks -> SwitchPreference(
                     title = stringResource(R.string.settings_about_debug_update_checks_title),

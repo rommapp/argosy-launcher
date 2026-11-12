@@ -471,6 +471,17 @@ class DualScreenManager(
         displayAffinityHelper.getRoleDisplayIds(_isRolesSwapped.value)?.second
 
     /**
+     * The role [displayId] holds in the live arrangement, or null for a display holding none.
+     */
+    fun liveRoleOf(displayId: Int): com.nendo.argosy.domain.model.ScreenRole? = when (displayId) {
+        in displayAffinityHelper.offDisplayIds -> com.nendo.argosy.domain.model.ScreenRole.OFF
+        displayAffinityHelper.appTargetDisplayId -> com.nendo.argosy.domain.model.ScreenRole.APP_TARGET
+        interactiveDisplayId() -> com.nendo.argosy.domain.model.ScreenRole.PRIMARY
+        showcaseDisplayId() -> com.nendo.argosy.domain.model.ScreenRole.PRESENTATION
+        else -> null
+    }
+
+    /**
      * Pixel area of the interactive display, then of the showcase display. Each is null while its
      * display is not attached, and both are null when one display holds both roles.
      */

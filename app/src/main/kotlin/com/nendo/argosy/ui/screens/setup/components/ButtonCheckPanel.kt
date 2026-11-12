@@ -1,6 +1,7 @@
 package com.nendo.argosy.ui.screens.setup.components
 
 import android.view.InputDevice
+import android.view.KeyEvent
 import android.view.MotionEvent
 import androidx.annotation.StringRes
 import androidx.compose.foundation.layout.Arrangement
@@ -14,6 +15,8 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
@@ -80,15 +83,24 @@ private fun MotionEvent.padAxes(): PadAxes = PadAxes(
 /**
  * Routes raw pad input to [controller] while [state] captures keys: in test mode every pad key and
  * every joystick sample lights the drawing and nothing navigates, and after it the release of a
- * key still held is consumed. Keys with no pad button pass through.
+ * key still held is consumed. Keys with no pad button pass through. [onPadDevice] receives the
+ * input device id of each pad press and joystick sample during the test.
  */
 @Composable
-fun ButtonCheckKeyCapture(state: ButtonCheckState, controller: ButtonCheckController) {
+fun ButtonCheckKeyCapture(
+    state: ButtonCheckState,
+    controller: ButtonCheckController,
+    onPadDevice: ((Int) -> Unit)? = null,
+) {
     val interceptor = LocalGamepadInputHandler.current
+    val currentOnPadDevice by rememberUpdatedState(onPadDevice)
     DisposableEffect(interceptor, controller, state.capturesKeys) {
         if (!state.capturesKeys || interceptor == null) return@DisposableEffect onDispose {}
         interceptor.setRawKeyEventFilter { event ->
             val button = checkedPadButton(event.keyCode, interceptor::mapKeyToEvent)
+            if (button != null && event.action == KeyEvent.ACTION_DOWN && controller.state.value.testing) {
+                currentOnPadDevice?.invoke(event.deviceId)
+            }
             controller.onKey(event.keyCode, event.action, event.repeatCount, button)
         }
         onDispose { interceptor.setRawKeyEventFilter(null) }
@@ -97,6 +109,7 @@ fun ButtonCheckKeyCapture(state: ButtonCheckState, controller: ButtonCheckContro
         if (!state.testing || interceptor == null) return@DisposableEffect onDispose {}
         interceptor.setRawMotionEventListener { event ->
             if (!event.isFromSource(InputDevice.SOURCE_CLASS_JOYSTICK)) return@setRawMotionEventListener false
+            currentOnPadDevice?.invoke(event.deviceId)
             controller.onMotion(event.padAxes())
             true
         }

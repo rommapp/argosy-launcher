@@ -802,6 +802,8 @@ fun SettingsScreen(
             onDismiss = { viewModel.closeChangelog() }
         )
 
+        com.nendo.argosy.ui.screens.settings.components.AboutToolsOverlays(tools = viewModel.aboutTools)
+
         uiState.rootScriptDialog?.let { dialog ->
             com.nendo.argosy.ui.screens.settings.dialogs.RootScriptDialog(
                 state = dialog,

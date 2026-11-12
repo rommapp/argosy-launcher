@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="about_tools_controller_title">控制器測試</string>
+    <string name="about_tools_controller_subtitle">按下的每個按鍵都會亮起，並顯示是哪個控制器送出的</string>
+    <string name="about_tools_display_title">螢幕資訊</string>
+    <string name="about_tools_display_subtitle">每個螢幕的 ID、尺寸、密度、更新率和角色</string>
+    <string name="about_tools_export_title">匯出診斷資訊</string>
+    <string name="about_tools_export_subtitle">將記錄、裝置資訊和設定儲存到 Download/Argosy，並移除帳號和伺服器位址</string>
+    <string name="about_tools_export_subtitle_busy">正在匯出...</string>
+    <string name="about_tools_setup_title">重新執行設定</string>
+    <string name="about_tools_setup_subtitle">逐頁走完設定流程。你的設定、帳號、遊戲庫和存檔維持不變。</string>
+    <string name="about_tools_prompt_title">顯示更新提示</string>
+    <string name="about_tools_prompt_subtitle">開啟最新版本的更新提示，即使已略過或已安裝</string>
+    <string name="about_tools_prompt_subtitle_busy">正在尋找最新版本...</string>
+    <string name="about_tools_reset_title">重設一次性提示</string>
+    <string name="about_tools_reset_subtitle">再次顯示 RetroAchievements 登入、存檔移轉、權限、每月回顧和已略過更新的提示</string>
+
+    <string name="about_tools_reset_confirm_title">重設一次性提示？</string>
+    <string name="about_tools_reset_confirm_message">已看過的提示會在下次適用時再次顯示。其他內容不變。</string>
+    <string name="about_tools_reset_confirm_action">重設</string>
+    <string name="about_tools_reset_done_title">提示已重設</string>
+    <string name="about_tools_reset_done_subtitle">每則提示會在下次適用時再次顯示</string>
+
+    <string name="about_tools_export_done_title">診斷資訊已儲存</string>
+    <string name="about_tools_export_done_subtitle">已儲存到 %1$s</string>
+    <string name="about_tools_export_failed">無法寫入診斷檔案</string>
+
+    <string name="about_tools_prompt_failed">無法取得最新版本</string>
+    <string name="about_tools_prompt_none">找不到任何版本</string>
+
+    <string name="about_tools_controller_heading">控制器測試</string>
+    <string name="about_tools_controller_companion_title">控制器測試</string>
+    <string name="about_tools_controller_waiting">請按下控制器上的任一按鍵</string>
+    <string name="about_tools_controller_unnamed">未命名的控制器</string>
+    <string name="about_tools_controller_ids">廠商 %1$s，產品 %2$s</string>
+    <string name="about_tools_controller_id">控制器 ID：%1$s</string>
+    <string name="about_tools_controller_seat">已儲存位置：玩家 %1$d</string>
+    <string name="about_tools_controller_no_seat">未儲存位置</string>
+    <string name="about_tools_controller_hint">按住任一按鍵即可結束。按下另一個控制器的按鍵即可切換到該控制器。</string>
+    <string name="about_tools_controller_close">關閉</string>
+
+    <string name="about_tools_display_heading">螢幕</string>
+    <string name="about_tools_display_loading">正在讀取螢幕...</string>
+    <string name="about_tools_display_empty">未偵測到螢幕</string>
+    <string name="about_tools_display_entry_title">螢幕 %1$d：%2$s</string>
+    <string name="about_tools_display_physical">實體 ID：%1$s</string>
+    <string name="about_tools_display_physical_none">實體 ID：無</string>
+    <string name="about_tools_display_size">%1$d x %2$d px，%3$d x %4$d dp</string>
+    <string name="about_tools_display_density">%1$d dpi，%2$.1f Hz</string>
+    <string name="about_tools_display_kind_role">%1$s，角色：%2$s</string>
+    <string name="about_tools_display_kind_built_in">內建</string>
+    <string name="about_tools_display_kind_external">外接</string>
+    <string name="about_tools_display_kind_virtual">虛擬</string>
+    <string name="about_tools_display_role_primary">選單</string>
+    <string name="about_tools_display_role_presentation">展示</string>
+    <string name="about_tools_display_role_app_target">遊戲和應用程式</string>
+    <string name="about_tools_display_role_off">關閉</string>
+    <string name="about_tools_display_role_none">無</string>
+    <string name="about_tools_display_close">關閉</string>
+</resources>

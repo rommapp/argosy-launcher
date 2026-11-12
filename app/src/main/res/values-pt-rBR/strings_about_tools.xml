@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="about_tools_controller_title">Teste de Controle</string>
+    <string name="about_tools_controller_subtitle">Cada botão pressionado acende e mostra qual controle o enviou</string>
+    <string name="about_tools_display_title">Informações das Telas</string>
+    <string name="about_tools_display_subtitle">IDs, tamanho, densidade, taxa de atualização e função de cada tela</string>
+    <string name="about_tools_export_title">Exportar Diagnóstico</string>
+    <string name="about_tools_export_subtitle">Salva registros, dados do dispositivo e configurações em Download/Argosy, sem contas nem endereços de servidor</string>
+    <string name="about_tools_export_subtitle_busy">Exportando...</string>
+    <string name="about_tools_setup_title">Executar a Configuração Novamente</string>
+    <string name="about_tools_setup_subtitle">Percorre todas as páginas da configuração. Suas configurações, contas, biblioteca e saves continuam como estão.</string>
+    <string name="about_tools_prompt_title">Mostrar Aviso de Atualização</string>
+    <string name="about_tools_prompt_subtitle">Abre o aviso de atualização da versão mais recente, mesmo se ela foi pulada ou já está instalada</string>
+    <string name="about_tools_prompt_subtitle_busy">Procurando a versão mais recente...</string>
+    <string name="about_tools_reset_title">Redefinir Avisos Únicos</string>
+    <string name="about_tools_reset_subtitle">Mostra de novo os avisos de login no RetroAchievements, migração de saves, permissões, resumo mensal e atualização pulada</string>
+
+    <string name="about_tools_reset_confirm_title">Redefinir avisos únicos?</string>
+    <string name="about_tools_reset_confirm_message">Os avisos que você já viu voltarão a aparecer na próxima vez que se aplicarem. Nada mais muda.</string>
+    <string name="about_tools_reset_confirm_action">Redefinir</string>
+    <string name="about_tools_reset_done_title">Avisos redefinidos</string>
+    <string name="about_tools_reset_done_subtitle">Cada aviso volta a aparecer na próxima vez que se aplicar</string>
+
+    <string name="about_tools_export_done_title">Diagnóstico salvo</string>
+    <string name="about_tools_export_done_subtitle">Salvo em %1$s</string>
+    <string name="about_tools_export_failed">Não foi possível gravar o arquivo de diagnóstico</string>
+
+    <string name="about_tools_prompt_failed">Não foi possível obter a versão mais recente</string>
+    <string name="about_tools_prompt_none">Nenhuma versão encontrada</string>
+
+    <string name="about_tools_controller_heading">Teste de Controle</string>
+    <string name="about_tools_controller_companion_title">Teste de Controle</string>
+    <string name="about_tools_controller_waiting">Pressione um botão em um controle</string>
+    <string name="about_tools_controller_unnamed">Controle sem nome</string>
+    <string name="about_tools_controller_ids">Fabricante %1$s, produto %2$s</string>
+    <string name="about_tools_controller_id">ID do controle: %1$s</string>
+    <string name="about_tools_controller_seat">Posição salva: jogador %1$d</string>
+    <string name="about_tools_controller_no_seat">Nenhuma posição salva</string>
+    <string name="about_tools_controller_hint">Segure qualquer botão para terminar. Pressione um botão em outro controle para trocar para ele.</string>
+    <string name="about_tools_controller_close">Fechar</string>
+
+    <string name="about_tools_display_heading">Telas</string>
+    <string name="about_tools_display_loading">Lendo as telas...</string>
+    <string name="about_tools_display_empty">Nenhuma tela informada</string>
+    <string name="about_tools_display_entry_title">Tela %1$d: %2$s</string>
+    <string name="about_tools_display_physical">ID físico: %1$s</string>
+    <string name="about_tools_display_physical_none">ID físico: nenhum</string>
+    <string name="about_tools_display_size">%1$d x %2$d px, %3$d x %4$d dp</string>
+    <string name="about_tools_display_density">%1$d dpi, %2$.1f Hz</string>
+    <string name="about_tools_display_kind_role">%1$s, função: %2$s</string>
+    <string name="about_tools_display_kind_built_in">Integrada</string>
+    <string name="about_tools_display_kind_external">Externa</string>
+    <string name="about_tools_display_kind_virtual">Virtual</string>
+    <string name="about_tools_display_role_primary">Menus</string>
+    <string name="about_tools_display_role_presentation">Apresentação</string>
+    <string name="about_tools_display_role_app_target">Jogos e apps</string>
+    <string name="about_tools_display_role_off">Desligada</string>
+    <string name="about_tools_display_role_none">Nenhuma</string>
+    <string name="about_tools_display_close">Fechar</string>
+</resources>

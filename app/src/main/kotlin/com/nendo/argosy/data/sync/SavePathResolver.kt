@@ -62,7 +62,8 @@ class SavePathResolver @Inject constructor(
     private val saveHandlerRegistry: PlatformSaveHandlerRegistry,
     private val libretroSavePathResolver: com.nendo.argosy.data.emulator.LibretroSavePathResolver,
     private val saveUnitResolver: SaveUnitResolver,
-    private val builtinSaveBase: com.nendo.argosy.data.emulator.BuiltinSaveBase
+    private val builtinSaveBase: com.nendo.argosy.data.emulator.BuiltinSaveBase,
+    private val duckStationCardFinder: DuckStationCardFinder
 ) {
     suspend fun discoverSavePath(
         emulatorId: String,
@@ -285,7 +286,7 @@ class SavePathResolver @Inject constructor(
                 return@withContext null
             }
             onDecision("perGame+title", null, perGameDir)
-            return@withContext findSaveInPath(perGameDir, gameTitle, config.saveExtensions)
+            return@withContext findSaveInPath(perGameDir, gameTitle, config.saveExtensions, allowsFuzzyTitle(platformSlug, emulatorId))
         }
 
         val effectiveEmulatorId = config.emulatorId
@@ -338,7 +339,7 @@ class SavePathResolver @Inject constructor(
                 return@withContext null
             }
             onDecision("override+title", selectedMemcardForLog, savePathOverrideForLog)
-            return@withContext findSaveInPath(overrideBaseDir, gameTitle, config.saveExtensions)
+            return@withContext findSaveInPath(overrideBaseDir, gameTitle, config.saveExtensions, allowsFuzzyTitle(platformSlug, emulatorId))
         }
 
         if (config.usesFolderBasedSaves && (romPath != null || cachedSaveId != null)) {
@@ -365,7 +366,7 @@ class SavePathResolver @Inject constructor(
         }
 
         if (platformSlug == "psx" && romPath != null && emulatorId == DUCKSTATION_EMULATOR_ID) {
-            val psxSave = discoverPSXSavePath(config, romPath, emulatorPackage)
+            val psxSave = discoverPSXSavePath(config, romPath, emulatorPackage, gameId)
             if (psxSave != null) {
                 Logger.debug(TAG, "discoverSavePath: PSX save found at $psxSave")
                 onDecision("psx", selectedMemcardForLog, savePathOverrideForLog)
@@ -410,7 +411,7 @@ class SavePathResolver @Inject constructor(
         }
 
         for (basePath in paths) {
-            val saveFile = findSaveInPath(basePath, gameTitle, config.saveExtensions)
+            val saveFile = findSaveInPath(basePath, gameTitle, config.saveExtensions, allowsFuzzyTitle(platformSlug, emulatorId))
             if (saveFile != null) {
                 Logger.debug(TAG, "discoverSavePath: found save at $saveFile")
                 onDecision("byTitle", selectedMemcardForLog, savePathOverrideForLog)
@@ -591,21 +592,28 @@ class SavePathResolver @Inject constructor(
         return null
     }
 
-    private fun discoverPSXSavePath(
+    private suspend fun discoverPSXSavePath(
         config: SavePathConfig,
         romPath: String,
-        emulatorPackage: String?
+        emulatorPackage: String?,
+        gameId: Long?
     ): String? {
         val romNameNoExt = File(romPath).nameWithoutExtension
         val resolvedPaths = SavePathRegistry.resolvePathWithPackage(config, emulatorPackage, context.filesDir.absolutePath, fal.externalStorageRoots())
+        val existingFolders = resolvedPaths.filter { fal.exists(it) && fal.isDirectory(it) }
 
-        for (basePath in resolvedPaths) {
-            if (!fal.exists(basePath) || !fal.isDirectory(basePath)) continue
+        for (basePath in existingFolders) {
             val mcdPath = "$basePath/${romNameNoExt}_1.mcd"
             if (fal.exists(mcdPath) && fal.isFile(mcdPath)) {
                 Logger.debug(TAG, "[SaveSync] DISCOVER | PSX memcard found | path=$mcdPath")
                 return mcdPath
             }
+        }
+
+        val owned = gameId?.let { duckStationCardFinder.ownedCard(it, existingFolders) }
+        if (owned != null) {
+            Logger.debug(TAG, "[SaveSync] DISCOVER | PSX memcard found by the serial its saves carry | path=$owned")
+            return owned
         }
 
         Logger.debug(TAG, "[SaveSync] DISCOVER | PSX memcard not found | rom=$romNameNoExt")
@@ -830,7 +838,15 @@ class SavePathResolver @Inject constructor(
         builtinSavesDir(config, gameId)
     )
 
-    private fun findSaveInPath(basePath: String, gameTitle: String, extensions: List<String>): String? {
+    private fun allowsFuzzyTitle(platformSlug: String, emulatorId: String): Boolean =
+        !(platformSlug == "psx" && emulatorId == DUCKSTATION_EMULATOR_ID)
+
+    private fun findSaveInPath(
+        basePath: String,
+        gameTitle: String,
+        extensions: List<String>,
+        fuzzyTitleMatch: Boolean
+    ): String? {
         if (!fal.exists(basePath) || !fal.isDirectory(basePath)) {
             Logger.verbose(TAG) { "findSaveInPath: dir does not exist: $basePath" }
             return null
@@ -863,7 +879,9 @@ class SavePathResolver @Inject constructor(
                 return file.path
             }
 
-            if (normalizedGameTitle.contains(fileBaseName) || fileBaseName.contains(normalizedGameTitle)) {
+            if (fuzzyTitleMatch &&
+                (normalizedGameTitle.contains(fileBaseName) || fileBaseName.contains(normalizedGameTitle))
+            ) {
                 Logger.debug(TAG, "findSaveInPath: fuzzy match ${file.path}")
                 return file.path
             }

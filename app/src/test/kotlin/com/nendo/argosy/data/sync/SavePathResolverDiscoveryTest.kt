@@ -54,6 +54,7 @@ class SavePathResolverDiscoveryTest {
     private val gciSaveHandler = mockk<GciSaveHandler>(relaxed = true)
     private val saveHandlerRegistry = mockk<PlatformSaveHandlerRegistry>(relaxed = true)
     private val saveUnitResolver = mockk<SaveUnitResolver>(relaxed = true)
+    private val duckStationCardFinder = mockk<DuckStationCardFinder>(relaxed = true)
     private val builtinPreferences =
         mockk<com.nendo.argosy.data.preferences.BuiltinEmulatorPreferencesRepository>(relaxed = true)
     private val platformLibretroSettingsDao =
@@ -100,6 +101,7 @@ class SavePathResolverDiscoveryTest {
             libretroSavePaths,
             saveUnitResolver,
             com.nendo.argosy.data.emulator.BuiltinSaveBase(libretroSavePaths, saveConfigRepository, emulatorConfigDao),
+            duckStationCardFinder,
         )
     }
 
@@ -133,6 +135,44 @@ class SavePathResolverDiscoveryTest {
         )
 
         assertEquals(expected, path)
+    }
+
+    private val duckStation = "com.github.stenzek.duckstation"
+
+    private fun duckStationCards(): File = File(tempDir, "Android/data/$duckStation/files/memcards").apply { mkdirs() }
+
+    private fun psxRom(name: String): File =
+        File(tempDir, "roms/$name.chd").apply { parentFile?.mkdirs(); writeBytes(byteArrayOf(0)) }
+
+    private suspend fun discoverWithRoot(gameTitle: String, gameId: Long): String? {
+        io.mockk.mockkObject(com.nendo.argosy.util.RootShell)
+        try {
+            every { com.nendo.argosy.util.RootShell.isAvailable } returns true
+            return resolver.discoverSavePath(
+                emulatorId = "duckstation", gameTitle = gameTitle, platformSlug = "psx",
+                romPath = psxRom(gameTitle).absolutePath, gameId = gameId, emulatorPackage = duckStation
+            )
+        } finally {
+            io.mockk.unmockkObject(com.nendo.argosy.util.RootShell)
+        }
+    }
+
+    @Test
+    fun `a DuckStation card named after the database title is found by the serial its saves carry`() = runTest {
+        stubBuiltinSettings()
+        val card = File(duckStationCards(), "Crash Team Racing (USA)_1.mcd").apply { writeBytes(ByteArray(16)) }
+        coEvery { duckStationCardFinder.ownedCard(9L, any()) } returns card.absolutePath
+
+        assertEquals(card.absolutePath, discoverWithRoot("CTR - Crash Team Racing", 9L))
+    }
+
+    @Test
+    fun `a DuckStation game never takes another game's card by a title substring`() = runTest {
+        stubBuiltinSettings()
+        File(duckStationCards(), "Digimon World 2 (USA)_1.mcd").writeBytes(ByteArray(16))
+        coEvery { duckStationCardFinder.ownedCard(any(), any()) } returns null
+
+        assertEquals(null, discoverWithRoot("Digimon World", 10L))
     }
 
     @Test

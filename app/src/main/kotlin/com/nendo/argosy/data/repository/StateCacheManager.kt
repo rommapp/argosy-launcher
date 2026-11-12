@@ -659,12 +659,14 @@ class StateCacheManager @Inject constructor(
         gameId: Long,
         emulatorId: String,
         slotNumber: Int,
-        channelName: String? = null
-    ): StateCacheEntity? = stateCacheDao.getBySlot(
+        channelName: String?,
+        coreId: String?
+    ): StateCacheEntity? = stateCacheDao.getBySlotAndCore(
         gameId,
         emulatorId,
         slotNumber,
         channelName,
+        coreId,
         syncPreferencesRepository.getRommUserId()
     )
 
@@ -1051,6 +1053,7 @@ class StateCacheManager @Inject constructor(
             val contentHash = calculateFileHash(cacheFile)
             if (state.lastUploadedHash == contentHash) {
                 Log.d(TAG, "[StateSync] UPLOAD stateId=${state.id} | Skipped - content unchanged (hash=$contentHash)")
+                if (state.rommSaveId != null) stateCacheDao.updateSyncStatus(state.id, StateCacheEntity.STATUS_SYNCED)
                 return@withContext StateCloudResult.AlreadySynced
             }
 

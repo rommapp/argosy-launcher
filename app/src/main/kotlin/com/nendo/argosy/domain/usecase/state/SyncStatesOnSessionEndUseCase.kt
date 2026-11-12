@@ -180,7 +180,8 @@ class SyncStatesOnSessionEndUseCase @Inject constructor(
                 gameId = gameId,
                 emulatorId = emulatorId,
                 slotNumber = state.slotNumber,
-                channelName = channelName
+                channelName = channelName,
+                coreId = coreId
             )
 
             val screenshotFile = config.slotPattern.screenshotFile(state.file)

@@ -86,7 +86,7 @@ class SyncStatesOnSessionEndUseCaseTest {
             stateCacheManager.discoverStatesForGame(any(), any(), any(), any(), any(), any(), any())
         } returns listOf(DiscoveredState(file, slotNumber = 1, lastModified = Instant.ofEpochSecond(2_000)))
         coEvery { serialResolver.serialsFor(any(), any()) } returns emptySet()
-        coEvery { stateCacheManager.getStateBySlot(GAME_ID, any(), 1, any()) } returns existing
+        coEvery { stateCacheManager.getStateBySlot(GAME_ID, any(), 1, any(), any()) } returns existing
         coEvery {
             stateCacheManager.cacheState(any(), any(), any(), any(), any(), any(), any(), any(), any(), any())
         } returns 42L
@@ -178,7 +178,7 @@ class SyncStatesOnSessionEndUseCaseTest {
     @Test
     fun `an off-session state older than the server copy uploads as its own state`() = runTest {
         coEvery { stateCacheManager.hasSameContent(any(), any()) } returns false
-        coEvery { stateCacheManager.getStateBySlot(GAME_ID, any(), 1, any()) } returns existing.copy(
+        coEvery { stateCacheManager.getStateBySlot(GAME_ID, any(), 1, any(), any()) } returns existing.copy(
             rommSaveId = 99L,
             serverUpdatedAt = Instant.ofEpochSecond(3_000)
         )
@@ -191,7 +191,7 @@ class SyncStatesOnSessionEndUseCaseTest {
     @Test
     fun `an off-session state newer than the server copy keeps its server link`() = runTest {
         coEvery { stateCacheManager.hasSameContent(any(), any()) } returns false
-        coEvery { stateCacheManager.getStateBySlot(GAME_ID, any(), 1, any()) } returns existing.copy(
+        coEvery { stateCacheManager.getStateBySlot(GAME_ID, any(), 1, any(), any()) } returns existing.copy(
             rommSaveId = 99L,
             serverUpdatedAt = Instant.ofEpochSecond(1_500)
         )
@@ -246,6 +246,20 @@ class SyncStatesOnSessionEndUseCaseTest {
         coVerify {
             stateCacheManager.discoverStatesForGame(GAME_ID, any(), any(), any(), setOf("SLUS-00001"), any(), any())
         }
+    }
+
+    @Test
+    fun `the slot is compared with the cached row the session's core writes`() = runTest {
+        val lookedUpCore = io.mockk.slot<String?>()
+        val cachedCore = io.mockk.slot<String?>()
+        coEvery { stateCacheManager.getStateBySlot(GAME_ID, any(), 1, any(), captureNullable(lookedUpCore)) } returns null
+        coEvery {
+            stateCacheManager.cacheState(any(), any(), any(), any(), any(), captureNullable(cachedCore), any(), any(), any(), any())
+        } returns 42L
+
+        useCase(GAME_ID, EmulatorRegistry.BUILTIN_PACKAGE, queueUploads = false)
+
+        assertEquals(cachedCore.captured, lookedUpCore.captured)
     }
 
     @Test

@@ -300,7 +300,6 @@
     <string name="ui_expandable_preference_collapse">Recolher</string>
     <string name="ui_expandable_preference_expand">Expandir</string>
 
-    <string name="ui_permission_card_granted">Concedido</string>
 
     <string name="ui_game_card_favorite">Favorito</string>
     <string name="ui_game_card_downloaded">Baixado</string>

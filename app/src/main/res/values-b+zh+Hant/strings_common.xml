@@ -289,7 +289,6 @@
     <string name="ui_expandable_preference_collapse">收合</string>
     <string name="ui_expandable_preference_expand">展開</string>
 
-    <string name="ui_permission_card_granted">已授權</string>
 
     <string name="ui_game_card_favorite">最愛</string>
     <string name="ui_game_card_downloaded">已下載</string>

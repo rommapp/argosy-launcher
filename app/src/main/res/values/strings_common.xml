@@ -612,9 +612,6 @@
     <!-- Icon description on a folded settings group. Verb: opens it. -->
     <string name="ui_expandable_preference_expand">Expand</string>
 
-    <!-- Icon description on a permission row that has been allowed. Adjective describing the
-         permission. -->
-    <string name="ui_permission_card_granted">Granted</string>
 
     <!-- Icon description on the marker a game card shows when it is a favourite. Noun. -->
     <string name="ui_game_card_favorite">Favorite</string>

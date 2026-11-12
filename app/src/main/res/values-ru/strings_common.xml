@@ -324,7 +324,6 @@
     <string name="ui_expandable_preference_collapse">Свернуть</string>
     <string name="ui_expandable_preference_expand">Развернуть</string>
 
-    <string name="ui_permission_card_granted">Разрешено</string>
 
     <string name="ui_game_card_favorite">Избранное</string>
     <string name="ui_game_card_downloaded">Загружено</string>

@@ -28,6 +28,10 @@
             android:exported="true"
             android:permission="android.permission.DUMP" />
         <receiver
+            android:name=".debugtools.SetupHarnessReceiver"
+            android:exported="true"
+            android:permission="android.permission.DUMP" />
+        <receiver
             android:name=".debugtools.RecapHarnessReceiver"
             android:exported="true"
             android:permission="android.permission.DUMP" />

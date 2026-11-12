@@ -583,6 +583,8 @@ object ComponentDefaults {
         const val menuPillHeightDp = 24
         const val chipHeightDp = 24
         const val chipGrantedFillAlpha = 0.15f
+        const val permissionRecheckMs = 1000
+        const val qrSizeDp = 180
     }
 
 }

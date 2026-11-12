@@ -302,7 +302,6 @@
     <string name="ui_expandable_preference_collapse">Einklappen</string>
     <string name="ui_expandable_preference_expand">Ausklappen</string>
 
-    <string name="ui_permission_card_granted">Erteilt</string>
 
     <string name="ui_game_card_favorite">Favorit</string>
     <string name="ui_game_card_downloaded">Heruntergeladen</string>

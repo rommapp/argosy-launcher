@@ -302,7 +302,6 @@
     <string name="ui_expandable_preference_collapse">समेटें</string>
     <string name="ui_expandable_preference_expand">विस्तार करें</string>
 
-    <string name="ui_permission_card_granted">स्वीकृत</string>
 
     <string name="ui_game_card_favorite">पसंदीदा</string>
     <string name="ui_game_card_downloaded">डाउनलोड हो चुका</string>

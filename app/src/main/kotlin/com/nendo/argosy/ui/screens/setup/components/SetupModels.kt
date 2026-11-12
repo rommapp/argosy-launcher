@@ -37,13 +37,15 @@ data class SetupStepLead(
 
 /**
  * An action-zone button. [hiddenWhenDocked] marks an action the controller keyboard's submit key
- * duplicates; it hides while the sheet is docked.
+ * duplicates; it hides while the sheet is docked. [labelCount] is the format argument of a label
+ * that carries a count.
  */
 data class SetupAction(
     @StringRes val label: Int,
     val primary: Boolean = false,
     val focused: Boolean = false,
     val hiddenWhenDocked: Boolean = false,
+    val labelCount: Int? = null,
 )
 
 enum class SetupLayout { WIDE, STANDARD, TALL }

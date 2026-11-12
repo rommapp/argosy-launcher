@@ -1,8 +1,11 @@
 package com.nendo.argosy.data.permissions
 
+import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
+import android.content.pm.PackageInstaller
 import android.net.Uri
+import android.os.Build
 import android.os.PowerManager
 import android.provider.Settings
 import com.nendo.argosy.data.access.PrivilegedAccess
@@ -16,6 +19,7 @@ import com.nendo.argosy.hardware.FanController
 import com.nendo.argosy.hardware.FocusAccessibilityService
 import com.nendo.argosy.hardware.LEDController
 import com.nendo.argosy.hardware.ScreenCaptureManager
+import com.nendo.argosy.util.Logger
 import com.nendo.argosy.util.NotificationAccess
 import com.nendo.argosy.util.PermissionHelper
 import com.nendo.argosy.util.RootShell
@@ -130,14 +134,61 @@ class PermissionRegistry @Inject constructor(
     }
 
     /**
-     * Grants [permission] through the root shell where Argosy has a root command for it. Blocks on
-     * the shell.
+     * Grants [permission] through the root shell where Argosy has a root command for it: usage
+     * access, all files access, notifications on Android 13 and newer, and the accessibility
+     * service. Blocks on the shell.
      */
     fun grantOnRoot(permission: ArgosyPermission) {
-        if (permission == ArgosyPermission.USAGE_ACCESS) keepAlivePolicy.get().grantUsageAccessOnRoot()
+        when (permission) {
+            ArgosyPermission.USAGE_ACCESS -> keepAlivePolicy.get().grantUsageAccessOnRoot()
+            ArgosyPermission.ALL_FILES_ACCESS -> if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                runRootCommand("appops set ${context.packageName} MANAGE_EXTERNAL_STORAGE allow")
+            }
+            ArgosyPermission.NOTIFICATIONS -> if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                runRootCommand("pm grant ${context.packageName} android.permission.POST_NOTIFICATIONS")
+            }
+            ArgosyPermission.ACCESSIBILITY -> enableAccessibilityOnRoot()
+            else -> Unit
+        }
+    }
+
+    fun hasRootRoute(): Boolean = RootShell.isAvailable
+
+    /**
+     * Whether Android holds the accessibility service behind "Allow restricted settings", which
+     * it does from Android 13 for an install made from a local or downloaded file.
+     */
+    fun restrictedSettingsApply(): Boolean {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) return false
+        val source = runCatching {
+            context.packageManager.getInstallSourceInfo(context.packageName).packageSource
+        }.getOrNull() ?: return false
+        return source == PackageInstaller.PACKAGE_SOURCE_LOCAL_FILE ||
+            source == PackageInstaller.PACKAGE_SOURCE_DOWNLOADED_FILE
     }
 
     fun accessibilityScreen(): Intent? = resolving(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS))
+
+    fun appInfoScreen(): Intent? = resolving(Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, packageUri))
+
+    private fun runRootCommand(command: String) {
+        if (!RootShell.isAvailable) return
+        RootShell.execute(command).onFailure { Logger.warn(TAG, "Root grant failed: $command", it) }
+    }
+
+    private fun enableAccessibilityOnRoot() {
+        if (!RootShell.isAvailable || FocusAccessibilityService.isEnabled(context)) return
+        val component = RootShell.quote(
+            ComponentName(context, FocusAccessibilityService::class.java).flattenToString()
+        )
+        val script = "key=enabled_accessibility_services\n" +
+            "all=$(settings get secure \$key)\n" +
+            "if [ -z \"\$all\" ] || [ \"\$all\" = null ]; then settings put secure \$key $component; " +
+            "else settings put secure \$key \"\$all:\"$component; fi\n" +
+            "settings put secure accessibility_enabled 1\n"
+        val result = RootShell.run(context, script)
+        if (result?.succeeded != true) Logger.warn(TAG, "Accessibility service did not turn on through root")
+    }
 
     private fun screenOrNone(intent: Intent?): PermissionGrant =
         intent?.let(PermissionGrant::Screen) ?: PermissionGrant.None
@@ -172,4 +223,8 @@ class PermissionRegistry @Inject constructor(
 
     private fun resolving(intent: Intent): Intent? =
         intent.takeIf { it.resolveActivity(context.packageManager) != null }
+
+    private companion object {
+        const val TAG = "PermissionRegistry"
+    }
 }

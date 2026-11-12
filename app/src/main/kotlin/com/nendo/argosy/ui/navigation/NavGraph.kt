@@ -19,7 +19,6 @@ import com.nendo.argosy.ui.screens.collections.CollectionsScreen
 import com.nendo.argosy.ui.screens.collections.VirtualBrowserScreen
 import com.nendo.argosy.ui.screens.collections.VirtualCategoryScreen
 import com.nendo.argosy.ui.screens.downloads.DownloadsScreen
-import com.nendo.argosy.ui.screens.firstrun.FirstRunScreen
 import com.nendo.argosy.ui.screens.gamedetail.GameDetailScreen
 import com.nendo.argosy.ui.screens.home.HomeScreen
 import com.nendo.argosy.ui.screens.quaypass.QuayPassCheckInScreen
@@ -32,6 +31,7 @@ import com.nendo.argosy.ui.screens.savetimeline.SaveTimelineScreen
 import com.nendo.argosy.ui.screens.search.SearchScreen
 import com.nendo.argosy.ui.screens.settings.ManagePinsScreen
 import com.nendo.argosy.ui.screens.settings.SettingsScreen
+import com.nendo.argosy.ui.screens.setup.SetupScreen
 import com.nendo.argosy.ui.screens.social.FeedEventDetailScreen
 import com.nendo.argosy.ui.screens.social.PostEditorScreen
 import com.nendo.argosy.ui.screens.social.SocialScreen
@@ -64,7 +64,7 @@ fun NavGraph(
         popExitTransition = { fadeOut(animationSpec = tween(150)) }
     ) {
         composable(Screen.FirstRun.route) {
-            FirstRunScreen(
+            SetupScreen(
                 onComplete = {
                     navController.navigate(Screen.Home.route) {
                         popUpTo(Screen.FirstRun.route) { inclusive = true }

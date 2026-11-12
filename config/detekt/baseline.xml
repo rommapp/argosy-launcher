@@ -84,9 +84,6 @@
     <ID>LongMethod:DownloadManager.kt$DownloadManager$private suspend fun processQueue()</ID>
     <ID>LongMethod:DownloadsScreen.kt$@Composable fun DownloadsScreen( onBack: () -&gt; Unit, onDrawerToggle: () -&gt; Unit, viewModel: DownloadsViewModel = hiltViewModel() )</ID>
     <ID>LongMethod:DownloadsScreen.kt$@Composable private fun DownloadItem( download: DownloadProgress, isFocused: Boolean, availableStorage: Long )</ID>
-    <ID>LongMethod:FirstRunScreen.kt$@Composable fun FirstRunScreen( onComplete: () -&gt; Unit, viewModel: FirstRunViewModel = hiltViewModel() )</ID>
-    <ID>LongMethod:FirstRunScreen.kt$@Composable private fun RomPathStep( currentPath: String?, folderSelected: Boolean, hasStoragePermission: Boolean, onRequestPermission: () -&gt; Unit, onChooseFolder: () -&gt; Unit, onContinue: () -&gt; Unit )</ID>
-    <ID>LongMethod:FirstRunScreen.kt$@Composable private fun RommLoginStep( url: String, username: String, password: String, isConnecting: Boolean, error: String?, onUrlChange: (String) -&gt; Unit, onUsernameChange: (String) -&gt; Unit, onPasswordChange: (String) -&gt; Unit, onConnect: () -&gt; Unit, onBack: () -&gt; Unit )</ID>
     <ID>LongMethod:GameCard.kt$@Composable fun GameCard( game: HomeGameUi, isFocused: Boolean, modifier: Modifier = Modifier, focusScale: Float = Motion.scaleFocused, scaleFromBottom: Boolean = false, downloadIndicator: GameDownloadIndicator = GameDownloadIndicator.NONE )</ID>
     <ID>LongMethod:GameDetailScreen.kt$@Composable fun GameDetailScreen( gameId: Long, onBack: () -&gt; Unit, viewModel: GameDetailViewModel = hiltViewModel() )</ID>
     <ID>LongMethod:GameDetailScreen.kt$@Composable private fun AchievementRow(achievement: AchievementUi)</ID>
@@ -140,7 +137,6 @@
     <ID>LongMethod:SyncOverlay.kt$@Composable fun SyncOverlay( syncState: SyncState?, modifier: Modifier = Modifier, gameTitle: String? = null )</ID>
     <ID>LongMethod:UpdateRepository.kt$UpdateRepository$suspend fun checkForUpdates(): UpdateState</ID>
     <ID>LongParameterList:DownloadManager.kt$DownloadManager$( gameId: Long, discId: Long, discNumber: Int, rommId: Long, fileName: String, gameTitle: String, platformSlug: String, coverPath: String?, expectedSizeBytes: Long = 0 )</ID>
-    <ID>LongParameterList:FirstRunScreen.kt$( url: String, username: String, password: String, isConnecting: Boolean, error: String?, onUrlChange: (String) -&gt; Unit, onUsernameChange: (String) -&gt; Unit, onPasswordChange: (String) -&gt; Unit, onConnect: () -&gt; Unit, onBack: () -&gt; Unit )</ID>
     <ID>LongParameterList:GameDetailScreen.kt$( entries: List&lt;UnifiedSaveEntry&gt;, focusIndex: Int, isLoading: Boolean, showRestoreConfirmation: Boolean, restoreEntry: UnifiedSaveEntry?, showRenameDialog: Boolean, renameText: String, onRenameTextChange: (String) -&gt; Unit, activeChannel: String? )</ID>
     <ID>LongParameterList:GameDetailScreen.kt$( game: GameDetailUi, uiState: GameDetailUiState, viewModel: GameDetailViewModel, scrollState: ScrollState, screenshotListState: LazyListState, achievementListState: LazyListState, currentSnapState: SnapState, onDescriptionPositioned: (Int) -&gt; Unit, onScreenshotPositioned: (Int) -&gt; Unit, onAchievementPositioned: (Int) -&gt; Unit )</ID>
     <ID>LongParameterList:GameDetailViewModel.kt$GameDetailViewModel$( @dagger.hilt.android.qualifiers.ApplicationContext private val context: android.content.Context, private val gameDao: GameDao, private val gameDiscDao: GameDiscDao, private val platformDao: PlatformDao, private val emulatorConfigDao: EmulatorConfigDao, private val emulatorDetector: EmulatorDetector, private val downloadManager: DownloadManager, private val notificationManager: NotificationManager, private val gameRepository: GameRepository, private val gameNavigationContext: GameNavigationContext, private val launchGameUseCase: LaunchGameUseCase, private val launchWithSyncUseCase: LaunchWithSyncUseCase, private val configureEmulatorUseCase: ConfigureEmulatorUseCase, private val romMRepository: RomMRepository, private val soundManager: SoundFeedbackManager, private val gameActions: GameActionsDelegate, private val achievementDao: com.nendo.argosy.data.local.dao.AchievementDao, private val imageCacheManager: ImageCacheManager, private val playSessionTracker: PlaySessionTracker, private val preferencesRepository: com.nendo.argosy.data.preferences.UserPreferencesRepository, private val getUnifiedSavesUseCase: GetUnifiedSavesUseCase, private val restoreCachedSaveUseCase: RestoreCachedSaveUseCase, private val saveCacheManager: SaveCacheManager )</ID>
@@ -154,8 +150,6 @@
     <ID>LoopWithTooManyJumpStatements:SteamRepository.kt$SteamRepository$for</ID>
     <ID>MagicNumber:AppsScreen.kt$128</ID>
     <ID>MagicNumber:ArgosyViewModel.kt$ArgosyViewModel$30_000L</ID>
-    <ID>MagicNumber:FirstRunScreen.kt$0.8f</ID>
-    <ID>MagicNumber:FirstRunScreen.kt$150</ID>
     <ID>MagicNumber:FooterHint.kt$3</ID>
     <ID>MagicNumber:GameCard.kt$0.25f</ID>
     <ID>MagicNumber:GameCard.kt$0.5f</ID>
@@ -441,7 +435,6 @@
     <ID>UnusedImports:DownloadsScreen.kt$import androidx.compose.material.icons.filled.PlayArrow</ID>
     <ID>UnusedImports:DownloadsScreen.kt$import androidx.compose.material.icons.filled.Refresh</ID>
     <ID>UnusedImports:DownloadsScreen.kt$import androidx.compose.ui.platform.LocalContext</ID>
-    <ID>UnusedImports:FirstRunScreen.kt$import androidx.compose.material.icons.filled.Cloud</ID>
     <ID>UnusedImports:GameCard.kt$import androidx.compose.ui.geometry.CornerRadius</ID>
     <ID>UnusedImports:GameCard.kt$import androidx.compose.ui.geometry.Offset</ID>
     <ID>UnusedImports:GameCard.kt$import androidx.compose.ui.geometry.Size</ID>
@@ -517,7 +510,6 @@
     <ID>VariableNaming:DownloadManager.kt$DownloadManager$private val _state = MutableStateFlow(DownloadQueueState())</ID>
     <ID>VariableNaming:DownloadsViewModel.kt$DownloadsViewModel$private val _uiState = MutableStateFlow(DownloadsUiState())</ID>
     <ID>VariableNaming:EmulatorDetector.kt$EmulatorDetector$private val _installedEmulators = MutableStateFlow&lt;List&lt;InstalledEmulator&gt;&gt;(emptyList())</ID>
-    <ID>VariableNaming:FirstRunViewModel.kt$FirstRunViewModel$private val _uiState = MutableStateFlow(FirstRunUiState())</ID>
     <ID>VariableNaming:GameDetailViewModel.kt$GameDetailViewModel$private val _launchEvents = MutableSharedFlow&lt;LaunchEvent&gt;()</ID>
     <ID>VariableNaming:GameDetailViewModel.kt$GameDetailViewModel$private val _uiState = MutableStateFlow(GameDetailUiState())</ID>
     <ID>VariableNaming:GamepadInputHandler.kt$GamepadInputHandler$private val _events = MutableSharedFlow&lt;GamepadEvent&gt;(extraBufferCapacity = 16)</ID>

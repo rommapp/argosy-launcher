@@ -285,7 +285,6 @@
     <string name="ui_expandable_preference_collapse">收起</string>
     <string name="ui_expandable_preference_expand">展开</string>
 
-    <string name="ui_permission_card_granted">已授权</string>
 
     <string name="ui_game_card_favorite">收藏</string>
     <string name="ui_game_card_downloaded">已下载</string>

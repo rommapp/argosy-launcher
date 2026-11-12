@@ -326,7 +326,6 @@
     <string name="ui_expandable_preference_collapse">Réduire</string>
     <string name="ui_expandable_preference_expand">Développer</string>
 
-    <string name="ui_permission_card_granted">Accordée</string>
 
     <string name="ui_game_card_favorite">Favori</string>
     <string name="ui_game_card_downloaded">Téléchargé</string>

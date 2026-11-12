@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <!--
-      Owner: ui/screens/setup/components (key prefix setup_) and the shared permission row in
+      Owner: ui/screens/setup (key prefix setup_) and the shared permission row in
       ui/components/PermissionCard.kt (key prefix ui_permission_).
       Keys are named for the usage site, never for the English text, and identical English
       is never shared between two usage sites.
@@ -25,6 +25,289 @@
     <!-- Line under a setup page title on a device with two screens, where the explanation for
          the selected item is shown on the other screen. -->
     <string name="setup_lead_context_on_other_screen">Details for each item show on the other screen.</string>
+
+    <!-- ===== Welcome page ===== -->
+
+    <!-- Title of the first setup page. Argosy is this app's name and is not translated. -->
+    <string name="setup_welcome_title">Welcome to Argosy</string>
+    <!-- Line under the welcome title. "saves" are game save data. "Settings" names this app's own
+         Settings screen. -->
+    <string name="setup_welcome_body">Let\'s set up your games, saves and controls. You can change any of it later in Settings.</string>
+    <!-- Button that starts setup. Verb phrase, imperative. -->
+    <string name="setup_welcome_button_start">Get started</string>
+
+    <!-- ===== Library page ===== -->
+
+    <!-- Title of the page that asks where the person's games come from. Question. -->
+    <string name="setup_library_choice_title">Where are your games?</string>
+    <!-- Line under that title. RomM is a product name (a game library server) and is not
+         translated. -->
+    <string name="setup_library_choice_purpose">Argosy works best with a RomM server. It can also play games stored on this device.</string>
+    <!-- Option row for signing in to a RomM server. Verb phrase. RomM is not translated. -->
+    <string name="setup_library_romm_row_title">Sign in to RomM</string>
+    <!-- Second line of that option. "saves" are game save data. -->
+    <string name="setup_library_romm_row_subtitle">Your library, saves and play time, synced</string>
+    <!-- Option row for playing only games already stored on this device. This option cannot be
+         chosen. Verb phrase. -->
+    <string name="setup_library_local_row_title">Use games on this device</string>
+    <!-- Second line of that option, saying it cannot be chosen. Adjective. -->
+    <string name="setup_library_local_row_unavailable">Unavailable</string>
+    <!-- First of three lines describing what a RomM server gives. -->
+    <string name="setup_library_context_downloads">Downloads games from your library</string>
+    <!-- Second of three lines describing what a RomM server gives. "saves" are game save data. -->
+    <string name="setup_library_context_saves">Syncs saves before and after you play</string>
+    <!-- Third of three lines describing what a RomM server gives. -->
+    <string name="setup_library_context_play_time">Keeps play time across devices</string>
+    <!-- Button that confirms the library choice and goes on. Verb. -->
+    <string name="setup_library_button_next">Next</string>
+    <!-- Title of the page where the person enters the RomM server address. RomM is not
+         translated. -->
+    <string name="setup_library_address_title">Sign in to RomM</string>
+    <!-- Label of the field holding the server's web address. Noun phrase. -->
+    <string name="setup_library_address_field_label">Server address</string>
+    <!-- Example text in the empty address field. The two examples are a host name and an IP
+         address with a port; only "or" is translated. -->
+    <string name="setup_library_address_placeholder">romm.example.com or 192.168.1.20:8080</string>
+    <!-- Hint under the address field. RomM is not translated. -->
+    <string name="setup_library_address_hint">Use the address you open RomM with in a browser.</string>
+    <!-- Button that checks the typed address and goes on to sign-in. Verb. -->
+    <string name="setup_library_address_button_continue">Continue</string>
+    <!-- Error under the address field when it is empty. Imperative. -->
+    <string name="setup_library_address_error_blank">Enter a server address.</string>
+    <!-- Error under the address field when no server answered at that address. -->
+    <string name="setup_library_address_error_unreachable">Can\'t reach this address. Check it and try again.</string>
+    <!-- Title of the page that shows a QR code and a short code the person approves on another
+         device. Imperative. -->
+    <string name="setup_library_approve_title">Approve this device</string>
+    <!-- Line under that title. "the code" is the QR code; "this code" is the short code shown
+         beside it. -->
+    <string name="setup_library_approve_purpose">Scan the code or open the link on a signed-in device, then confirm this code.</string>
+    <!-- Small label above the short sign-in code. Noun phrase. -->
+    <string name="setup_library_approve_code_label">Your code</string>
+    <!-- Status line while Argosy waits for the person to approve the device elsewhere. -->
+    <string name="setup_library_approve_status">Waiting for approval</string>
+    <!-- Accessibility description of the QR code that opens the sign-in page. -->
+    <string name="setup_library_approve_qr_desc">Sign-in QR code</string>
+    <!-- Button that opens the sign-in web page in a browser on this device. Verb phrase. -->
+    <string name="setup_library_approve_button_open">Open sign-in page</string>
+    <!-- Button on the pairing code page that returns to the server address. Verb phrase. -->
+    <string name="setup_library_pairing_button_edit_address">Edit address</string>
+    <!-- Button on the pairing code page that switches to approving this device from another
+         signed-in device with a QR code. Verb phrase. -->
+    <string name="setup_library_pairing_button_approve">Approve on another device</string>
+    <!-- Title once sign-in has worked. Past participle. -->
+    <string name="setup_library_signed_in_title">Signed in</string>
+    <!-- Line naming the server Argosy signed in to. %1$s is the server address and is never
+         translated. -->
+    <string name="setup_library_signed_in_server">Connected to %1$s</string>
+    <!-- Button that goes back to the server address to sign in somewhere else. Verb phrase. -->
+    <string name="setup_library_signed_in_button_different">Use a different server</string>
+    <!-- Button that confirms the signed-in library and goes on. Verb. -->
+    <string name="setup_library_button_signed_in_next">Next</string>
+
+    <!-- ===== Permissions page ===== -->
+
+    <!-- Title of the page listing Android permissions. Imperative. -->
+    <string name="setup_permissions_title">Allow access</string>
+    <!-- Line under that title. "saves" are game save data. -->
+    <string name="setup_permissions_purpose">Argosy needs these to run your library and keep your saves safe.</string>
+    <!-- Note under the Required heading when Argosy granted the permissions itself through root
+         access on this device. -->
+    <string name="setup_permissions_root_note">Turned on for you with root access.</string>
+    <!-- Main button while all files access is missing. Name the permission the way Android
+         settings name it in your language. -->
+    <string name="setup_permissions_primary_allow_all_files">Allow all files access</string>
+    <!-- Main button while usage access is missing. Name the permission the way Android settings
+         name it in your language. -->
+    <string name="setup_permissions_primary_allow_usage">Allow usage access</string>
+    <!-- Main button while notifications are not allowed. -->
+    <string name="setup_permissions_primary_allow_notifications">Allow notifications</string>
+    <!-- Main button once every required permission is allowed. Verb. -->
+    <string name="setup_permissions_primary_next">Next</string>
+    <!-- What all files access lets Argosy do. Noun list. ROMs are game files. -->
+    <string name="setup_permissions_enables_all_files">ROMs, saves, covers, downloads and the file browser</string>
+    <!-- What usage access lets Argosy do. Noun list. An external emulator is a separate app that
+         runs games. -->
+    <string name="setup_permissions_enables_usage">Knowing when an external emulator closes, resuming it, recovering a session after a crash, accurate play time and screenshot upload</string>
+    <!-- What notifications let Argosy do. -->
+    <string name="setup_permissions_enables_notifications">Staying open during play</string>
+    <!-- What display over other apps lets Argosy do. "save sync marker" is a small sign shown
+         when a game's save is synced. -->
+    <string name="setup_permissions_enables_overlay">Argosy\'s notices, the save sync marker, the quick panel and the resume overlay over emulators</string>
+    <!-- What unrestricted battery use lets Argosy do. -->
+    <string name="setup_permissions_enables_battery">Downloads, caching and Argosy staying alive while you play</string>
+    <!-- What is lost without display over other apps. "These" are the notices and panels. -->
+    <string name="setup_permissions_lost_overlay">These only appear while Argosy is on screen.</string>
+    <!-- What is lost without unrestricted battery use. -->
+    <string name="setup_permissions_lost_battery">Android may pause downloads and close Argosy during long sessions.</string>
+
+    <!-- ===== Accessibility page ===== -->
+
+    <!-- Title of the page that turns on Argosy's accessibility service, which lets the Home
+         button and button combinations reach Argosy from other apps. Noun phrase. -->
+    <string name="setup_accessibility_title">Button shortcuts</string>
+    <!-- Line under that title. "button combos" are combinations of controller buttons. -->
+    <string name="setup_accessibility_purpose">Lets Home and button combos reach Argosy while another app is open.</string>
+    <!-- What is lost while the service is off. -->
+    <string name="setup_accessibility_lost">Without it, Home and button combos only work while Argosy is on screen.</string>
+    <!-- Step 1 title. "Allow restricted settings" is the name of an Android menu item; use the
+         wording Android uses in your language. -->
+    <string name="setup_accessibility_step_restricted_title">Allow restricted settings</string>
+    <!-- Step 1 instructions. "App info" and "Allow restricted settings" are Android screen and
+         menu names; use Android's wording in your language. -->
+    <string name="setup_accessibility_step_restricted_subtitle">Open App info, then the top-corner menu, and choose Allow restricted settings.</string>
+    <!-- Step 1 line when the service still could not be turned on. -->
+    <string name="setup_accessibility_still_blocked">Android still blocks this. Check the top-corner menu in App info.</string>
+    <!-- Step 2 title. "Accessibility" is the Android settings screen. Imperative. -->
+    <string name="setup_accessibility_step_service_title">Turn on Argosy in Accessibility</string>
+    <!-- Step 2 second line. -->
+    <string name="setup_accessibility_step_service_subtitle">Opens Accessibility settings</string>
+    <!-- Row shown when Argosy turned the service on itself through root access. -->
+    <string name="setup_accessibility_rooted_title">Turned on for you.</string>
+    <!-- Second line of that row, naming what was turned on. Noun phrase. -->
+    <string name="setup_accessibility_rooted_subtitle">Accessibility service</string>
+    <!-- Status chip on a step that is finished. Adjective. -->
+    <string name="setup_accessibility_chip_done">Done</string>
+    <!-- Status chip on a step that still needs doing. Short. -->
+    <string name="setup_accessibility_chip_todo">To do</string>
+    <!-- Status chip: the accessibility service is on. Adjective. -->
+    <string name="setup_accessibility_chip_on">On</string>
+    <!-- Status chip: the accessibility service is off. Adjective. -->
+    <string name="setup_accessibility_chip_off">Off</string>
+    <!-- Status chip while Argosy turns the service on through root access. Present participle. -->
+    <string name="setup_accessibility_chip_checking">Checking</string>
+    <!-- Heading over the tap paths in Android settings. Noun phrase. -->
+    <string name="setup_accessibility_context_where">Where to tap</string>
+    <!-- Tap path for step 1. Use Android's names for the screen and menu item in your language. -->
+    <string name="setup_accessibility_context_restricted_path">App info &gt; top-corner menu &gt; Allow restricted settings</string>
+    <!-- Tap path for step 2. "On" is the switch state. -->
+    <string name="setup_accessibility_context_service_path">Accessibility &gt; Argosy &gt; On</string>
+    <!-- Main button while the service is off: go on without it. Verb. -->
+    <string name="setup_accessibility_button_skip">Skip</string>
+    <!-- Main button once the service is on. Verb. -->
+    <string name="setup_accessibility_button_next">Next</string>
+
+    <!-- ===== Folders page ===== -->
+
+    <!-- Title of the page that picks the folder for game files. Noun phrase. -->
+    <string name="setup_folders_title">Game folder</string>
+    <!-- Line under that title. -->
+    <string name="setup_folders_purpose">Choose where your games are stored. New downloads go here too.</string>
+    <!-- Heading over the game folder choices. Shown in capitals. Noun, plural. -->
+    <string name="setup_folders_group_games">Games</string>
+    <!-- Heading over the cover image storage choices. Shown in capitals. -->
+    <string name="setup_folders_group_covers">Covers and screenshots</string>
+    <!-- Choice for the device's internal storage. -->
+    <string name="setup_folders_internal_title">Internal storage</string>
+    <!-- Choice for a removable memory card. -->
+    <string name="setup_folders_sd_title">SD card</string>
+    <!-- Second line of the SD card choice once the card was taken out. -->
+    <string name="setup_folders_sd_removed">SD card removed</string>
+    <!-- Choice that opens a folder picker. Verb phrase. -->
+    <string name="setup_folders_custom_title">Choose another folder</string>
+    <!-- Second line of that choice before a folder is picked. -->
+    <string name="setup_folders_custom_subtitle">Opens the file browser</string>
+    <!-- Second line of a folder choice. %1$s is the folder path and is never translated; %2$s is
+         the free space, for example 41.2 GB. -->
+    <string name="setup_folders_path_free">%1$s, %2$s free</string>
+    <!-- Second line of a folder choice while its free space is being read. -->
+    <string name="setup_folders_checking_space">Checking space</string>
+    <!-- Note that the chosen folder does not exist yet and Argosy will create it. -->
+    <string name="setup_folders_creates">Argosy creates this folder.</string>
+    <!-- Free and total space of a storage volume. %1$s is the free space, %2$s the total. -->
+    <string name="setup_folders_free_of_total">%1$s free of %2$s</string>
+    <!-- Choice that keeps cover images in storage only Argosy can read. -->
+    <string name="setup_folders_private_title">Private storage</string>
+    <!-- Second line of the private storage choice. -->
+    <string name="setup_folders_private_subtitle">Only Argosy can open these files</string>
+    <!-- Choice that keeps cover images in a shared folder the person picks. -->
+    <string name="setup_folders_public_title">Public storage</string>
+    <!-- Second line of the public storage choice before a folder is picked. -->
+    <string name="setup_folders_public_subtitle">Any app can open these files</string>
+    <!-- Error under a folder choice Argosy cannot write to. -->
+    <string name="setup_folders_error_unwritable">Argosy can\'t write to this folder. Choose another.</string>
+    <!-- Button that confirms both folder choices and goes on. Verb. -->
+    <string name="setup_folders_button_next">Next</string>
+
+    <!-- ===== Save sync page ===== -->
+
+    <!-- Line on the save sync page. %1$s is the server address and is never translated.
+         "saves" are game save data; "pick up" means continue playing. -->
+    <string name="setup_save_sync_purpose">Keep your saves on %1$s so you can pick up on any device.</string>
+    <!-- One end of a small diagram: this device, with the server at the other end. -->
+    <string name="setup_save_sync_context_device">This device</string>
+    <!-- Line under that diagram. "states" are save states, snapshots of a running game. -->
+    <string name="setup_save_sync_context_when">Saves and states upload after you play and download before you play.</string>
+    <!-- Button that records the save sync answer and goes on. Verb. -->
+    <string name="setup_save_sync_button_next">Next</string>
+
+    <!-- ===== Platforms page ===== -->
+
+    <!-- Title of the page that picks which platforms to sync. A platform is a games console or
+         computer system. Noun, plural. -->
+    <string name="setup_platforms_title">Platforms</string>
+    <!-- Line under that title. "Settings" names this app's own Settings screen. -->
+    <string name="setup_platforms_purpose">Pick the platforms to sync. You can change this later in Settings.</string>
+    <!-- Switch row that downloads the emulators built into Argosy. Verb phrase. -->
+    <string name="setup_platforms_cores_title">Download built-in emulators</string>
+    <!-- Second line of that switch: how many emulators the chosen platforms need. -->
+    <plurals name="setup_platforms_cores_subtitle">
+        <item quantity="one">%d emulator for your platforms</item>
+        <item quantity="other">%d emulators for your platforms</item>
+    </plurals>
+    <!-- Footer hint for the button that switches every platform on or off. Verb phrase. -->
+    <string name="setup_platforms_footer_select_all">Select all</string>
+    <!-- Button that confirms the platform choice and goes on. Verb. -->
+    <string name="setup_platforms_button_next">Next</string>
+
+    <!-- ===== Done page ===== -->
+
+    <!-- Title of the last setup page. -->
+    <string name="setup_done_title">You\'re set</string>
+    <!-- Line asking the person to make Argosy their home app. "home app" is the app Android
+         opens with the Home button. -->
+    <string name="setup_done_body_home">Make Argosy your home app so Home and the home button open it.</string>
+    <!-- Line when nothing is left to ask. -->
+    <string name="setup_done_body_ready">Your library is ready to play.</string>
+    <!-- Summary label for the game library. Noun. -->
+    <string name="setup_done_summary_library">Library</string>
+    <!-- Summary value for the library. %1$s is the server address and is never translated;
+         %2$d is the number of games. -->
+    <plurals name="setup_done_library_value">
+        <item quantity="one">%1$s, %2$d game</item>
+        <item quantity="other">%1$s, %2$d games</item>
+    </plurals>
+    <!-- Summary label for the game folder. Noun, plural. -->
+    <string name="setup_done_summary_games">Games</string>
+    <!-- Summary label for save sync. "Save" is a noun: game save data. -->
+    <string name="setup_done_summary_save_sync">Save sync</string>
+    <!-- Summary value: save sync is on. Adjective. -->
+    <string name="setup_done_summary_on">On</string>
+    <!-- Summary value: save sync is off. Adjective. -->
+    <string name="setup_done_summary_off">Off</string>
+    <!-- Summary label for the built-in emulator downloads. Noun, plural. -->
+    <string name="setup_done_summary_emulators">Emulators</string>
+    <!-- Summary value while downloads run. %1$d is how many finished, %2$d how many there are;
+         the plural form follows the total. -->
+    <plurals name="setup_done_emulators_downloading">
+        <item quantity="one">Downloading (%1$d of %2$d)</item>
+        <item quantity="other">Downloading (%1$d of %2$d)</item>
+    </plurals>
+    <!-- Summary value when some downloads failed. %1$d is how many downloaded, %2$d how many
+         there are; the plural form follows the total. -->
+    <plurals name="setup_done_emulators_partial">
+        <item quantity="one">%1$d of %2$d downloaded</item>
+        <item quantity="other">%1$d of %2$d downloaded</item>
+    </plurals>
+    <!-- Summary value when every download finished. Past participle. -->
+    <string name="setup_done_emulators_done">Downloaded</string>
+    <!-- Main button that asks Android to make Argosy the home app. Verb phrase. -->
+    <string name="setup_done_button_set_home">Set as home app</string>
+    <!-- Button that finishes setup without making Argosy the home app. -->
+    <string name="setup_done_button_not_now">Not now</string>
+    <!-- Main button that finishes setup and opens Home. Verb phrase. "Home" is Argosy's main
+         screen. -->
+    <string name="setup_done_button_go_home">Go to Home</string>
 
     <!-- ===== Controller button diagram ===== -->
 

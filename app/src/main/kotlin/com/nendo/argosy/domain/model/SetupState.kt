@@ -39,3 +39,21 @@ sealed interface SetupState {
 
 val SetupState.isComplete: Boolean
     get() = this is SetupState.Complete
+
+/**
+ * Built-in emulator downloads that setup started. They run past the end of setup; [running] holds
+ * until every one has either downloaded or failed.
+ */
+data class CoreDownloadProgress(
+    val total: Int = 0,
+    val completed: Int = 0,
+    val failed: Int = 0
+) {
+    val running: Boolean get() = completed + failed < total
+}
+
+data class FolderSpace(
+    val freeBytes: Long,
+    val totalBytes: Long,
+    val exists: Boolean
+)

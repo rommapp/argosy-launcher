@@ -437,6 +437,7 @@
     <string name="ingame_libretro_hardcore_off_core_setting">इस सत्र के लिए हार्डकोर बंद है: %1$s का मान %2$s है</string>
     <string name="ingame_libretro_core_option_blocked_hardcore">हार्डकोर में यह मान अनुमत नहीं है</string>
     <string name="ingame_libretro_casual_save_in_hardcore">हार्डकोर में कैज़ुअल सेव जारी है</string>
+    <string name="ingame_ra_sign_in_notice">उपलब्धियां पाने के लिए सेटिंग्स में RetroAchievements में साइन इन करें</string>
 
     <string name="ingame_libretro_disc_swap_inserted">%1$s डाला गया</string>
     <string name="ingame_libretro_sun_level">धूप %1$d/%2$d</string>

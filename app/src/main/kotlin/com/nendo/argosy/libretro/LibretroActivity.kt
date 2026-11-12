@@ -759,6 +759,17 @@ open class LibretroActivity : ComponentActivity() {
             observeRaSessionMode()
             observeRaNotices()
             observeInGameAchievements()
+            offerRaSignIn()
+        }
+    }
+
+    private fun offerRaSignIn() {
+        lifecycleScope.launch {
+            if (raRepository.isLoggedIn()) return@launch
+            val game = withContext(Dispatchers.IO) { gameDao.getById(gameId) } ?: return@launch
+            if (game.achievementCount <= 0) return@launch
+            if (!preferencesRepository.claimRaSignInNotice()) return@launch
+            showNotice(NotificationSeverity.INFO, R.string.ingame_ra_sign_in_notice)
         }
     }
 

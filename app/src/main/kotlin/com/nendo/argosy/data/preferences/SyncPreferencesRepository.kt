@@ -142,6 +142,7 @@ class SyncPreferencesRepository @Inject constructor(
         val SOCIAL_HIDDEN_GAME_IDS = stringPreferencesKey("social_hidden_game_ids")
         val SAVE_SYNC_LOCAL_REKEY_DONE = booleanPreferencesKey("save_sync_local_rekey_done")
         val SAVE_PATH_CACHE_PURGED = booleanPreferencesKey("save_path_cache_purged")
+        val RA_SIGN_IN_NOTICE_SHOWN = booleanPreferencesKey("ra_sign_in_notice_shown")
         val SAVE_MIGRATION_NOTICES_SHOWN = stringPreferencesKey("save_migration_notices_shown")
         val SIBLING_SPLIT_REPAIR_DONE = booleanPreferencesKey("sibling_split_repair_finished")
         val SIBLING_CONFIG_CARRY_OVER_DONE = booleanPreferencesKey("sibling_config_carry_over_done")
@@ -230,6 +231,17 @@ class SyncPreferencesRepository @Inject constructor(
 
     suspend fun setSavePathCachePurged() {
         dataStore.edit { it[Keys.SAVE_PATH_CACHE_PURGED] = true }
+    }
+
+    suspend fun claimRaSignInNotice(): Boolean {
+        var claimed = false
+        dataStore.edit { prefs ->
+            if (prefs[Keys.RA_SIGN_IN_NOTICE_SHOWN] != true) {
+                prefs[Keys.RA_SIGN_IN_NOTICE_SHOWN] = true
+                claimed = true
+            }
+        }
+        return claimed
     }
 
     suspend fun isSaveMigrationNoticeShown(cacheId: Long): Boolean =

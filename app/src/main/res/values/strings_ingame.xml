@@ -932,6 +932,7 @@
     <string name="ingame_libretro_core_option_blocked_hardcore">That value is not allowed in hardcore</string>
     <!-- Shown when a hardcore-mode session had to resume from a casual save. "save" is a noun. -->
     <string name="ingame_libretro_casual_save_in_hardcore">Continuing casual save in hardcore</string>
+    <string name="ingame_ra_sign_in_notice">Sign in to RetroAchievements in Settings to earn achievements</string>
 
     <!-- Disc-swap toast. %1$s is the disc's own label, or the fallback name below if it has
          none. -->

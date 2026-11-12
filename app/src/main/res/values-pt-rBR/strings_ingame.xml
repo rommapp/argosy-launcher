@@ -367,6 +367,7 @@
     <string name="ingame_libretro_hardcore_off_core_setting">Hardcore está desativado para esta sessão: %1$s definido como %2$s</string>
     <string name="ingame_libretro_core_option_blocked_hardcore">Esse valor não é permitido no Hardcore</string>
     <string name="ingame_libretro_casual_save_in_hardcore">Continuando salva casual no Hardcore</string>
+    <string name="ingame_ra_sign_in_notice">Entre no RetroAchievements nas Configurações para ganhar conquistas</string>
     <string name="ingame_libretro_disc_swap_inserted">Inserido %1$s</string>
     <string name="ingame_libretro_sun_level">Luz solar %1$d/%2$d</string>
     <string name="ingame_libretro_microphone_request_reason">Jogos de DS podem usar o microfone. Permita aqui e ele funcionará a partir da próxima abertura.</string>

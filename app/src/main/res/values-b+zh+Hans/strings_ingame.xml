@@ -428,6 +428,7 @@
     <string name="ingame_libretro_hardcore_off_core_setting">本次游戏已关闭硬核模式：%1$s 设为 %2$s</string>
     <string name="ingame_libretro_core_option_blocked_hardcore">硬核模式下不允许此值</string>
     <string name="ingame_libretro_casual_save_in_hardcore">正在硬核模式下继续休闲存档</string>
+    <string name="ingame_ra_sign_in_notice">在设置中登录 RetroAchievements 即可获得成就</string>
 
     <string name="ingame_libretro_disc_swap_inserted">已插入%1$s</string>
     <string name="ingame_libretro_sun_level">阳光 %1$d/%2$d</string>

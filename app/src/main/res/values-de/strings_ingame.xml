@@ -437,6 +437,7 @@
     <string name="ingame_libretro_hardcore_off_core_setting">Hardcore ist für diese Sitzung aus: %1$s steht auf %2$s</string>
     <string name="ingame_libretro_core_option_blocked_hardcore">Dieser Wert ist im Hardcore-Modus nicht erlaubt</string>
     <string name="ingame_libretro_casual_save_in_hardcore">Fortsetzung eines Casual-Spielstands im Hardcore-Modus</string>
+    <string name="ingame_ra_sign_in_notice">Melde dich in den Einstellungen bei RetroAchievements an, um Erfolge zu verdienen</string>
 
     <string name="ingame_libretro_disc_swap_inserted">%1$s eingelegt</string>
     <string name="ingame_libretro_sun_level">Sonnenlicht %1$d/%2$d</string>

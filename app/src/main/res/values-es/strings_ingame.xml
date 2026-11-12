@@ -447,6 +447,7 @@
     <string name="ingame_libretro_hardcore_off_core_setting">El modo hardcore está desactivado en esta sesión: %1$s está en %2$s</string>
     <string name="ingame_libretro_core_option_blocked_hardcore">Ese valor no está permitido en modo hardcore</string>
     <string name="ingame_libretro_casual_save_in_hardcore">Continuando una partida casual en hardcore</string>
+    <string name="ingame_ra_sign_in_notice">Inicia sesión en RetroAchievements en Ajustes para conseguir logros</string>
 
     <string name="ingame_libretro_disc_swap_inserted">%1$s insertado</string>
     <string name="ingame_libretro_sun_level">Luz solar %1$d/%2$d</string>

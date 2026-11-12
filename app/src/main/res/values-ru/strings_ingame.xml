@@ -457,6 +457,7 @@
     <string name="ingame_libretro_hardcore_off_core_setting">Режим хардкор отключён в этой сессии: %1$s = %2$s</string>
     <string name="ingame_libretro_core_option_blocked_hardcore">Это значение недоступно в режиме хардкор</string>
     <string name="ingame_libretro_casual_save_in_hardcore">Продолжение казуального сохранения в хардкоре</string>
+    <string name="ingame_ra_sign_in_notice">Войдите в RetroAchievements в настройках, чтобы получать достижения</string>
 
     <string name="ingame_libretro_disc_swap_inserted">Вставлен %1$s</string>
     <string name="ingame_libretro_sun_level">Солнечный свет %1$d/%2$d</string>

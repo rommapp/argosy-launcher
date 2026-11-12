@@ -45,7 +45,8 @@ class SettingsBackupKeysTest {
         "last_integrity_check_time", "romm_play_session_backfill_done",
         "sibling_split_repair_finished", "sibling_pick_seeded_owners", "sibling_full_pass_done",
         "variant_file_cleanup_done", "sibling_config_carry_over_done", "save_migration_notices_shown",
-        "home_app_default_applied", "last_monthly_recap_shown", "pre_launch_recap_baseline"
+        "home_app_default_applied", "last_monthly_recap_shown", "pre_launch_recap_baseline",
+        "ra_sign_in_notice_shown"
     )
 
     private val liveSessionState = setOf(

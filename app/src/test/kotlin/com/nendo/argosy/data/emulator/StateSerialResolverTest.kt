@@ -137,6 +137,39 @@ class StateSerialResolverTest {
     }
 
     @Test
+    fun `an unchanged disc is read by Sigil once across calls`() = runTest {
+        coEvery { gameDao.getById(GAME_ID) } returns game(titleId = "SLUS-00001", locked = true)
+        sigil(rom, "SLUS-00001", fromBinary = true)
+
+        repeat(3) { assertEquals(setOf("SLUS-00001"), resolver.serialsFor(GAME_ID, "duckstation")) }
+
+        verify(exactly = 1) { extractor.extractTitleIdWithSource(rom, "psx", any()) }
+    }
+
+    @Test
+    fun `a replaced disc file is read again`() = runTest {
+        coEvery { gameDao.getById(GAME_ID) } returns game()
+        sigil(rom, "SLUS-00001", fromBinary = true)
+        resolver.serialsFor(GAME_ID, "duckstation")
+
+        rom.writeBytes(byteArrayOf(1, 2, 3))
+        sigil(rom, "SLUS-00002", fromBinary = true)
+
+        assertEquals(setOf("SLUS-00002"), resolver.serialsFor(GAME_ID, "duckstation"))
+        verify(exactly = 2) { extractor.extractTitleIdWithSource(rom, "psx", any()) }
+    }
+
+    @Test
+    fun `a failed read is retried on the next call`() = runTest {
+        coEvery { gameDao.getById(GAME_ID) } returns game()
+        every { extractor.extractTitleIdWithSource(rom, "psx", any()) } throws IllegalStateException("io") andThen
+            TitleIdResult(titleId = "SLUS-00001", fromBinary = true)
+
+        assertEquals(emptySet<String>(), resolver.serialsFor(GAME_ID, "duckstation"))
+        assertEquals(setOf("SLUS-00001"), resolver.serialsFor(GAME_ID, "duckstation"))
+    }
+
+    @Test
     fun `a rom-named emulator needs no serial and reads nothing`() = runTest {
         assertEquals(emptySet<String>(), resolver.serialsFor(GAME_ID, "retroarch"))
         assertEquals(emptySet<String>(), resolver.serialsFor(GAME_ID, EmulatorRegistry.BUILTIN_ID))

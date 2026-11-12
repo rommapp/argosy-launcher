@@ -7,6 +7,7 @@ import com.nendo.argosy.util.Logger
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.io.File
+import java.util.concurrent.ConcurrentHashMap
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -16,6 +17,7 @@ class StateSerialResolver @Inject constructor(
     private val gameDiscDao: GameDiscDao,
     private val titleIdExtractor: TitleIdExtractor
 ) {
+    private val reads = ConcurrentHashMap<FileIdentity, CachedRead>()
 
     suspend fun serialsFor(gameId: Long, emulatorId: String): Set<String> {
         if (StatePathRegistry.serialPatternFor(emulatorId) == null) return emptySet()
@@ -50,14 +52,22 @@ class StateSerialResolver @Inject constructor(
 
     private fun binaryRead(file: File, platformSlug: String): TitleIdResult? {
         if (!file.isFile) return null
+        val identity = FileIdentity(file.absolutePath, platformSlug, file.length(), file.lastModified())
+        reads[identity]?.let { return it.result }
         val result = try {
             titleIdExtractor.extractTitleIdWithSource(file, platformSlug)
         } catch (e: Exception) {
             Logger.warn(TAG, "Sigil could not read ${file.name}", e)
-            null
-        }
-        return result?.takeIf { it.fromBinary && it.titleId.isNotBlank() }
+            return null
+        }?.takeIf { it.fromBinary && it.titleId.isNotBlank() }
+        reads.keys.removeAll { it.path == identity.path && it.platformSlug == platformSlug }
+        reads[identity] = CachedRead(result)
+        return result
     }
+
+    private data class FileIdentity(val path: String, val platformSlug: String, val length: Long, val modified: Long)
+
+    private class CachedRead(val result: TitleIdResult?)
 
     private companion object {
         const val TAG = "StateSerialResolver"

@@ -49,6 +49,9 @@ interface GameFileDao {
     @Query("SELECT * FROM game_files WHERE gameId = :gameId AND category = :category ORDER BY fileName ASC")
     suspend fun getFilesByCategory(gameId: Long, category: String): List<GameFileEntity>
 
+    @Query("SELECT * FROM game_files WHERE gameId = :gameId AND category = 'mod' ORDER BY fileName ASC")
+    suspend fun getModFilesForGame(gameId: Long): List<GameFileEntity>
+
     @Query("SELECT * FROM game_files WHERE category = :category AND localPath IS NOT NULL")
     suspend fun getLocalFilesByCategory(category: String): List<GameFileEntity>
 
@@ -140,8 +143,9 @@ interface GameFileDao {
     @Query("""
         UPDATE game_files SET localPath = NULL, downloadedAt = NULL
         WHERE gameId = :gameId AND localPath IS NOT NULL AND localPath NOT LIKE :prefix || '%'
+            AND id NOT IN (:keepIds)
     """)
-    suspend fun clearLocalPathsByGameIdExcludingPrefix(gameId: Long, prefix: String)
+    suspend fun clearLocalPathsByGameIdExcludingPrefix(gameId: Long, prefix: String, keepIds: List<Long>)
 
     @Query("DELETE FROM game_files WHERE id = :id")
     suspend fun deleteById(id: Long)

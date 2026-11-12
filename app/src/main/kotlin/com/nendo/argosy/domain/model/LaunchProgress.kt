@@ -25,6 +25,7 @@ sealed interface LaunchStep {
         override val options: List<LaunchPromptOption>
     ) : Question
     data class DownloadingCore(val fraction: Float?, val totalBytes: Long? = null) : LaunchStep
+    data class InstallingTextures(val fraction: Float? = null) : LaunchStep
     data object Starting : LaunchStep
     data object PreparingSystemFiles : LaunchStep
     data object PreparingUi : LaunchStep
@@ -35,7 +36,7 @@ sealed interface LaunchStep {
  * The stretch of a launch a step belongs to. One clock runs for a phase across its steps;
  * QUESTION steps wait for an answer and LAUNCHING ends the launch.
  */
-enum class LaunchPhase { PREVIOUS, RECAP_LOADING, SAVE, CORE, PREPARE, LAUNCHING, QUESTION }
+enum class LaunchPhase { PREVIOUS, RECAP_LOADING, SAVE, CORE, TEXTURES, PREPARE, LAUNCHING, QUESTION }
 
 /**
  * A fault the launch survives: the game still opens, with the save already on the device.
@@ -50,6 +51,7 @@ val LaunchStep.phase: LaunchPhase
         is LaunchStep.Question -> LaunchPhase.QUESTION
         is LaunchStep.Save -> LaunchPhase.SAVE
         is LaunchStep.DownloadingCore -> LaunchPhase.CORE
+        is LaunchStep.InstallingTextures -> LaunchPhase.TEXTURES
         LaunchStep.Starting -> LaunchPhase.PREPARE
         LaunchStep.PreparingSystemFiles -> LaunchPhase.PREPARE
         LaunchStep.PreparingUi -> LaunchPhase.PREPARE
@@ -60,7 +62,11 @@ val LaunchStep.failure: LaunchFailure?
     get() = (this as? LaunchStep.Save)?.progress?.launchFailure
 
 val LaunchStep.fraction: Float?
-    get() = (this as? LaunchStep.DownloadingCore)?.fraction
+    get() = when (this) {
+        is LaunchStep.DownloadingCore -> fraction
+        is LaunchStep.InstallingTextures -> fraction
+        else -> null
+    }
 
 val LaunchStep.sizeBytes: Long?
     get() = (this as? LaunchStep.DownloadingCore)?.totalBytes?.takeIf { it > 0 }

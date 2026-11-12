@@ -10,6 +10,8 @@ import android.os.StatFs
 import android.os.storage.StorageManager
 import com.nendo.argosy.core.storage.StorageVolumeType
 import com.nendo.argosy.data.cache.ImageCacheManager
+import com.nendo.argosy.data.emulator.BuiltinTexturePathRegistry
+import com.nendo.argosy.data.emulator.TexturePackInstaller
 import com.nendo.argosy.data.local.dao.GameDao
 import com.nendo.argosy.data.local.dao.GameDiscDao
 import com.nendo.argosy.data.local.dao.GameFileDao
@@ -427,13 +429,19 @@ class StorageAttributionRepository @Inject constructor(
             if (canonical == musicRoot || canonical.startsWith("$musicRoot/")) continue
             if (isUnderAny(canonical, storeRoots)) continue
             val entry = File(canonical)
+            val isManifest = TexturePackInstaller.isManifestFile(entry)
             when {
-                entry.isDirectory -> directoryRows.add(platformId to canonical)
-                entry.isFile -> {
+                !isManifest && entry.isDirectory -> directoryRows.add(platformId to canonical)
+                isManifest || entry.isFile -> {
                     val volumeKey = gameFileVolumeKey(canonical, volumes, internalKey)
-                    total.add(entry.length(), 1, volumeKey)
+                    val (entryBytes, entryFiles) = if (isManifest) {
+                        TexturePackInstaller.measureManifestUsage(entry, seen, fileAccessLayer)
+                    } else {
+                        entry.length() to 1
+                    }
+                    total.add(entryBytes, entryFiles, volumeKey)
                     perPlatform.getOrPut(platformId) { UsageAccumulator() }
-                        .add(entry.length(), 1, volumeKey)
+                        .add(entryBytes, entryFiles, volumeKey)
                     processed += 1
                     if (processed % GAMES_PROGRESS_INTERVAL == 0) {
                         setWalkState(StorageCategory.GAMES, WalkState.Walking(total.bytes, total.files))
@@ -901,11 +909,11 @@ class StorageAttributionRepository @Inject constructor(
             if (!root.exists()) continue
             val volumeKey = volumeKeyFor(canonicalRoot, volumes, internalKey)
             val measured = if (useNio) {
-                nioWalk(root, ctx) { bytes, files ->
+                nioWalk(root, ctx, excludeSystemTextures = category == StorageCategory.BIOS) { bytes, files ->
                     setWalkState(category, WalkState.Walking(total.bytes + bytes, total.files + files))
                 }
             } else {
-                topDownWalk(root, ctx)
+                topDownWalk(root, ctx, excludeSystemTextures = category == StorageCategory.BIOS)
             }
             total.add(measured.first, measured.second, volumeKey)
             setWalkState(category, WalkState.Walking(total.bytes, total.files))
@@ -916,6 +924,7 @@ class StorageAttributionRepository @Inject constructor(
     private fun nioWalk(
         root: File,
         ctx: CoroutineContext,
+        excludeSystemTextures: Boolean = false,
         onProgress: (Long, Int) -> Unit
     ): Pair<Long, Int> {
         var bytes = 0L
@@ -923,11 +932,20 @@ class StorageAttributionRepository @Inject constructor(
         Files.walkFileTree(root.toPath(), object : SimpleFileVisitor<Path>() {
             override fun preVisitDirectory(dir: Path?, attrs: BasicFileAttributes?): FileVisitResult {
                 ctx.ensureActive()
+                if (excludeSystemTextures && dir != null && BuiltinTexturePathRegistry.isSystemTexturePath(dir.toString())) {
+                    return FileVisitResult.SKIP_SUBTREE
+                }
                 return FileVisitResult.CONTINUE
             }
 
             override fun visitFile(file: Path?, attrs: BasicFileAttributes?): FileVisitResult {
                 if (attrs != null && attrs.isRegularFile) {
+                    if (excludeSystemTextures && file != null &&
+                        (BuiltinTexturePathRegistry.isSystemTexturePath(file.toString()) ||
+                            TexturePackInstaller.isManifestPath(file.toString()))
+                    ) {
+                        return FileVisitResult.CONTINUE
+                    }
                     bytes += attrs.size()
                     files += 1
                     if (files % WALK_PROGRESS_INTERVAL == 0) onProgress(bytes, files)
@@ -948,17 +966,28 @@ class StorageAttributionRepository @Inject constructor(
         root: File,
         ctx: CoroutineContext,
         excludeTmp: Boolean = false,
+        excludeSystemTextures: Boolean = false,
         onProgress: ((Long, Int) -> Unit)? = null
     ): Pair<Long, Int> {
         var bytes = 0L
         var files = 0
         root.walkTopDown()
-            .onEnter {
+            .onEnter { dir ->
                 ctx.ensureActive()
-                true
+                if (excludeSystemTextures && BuiltinTexturePathRegistry.isSystemTexturePath(dir.path)) {
+                    false
+                } else {
+                    true
+                }
             }
             .forEach { entry ->
                 if (entry.isFile && !(excludeTmp && entry.name.endsWith(TMP_SUFFIX))) {
+                    if (excludeSystemTextures &&
+                        (BuiltinTexturePathRegistry.isSystemTexturePath(entry.path) ||
+                            TexturePackInstaller.isManifestFile(entry))
+                    ) {
+                        return@forEach
+                    }
                     bytes += entry.length()
                     files += 1
                     if (onProgress != null && files % WALK_PROGRESS_FILES == 0) {

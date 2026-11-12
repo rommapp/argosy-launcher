@@ -729,6 +729,7 @@
     <string name="ui_launch_overlay_wait_save">Ainda sincronizando seu save</string>
     <string name="ui_launch_overlay_wait_core">Ainda baixando o core do emulador</string>
     <string name="ui_launch_overlay_wait_core_sized">Ainda baixando o core do emulador &#183; %1$s</string>
+    <string name="ui_launch_overlay_wait_textures">Ainda instalando as texturas</string>
     <string name="ui_launch_overlay_wait_prepare">Ainda preparando o emulador</string>
     <string name="ui_launch_overlay_failed_connect">O RomM não respondeu. Iniciando com o save neste dispositivo.</string>
     <string name="ui_launch_overlay_failed_timeout">O RomM demorou demais para responder. Iniciando com o save neste dispositivo.</string>

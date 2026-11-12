@@ -142,6 +142,7 @@
     <string name="sync_steam_qr_disconnected">Steam не подключен</string>
 
     <string name="sync_launch_core_fallback">Не удалось загрузить %1$s, используется %2$s</string>
+    <string name="launch_texture_pack_failed">Не удалось установить некоторые пакеты текстур</string>
 
     <plurals name="sync_screenshot_uploaded">
         <item quantity="one">%1$d скриншот выгружен</item>

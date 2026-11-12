@@ -29,11 +29,16 @@ import com.nendo.argosy.libretro.LibretroCoreRegistry
 import com.nendo.argosy.data.local.dao.GameDao
 import com.nendo.argosy.data.local.dao.PlatformDao
 import com.nendo.argosy.data.local.dao.GameDiscDao
+import com.nendo.argosy.data.emulator.enhancements.EnhancementTarget
+import com.nendo.argosy.data.emulator.enhancements.GameEnhancementProvisioner
 import com.nendo.argosy.data.preferences.UserPreferencesRepository
 import com.nendo.argosy.libretro.coreoptions.CoreOptionResolver
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.withContext
+import kotlin.coroutines.coroutineContext
 import com.nendo.argosy.data.local.entity.GameDiscEntity
 import com.nendo.argosy.data.platform.PlatformDefinitions
 import com.nendo.argosy.data.platform.PlatformFolderResolver
@@ -150,7 +155,9 @@ class GameLauncher @Inject constructor(
     private val steamInstallReports: SteamInstallReports,
     private val appsRepository: com.nendo.argosy.data.repository.AppsRepository,
     private val emulatorResolver: EmulatorResolver,
-    private val keepAlivePolicy: com.nendo.argosy.data.emulator.background.KeepAlivePolicy
+    private val keepAlivePolicy: com.nendo.argosy.data.emulator.background.KeepAlivePolicy,
+    private val texturePackInstaller: TexturePackInstaller,
+    private val enhancementProvisioners: Set<@JvmSuppressWildcards GameEnhancementProvisioner>
 ) {
     private val shellAmAvailable: Boolean by lazy {
         try {
@@ -185,16 +192,21 @@ class GameLauncher @Inject constructor(
         allowVariantPrompt: Boolean = true,
         prefetchedGame: GameEntity? = null
     ): LaunchResult = withContext(Dispatchers.IO) {
-        launchInternal(
-            gameId = gameId,
-            discId = discId,
-            forResume = forResume,
-            selectedDiscPath = selectedDiscPath,
-            variantFileId = variantFileId,
-            skipVariantPrompt = skipVariantPrompt,
-            allowVariantPrompt = allowVariantPrompt,
-            prefetchedGame = prefetchedGame
-        )
+        try {
+            launchInternal(
+                gameId = gameId,
+                discId = discId,
+                forResume = forResume,
+                selectedDiscPath = selectedDiscPath,
+                variantFileId = variantFileId,
+                skipVariantPrompt = skipVariantPrompt,
+                allowVariantPrompt = allowVariantPrompt,
+                prefetchedGame = prefetchedGame
+            )
+        } catch (e: CancellationException) {
+            Logger.info(TAG, "Launch cancelled: ${e.message}")
+            LaunchResult.Cancelled
+        }
     }
 
     private suspend fun launchInternal(
@@ -421,7 +433,11 @@ class GameLauncher @Inject constructor(
         )
     }
 
-    private suspend fun launchVariantFile(game: GameEntity, variant: com.nendo.argosy.data.local.entity.GameFileEntity, forResume: Boolean): LaunchResult {
+    private suspend fun launchVariantFile(
+        game: GameEntity,
+        variant: com.nendo.argosy.data.local.entity.GameFileEntity,
+        forResume: Boolean
+    ): LaunchResult {
         val variantPath = variant.localPath
             ?: return LaunchResult.NoRomFile(null)
         val variantFile = File(variantPath)
@@ -431,7 +447,8 @@ class GameLauncher @Inject constructor(
             val m3u = variant.m3uPath?.let { File(it) }
             if (m3u != null && m3u.exists()) {
                 val emulator = resolveEmulator(game) ?: return LaunchResult.NoEmulator(game.platformSlug)
-                val intent = buildIntent(emulator, m3u, game, forResume, variant.id) ?: return LaunchResult.NoCore(game.platformSlug, lastCoreDownloadError)
+                val intent = buildIntent(emulator, m3u, game, forResume, variant.id)
+                    ?: return LaunchResult.NoCore(game.platformSlug, lastCoreDownloadError)
                 overlayWriter.recordPlayStart(game.id, java.time.Instant.now())
                 val alreadyLaunched = intent.getBooleanExtra(EXTRA_ALREADY_LAUNCHED, false)
                 return LaunchResult.Success(
@@ -524,7 +541,11 @@ class GameLauncher @Inject constructor(
     private fun discNumberOf(fileName: String): Int? =
         DISC_TAG_REGEX.find(fileName)?.let { DISC_NUMBER_REGEX.find(it.value)?.value?.toIntOrNull() }
 
-    private suspend fun launchMultiDiscGame(game: GameEntity, requestedDiscId: Long?, forResume: Boolean): LaunchResult {
+    private suspend fun launchMultiDiscGame(
+        game: GameEntity,
+        requestedDiscId: Long?,
+        forResume: Boolean
+    ): LaunchResult {
         Logger.debug(TAG, "launchMultiDiscGame(): discCount query for gameId=${game.id}, forResume=$forResume")
 
         val discs = gameDiscDao.getDiscsForGame(game.id)
@@ -601,7 +622,7 @@ class GameLauncher @Inject constructor(
         }
 
         val intent = buildIntent(emulator, launchFile, game, forResume, discM3uPath = discM3u)
-            ?: return if (emulator.launchConfig is LaunchConfig.RetroArch) {
+            ?: return if (emulator.launchConfig is LaunchConfig.RetroArch || emulator.launchConfig is LaunchConfig.BuiltIn) {
                 LaunchResult.NoCore(game.platformSlug, lastCoreDownloadError).also {
                     Logger.warn(TAG, "launchMultiDiscGame() failed: no core for platform=${game.platformSlug}")
                 }
@@ -722,7 +743,12 @@ class GameLauncher @Inject constructor(
         return LaunchResult.Success(intent)
     }
 
-    private suspend fun buildBuiltInIntent(romFile: File, game: GameEntity, variantFileId: Long? = null, discM3uPath: String? = null): Intent? {
+    private suspend fun buildBuiltInIntent(
+        romFile: File,
+        game: GameEntity,
+        variantFileId: Long? = null,
+        discM3uPath: String? = null
+    ): Intent? {
         Logger.debug(TAG, "[BuiltIn] Preparing launch: rom=${romFile.name}, platform=${game.platformSlug}")
         lastCoreDownloadError = null
 
@@ -765,9 +791,23 @@ class GameLauncher @Inject constructor(
             return null
         }
 
+        val textureCoreOptions = texturePackInstaller.resolveAutoCoreOptionsForGame(
+            gameId = game.id,
+            coreId = coreName,
+            platformSlug = game.platformSlug
+        )
+        val effectiveSavePath = builtinSaveBase.forGame(game, romFile.absolutePath)
+        val enhancementCoreOptions = prepareEnhancements(
+            game,
+            romFile,
+            EnhancementTarget.Builtin(coreName, systemDir, liveSaveDir(effectiveSavePath, variantFileId))
+        )
+
+        val launchDefaults = textureCoreOptions + enhancementCoreOptions
         val resolvedVariables = coreOptionResolver.resolveVariables(
             coreName,
-            gameId = game.id.takeIf { game.perGameSettingsEnabled }
+            gameId = game.id.takeIf { game.perGameSettingsEnabled },
+            defaultOverrides = launchDefaults
         )
 
         Logger.info(TAG, "[BuiltIn] Launching: rom=${romFile.name}, core=$coreName, romSize=${romFile.length()}b, coreVars=${resolvedVariables.size}")
@@ -789,7 +829,6 @@ class GameLauncher @Inject constructor(
             }
         })
         val platformLibretroOverride = platformLibretroSettingsDao.getByPlatformId(game.platformId)
-        val effectiveSavePath = builtinSaveBase.forGame(game, romFile.absolutePath)
         val effectiveStatePath = libretroStatePathResolver
             .liveStateBaseDir(platformLibretroOverride?.statePath, builtinSettings.customStatePath)
             .absolutePath
@@ -814,6 +853,8 @@ class GameLauncher @Inject constructor(
             putExtra(LibretroActivity.EXTRA_CORE_NAME, coreName)
             putExtra(LibretroActivity.EXTRA_CORE_VAR_KEYS, coreVariables.map { it.key }.toTypedArray())
             putExtra(LibretroActivity.EXTRA_CORE_VAR_VALUES, coreVariables.map { it.value }.toTypedArray())
+            putExtra(LibretroActivity.EXTRA_LAUNCH_DEFAULT_KEYS, launchDefaults.keys.toTypedArray())
+            putExtra(LibretroActivity.EXTRA_LAUNCH_DEFAULT_VALUES, launchDefaults.values.toTypedArray())
             putExtra(LibretroActivity.EXTRA_PREFER_VULKAN, graphics.preferVulkan)
             vulkanDriver?.let {
                 putExtra(LibretroActivity.EXTRA_VULKAN_DRIVER_DIR, it.directory.absolutePath)
@@ -823,6 +864,58 @@ class GameLauncher @Inject constructor(
             putExtra(LibretroActivity.EXTRA_STATES_DIR, effectiveStatePath)
             addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
         }
+    }
+
+    private suspend fun installTexturesIfNeeded(game: GameEntity, launch: TexturePackInstaller.LaunchTarget) {
+        val ticket = launchProgressTracker.current
+        val callerContext = coroutineContext
+        var texturesInstalled = false
+        texturePackInstaller.invalidateFailedInstallsForGame(game.id)
+        texturePackInstaller.installPendingModFilesForGame(
+            gameId = game.id,
+            isCancelled = { ticket?.isCancelled == true || launchProgressTracker.current?.isCancelled == true || !callerContext.isActive },
+            onProgress = { fraction ->
+                texturesInstalled = true
+                launchProgressTracker.report(LaunchStep.InstallingTextures(fraction))
+            },
+            launch = launch
+        )
+        if (ticket?.isCancelled == true || launchProgressTracker.current?.isCancelled == true || !callerContext.isActive) {
+            Logger.info(TAG, "Launch was cancelled during texture installation")
+            throw CancellationException("Launch was cancelled during texture installation")
+        }
+        if (texturesInstalled) {
+            launchProgressTracker.report(LaunchStep.PreparingSystemFiles)
+        }
+        val failedPacks = texturePackInstaller.failedInstallNames(game.id)
+        if (failedPacks.isNotEmpty()) {
+            notificationManager.show(
+                title = com.nendo.argosy.core.notification.NotificationText.Res(
+                    com.nendo.argosy.R.string.launch_texture_pack_failed
+                ),
+                subtitle = com.nendo.argosy.core.notification.NotificationText.Raw(failedPacks.joinToString(", ")),
+                type = com.nendo.argosy.core.notification.NotificationType.WARNING,
+                key = "texture-pack-${game.id}"
+            )
+        }
+    }
+
+    private suspend fun prepareEnhancements(
+        game: GameEntity,
+        romFile: File,
+        target: EnhancementTarget
+    ): Map<String, String> {
+        val coreOptions = mutableMapOf<String, String>()
+        for (provisioner in enhancementProvisioners) {
+            try {
+                coreOptions += provisioner.prepareForLaunch(game, romFile, target)
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                Logger.warn(TAG, "Could not prepare enhancements for ${game.title}: ${e.message}")
+            }
+        }
+        return coreOptions
     }
 
     /**
@@ -960,13 +1053,24 @@ class GameLauncher @Inject constructor(
     private suspend fun resolveEmulator(game: GameEntity): EmulatorDef? =
         emulatorResolver.resolveEmulatorForGame(game.id, game.platformId, game.platformSlug)
 
-    private suspend fun buildIntent(emulator: EmulatorDef, romFile: File, game: GameEntity, forResume: Boolean, variantFileId: Long? = null, discM3uPath: String? = null): Intent? {
+    private suspend fun buildIntent(
+        emulator: EmulatorDef,
+        romFile: File,
+        game: GameEntity,
+        forResume: Boolean,
+        variantFileId: Long? = null,
+        discM3uPath: String? = null
+    ): Intent? {
         val configType = emulator.launchConfig::class.simpleName
         Logger.debug(TAG, "buildIntent: emulator=${emulator.displayName}, config=$configType, rom=${romFile.name}, forResume=$forResume")
+
+        installTexturesIfNeeded(game, TexturePackInstaller.LaunchTarget(romFile, variantFileId))
 
         if (emulator.launchConfig.isInProcess) {
             return buildBuiltInIntent(romFile, game, variantFileId, discM3uPath)
         }
+
+        prepareEnhancements(game, romFile, EnhancementTarget.External(emulator.packageName))
 
         val built = buildEffectiveCommand(emulator, romFile, game, forResume) ?: return null
         val command = built.pinnedPastPathPattern(romFile.extension) { path -> resolveViewActivity(built, path) }

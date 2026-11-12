@@ -677,6 +677,7 @@
     <string name="ui_launch_overlay_wait_save">仍在同步存档</string>
     <string name="ui_launch_overlay_wait_core">仍在下载模拟器核心</string>
     <string name="ui_launch_overlay_wait_core_sized">仍在下载模拟器核心 &#183; %1$s</string>
+    <string name="ui_launch_overlay_wait_textures">仍在安装材质包</string>
     <string name="ui_launch_overlay_wait_prepare">仍在准备模拟器</string>
     <string name="ui_launch_overlay_failed_connect">RomM 未响应。将使用此设备上的存档启动。</string>
     <string name="ui_launch_overlay_failed_timeout">RomM 响应超时。将使用此设备上的存档启动。</string>

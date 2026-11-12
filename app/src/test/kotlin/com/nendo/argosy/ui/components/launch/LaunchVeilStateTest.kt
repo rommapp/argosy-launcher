@@ -28,6 +28,7 @@ class LaunchVeilStateTest {
         LaunchStep.RecapLoading,
         LaunchStep.Save(SyncProgress.PreLaunch.CheckingSave(null, found = null)),
         LaunchStep.DownloadingCore(fraction = 0.5f, totalBytes = 1_000_000L),
+        LaunchStep.InstallingTextures(fraction = 0.5f),
         LaunchStep.Starting,
         LaunchStep.PreparingSystemFiles,
         LaunchStep.PreparingUi,

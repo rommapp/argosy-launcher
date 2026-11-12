@@ -725,6 +725,7 @@
     <string name="ui_launch_overlay_wait_save">Сохранение ещё синхронизируется</string>
     <string name="ui_launch_overlay_wait_core">Ядро эмулятора ещё загружается</string>
     <string name="ui_launch_overlay_wait_core_sized">Ядро эмулятора ещё загружается &#183; %1$s</string>
+    <string name="ui_launch_overlay_wait_textures">Текстуры ещё устанавливаются</string>
     <string name="ui_launch_overlay_wait_prepare">Эмулятор ещё подготавливается</string>
     <string name="ui_launch_overlay_failed_connect">RomM не ответил. Запуск с сохранением на этом устройстве.</string>
     <string name="ui_launch_overlay_failed_timeout">RomM слишком долго не отвечал. Запуск с сохранением на этом устройстве.</string>

@@ -124,7 +124,8 @@ class GameStorageBreakdownUseCase @Inject constructor(
     private val saveCacheDao: SaveCacheDao,
     private val platformDao: PlatformDao,
     private val volumeLocator: StorageVolumeLocator,
-    private val syncPreferencesRepository: com.nendo.argosy.data.preferences.SyncPreferencesRepository
+    private val syncPreferencesRepository: com.nendo.argosy.data.preferences.SyncPreferencesRepository,
+    private val fileAccessLayer: com.nendo.argosy.data.storage.FileAccessLayer
 ) {
     suspend fun loadPlatform(platformId: Long): List<GameStorageBreakdown> = withContext(Dispatchers.IO) {
         val ownerUserId = syncPreferencesRepository.getRommUserId()
@@ -183,8 +184,12 @@ class GameStorageBreakdownUseCase @Inject constructor(
 
         files.forEach { f: GameFileEntity ->
             val bucket = bucketForFile(f.category, f.filePath.count { c -> c == '/' } > rootDepth)
-            add(bucket, f.fileSize, f.rommFileId)
-            f.localPath?.let { record(it, f.fileSize) }
+            val onDiskBytes = f.localPath
+                ?.takeIf { com.nendo.argosy.data.emulator.TexturePackInstaller.isManifestPath(it) }
+                ?.let { com.nendo.argosy.data.emulator.TexturePackInstaller.measureManifestBytes(File(it), fileAccessLayer = fileAccessLayer).takeIf { b -> b > 0L } }
+                ?: f.fileSize
+            add(bucket, onDiskBytes, f.rommFileId)
+            f.localPath?.let { record(it, onDiskBytes) }
         }
 
         val countedPaths = files.mapNotNull { it.localPath }

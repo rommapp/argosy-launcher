@@ -26,6 +26,8 @@ class LaunchOverlayStateTest {
         save,
         LaunchStep.DownloadingCore(fraction = null),
         LaunchStep.DownloadingCore(fraction = 0.5f, totalBytes = 1_000_000L),
+        LaunchStep.InstallingTextures(fraction = null),
+        LaunchStep.InstallingTextures(fraction = 0.5f),
         LaunchStep.Starting,
         LaunchStep.PreparingSystemFiles,
         LaunchStep.PreparingUi,
@@ -80,6 +82,7 @@ class LaunchOverlayStateTest {
             LaunchStep.RecapLoading to R.string.ui_launch_overlay_wait_recap,
             save to R.string.ui_launch_overlay_wait_save,
             LaunchStep.DownloadingCore(fraction = null) to R.string.ui_launch_overlay_wait_core,
+            LaunchStep.InstallingTextures(fraction = null) to R.string.ui_launch_overlay_wait_textures,
             LaunchStep.Starting to R.string.ui_launch_overlay_wait_prepare,
             LaunchStep.PreparingSystemFiles to R.string.ui_launch_overlay_wait_prepare,
             LaunchStep.PreparingUi to R.string.ui_launch_overlay_wait_prepare
@@ -110,6 +113,24 @@ class LaunchOverlayStateTest {
         assertEquals(0.426f, ui.fraction!!, 0f)
         assertEquals(43, ui.percent)
         assertEquals(R.string.ui_launch_overlay_wait_core, ui.line)
+    }
+
+    @Test
+    fun `installing textures past patience shows a determinate bar with its percent and textures line`() {
+        val ui = map(progress(LaunchStep.InstallingTextures(fraction = 0.426f)), 3000L)
+        assertEquals(CalmLaunchBar.DETERMINATE, ui.bar)
+        assertEquals(0.426f, ui.fraction!!, 0f)
+        assertEquals(43, ui.percent)
+        assertEquals(R.string.ui_launch_overlay_wait_textures, ui.line)
+    }
+
+    @Test
+    fun `installing textures within patience stays quiet`() {
+        val ui = map(progress(LaunchStep.InstallingTextures(fraction = 0.5f)), 1500L)
+        assertNull(ui.line)
+        assertEquals(CalmLaunchBar.NONE, ui.bar)
+        assertNull(ui.percent)
+        assertNull(ui.etaSeconds)
     }
 
     @Test

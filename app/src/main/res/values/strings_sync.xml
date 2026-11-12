@@ -374,6 +374,7 @@
          the default one. %1$s is the core that failed, %2$s the one used instead. Both
          are core names from the libretro project; leave them as they are. -->
     <string name="sync_launch_core_fallback">Failed to load %1$s, using %2$s instead</string>
+    <string name="launch_texture_pack_failed">Some texture packs could not be installed</string>
 
     <!-- Toasts after queued screenshots were sent to the game server. -->
 

@@ -1,18 +1,33 @@
 package com.nendo.argosy.data.emulator
 
 import com.nendo.argosy.data.download.DownloadManager
+import com.nendo.argosy.data.download.ZipExtractor
 import com.nendo.argosy.data.local.dao.GameDao
 import com.nendo.argosy.data.local.dao.GameDiscDao
+import com.nendo.argosy.data.local.dao.GameFileDao
 import com.nendo.argosy.data.local.entity.GameEntity
+import com.nendo.argosy.data.model.VariantCategory
 import com.nendo.argosy.util.Logger
 import com.nendo.argosy.util.SafeCoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import java.io.File
+import java.util.Locale
 import javax.inject.Inject
 import javax.inject.Singleton
 
 private const val TAG = "TitleIdDownloadObserver"
+
+private val ADDON_SUBFOLDERS = setOf(
+    "mods", "mod",
+    "updates", "update",
+    "dlc",
+    "hacks", "hack",
+    "patches", "patch",
+    "demos", "demo",
+    "translations", "translation",
+    ZipExtractor.EXTCONTENT_FOLDER
+)
 
 private fun hasTitleId(platformSlug: String) =
     com.nendo.argosy.data.platform.PlatformDefinitions.hasTitleId(platformSlug)
@@ -29,10 +44,12 @@ class TitleIdDownloadObserver @Inject constructor(
     private val downloadManager: DownloadManager,
     private val gameDao: GameDao,
     private val gameDiscDao: GameDiscDao,
+    private val gameFileDao: GameFileDao,
     private val titleIdExtractor: TitleIdExtractor,
     private val emulatorResolver: EmulatorResolver,
     private val baseRomFileResolver: BaseRomFileResolver,
-    private val cartFeatureScanner: CartFeatureScanner
+    private val cartFeatureScanner: CartFeatureScanner,
+    private val texturePackInstaller: TexturePackInstaller
 ) {
     private val scope = SafeCoroutineScope(Dispatchers.IO, "TitleIdDownloadObserver")
 
@@ -59,24 +76,43 @@ class TitleIdDownloadObserver @Inject constructor(
             return
         }
 
-        if (cartFeatureScanner.appliesTo(game.platformSlug)) {
-            cartFeatureScanner.scan(game.copy(localPath = event.localPath))
+        val isAddonDownload = isAddonDownloadPath(event.localPath)
+        if (!isAddonDownload && cartFeatureScanner.appliesTo(game.platformSlug)) {
+            cartFeatureScanner.scan(game.copy(localPath = game.localPath ?: event.localPath))
         }
 
+        val extractedTitleId = extractTitleIdOnDownload(event, game, isAddonDownload)
+        texturePackInstaller.invalidateFailedInstallsForGame(event.gameId)
+        texturePackInstaller.installPendingModFilesForGame(event.gameId, extractedTitleId)
+    }
+
+    private suspend fun isAddonDownloadPath(localPath: String): Boolean {
+        val parentName = File(localPath).parentFile?.name?.lowercase(Locale.ROOT)
+        if (parentName != null && parentName in ADDON_SUBFOLDERS) return true
+        val recordedCategory = gameFileDao.getByLocalPath(localPath)?.category
+        return recordedCategory != null && VariantCategory.fromKey(recordedCategory) != VariantCategory.GAME
+    }
+
+    private suspend fun extractTitleIdOnDownload(
+        event: com.nendo.argosy.data.download.DownloadCompletionEvent,
+        game: GameEntity,
+        isAddonDownload: Boolean
+    ): TitleIdResult? {
         if (!hasTitleId(game.platformSlug)) {
             Logger.debug(TAG, "Platform ${game.platformSlug} doesn't use title IDs, skipping")
-            return
+            return null
         }
 
         if (gameDao.isTitleIdLocked(event.gameId)) {
             Logger.debug(TAG, "Title ID already locked for game ${event.gameId}, skipping extraction")
-            return
+            return null
         }
 
-        val romFile = File(event.localPath)
-        if (!romFile.exists()) {
+        val romFile = resolveGameFile(game)
+            ?: File(event.localPath).takeUnless { isAddonDownload }
+        if (romFile == null || !romFile.exists()) {
             Logger.warn(TAG, "ROM file not found: ${event.localPath}")
-            return
+            return null
         }
 
         val emulatorPackage = emulatorResolver.getEmulatorPackageForGame(
@@ -85,7 +121,7 @@ class TitleIdDownloadObserver @Inject constructor(
             game.platformSlug
         )
 
-        extractAndStoreTitleId(event.gameId, romFile, game.platformSlug, emulatorPackage)
+        return extractAndStoreTitleId(event.gameId, romFile, game.platformSlug, emulatorPackage)
     }
 
     suspend fun extractTitleIdForGame(gameId: Long): Boolean {
@@ -132,9 +168,9 @@ class TitleIdDownloadObserver @Inject constructor(
             game.platformSlug
         )
 
-        val titleId = extractAndStoreTitleId(gameId, romFile, game.platformSlug, emulatorPackage)
+        val result = extractAndStoreTitleId(gameId, romFile, game.platformSlug, emulatorPackage)
             ?: return TitleIdRecheck.NotFound(romFile.name)
-        return TitleIdRecheck.Found(titleId, game.titleId?.takeIf { it != titleId })
+        return TitleIdRecheck.Found(result.titleId, game.titleId?.takeIf { it != result.titleId })
     }
 
     private suspend fun resolveGameFile(game: GameEntity): File? {
@@ -155,7 +191,7 @@ class TitleIdDownloadObserver @Inject constructor(
         romFile: File,
         platformSlug: String,
         emulatorPackage: String?
-    ): String? {
+    ): TitleIdResult? {
         val result = titleIdExtractor.extractTitleIdWithSource(romFile, platformSlug, emulatorPackage)
         if (result == null) {
             Logger.debug(TAG, "No title ID extracted for game $gameId from ${romFile.name}")
@@ -164,6 +200,6 @@ class TitleIdDownloadObserver @Inject constructor(
 
         Logger.info(TAG, "Extracted title ID for game $gameId: ${result.titleId} (saveId=${result.saveId}, fromBinary=${result.fromBinary})")
         gameDao.setTitleAndSaveIdWithLock(gameId, result.titleId, result.saveId, result.fromBinary)
-        return result.titleId
+        return result
     }
 }

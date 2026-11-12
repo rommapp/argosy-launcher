@@ -1,6 +1,7 @@
 package com.nendo.argosy.data.emulator
 
 import android.content.Context
+import java.io.File
 import com.nendo.argosy.data.local.dao.EmulatorConfigDao
 import com.nendo.argosy.data.local.dao.EmulatorLaunchArgsDao
 import com.nendo.argosy.data.local.dao.GameDao
@@ -9,6 +10,7 @@ import com.nendo.argosy.data.local.dao.GameDiscDao
 import com.nendo.argosy.data.local.dao.GameFileDao
 import com.nendo.argosy.data.local.dao.PlatformLibretroSettingsDao
 import com.nendo.argosy.data.local.entity.EmulatorConfigEntity
+import com.nendo.argosy.data.local.entity.GameDiscEntity
 import com.nendo.argosy.data.local.entity.GameEntity
 import com.nendo.argosy.data.local.entity.GameFileEntity
 import com.nendo.argosy.data.model.GameSource
@@ -17,6 +19,8 @@ import com.nendo.argosy.data.platform.PlatformFolderResolver
 import com.nendo.argosy.data.preferences.UserPreferences
 import com.nendo.argosy.data.preferences.UserPreferencesRepository
 import com.nendo.argosy.data.repository.BiosRepository
+import com.nendo.argosy.domain.model.LaunchStep
+import com.nendo.argosy.domain.model.fraction
 import com.nendo.argosy.libretro.LibretroCoreManager
 import com.nendo.argosy.libretro.coreoptions.CoreOptionResolver
 import android.net.Uri
@@ -70,6 +74,7 @@ class GameLauncherTest {
     private val launchProgressTracker = mockk<LaunchProgressTracker>(relaxed = true)
     private val steamInstallReports = mockk<com.nendo.argosy.data.launcher.SteamInstallReports>(relaxed = true)
     private val appsRepository = mockk<com.nendo.argosy.data.repository.AppsRepository>(relaxed = true)
+    private val texturePackInstaller = mockk<TexturePackInstaller>(relaxed = true)
 
     @Before
     fun setup() {
@@ -169,6 +174,8 @@ class GameLauncherTest {
             volumeHealth = mockk(relaxed = true),
             dreamcastVmuMigrator = mockk(relaxed = true),
             launchProgressTracker = launchProgressTracker,
+            texturePackInstaller = texturePackInstaller,
+            enhancementProvisioners = emptySet(),
             steamInstallReports = steamInstallReports,
             appsRepository = appsRepository,
             emulatorResolver = EmulatorResolver(
@@ -1110,6 +1117,79 @@ class GameLauncherTest {
     }
 
     @Test
+    fun `launching with pending textures reports InstallingTextures step then resumes preparing`() = runTest {
+        bindPs2ToBuiltin(coreSupportsPs2 = true)
+        val systemDir = tempFolder.newFolder("system-textures")
+        java.io.File(systemDir, "pcsx2/bios").mkdirs()
+        java.io.File(systemDir, "pcsx2/bios/dump.bin").writeBytes(byteArrayOf(1))
+        every { biosRepository.getLibretroSystemDir() } returns systemDir
+        every { libretroCoreMgr.getCorePathForPlatform(any(), any()) } returns "/fake/pcsx2_libretro_android.so"
+        coEvery { coreSystemDataManager.ensureCoreSystemData(any(), any()) } returns true
+        every { userPreferencesRepository.getBuiltinEmulatorSettings() } returns flowOf(
+            com.nendo.argosy.data.preferences.BuiltinEmulatorSettings()
+        )
+
+        val reportedSteps = mutableListOf<LaunchStep>()
+        every { launchProgressTracker.report(capture(reportedSteps)) } returns Unit
+
+        val progressCallbacks = mutableListOf<(Float?) -> Unit>()
+        coEvery {
+            texturePackInstaller.installPendingModFilesForGame(
+                gameId = 1L,
+                extractedTitleId = any(),
+                isCancelled = any(),
+                launch = any(),
+                onProgress = capture(progressCallbacks)
+            )
+        } coAnswers {
+            progressCallbacks.lastOrNull()?.invoke(0.5f)
+            1
+        }
+
+        runCatching { launcher.launch(1L) }
+
+        assertTrue(reportedSteps.any { it is LaunchStep.InstallingTextures && it.fraction == 0.5f })
+        assertEquals(LaunchStep.PreparingSystemFiles, reportedSteps.last())
+    }
+
+    @Test
+    fun `launching cancelled during texture installation returns LaunchResult Cancelled`() = runTest {
+        bindPs2ToBuiltin(coreSupportsPs2 = true)
+        val systemDir = tempFolder.newFolder("system-cancel")
+        java.io.File(systemDir, "pcsx2/bios").mkdirs()
+        java.io.File(systemDir, "pcsx2/bios/dump.bin").writeBytes(byteArrayOf(1))
+        every { biosRepository.getLibretroSystemDir() } returns systemDir
+        every { libretroCoreMgr.getCorePathForPlatform(any(), any()) } returns "/fake/pcsx2_libretro_android.so"
+        coEvery { coreSystemDataManager.ensureCoreSystemData(any(), any()) } returns true
+        every { userPreferencesRepository.getBuiltinEmulatorSettings() } returns flowOf(
+            com.nendo.argosy.data.preferences.BuiltinEmulatorSettings()
+        )
+
+        val ticket = mockk<LaunchProgressTracker.Ticket>(relaxed = true)
+        every { ticket.isCancelled } returns false
+        var liveTicket: LaunchProgressTracker.Ticket? = ticket
+        every { launchProgressTracker.current } answers { liveTicket }
+
+        coEvery {
+            texturePackInstaller.installPendingModFilesForGame(
+                gameId = 1L,
+                extractedTitleId = any(),
+                isCancelled = any(),
+                launch = any(),
+                onProgress = any()
+            )
+        } coAnswers {
+            every { ticket.isCancelled } returns true
+            liveTicket = null
+            throw kotlinx.coroutines.CancellationException("User cancelled launch")
+        }
+
+        val result = launcher.launch(1L)
+
+        assertEquals(LaunchResult.Cancelled, result)
+    }
+
+    @Test
     fun `PS2 on the built-in core never raises the memory card picker`() = runTest {
         bindPs2ToBuiltin(coreSupportsPs2 = true)
         every { biosRepository.getLibretroSystemDir() } returns tempFolder.newFolder("system-cards")
@@ -1334,5 +1414,71 @@ class GameLauncherTest {
             "Multi-disc routing failed: ${result::class.simpleName}",
             result is LaunchResult.SelectDisc || result is LaunchResult.Error || result is LaunchResult.NoRomFile
         )
+    }
+
+    @Test
+    fun `launching multi-disc game on external emulator triggers texture pack installation exactly once`() = runTest {
+        val disc1 = File(tempFolder.root, "disc1.iso").apply { writeText("disc1") }
+        val disc2 = File(tempFolder.root, "disc2.iso").apply { writeText("disc2") }
+        val game = createGame(localPath = disc1.absolutePath, platformSlug = "ngc").copy(isMultiDisc = true)
+        coEvery { gameDao.getById(1L) } returns game
+        coEvery { variantResolver.getVariantOptions(game) } returns null
+
+        val discs = listOf(
+            GameDiscEntity(id = 11L, gameId = 1L, discNumber = 1, rommId = 101L, fileName = "disc1.iso", localPath = disc1.absolutePath, fileSize = 1024L),
+            GameDiscEntity(id = 12L, gameId = 1L, discNumber = 2, rommId = 102L, fileName = "disc2.iso", localPath = disc2.absolutePath, fileSize = 1024L)
+        )
+        coEvery { gameDiscDao.getDiscsForGame(1L) } returns discs
+
+        val dolphin = EmulatorRegistry.getById("dolphin")!!
+        val gameConfig = createConfig(
+            gameId = 1L,
+            packageName = dolphin.packageName,
+            displayName = "Dolphin"
+        )
+        coEvery { emulatorConfigDao.getByGameId(1L) } returns gameConfig
+        stubDetectorWith(installedEmulator(dolphin))
+        every { emulatorDetector.getByPackage(dolphin.packageName) } returns dolphin
+
+        try {
+            launcher.launch(1L)
+        } catch (_: NullPointerException) {
+        }
+
+        coVerify(exactly = 1) {
+            texturePackInstaller.installPendingModFilesForGame(
+                gameId = 1L,
+                extractedTitleId = any(),
+                isCancelled = any(),
+                launch = any(),
+                onProgress = any()
+            )
+        }
+    }
+
+    @Test
+    fun `launching built-in game triggers texture pack installation exactly once`() = runTest {
+        bindPs2ToBuiltin(coreSupportsPs2 = true)
+        val systemDir = tempFolder.newFolder("system-single-tex")
+        File(systemDir, "pcsx2/bios").mkdirs()
+        File(systemDir, "pcsx2/bios/dump.bin").writeBytes(byteArrayOf(1))
+        every { biosRepository.getLibretroSystemDir() } returns systemDir
+        every { libretroCoreMgr.getCorePathForPlatform(any(), any()) } returns "/fake/pcsx2_libretro_android.so"
+        coEvery { coreSystemDataManager.ensureCoreSystemData(any(), any()) } returns true
+        every { userPreferencesRepository.getBuiltinEmulatorSettings() } returns flowOf(
+            com.nendo.argosy.data.preferences.BuiltinEmulatorSettings()
+        )
+
+        runCatching { launcher.launch(1L) }
+
+        coVerify(exactly = 1) {
+            texturePackInstaller.installPendingModFilesForGame(
+                gameId = 1L,
+                extractedTitleId = any(),
+                isCancelled = any(),
+                launch = any(),
+                onProgress = any()
+            )
+        }
     }
 }

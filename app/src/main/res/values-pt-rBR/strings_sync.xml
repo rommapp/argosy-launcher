@@ -116,6 +116,7 @@
     <string name="sync_media_transcode_unavailable_title">Baixando o arquivo original</string>
     <string name="sync_media_transcode_unavailable_subtitle">%1$s não pôde ser transcodificado para download</string>
 
+    <string name="launch_texture_pack_failed">Não foi possível instalar alguns pacotes de texturas</string>
     <plurals name="sync_screenshot_uploaded">
         <item quantity="one">%1$d captura de tela enviada</item>
         <item quantity="many">%1$d capturas de tela enviadas</item>

@@ -125,7 +125,7 @@ class FilePickerFlowUseCase @Inject constructor(
                     }
                     val includeDefault = when {
                         isGame -> true
-                        key.startsWith("folder:") -> defaults[DownloadDefaults.OTHER_KEY] ?: false
+                        key.startsWith("folder:") -> DownloadDefaults.includesUncategorised(defaults, game.platformSlug)
                         else -> defaults[key] ?: false
                     }
                     files.sortedBy { it.fileName }.forEach { f ->

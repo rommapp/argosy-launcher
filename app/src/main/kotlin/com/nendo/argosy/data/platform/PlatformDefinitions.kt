@@ -48,6 +48,11 @@ object PlatformDefinitions {
     fun hasTitleId(platformSlug: String): Boolean =
         platformSlug.lowercase() in TITLE_ID_PLATFORMS || getCanonicalSlug(platformSlug) in TITLE_ID_PLATFORMS
 
+    private val FOLDER_TREE_PLATFORMS = setOf("windows", "pc", "dos", "scummvm")
+
+    fun gamesAreFolderTrees(platformSlug: String): Boolean =
+        platformSlug.lowercase() in FOLDER_TREE_PLATFORMS || getCanonicalSlug(platformSlug) in FOLDER_TREE_PLATFORMS
+
     /**
      * Platforms whose roms are already-compressed containers. The download storage gate reserves
      * about the archive's own size for these. Holds raw slug aliases beside canonical slugs.

@@ -1,6 +1,7 @@
 package com.nendo.argosy.data.preferences
 
 import com.nendo.argosy.data.model.VariantCategory
+import com.nendo.argosy.data.platform.PlatformDefinitions
 
 /**
  * Per-category include defaults for cherry-pick downloads. `game` is always
@@ -67,6 +68,9 @@ object DownloadDefaults {
             entry.substring(0, idx) to deserialize(entry.substring(idx + 1))
         }.toMap()
     }
+
+    fun includesUncategorised(defaults: Map<String, Boolean>, platformSlug: String): Boolean =
+        PlatformDefinitions.gamesAreFolderTrees(platformSlug) || (defaults[OTHER_KEY] ?: false)
 
     /**
      * factory -> global -> platform override, later layers win per key, and a document category

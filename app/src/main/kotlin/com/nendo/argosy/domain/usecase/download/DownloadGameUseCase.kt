@@ -197,7 +197,7 @@ class DownloadGameUseCase @Inject constructor(
                 cat == null && f.filePath.length == rootLen &&
                     !com.nendo.argosy.data.download.ZipExtractor.isCompanionFileName(f.fileName) -> true
                 cat == null ->
-                    defaults[com.nendo.argosy.data.preferences.DownloadDefaults.OTHER_KEY] ?: false
+                    com.nendo.argosy.data.preferences.DownloadDefaults.includesUncategorised(defaults, platformSlug)
                 else -> defaults[cat] ?: false
             }
         }

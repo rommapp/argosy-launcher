@@ -4,6 +4,7 @@ import android.util.Log
 import com.nendo.argosy.data.emulator.CoreVersionExtractor
 import com.nendo.argosy.data.emulator.EmulatorResolver
 import com.nendo.argosy.data.emulator.StatePathRegistry
+import com.nendo.argosy.data.emulator.StateSerialResolver
 import com.nendo.argosy.data.local.dao.EmulatorConfigDao
 import com.nendo.argosy.data.local.dao.GameDao
 import com.nendo.argosy.data.local.entity.StateCacheEntity
@@ -65,7 +66,8 @@ class PreLaunchStateSyncUseCase @Inject constructor(
     private val emulatorResolver: EmulatorResolver,
     private val coreVersionExtractor: CoreVersionExtractor,
     private val preferencesRepository: UserPreferencesRepository,
-    private val restoreStateUseCase: RestoreStateUseCase
+    private val restoreStateUseCase: RestoreStateUseCase,
+    private val stateSerialResolver: StateSerialResolver
 ) {
     sealed class Result {
         data object Ready : Result()
@@ -133,6 +135,9 @@ class PreLaunchStateSyncUseCase @Inject constructor(
 
         Log.d(TAG, "Found ${serverStates.size} server states for ${game.title}")
 
+        stateCacheManager.detachForeignSerialStates(gameId, stateSerialResolver.serialsFor(gameId, emulatorId))
+        val tombstoned = stateCacheManager.getStateTombstones(gameId)
+
         val localStates = stateCacheManager.getByGameAndEmulator(gameId, emulatorId)
         val reconciled = reconcileDeadServerLinks(localStates, serverStates.map { it.id }.toSet())
         reconciled.filter { it.linkWasDropped }.forEach {
@@ -150,7 +155,7 @@ class PreLaunchStateSyncUseCase @Inject constructor(
 
         var downloadedCount = 0
 
-        for (serverState in newestPerSlot(serverStates)) {
+        for (serverState in newestPerSlot(serverStates.filter { it.id !in tombstoned })) {
             val parsed = stateCacheManager.parseStateFileName(serverState.fileName)
             if (!belongsToChannel(parsed.channelName, channelName)) continue
             val slotNumber = parsed.slotNumber

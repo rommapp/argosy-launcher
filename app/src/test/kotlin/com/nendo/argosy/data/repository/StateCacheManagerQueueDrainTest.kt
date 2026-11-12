@@ -113,6 +113,19 @@ class StateCacheManagerQueueDrainTest {
         coVerify(exactly = 1) { manager.uploadStateToRomM(state, CURRENT_ROM, "blue", api) }
     }
 
+    @Test
+    fun `a queued state detached from its game stays local and is not uploaded`() = runTest {
+        coEvery { stateCacheDao.getById(STATE_ID) } returns state.copy(gameId = -GAME_ID)
+        coEvery { pendingSyncQueueDao.getRetryableBySyncType(SyncType.SAVE_STATE) } returns listOf(row(CURRENT_ROM))
+
+        val uploaded = manager.processPendingStateUploads()
+
+        assertEquals(0, uploaded)
+        coVerify(exactly = 0) { manager.uploadStateToRomM(any(), any(), any(), any()) }
+        coVerify(exactly = 0) { stateCacheDao.deleteById(any()) }
+        coVerify { pendingSyncQueueDao.deleteById(ROW_ID) }
+    }
+
     private fun row(rommId: Long) = PendingSyncQueueEntity(
         id = ROW_ID,
         gameId = GAME_ID,

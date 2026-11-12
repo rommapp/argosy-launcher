@@ -5,6 +5,8 @@ import android.util.Log
 import com.nendo.argosy.data.emulator.CoreVersionExtractor
 import com.nendo.argosy.data.emulator.EmulatorRegistry
 import com.nendo.argosy.data.emulator.RetroArchConfigParser
+import com.nendo.argosy.data.emulator.provenStateKey
+import com.nendo.argosy.data.emulator.StateNameKey
 import com.nendo.argosy.data.emulator.StatePathConfig
 import com.nendo.argosy.data.emulator.StatePathRegistry
 import com.nendo.argosy.data.emulator.VersionValidationResult
@@ -127,6 +129,7 @@ class StateCacheManager @Inject constructor(
         emulatorId: String,
         romPath: String,
         platformId: String,
+        serials: Set<String>,
         emulatorPackage: String? = null,
         coreName: String? = null
     ): List<DiscoveredState> = withContext(Dispatchers.IO) {
@@ -176,7 +179,7 @@ class StateCacheManager @Inject constructor(
                 Log.d(TAG, "Files in $statePath: $files")
             }
             val states = romBaseNames.firstNotNullOfOrNull { baseName ->
-                StatePathRegistry.discoverStates(stateDir, baseName, config.slotPattern)
+                StatePathRegistry.discoverStates(stateDir, StateNameKey(baseName, serials), config.slotPattern)
                     .takeIf { it.isNotEmpty() }
             }.orEmpty()
             Log.d(TAG, "Found ${states.size} matching states in $statePath")
@@ -240,7 +243,7 @@ class StateCacheManager @Inject constructor(
             val stateSize = cachedFile.length()
 
             var screenshotCachePath: String? = null
-            val screenshotFile = File("$statePath.png")
+            val screenshotFile = StatePathRegistry.screenshotFileFor(emulatorId, stateFile)
             Log.d(TAG, "Looking for screenshot at: ${screenshotFile.absolutePath} exists=${screenshotFile.exists()}")
             if (screenshotFile.exists()) {
                 val cachedScreenshot = File(coreDir, screenshotFile.name)
@@ -395,10 +398,10 @@ class StateCacheManager @Inject constructor(
      * Removes a live state file and its screenshot sidecar. Returns false when the state file was
      * there and could not be deleted, so a caller can leave the ownership row alone.
      */
-    suspend fun deleteLiveState(statePath: String): Boolean = withContext(Dispatchers.IO) {
+    suspend fun deleteLiveState(statePath: String, emulatorId: String): Boolean = withContext(Dispatchers.IO) {
         val file = File(statePath)
         val removed = !file.exists() || file.delete()
-        File("$statePath.png").takeIf { it.exists() }?.delete()
+        StatePathRegistry.screenshotFileFor(emulatorId, file).takeIf { it.exists() }?.delete()
         removed
     }
 
@@ -528,7 +531,8 @@ class StateCacheManager @Inject constructor(
         }
 
         val coreDir = coreDirFor(source)
-        val targetName = stateFileNameForSlot(sourceFile.name, targetSlot)
+        val targetName = StatePathRegistry.serialPatternFor(source.emulatorId)?.withSlot(sourceFile.name, targetSlot)
+            ?: stateFileNameForSlot(sourceFile.name, targetSlot)
         val targetFile = File(coreDir, targetName)
         if (targetFile.absolutePath == sourceFile.absolutePath) return@withContext false
 
@@ -539,9 +543,9 @@ class StateCacheManager @Inject constructor(
             val relativeDir = source.cachePath.substringBeforeLast('/')
             var targetScreenshotPath: String? = null
             getScreenshotFile(source)?.let { shot ->
-                val targetShot = File(coreDir, "$targetName.png")
+                val targetShot = StatePathRegistry.screenshotFileFor(source.emulatorId, targetFile)
                 shot.copyTo(targetShot, overwrite = true)
-                targetScreenshotPath = "$relativeDir/$targetName.png"
+                targetScreenshotPath = "$relativeDir/${targetShot.name}"
             }
 
             stateCacheDao.upsert(
@@ -736,19 +740,41 @@ class StateCacheManager @Inject constructor(
         localOnly.size
     }
 
+    /**
+     * Where a cached state for [slotNumber] goes live, or null when no location or no name can be
+     * proven to belong to the game. [cachedFileName] is the name the state was cached under.
+     */
     suspend fun buildStateTargetPath(
         config: StatePathConfig,
         platformId: String,
-        romBaseName: String,
+        key: StateNameKey,
         slotNumber: Int,
+        cachedFileName: String?,
         emulatorId: String? = null,
         coreName: String? = null,
         romPath: String? = null,
         gameId: Long? = null,
+        cachedFile: File? = null,
     ): String? {
         if (emulatorId == EmulatorRegistry.BUILTIN_ID && gameId != null) {
             val baseDir = libretroStatePathResolver.liveStateBaseDir(gameId)
-            return libretroStatePathResolver.liveStateFile(baseDir, romBaseName, slotNumber).absolutePath
+            return libretroStatePathResolver.liveStateFile(baseDir, key.romBaseName, slotNumber).absolutePath
+        }
+        val placedKey = if (cachedFile != null) {
+            withContext(Dispatchers.IO) {
+                provenStateKey(config.slotPattern, key, cachedFile)
+            }
+        } else {
+            key
+        }
+        if (placedKey == null) {
+            Log.w(TAG, "State ${cachedFile?.name} carries no serial of this game in its header; not placed")
+            return null
+        }
+        val fileName = config.slotPattern.targetFileName(placedKey, slotNumber, cachedFileName)
+        if (fileName == null) {
+            Log.w(TAG, "No state name belongs to this game for slot $slotNumber (cached as $cachedFileName)")
+            return null
         }
         val paths = if (emulatorId != null &&
             com.nendo.argosy.data.emulator.RetroArchPathResolver.isRetroArch(emulatorId)
@@ -763,7 +789,6 @@ class StateCacheManager @Inject constructor(
             StatePathRegistry.resolvePath(config, platformId)
         }
         val baseDir = paths.firstOrNull { File(it).exists() } ?: paths.firstOrNull() ?: return null
-        val fileName = config.slotPattern.buildFileName(romBaseName, slotNumber)
         return "$baseDir/$fileName"
     }
 
@@ -809,11 +834,11 @@ class StateCacheManager @Inject constructor(
     }
 
     /**
-     * Puts the cached screenshot beside a restored live state as `<state>.png`, the name the
-     * in-game slot list reads, or removes a stale one so it cannot caption different content.
+     * Puts the cached screenshot beside a restored live state under the sidecar name its emulator
+     * reads, or removes a stale one so it cannot caption different content.
      */
     fun restoreScreenshot(entity: StateCacheEntity, liveStateFile: File) {
-        val target = File("${liveStateFile.absolutePath}.png")
+        val target = StatePathRegistry.screenshotFileFor(entity.emulatorId, liveStateFile)
         try {
             val cached = getScreenshotFile(entity)
             if (cached != null) {
@@ -867,11 +892,12 @@ class StateCacheManager @Inject constructor(
         platformSlug: String,
         emulatorPackage: String?,
         coreId: String?,
+        serials: Set<String>,
         gameId: Long? = null,
     ): Boolean = withContext(Dispatchers.IO) {
-        val files = autoResumeStateFiles(emulatorId, romPath, platformSlug, coreId, gameId)
+        val files = autoResumeStateFiles(emulatorId, romPath, platformSlug, coreId, serials, gameId)
             ?: return@withContext false
-        deleteLiveStates(files, romPath)
+        deleteLiveStates(files, romPath, emulatorId)
     }
 
     /**
@@ -883,18 +909,19 @@ class StateCacheManager @Inject constructor(
         romPath: String,
         platformSlug: String,
         coreId: String?,
+        serials: Set<String>,
         gameId: Long?,
         cutoff: java.time.Instant,
     ): Boolean = withContext(Dispatchers.IO) {
-        val files = autoResumeStateFiles(emulatorId, romPath, platformSlug, coreId, gameId)
+        val files = autoResumeStateFiles(emulatorId, romPath, platformSlug, coreId, serials, gameId)
             ?: return@withContext false
-        deleteLiveStates(files.filter { it.lastModified() < cutoff.toEpochMilli() }, romPath)
+        deleteLiveStates(files.filter { it.lastModified() < cutoff.toEpochMilli() }, romPath, emulatorId)
     }
 
-    private fun deleteLiveStates(files: List<File>, romPath: String): Boolean {
+    private fun deleteLiveStates(files: List<File>, romPath: String, emulatorId: String): Boolean {
         var deletedAny = false
         for (file in files) {
-            if (displaceLiveState(file)) deletedAny = true
+            if (displaceLiveState(file, emulatorId)) deletedAny = true
         }
         if (!deletedAny) Log.d(TAG, "deleteLiveStates: nothing to delete for ${File(romPath).name}")
         return deletedAny
@@ -904,12 +931,12 @@ class StateCacheManager @Inject constructor(
      * Moves a live state and its screenshot out of the emulator's folder into the displaced-state
      * store, where it stays for [DISPLACED_RETENTION_DAYS] days. False when nothing was moved.
      */
-    fun displaceLiveState(file: File): Boolean {
+    fun displaceLiveState(file: File, emulatorId: String): Boolean {
         if (!file.exists()) return false
         val displacedDir = File(cacheBaseDir, "$DISPLACED_DIR/${System.currentTimeMillis()}")
         return try {
             displacedDir.mkdirs()
-            val screenshot = File("${file.absolutePath}.png")
+            val screenshot = StatePathRegistry.screenshotFileFor(emulatorId, file)
             file.copyTo(File(displacedDir, file.name), overwrite = true)
             if (screenshot.exists()) screenshot.copyTo(File(displacedDir, screenshot.name), overwrite = true)
             file.delete()
@@ -935,6 +962,7 @@ class StateCacheManager @Inject constructor(
         romPath: String,
         platformSlug: String,
         coreId: String?,
+        serials: Set<String>,
         gameId: Long?,
     ): List<File>? {
         val config = StatePathRegistry.getConfig(emulatorId)
@@ -970,12 +998,7 @@ class StateCacheManager @Inject constructor(
         }
 
         val fileNames = romBaseNames.flatMap { romBaseName ->
-            listOf(
-                config.slotPattern.buildFileName(romBaseName, -1),
-                com.nendo.argosy.libretro.LibretroStateSlots.fileName(
-                    romBaseName, com.nendo.argosy.libretro.LibretroStateSlots.RESUME_SLOT
-                ),
-            )
+            config.slotPattern.resumeFileNames(StateNameKey(romBaseName, serials))
         }
 
         return statePaths.map(::File).filter { it.exists() }.flatMap { stateDir ->
@@ -1239,6 +1262,28 @@ class StateCacheManager @Inject constructor(
             serverUpdatedAt = null,
             lastUploadedHash = null
         )
+    }
+
+    /**
+     * Detaches this game's cached states whose name carries a disc serial outside [serials],
+     * keeping row and file, and tombstones their server copies for the game. Returns the count.
+     */
+    suspend fun detachForeignSerialStates(gameId: Long, serials: Set<String>): Int = withContext(Dispatchers.IO) {
+        if (serials.isEmpty()) return@withContext 0
+        var detached = 0
+        for (row in stateCacheDao.getByGame(gameId, syncPreferencesRepository.getRommUserId())) {
+            val pattern = StatePathRegistry.serialPatternFor(row.emulatorId) ?: continue
+            val name = File(row.cachePath).name
+            if (pattern.serialOf(name) == null || pattern.ownsSerial(name, serials)) continue
+            if (stateCacheDao.detachFromGame(row.id) == 0) {
+                Log.w(TAG, "Could not detach foreign state ${row.id} ($name) from game $gameId")
+                continue
+            }
+            row.rommSaveId?.let { tombstoneServerState(gameId, it) }
+            detached++
+            Log.i(TAG, "Detached state ${row.id} ($name) from game $gameId: its serial is not one of $serials")
+        }
+        detached
     }
 
     suspend fun checkServerStates(rommId: Long, api: RomMApi): List<RomMState> = withContext(Dispatchers.IO) {
@@ -1607,6 +1652,15 @@ class StateCacheManager @Inject constructor(
             val state = stateCacheDao.getById(payload.stateCacheId)
             if (state == null) {
                 Log.w(TAG, "[StateSync] UPLOAD itemId=${item.id} | State cache not found, removing from queue")
+                pendingSyncQueueDao.deleteById(item.id)
+                continue
+            }
+
+            if (state.gameId != item.gameId) {
+                Log.w(
+                    TAG,
+                    "[StateSync] UPLOAD itemId=${item.id} | stateId=${state.id} no longer belongs to gameId=${item.gameId}; keeping it local, removing from queue"
+                )
                 pendingSyncQueueDao.deleteById(item.id)
                 continue
             }

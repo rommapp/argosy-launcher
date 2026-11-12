@@ -2,7 +2,9 @@ package com.nendo.argosy.domain.usecase.state
 
 import com.nendo.argosy.data.emulator.ArchiveRomNaming
 import com.nendo.argosy.data.emulator.EmulatorRegistry
+import com.nendo.argosy.data.emulator.StateNameKey
 import com.nendo.argosy.data.emulator.StatePathRegistry
+import com.nendo.argosy.data.emulator.StateSerialResolver
 import com.nendo.argosy.data.emulator.VersionValidationResult
 import com.nendo.argosy.data.repository.StateCacheManager
 import java.io.File
@@ -30,7 +32,8 @@ sealed class RestoreStateFailureReason {
 }
 
 class RestoreStateUseCase @Inject constructor(
-    private val stateCacheManager: StateCacheManager
+    private val stateCacheManager: StateCacheManager,
+    private val stateSerialResolver: StateSerialResolver
 ) {
     /**
      * Writes a cached state back to where the emulator will look for it.
@@ -79,11 +82,14 @@ class RestoreStateUseCase @Inject constructor(
         } else {
             romFile.nameWithoutExtension
         }
+        val nameKey = StateNameKey(romBaseName, stateSerialResolver.serialsFor(cache.gameId, emulatorId))
         val targetPath = stateCacheManager.buildStateTargetPath(
             config = config,
             platformId = platformId,
-            romBaseName = romBaseName,
+            key = nameKey,
             slotNumber = cache.slotNumber,
+            cachedFileName = File(cache.cachePath).name,
+            cachedFile = File(cache.cachePath),
             emulatorId = emulatorId,
             coreName = currentCoreId ?: cache.coreId,
             romPath = romPath,

@@ -171,6 +171,7 @@ class LaunchWithSyncUseCase @Inject constructor(
                 romPath = romPath,
                 platformSlug = game.platformSlug,
                 coreId = null,
+                serials = emptySet(),
                 gameId = game.id,
                 cutoff = serverTimestamp
             )

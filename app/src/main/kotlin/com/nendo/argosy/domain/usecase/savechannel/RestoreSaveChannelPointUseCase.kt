@@ -1,5 +1,6 @@
 package com.nendo.argosy.domain.usecase.savechannel
 
+import com.nendo.argosy.data.emulator.StateSerialResolver
 import com.nendo.argosy.data.repository.StateCacheManager
 import com.nendo.argosy.domain.usecase.state.RestoreCachedStatesUseCase
 import javax.inject.Inject
@@ -14,7 +15,8 @@ import javax.inject.Inject
 class RestoreSaveChannelPointUseCase @Inject constructor(
     private val restoreCachedStatesUseCase: RestoreCachedStatesUseCase,
     private val stateCacheManager: StateCacheManager,
-    private val contextResolver: SaveChannelContextResolver
+    private val contextResolver: SaveChannelContextResolver,
+    private val stateSerialResolver: StateSerialResolver
 ) {
     suspend operator fun invoke(
         gameId: Long,
@@ -43,6 +45,7 @@ class RestoreSaveChannelPointUseCase @Inject constructor(
             platformSlug = platformSlug,
             emulatorPackage = context.emulatorPackage,
             coreId = context.coreId,
+            serials = stateSerialResolver.serialsFor(gameId, emulatorId),
             gameId = gameId
         )
     }

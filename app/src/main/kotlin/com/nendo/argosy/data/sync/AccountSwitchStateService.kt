@@ -2,7 +2,9 @@ package com.nendo.argosy.data.sync
 
 import com.nendo.argosy.data.emulator.CoreVersionExtractor
 import com.nendo.argosy.data.emulator.EmulatorResolver
+import com.nendo.argosy.data.emulator.StateNameKey
 import com.nendo.argosy.data.emulator.StatePathRegistry
+import com.nendo.argosy.data.emulator.StateSerialResolver
 import com.nendo.argosy.data.emulator.VersionValidationResult
 import com.nendo.argosy.data.local.dao.GameDao
 import com.nendo.argosy.data.local.dao.StateCacheDao
@@ -22,20 +24,9 @@ import javax.inject.Singleton
 private const val TAG = "AccountSwitchState"
 
 /**
- * The per-artifact half of an account switch for save states, peer of
- * [AccountSwitchArtifactService] and driven through the same
- * STABLE -> RECLAIMING -> RECLAIMED -> CLEARED -> APPLYING -> STABLE machine, persisted on the
- * ownership row as each step completes.
- *
- * The invariant is the save side's: the live bytes are not removed until an archive of them has
- * been read back and hash-matched, and they are re-hashed immediately before removal so a state
- * written since the archive is left alone rather than lost.
- *
- * Three things differ from a save and are handled rather than papered over. One game has N
- * artifacts, not one, because states are per slot per channel per core, which is why an artifact
- * here is a slot and not a game. Each state carries a `.png` sidecar that travels with it in both
- * directions. And an incoming state whose core no longer matches is refused placement: an
- * unloadable state on disk is worse than an empty slot, so it stays cleared and flagged.
+ * The save-state half of an account switch, peer of [AccountSwitchArtifactService], run per slot
+ * through the same persisted STABLE -> RECLAIMING -> RECLAIMED -> CLEARED -> APPLYING -> STABLE
+ * machine.
  */
 @Singleton
 class AccountSwitchStateService @Inject constructor(
@@ -44,7 +35,8 @@ class AccountSwitchStateService @Inject constructor(
     private val stateOwnershipDao: StateOwnershipDao,
     private val stateCacheManager: StateCacheManager,
     private val coreVersionExtractor: CoreVersionExtractor,
-    private val emulatorResolver: EmulatorResolver
+    private val emulatorResolver: EmulatorResolver,
+    private val stateSerialResolver: StateSerialResolver
 ) {
     enum class TeardownResult { RECLAIMED, ABORTED, NOTHING_TO_DO }
 
@@ -447,7 +439,7 @@ class AccountSwitchStateService @Inject constructor(
             )
             return false
         }
-        val removed = stateCacheManager.deleteLiveState(row.statePath)
+        val removed = stateCacheManager.deleteLiveState(row.statePath, row.emulatorId)
         if (!removed) {
             Logger.error(TAG, "Could not delete live state | game=${row.gameId}, path=${row.statePath}")
         }
@@ -457,11 +449,14 @@ class AccountSwitchStateService @Inject constructor(
     private suspend fun resolveTargetPath(game: GameEntity, cache: StateCacheEntity): String? {
         val romPath = game.localPath ?: return null
         val config = StatePathRegistry.getConfig(cache.emulatorId) ?: return null
+        val serials = stateSerialResolver.serialsFor(game.id, cache.emulatorId)
         return stateCacheManager.buildStateTargetPath(
             config = config,
             platformId = game.platformSlug,
-            romBaseName = File(romPath).nameWithoutExtension,
+            key = StateNameKey(File(romPath).nameWithoutExtension, serials),
             slotNumber = cache.slotNumber,
+            cachedFileName = File(cache.cachePath).name,
+            cachedFile = File(cache.cachePath),
             emulatorId = cache.emulatorId,
             coreName = cache.coreId,
             romPath = romPath,

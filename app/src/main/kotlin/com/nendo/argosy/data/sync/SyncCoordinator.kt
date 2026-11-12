@@ -573,6 +573,13 @@ class SyncCoordinator @Inject constructor(
             ?: return ItemOutcome.Failed("Unreadable save state payload")
         val state = stateCacheManager.get().getStateById(payload.stateCacheId)
             ?: return ItemOutcome.Failed("State cache ${payload.stateCacheId} not found")
+        if (state.gameId != item.gameId) {
+            Logger.warn(
+                TAG,
+                "processSaveState: state ${state.id} no longer belongs to gameId=${item.gameId}; keeping it local and dropping the row"
+            )
+            return ItemOutcome.Done
+        }
         val game = gameDao.getById(item.gameId)
         if (!item.targetsRomOf(game)) {
             Logger.warn(

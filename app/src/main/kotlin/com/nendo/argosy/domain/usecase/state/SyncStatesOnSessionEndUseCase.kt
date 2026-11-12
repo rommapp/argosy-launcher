@@ -4,6 +4,7 @@ import android.util.Log
 import com.nendo.argosy.data.emulator.CoreVersionExtractor
 import com.nendo.argosy.data.emulator.EmulatorResolver
 import com.nendo.argosy.data.emulator.StatePathRegistry
+import com.nendo.argosy.data.emulator.StateSerialResolver
 import com.nendo.argosy.data.local.dao.GameDao
 import com.nendo.argosy.data.local.dao.getByIdsChunked
 import com.nendo.argosy.data.local.entity.StateCacheEntity
@@ -14,8 +15,9 @@ import com.nendo.argosy.data.repository.ActiveSaveRepository
 import com.nendo.argosy.data.repository.StateCacheManager
 import com.nendo.argosy.data.sync.StateClaim
 import com.nendo.argosy.data.sync.StateOwnershipTracker
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.first
-import java.io.File
+import kotlinx.coroutines.withContext
 import javax.inject.Inject
 
 private const val TAG = "SyncStatesOnSessionEnd"
@@ -43,7 +45,9 @@ class SyncStatesOnSessionEndUseCase @Inject constructor(
     private val preferencesRepository: UserPreferencesRepository,
     private val stateOwnershipTracker: StateOwnershipTracker,
     private val emulatorResolver: EmulatorResolver,
-    private val accountSwitchMarkerStore: AccountSwitchMarkerStore
+    private val accountSwitchMarkerStore: AccountSwitchMarkerStore,
+    private val stateSerialResolver: StateSerialResolver,
+    private val fileAccessLayer: com.nendo.argosy.data.storage.FileAccessLayer
 ) {
     suspend operator fun invoke(
         gameId: Long,
@@ -138,11 +142,15 @@ class SyncStatesOnSessionEndUseCase @Inject constructor(
             null
         }
 
+        val serials = stateSerialResolver.serialsFor(gameId, emulatorId)
+        stateCacheManager.detachForeignSerialStates(gameId, serials)
+
         val discoveredStates = stateCacheManager.discoverStatesForGame(
             gameId = gameId,
             emulatorId = emulatorId,
             romPath = romPath,
             platformId = game.platformSlug,
+            serials = serials,
             emulatorPackage = emulatorPackage,
             coreName = coreId
         )
@@ -150,6 +158,9 @@ class SyncStatesOnSessionEndUseCase @Inject constructor(
         if (discoveredStates.isEmpty()) {
             Log.d(TAG, "No states found for game $gameId")
             return StateSyncResult.NoStatesFound
+        }
+        withContext(Dispatchers.IO) {
+            fileAccessLayer.prepareSaveAccess(*discoveredStates.map { it.file.absolutePath }.toTypedArray())
         }
 
         var cachedCount = 0
@@ -172,7 +183,7 @@ class SyncStatesOnSessionEndUseCase @Inject constructor(
                 channelName = channelName
             )
 
-            val screenshotFile = File("${state.file.absolutePath}.png")
+            val screenshotFile = config.slotPattern.screenshotFile(state.file)
             val screenshotMissing = existingCache?.screenshotPath == null && screenshotFile.exists()
 
             val isNewer = existingCache != null && state.lastModified.isAfter(existingCache.cachedAt)

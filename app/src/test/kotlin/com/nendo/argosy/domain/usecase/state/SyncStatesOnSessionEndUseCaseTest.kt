@@ -4,6 +4,7 @@ import com.nendo.argosy.data.emulator.EmulatorDetector
 import com.nendo.argosy.data.emulator.EmulatorRegistry
 import com.nendo.argosy.data.emulator.EmulatorResolver
 import com.nendo.argosy.data.emulator.InstalledEmulator
+import com.nendo.argosy.data.emulator.StateSerialResolver
 import com.nendo.argosy.data.local.dao.EmulatorConfigDao
 import com.nendo.argosy.data.local.dao.GameDao
 import com.nendo.argosy.data.local.entity.EmulatorConfigEntity
@@ -46,6 +47,8 @@ class SyncStatesOnSessionEndUseCaseTest {
     private val preferencesRepository = mockk<UserPreferencesRepository>()
     private val ownershipTracker = mockk<StateOwnershipTracker>()
     private val accountSwitchMarkerStore = mockk<AccountSwitchMarkerStore>()
+    private val serialResolver = mockk<StateSerialResolver>()
+    private val fileAccessLayer = mockk<com.nendo.argosy.data.storage.FileAccessLayer>(relaxed = true)
     private val preferences = MutableStateFlow(UserPreferences(secureSaves = false))
 
     private val file = File("slot1.state1")
@@ -80,8 +83,9 @@ class SyncStatesOnSessionEndUseCaseTest {
         coEvery { ownershipTracker.claim(any(), any()) } returns StateClaim.Mine
         coEvery { accountSwitchMarkerStore.isSwitching() } returns false
         coEvery {
-            stateCacheManager.discoverStatesForGame(any(), any(), any(), any(), any(), any())
+            stateCacheManager.discoverStatesForGame(any(), any(), any(), any(), any(), any(), any())
         } returns listOf(DiscoveredState(file, slotNumber = 1, lastModified = Instant.ofEpochSecond(2_000)))
+        coEvery { serialResolver.serialsFor(any(), any()) } returns emptySet()
         coEvery { stateCacheManager.getStateBySlot(GAME_ID, any(), 1, any()) } returns existing
         coEvery {
             stateCacheManager.cacheState(any(), any(), any(), any(), any(), any(), any(), any(), any(), any())
@@ -101,7 +105,9 @@ class SyncStatesOnSessionEndUseCaseTest {
                 libretroCoreMgr = mockk(relaxed = true),
                 installedAppResolver = mockk(relaxed = true) { every { isAppInstalled(any()) } returns false }
             ),
-            accountSwitchMarkerStore = accountSwitchMarkerStore
+            accountSwitchMarkerStore = accountSwitchMarkerStore,
+            stateSerialResolver = serialResolver,
+            fileAccessLayer = fileAccessLayer
         )
     }
 
@@ -119,7 +125,7 @@ class SyncStatesOnSessionEndUseCaseTest {
         useCase(GAME_ID, retroarch.packageName, queueUploads = false)
 
         coVerify {
-            stateCacheManager.discoverStatesForGame(GAME_ID, "retroarch", any(), "snes", retroarch.packageName, any())
+            stateCacheManager.discoverStatesForGame(GAME_ID, "retroarch", any(), "snes", any(), retroarch.packageName, any())
         }
     }
 
@@ -130,7 +136,7 @@ class SyncStatesOnSessionEndUseCaseTest {
         useCase(GAME_ID, forkPackage, queueUploads = false)
 
         coVerify {
-            stateCacheManager.discoverStatesForGame(GAME_ID, "retroarch", any(), "snes", forkPackage, any())
+            stateCacheManager.discoverStatesForGame(GAME_ID, "retroarch", any(), "snes", any(), forkPackage, any())
         }
     }
 
@@ -144,7 +150,7 @@ class SyncStatesOnSessionEndUseCaseTest {
         useCase(GAME_ID, "", queueUploads = false)
 
         coVerify {
-            stateCacheManager.discoverStatesForGame(GAME_ID, "retroarch", any(), "snes", retroarch.packageName, any())
+            stateCacheManager.discoverStatesForGame(GAME_ID, "retroarch", any(), "snes", any(), retroarch.packageName, any())
         }
     }
 
@@ -198,7 +204,7 @@ class SyncStatesOnSessionEndUseCaseTest {
     @Test
     fun `a slot no newer than its cache is not hashed`() = runTest {
         coEvery {
-            stateCacheManager.discoverStatesForGame(any(), any(), any(), any(), any(), any())
+            stateCacheManager.discoverStatesForGame(any(), any(), any(), any(), any(), any(), any())
         } returns listOf(DiscoveredState(file, slotNumber = 1, lastModified = Instant.ofEpochSecond(500)))
 
         useCase.adoptOffSessionStates(GAME_ID, EmulatorRegistry.BUILTIN_PACKAGE, queueUploads = false)
@@ -214,7 +220,7 @@ class SyncStatesOnSessionEndUseCaseTest {
 
         assertEquals(StateSyncResult.NotConfigured, result)
         coVerify(exactly = 0) {
-            stateCacheManager.discoverStatesForGame(any(), any(), any(), any(), any(), any())
+            stateCacheManager.discoverStatesForGame(any(), any(), any(), any(), any(), any(), any())
         }
     }
 
@@ -226,7 +232,29 @@ class SyncStatesOnSessionEndUseCaseTest {
 
         assertEquals(StateSyncResult.NotConfigured, result)
         coVerify(exactly = 0) {
-            stateCacheManager.discoverStatesForGame(any(), any(), any(), any(), any(), any())
+            stateCacheManager.discoverStatesForGame(any(), any(), any(), any(), any(), any(), any())
+        }
+    }
+
+    @Test
+    fun `the game's trusted serials reach the repair and the discovery`() = runTest {
+        coEvery { serialResolver.serialsFor(GAME_ID, any()) } returns setOf("SLUS-00001")
+
+        useCase(GAME_ID, EmulatorRegistry.BUILTIN_PACKAGE, queueUploads = false)
+
+        coVerify { stateCacheManager.detachForeignSerialStates(GAME_ID, setOf("SLUS-00001")) }
+        coVerify {
+            stateCacheManager.discoverStatesForGame(GAME_ID, any(), any(), any(), setOf("SLUS-00001"), any(), any())
+        }
+    }
+
+    @Test
+    fun `discovered state files are opened for reading before they are cached`() = runTest {
+        useCase(GAME_ID, EmulatorRegistry.BUILTIN_PACKAGE, queueUploads = false)
+
+        io.mockk.coVerifyOrder {
+            fileAccessLayer.prepareSaveAccess(*anyVararg())
+            stateCacheManager.cacheState(any(), any(), any(), any(), any(), any(), any(), any(), any(), any())
         }
     }
 

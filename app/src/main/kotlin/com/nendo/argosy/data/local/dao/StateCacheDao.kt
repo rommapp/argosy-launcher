@@ -285,4 +285,11 @@ interface StateCacheDao {
 
     @Query("UPDATE OR IGNORE state_cache SET gameId = :gameId, channelName = :channelName WHERE id = :id")
     suspend fun moveToGame(id: Long, gameId: Long, channelName: String?): Int
+
+    /**
+     * Takes a row off its game without deleting it or its file. The negated game id matches no
+     * game-scoped read and keeps the original game recoverable from the row.
+     */
+    @Query("UPDATE OR IGNORE state_cache SET gameId = -gameId WHERE id = :id AND gameId > 0")
+    suspend fun detachFromGame(id: Long): Int
 }

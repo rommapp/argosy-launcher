@@ -6,15 +6,152 @@ import com.nendo.argosy.libretro.LibretroStateSlots
 import com.nendo.argosy.util.AppPaths
 import java.io.File
 
+/**
+ * What a state file name is matched against: the rom stem for rom-named emulators, the disc
+ * serials for serial-keyed ones. An empty [serials] set makes a serial-keyed pattern match nothing.
+ */
+data class StateNameKey(
+    val romBaseName: String,
+    val serials: Set<String>
+)
+
+private const val AUTO_SLOT = -1
+
+private fun pairedPng(stateFile: File): File = File("${stateFile.absolutePath}.png")
+
 sealed class StateSlotPattern {
-    abstract fun parseSlotNumber(fileName: String, baseName: String): Int?
-    abstract fun buildFileName(baseName: String, slotNumber: Int): String
     abstract val extension: String
+    abstract fun parseSlotNumber(fileName: String, key: StateNameKey): Int?
+
+    /**
+     * The live file name a state for [slotNumber] is written to, or null when no name can be
+     * proven to belong to the game. [cachedFileName] is the name the state was cached under.
+     */
+    abstract fun targetFileName(key: StateNameKey, slotNumber: Int, cachedFileName: String?): String?
+
+    /**
+     * The live file name a cached state is put back under when a channel's states are restored
+     * as a set, or null when it cannot be placed without touching another game's file.
+     */
+    abstract fun restoreFileName(key: StateNameKey, slotNumber: Int, cachedFileName: String): String?
+
+    abstract fun resumeFileNames(key: StateNameKey): List<String>
+
+    open fun screenshotFile(stateFile: File): File = pairedPng(stateFile)
+
+    sealed class RomNamed : StateSlotPattern() {
+        protected abstract fun parseSlotNumber(fileName: String, baseName: String): Int?
+        protected abstract fun buildFileName(baseName: String, slotNumber: Int): String
+
+        final override fun parseSlotNumber(fileName: String, key: StateNameKey): Int? =
+            parseSlotNumber(fileName, key.romBaseName)
+
+        final override fun targetFileName(key: StateNameKey, slotNumber: Int, cachedFileName: String?): String =
+            buildFileName(key.romBaseName, slotNumber)
+
+        final override fun restoreFileName(key: StateNameKey, slotNumber: Int, cachedFileName: String): String =
+            cachedFileName
+
+        final override fun resumeFileNames(key: StateNameKey): List<String> = listOf(
+            buildFileName(key.romBaseName, AUTO_SLOT),
+            LibretroStateSlots.fileName(key.romBaseName, LibretroStateSlots.RESUME_SLOT)
+        )
+    }
+
+    /**
+     * Emulators that keep one state folder for every game and name each state after the disc
+     * serial. A name is the game's only when its serial is one of [StateNameKey.serials].
+     */
+    sealed class SerialKeyed : StateSlotPattern() {
+        abstract fun serialOf(fileName: String): String?
+        protected abstract fun slotOf(fileName: String): Int?
+        abstract fun withSlot(fileName: String, slotNumber: Int): String?
+        protected abstract fun fromSerial(serial: String, slotNumber: Int): String?
+
+        fun ownsSerial(fileName: String, serials: Set<String>): Boolean {
+            val serial = serialOf(fileName) ?: return false
+            return serials.any { it.equals(serial, ignoreCase = true) }
+        }
+
+        final override fun parseSlotNumber(fileName: String, key: StateNameKey): Int? =
+            if (ownsSerial(fileName, key.serials)) slotOf(fileName) else null
+
+        final override fun targetFileName(key: StateNameKey, slotNumber: Int, cachedFileName: String?): String? {
+            if (cachedFileName != null && serialOf(cachedFileName) != null) {
+                return if (ownsSerial(cachedFileName, key.serials)) withSlot(cachedFileName, slotNumber) else null
+            }
+            val serial = key.serials.singleOrNull() ?: return null
+            return fromSerial(serial, slotNumber)
+        }
+
+        final override fun restoreFileName(key: StateNameKey, slotNumber: Int, cachedFileName: String): String? =
+            targetFileName(key, slotNumber, cachedFileName)
+
+        final override fun resumeFileNames(key: StateNameKey): List<String> =
+            key.serials.mapNotNull { fromSerial(it, AUTO_SLOT) }
+    }
+
+    /**
+     * DuckStation `src/core/system.cpp` `GetGameSaveStatePath`: `<serial>_<slot>.sav` and
+     * `<serial>_resume.sav`, the resume state carried as the auto slot. Global states
+     * (`savestate_<n>.sav`, `resume.sav`) carry no game serial.
+     */
+    data object DuckStationSerial : SerialKeyed() {
+        private const val RESUME_TOKEN = "resume"
+        private val NAME = Regex("""^(.+)_(\d+|resume)\.sav$""", RegexOption.IGNORE_CASE)
+
+        override val extension: String = "sav"
+
+        override fun serialOf(fileName: String): String? = NAME.matchEntire(fileName)?.groupValues?.get(1)
+
+        override fun slotOf(fileName: String): Int? {
+            val token = NAME.matchEntire(fileName)?.groupValues?.get(2) ?: return null
+            return if (token.equals(RESUME_TOKEN, ignoreCase = true)) AUTO_SLOT else token.toIntOrNull()
+        }
+
+        override fun withSlot(fileName: String, slotNumber: Int): String? =
+            serialOf(fileName)?.let { fromSerial(it, slotNumber) }
+
+        override fun fromSerial(serial: String, slotNumber: Int): String? = when {
+            slotNumber == AUTO_SLOT -> "${serial}_$RESUME_TOKEN.$extension"
+            slotNumber >= 0 -> "${serial}_$slotNumber.$extension"
+            else -> null
+        }
+    }
+
+    /**
+     * PPSSPP `Core/SaveState.cpp`: `<DISC_ID>_<DISC_VERSION>_<slot>.ppst` with a `.jpg` screenshot
+     * of the same stem. Undo states, slot names and `load_undo.ppst` never match. A target name
+     * keeps the version of the name the state was cached under; a cached name without one has no
+     * target.
+     */
+    data object PpssppSerial : SerialKeyed() {
+        private const val SCREENSHOT_EXTENSION = "jpg"
+        private val NAME = Regex("""^([^_]+)_([^_]+)_(\d+)\.ppst$""", RegexOption.IGNORE_CASE)
+
+        override val extension: String = "ppst"
+
+        override fun serialOf(fileName: String): String? = NAME.matchEntire(fileName)?.groupValues?.get(1)
+
+        override fun slotOf(fileName: String): Int? =
+            NAME.matchEntire(fileName)?.groupValues?.get(3)?.toIntOrNull()
+
+        override fun withSlot(fileName: String, slotNumber: Int): String? {
+            if (slotNumber < 0) return null
+            val match = NAME.matchEntire(fileName) ?: return null
+            return "${match.groupValues[1]}_${match.groupValues[2]}_$slotNumber.$extension"
+        }
+
+        override fun fromSerial(serial: String, slotNumber: Int): String? = null
+
+        override fun screenshotFile(stateFile: File): File =
+            File(stateFile.parentFile, "${stateFile.nameWithoutExtension}.$SCREENSHOT_EXTENSION")
+    }
 
     data class SuffixNumber(
         override val extension: String,
         val autoSlotSuffix: String? = null
-    ) : StateSlotPattern() {
+    ) : RomNamed() {
         override fun parseSlotNumber(fileName: String, baseName: String): Int? {
             if (!fileName.startsWith(baseName, ignoreCase = true)) return null
 
@@ -46,7 +183,7 @@ sealed class StateSlotPattern {
      * write codec ([LibretroStateSlots.fileName]) and read codec ([LibretroStateSlots.parseSlotNumber])
      * can never drift apart.
      */
-    data object BuiltinLibretro : StateSlotPattern() {
+    data object BuiltinLibretro : RomNamed() {
         override val extension: String = "state"
 
         override fun parseSlotNumber(fileName: String, baseName: String): Int? =
@@ -59,31 +196,13 @@ sealed class StateSlotPattern {
     data class NameAndSlot(
         val separator: String,
         override val extension: String
-    ) : StateSlotPattern() {
+    ) : RomNamed() {
         override fun parseSlotNumber(fileName: String, baseName: String): Int? {
             val name = File(fileName).nameWithoutExtension
             val ext = File(fileName).extension
             if (!ext.equals(extension, ignoreCase = true)) return null
 
             val pattern = Regex("${Regex.escape(baseName)}${Regex.escape(separator)}(\\d+)", RegexOption.IGNORE_CASE)
-            return pattern.find(name)?.groupValues?.get(1)?.toIntOrNull()
-        }
-
-        override fun buildFileName(baseName: String, slotNumber: Int): String {
-            return "$baseName$separator$slotNumber.$extension"
-        }
-    }
-
-    data class SerialAndSlot(
-        val separator: String,
-        override val extension: String
-    ) : StateSlotPattern() {
-        override fun parseSlotNumber(fileName: String, baseName: String): Int? {
-            val name = File(fileName).nameWithoutExtension
-            val ext = File(fileName).extension
-            if (!ext.equals(extension, ignoreCase = true)) return null
-
-            val pattern = Regex(".*${Regex.escape(separator)}(\\d+)$")
             return pattern.find(name)?.groupValues?.get(1)?.toIntOrNull()
         }
 
@@ -163,10 +282,7 @@ object StatePathRegistry {
                 "{extStorage}/PSP/PPSSPP_STATE",
                 "{extStorage}/Android/data/org.ppsspp.ppsspp/files/PSP/PPSSPP_STATE"
             ),
-            slotPattern = StateSlotPattern.SerialAndSlot(
-                separator = "_",
-                extension = "ppst"
-            ),
+            slotPattern = StateSlotPattern.PpssppSerial,
             maxSlots = 5
         ),
         "ppsspp_gold" to StatePathConfig(
@@ -175,10 +291,7 @@ object StatePathRegistry {
                 "{extStorage}/PSP/PPSSPP_STATE",
                 "{extStorage}/Android/data/org.ppsspp.ppssppgold/files/PSP/PPSSPP_STATE"
             ),
-            slotPattern = StateSlotPattern.SerialAndSlot(
-                separator = "_",
-                extension = "ppst"
-            ),
+            slotPattern = StateSlotPattern.PpssppSerial,
             maxSlots = 5
         ),
         "ppsspp_legacy" to StatePathConfig(
@@ -187,10 +300,7 @@ object StatePathRegistry {
                 "{extStorage}/PSP/PPSSPP_STATE",
                 "{extStorage}/Android/data/org.ppsspp.ppsspplegacy/files/PSP/PPSSPP_STATE"
             ),
-            slotPattern = StateSlotPattern.SerialAndSlot(
-                separator = "_",
-                extension = "ppst"
-            ),
+            slotPattern = StateSlotPattern.PpssppSerial,
             maxSlots = 5
         ),
 
@@ -238,10 +348,7 @@ object StatePathRegistry {
                 "{extStorage}/duckstation/savestates",
                 "{extStorage}/Android/data/com.github.stenzek.duckstation/files/savestates"
             ),
-            slotPattern = StateSlotPattern.SerialAndSlot(
-                separator = "_",
-                extension = "sav"
-            ),
+            slotPattern = StateSlotPattern.DuckStationSerial,
             maxSlots = 10
         ),
 
@@ -401,9 +508,15 @@ object StatePathRegistry {
         return paths
     }
 
+    fun serialPatternFor(emulatorId: String): StateSlotPattern.SerialKeyed? =
+        getConfigIncludingUnsupported(emulatorId)?.slotPattern as? StateSlotPattern.SerialKeyed
+
+    fun screenshotFileFor(emulatorId: String, stateFile: File): File =
+        getConfigIncludingUnsupported(emulatorId)?.slotPattern?.screenshotFile(stateFile) ?: pairedPng(stateFile)
+
     fun discoverStates(
         stateDir: File,
-        romBaseName: String,
+        key: StateNameKey,
         pattern: StateSlotPattern
     ): List<Pair<File, Int>> {
         if (!stateDir.exists() || !stateDir.isDirectory) return emptyList()
@@ -411,7 +524,7 @@ object StatePathRegistry {
         return stateDir.listFiles()
             ?.filter { it.isFile }
             ?.mapNotNull { file ->
-                val slotNumber = pattern.parseSlotNumber(file.name, romBaseName)
+                val slotNumber = pattern.parseSlotNumber(file.name, key)
                 if (slotNumber != null) file to slotNumber else null
             }
             ?.sortedBy { it.second }

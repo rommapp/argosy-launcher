@@ -46,7 +46,7 @@ class RestoreCachedStatesKeptInPlaceTest {
         val stateCacheManager = mockk<StateCacheManager>(relaxed = true) {
             coEvery { getStatesForChannelAndCore(1L, null, any()) } returns listOf(state)
             every { getCacheFile(state) } returns cached
-            every { displaceLiveState(any()) } returns false
+            every { displaceLiveState(any(), any()) } returns false
         }
         val tracker = mockk<StateOwnershipTracker>(relaxed = true) {
             coEvery { claim(any(), any()) } returns StateClaim.Mine
@@ -64,11 +64,70 @@ class RestoreCachedStatesKeptInPlaceTest {
             retroArchConfigParser = mockk(relaxed = true),
             retroArchPathResolver = mockk(relaxed = true),
             libretroStatePathResolver = pathResolver,
-            stateOwnershipTracker = tracker
+            stateOwnershipTracker = tracker,
+            stateSerialResolver = mockk { coEvery { serialsFor(any(), any()) } returns emptySet() },
+            fileAccessLayer = mockk(relaxed = true)
         )
 
         useCase(gameId = 1L, channelName = null, emulatorPackage = EmulatorRegistry.BUILTIN_PACKAGE, coreId = "snes9x")
 
         assertEquals("live progress", live.readText())
+    }
+
+    @Test
+    fun `restore never displaces or writes another game's duckstation state`() = runTest {
+        val liveDir = temp.newFolder("savestates")
+        val cacheDir = temp.newFolder("duck-cache")
+        val ownLive = File(liveDir, "SLUS-00001_1.sav").apply { writeText("own live") }
+        val foreignLive = File(liveDir, "SCUS-94163_1.sav").apply { writeText("other game") }
+        val ownCached = File(cacheDir, "SLUS-00001_1.sav").apply { writeText("own cached") }
+        val foreignCached = File(cacheDir, "SCUS-94163_2.sav").apply { writeText("stale foreign copy") }
+        val duckstation = EmulatorRegistry.getById("duckstation")!!
+
+        val game = mockk<GameEntity>(relaxed = true) {
+            every { localPath } returns "/roms/psx/Game (USA).chd"
+            every { platformSlug } returns "psx"
+        }
+        val ownState = mockk<StateCacheEntity>(relaxed = true) { every { slotNumber } returns 1 }
+        val foreignState = mockk<StateCacheEntity>(relaxed = true) { every { slotNumber } returns 2 }
+        val stateCacheManager = mockk<StateCacheManager>(relaxed = true) {
+            coEvery { getStatesForChannelAndCore(1L, null, any()) } returns listOf(ownState, foreignState)
+            every { getCacheFile(ownState) } returns ownCached
+            every { getCacheFile(foreignState) } returns foreignCached
+            every { displaceLiveState(any(), any()) } returns true
+        }
+        val saveConfigDao = mockk<com.nendo.argosy.data.local.dao.EmulatorSaveConfigDao> {
+            coEvery { getByEmulator("duckstation") } returns com.nendo.argosy.data.local.entity.EmulatorSaveConfigEntity(
+                emulatorId = "duckstation",
+                savePathPattern = "",
+                isAutoDetected = false,
+                statePathPattern = liveDir.absolutePath,
+                isUserStateOverride = true
+            )
+        }
+
+        val useCase = RestoreCachedStatesUseCase(
+            stateCacheManager = stateCacheManager,
+            gameDao = mockk { coEvery { getById(1L) } returns game },
+            emulatorSaveConfigDao = saveConfigDao,
+            emulatorDetector = mockk { every { getByPackage(duckstation.packageName) } returns duckstation },
+            coreVersionExtractor = mockk(relaxed = true),
+            retroArchConfigParser = mockk(relaxed = true),
+            retroArchPathResolver = mockk(relaxed = true),
+            libretroStatePathResolver = mockk(relaxed = true),
+            stateOwnershipTracker = mockk(relaxed = true) { coEvery { claim(any(), any()) } returns StateClaim.Mine },
+            stateSerialResolver = mockk { coEvery { serialsFor(1L, "duckstation") } returns setOf("SLUS-00001") },
+            fileAccessLayer = mockk(relaxed = true)
+        )
+
+        useCase(gameId = 1L, channelName = null, emulatorPackage = duckstation.packageName)
+
+        io.mockk.verify(exactly = 1) { stateCacheManager.displaceLiveState(ownLive, "duckstation") }
+        io.mockk.verify(exactly = 0) { stateCacheManager.displaceLiveState(foreignLive, any()) }
+        io.mockk.coVerify { stateCacheManager.detachForeignSerialStates(1L, setOf("SLUS-00001")) }
+        assertEquals("other game", foreignLive.readText())
+        assertEquals("own cached", ownLive.readText())
+        assertEquals(false, File(liveDir, "SCUS-94163_2.sav").exists())
+        assertEquals(false, File(liveDir, "SLUS-00001_2.sav").exists())
     }
 }

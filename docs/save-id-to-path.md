@@ -523,6 +523,54 @@ only rescues a folder that already exists, so the first write into a fresh tree
 uses the raw id and is harmless solely because Android's storage is
 case-insensitive. Do not "complete" that map.
 
+### DuckStation and PPSSPP name states after the disc
+
+Both keep one state folder for every game, so a state belongs to a game only
+through the serial in its name. `StateSlotPattern.SerialKeyed` matches on that
+serial; the rom file name plays no part. Verified against upstream source
+2026-11-12:
+
+| Emulator | Game state | Never a game's state |
+|----------|-----------|----------------------|
+| DuckStation (`src/core/system.cpp` `GetGameSaveStatePath` 6175, `GetGlobalSaveStatePath` 6183; `PER_GAME_SAVE_STATE_SLOTS = 10` in `system.h`) | `<serial>_<slot>.sav` (slots 1..10), `<serial>_resume.sav` (the auto slot) | `savestate_<n>.sav`, `resume.sav` |
+| PPSSPP (`Core/SaveState.cpp` 80-87 and 688-710, `SaveState.h:46`) | `<DISC_ID>_<DISC_VERSION>_<slot>.ppst`, screenshot `<same stem>.jpg` | `<...>_<slot>.undo.ppst`, `<...>_<slot>.undo.jpg`, `<...>_<slot>.name.txt`, `load_undo.ppst` |
+
+DuckStation's serial is its GameDatabase entry serial when it knows the disc,
+else the boot id (`SLUS-12345`); EXE paths get a hash id. 867 database entries
+map several disc codes to one serial (Sigil `docs/platforms/psx.md:80`), so a
+game whose database serial differs from its disc code matches nothing and is
+left alone. PPSSPP's slot count is the `iSaveStateSlotCount` setting, so no
+maximum is assumed, and its `DISC_VERSION` is only ever taken from a name PPSSPP
+already wrote: a cached copy without one is not placed.
+
+The serial set comes from `StateSerialResolver.serialsFor`, and only from Sigil
+reading the local disc on every call:
+
+1. `TitleIdExtractor.extractTitleIdWithSource` on the rom, used only when
+   `fromBinary`; the result is stored with the lock when it differs from the
+   stored value (an existing `saveId` is kept);
+2. for a game with `game_discs` rows, one binary read per downloaded disc;
+3. anything else (filename fallback, unreadable, no rom) is the empty set, which
+   matches no file, so nothing is cached, displaced, restored or repaired.
+
+No stored `titleId` stands in for the read, locked or not: `titleIdLocked` only
+means RomM may not overwrite the value, and `PspSavePrefixLearner` sets it on a
+title id that never came from the disc.
+
+Sigil's psx `title_id` is the normalised boot serial and its psp `title_id` is the
+disc id without a dash (`ULUS10064`), never `save_id`. RomM's `title_id` is never
+used.
+
+A cached state whose name carries another serial is detached from the game
+(`StateCacheDao.detachFromGame` negates its `gameId`; row and file are kept) and
+its server copy is tombstoned for the game. A cached copy whose name carries no
+serial, which is every copy downloaded from RomM, is placed by `provenStateKey`
+only when the serial in its own DuckStation header (`src/core/save_state_version.h`
+`SAVE_STATE_HEADER`: magic `0x43435544` at 0, `serial[32]` at 136) is one of the
+game's, and then under `<that serial>_<slot>.sav`; a foreign or unreadable header
+is not placed. PPSSPP copies without a `DISC_VERSION` in their name are not
+placed.
+
 ## Which config answers, and under which key
 
 A save layout is chosen by `(emulator, platform)`, never by emulator alone. The

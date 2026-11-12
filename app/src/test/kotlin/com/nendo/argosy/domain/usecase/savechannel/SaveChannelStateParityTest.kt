@@ -1,5 +1,6 @@
 package com.nendo.argosy.domain.usecase.savechannel
 
+import com.nendo.argosy.data.emulator.StateSerialResolver
 import com.nendo.argosy.data.repository.ActiveSaveRepository
 import com.nendo.argosy.data.repository.SaveCacheManager
 import com.nendo.argosy.data.repository.SaveSyncRepository
@@ -37,6 +38,9 @@ class SaveChannelStateParityTest {
     private val restoreCachedSave: RestoreCachedSaveUseCase = mockk(relaxed = true)
     private val getUnifiedSaves: GetUnifiedSavesUseCase = mockk(relaxed = true)
     private val contextResolver: SaveChannelContextResolver = mockk()
+    private val serialResolver: StateSerialResolver = mockk {
+        coEvery { serialsFor(any(), any()) } returns emptySet()
+    }
 
     private fun context(supportsStates: Boolean = true) = SaveChannelContext(
         gameId = GAME_ID,
@@ -268,7 +272,7 @@ class SaveChannelStateParityTest {
     fun `restoring an older point drops the auto-resume state`() = runTest {
         stubContext()
         val useCase = RestoreSaveChannelPointUseCase(
-            restoreCachedStates, stateCacheManager, contextResolver
+            restoreCachedStates, stateCacheManager, contextResolver, serialResolver
         )
 
         useCase(GAME_ID, "primary", isLatest = false)
@@ -278,7 +282,7 @@ class SaveChannelStateParityTest {
         }
         coVerify {
             stateCacheManager.deleteAutoResumeStatesFromDisk(
-                EMULATOR_ID, "/roms/game.sfc", "snes", EMULATOR_PACKAGE, CORE_ID, GAME_ID
+                EMULATOR_ID, "/roms/game.sfc", "snes", EMULATOR_PACKAGE, CORE_ID, emptySet(), GAME_ID
             )
         }
     }
@@ -287,7 +291,7 @@ class SaveChannelStateParityTest {
     fun `restoring the latest point keeps the auto-resume state`() = runTest {
         stubContext()
         val useCase = RestoreSaveChannelPointUseCase(
-            restoreCachedStates, stateCacheManager, contextResolver
+            restoreCachedStates, stateCacheManager, contextResolver, serialResolver
         )
 
         useCase(GAME_ID, "primary", isLatest = true)
@@ -297,7 +301,7 @@ class SaveChannelStateParityTest {
         }
         coVerify(exactly = 0) {
             stateCacheManager.deleteAutoResumeStatesFromDisk(
-                any(), any(), any(), any(), any(), any()
+                any(), any(), any(), any(), any(), any(), any()
             )
         }
     }

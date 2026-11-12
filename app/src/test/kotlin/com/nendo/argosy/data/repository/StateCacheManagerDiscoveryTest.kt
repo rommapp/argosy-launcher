@@ -13,6 +13,7 @@ import com.nendo.argosy.data.local.dao.SaveCacheDao
 import com.nendo.argosy.data.local.dao.SaveSyncDao
 import com.nendo.argosy.data.local.dao.StateCacheDao
 import com.nendo.argosy.data.local.dao.StateTombstoneDao
+import com.nendo.argosy.data.local.entity.EmulatorSaveConfigEntity
 import com.nendo.argosy.data.preferences.SyncPreferencesRepository
 import com.nendo.argosy.data.preferences.UserPreferencesRepository
 import com.nendo.argosy.data.sync.StateOwnershipTracker
@@ -93,8 +94,88 @@ class StateCacheManagerDiscoveryTest {
             gameId = 1L,
             emulatorId = EmulatorRegistry.BUILTIN_ID,
             romPath = rom.absolutePath,
-            platformId = platform
+            platformId = platform,
+            serials = emptySet()
         )
+
+    private suspend fun discoverIn(emulatorId: String, platform: String, serials: Set<String>): List<String> {
+        coEvery { emulatorSaveConfigDao.getByEmulator(emulatorId) } returns EmulatorSaveConfigEntity(
+            emulatorId = emulatorId,
+            savePathPattern = "",
+            isAutoDetected = false,
+            statePathPattern = statesDir.absolutePath,
+            isUserStateOverride = true
+        )
+        return manager.discoverStatesForGame(
+            gameId = 1L,
+            emulatorId = emulatorId,
+            romPath = "/roms/$platform/Game.chd",
+            platformId = platform,
+            serials = serials
+        ).map { "${it.file.name}=${it.slotNumber}" }.sorted()
+    }
+
+    private fun live(vararg names: String) = names.forEach { File(statesDir, it).writeBytes(byteArrayOf(7)) }
+
+    @Test
+    fun `duckstation finds only the states named for the game's serial`() = runTest {
+        live("SLUS-00001_1.sav", "SLUS-00001_resume.sav", "SCUS-94163_1.sav", "SCUS-94163_2.sav")
+
+        val found = discoverIn("duckstation", "psx", setOf("SLUS-00001"))
+
+        assertEquals(listOf("SLUS-00001_1.sav=1", "SLUS-00001_resume.sav=-1"), found)
+    }
+
+    @Test
+    fun `duckstation global states never match a game`() = runTest {
+        live("savestate_1.sav", "resume.sav", "Game_1.sav")
+
+        assertEquals(emptyList<String>(), discoverIn("duckstation", "psx", setOf("SLUS-00001")))
+    }
+
+    @Test
+    fun `duckstation matches the serial without regard to case`() = runTest {
+        live("slus-00001_3.sav")
+
+        assertEquals(listOf("slus-00001_3.sav=3"), discoverIn("duckstation", "psx", setOf("SLUS-00001")))
+    }
+
+    @Test
+    fun `ppsspp keeps two discs that share slot 3 apart`() = runTest {
+        live("ULUS10064_1.00_3.ppst", "ULUS10064_1.00_3.jpg", "NPJH50804_1.01_3.ppst")
+
+        assertEquals(listOf("ULUS10064_1.00_3.ppst=3"), discoverIn("ppsspp", "psp", setOf("ULUS10064")))
+        assertEquals(listOf("NPJH50804_1.01_3.ppst=3"), discoverIn("ppsspp", "psp", setOf("NPJH50804")))
+    }
+
+    @Test
+    fun `ppsspp undo states, slot names and the global undo never match`() = runTest {
+        live(
+            "ULUS10064_1.00_1.undo.ppst",
+            "ULUS10064_1.00_1.undo.jpg",
+            "ULUS10064_1.00_1.name.txt",
+            "load_undo.ppst"
+        )
+
+        assertEquals(emptyList<String>(), discoverIn("ppsspp", "psp", setOf("ULUS10064")))
+    }
+
+    @Test
+    fun `an empty serial set matches nothing`() = runTest {
+        live("SLUS-00001_1.sav", "ULUS10064_1.00_0.ppst", "savestate_1.sav")
+
+        assertEquals(emptyList<String>(), discoverIn("duckstation", "psx", emptySet()))
+        assertEquals(emptyList<String>(), discoverIn("ppsspp", "psp", emptySet()))
+    }
+
+    @Test
+    fun `a multi-disc serial set matches every disc of the game`() = runTest {
+        live("SLUS-00892_1.sav", "SLUS-00908_2.sav", "SLUS-00909_1.sav")
+
+        val found = discoverIn("duckstation", "psx", setOf("SLUS-00892", "SLUS-00908"))
+
+        assertEquals(listOf("SLUS-00892_1.sav=1", "SLUS-00908_2.sav=2"), found)
+    }
 
     @Test
     fun `states named after the zip entry are found for a zipped rom`() = runTest {

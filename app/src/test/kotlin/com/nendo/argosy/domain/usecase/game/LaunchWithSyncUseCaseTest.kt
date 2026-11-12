@@ -215,7 +215,7 @@ class LaunchWithSyncUseCaseTest {
 
     private fun verifyDrop(times: Int) = io.mockk.coVerify(exactly = times) {
         stateCacheManager.deleteAutoResumeStatesOlderThan(
-            builtinId, game.localPath!!, game.platformSlug, null, gameId, serverSaveTime
+            builtinId, game.localPath!!, game.platformSlug, null, emptySet(), gameId, serverSaveTime
         )
     }
 
@@ -270,7 +270,7 @@ class LaunchWithSyncUseCaseTest {
 
         useCase.invokeWithProgress(gameId).toList()
 
-        io.mockk.coVerify(exactly = 0) { stateCacheManager.deleteAutoResumeStatesOlderThan(any(), any(), any(), any(), any(), any()) }
+        io.mockk.coVerify(exactly = 0) { stateCacheManager.deleteAutoResumeStatesOlderThan(any(), any(), any(), any(), any(), any(), any()) }
     }
 
     @Test

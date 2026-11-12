@@ -6,6 +6,7 @@ import com.nendo.argosy.util.AppPaths
 import io.mockk.every
 import io.mockk.mockk
 import org.junit.After
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import java.io.File
@@ -60,10 +61,47 @@ class StateCacheManagerScreenshotTest {
         assertTrue(liveState.exists())
     }
 
-    private fun entity(screenshotPath: String) = StateCacheEntity(
+    @Test
+    fun `a ppsspp state gets its screenshot back as the same-stem jpg`() {
+        val cached = File(AppPaths.stateCacheDir(filesDir), "1/ULUS10064_1.00_2.jpg").apply {
+            parentFile?.mkdirs()
+            writeBytes(byteArrayOf(4, 5, 6))
+        }
+        val liveState = File(filesDir, "PPSSPP_STATE/ULUS10064_1.00_2.ppst").apply {
+            parentFile?.mkdirs()
+            writeBytes(byteArrayOf(9))
+        }
+
+        manager.restoreScreenshot(
+            entity(screenshotPath = "1/${cached.name}", emulatorId = "ppsspp"),
+            liveState
+        )
+
+        val sidecar = File(liveState.parentFile, "ULUS10064_1.00_2.jpg")
+        assertTrue(sidecar.readBytes().contentEquals(byteArrayOf(4, 5, 6)))
+        assertFalse(File("${liveState.absolutePath}.png").exists())
+    }
+
+    @Test
+    fun `displacing a ppsspp state moves its jpg with it`() {
+        val liveState = File(filesDir, "PPSSPP_STATE/ULUS10064_1.00_0.ppst").apply {
+            parentFile?.mkdirs()
+            writeBytes(byteArrayOf(9))
+        }
+        val sidecar = File(liveState.parentFile, "ULUS10064_1.00_0.jpg").apply { writeBytes(byteArrayOf(1)) }
+
+        assertTrue(manager.displaceLiveState(liveState, "ppsspp"))
+
+        assertFalse(liveState.exists())
+        assertFalse(sidecar.exists())
+        val displaced = File(AppPaths.stateCacheDir(filesDir), "displaced").walkTopDown().map { it.name }.toSet()
+        assertTrue("ULUS10064_1.00_0.jpg" in displaced)
+    }
+
+    private fun entity(screenshotPath: String, emulatorId: String = "argosy") = StateCacheEntity(
         gameId = 1L,
         platformSlug = "snes",
-        emulatorId = "argosy",
+        emulatorId = emulatorId,
         slotNumber = 1,
         cachedAt = Instant.now(),
         stateSize = 1,

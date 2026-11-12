@@ -192,6 +192,7 @@ sealed class LaunchConfig {
                     val hasDocUri = intentExtras.values.any { it is ExtraValue.DocumentUri }
                     val hasFileUri = intentExtras.values.any { it is ExtraValue.FileUri }
                     val hasFileUriString = intentExtras.values.any { it is ExtraValue.FileUriString }
+                    val hasPathFromBuild = intentExtras.values.any { it is ExtraValue.PathFromBuild }
                     val hasFilePath = intentExtras.values.any { it is ExtraValue.FilePath }
                     val hasAbsPath = useAbsolutePath
 
@@ -199,6 +200,7 @@ sealed class LaunchConfig {
                         hasDocUri -> "Document URI (SAF)"
                         hasFileUri -> "FileProvider URI"
                         hasFileUriString -> "FileProvider URI (string)"
+                        hasPathFromBuild -> "Absolute path (FileProvider URI on older builds)"
                         hasFilePath || hasAbsPath -> "Absolute path"
                         else -> "None"
                     }
@@ -207,6 +209,7 @@ sealed class LaunchConfig {
                             it.value is ExtraValue.FilePath ||
                                 it.value is ExtraValue.FileUri ||
                                 it.value is ExtraValue.FileUriString ||
+                                it.value is ExtraValue.PathFromBuild ||
                                 it.value is ExtraValue.DocumentUri
                         }
                         .map { it.key }
@@ -317,7 +320,20 @@ sealed class ExtraValue {
     object Platform : ExtraValue()
     data class Literal(val value: String) : ExtraValue()
     data class BooleanLiteral(val value: Boolean) : ExtraValue()
+
+    /**
+     * A ROM path extra that is the plain absolute path when the installed build number is at least
+     * [minBuild], and a FileProvider URI string below it or when the build cannot be read.
+     */
+    data class PathFromBuild(val minBuild: Int) : ExtraValue()
 }
+
+private val BUILD_NUMBER = Regex("""^\d+\.\d+-(\d+)""")
+
+fun buildNumberOf(versionName: String?): Int? =
+    versionName?.let { BUILD_NUMBER.find(it)?.groupValues?.get(1)?.toIntOrNull() }
+
+const val DUCKSTATION_PLAIN_PATH_MIN_BUILD = 10_000
 
 data class RetroArchCore(
     val id: String,
@@ -829,7 +845,7 @@ object EmulatorRegistry {
             launchConfig = LaunchConfig.Custom(
                 activityClass = "com.github.stenzek.duckstation.EmulationActivity",
                 intentExtras = mapOf(
-                    "bootPath" to ExtraValue.FileUriString,
+                    "bootPath" to ExtraValue.PathFromBuild(DUCKSTATION_PLAIN_PATH_MIN_BUILD),
                     "resumeState" to ExtraValue.BooleanLiteral(false)
                 )
             ),
@@ -2010,7 +2026,7 @@ object EmulatorRegistry {
             launchConfig = LaunchConfig.Custom(
                 activityClass = "com.github.stenzek.duckstation.EmulationActivity",
                 intentExtras = mapOf(
-                    "bootPath" to ExtraValue.FileUriString,
+                    "bootPath" to ExtraValue.PathFromBuild(DUCKSTATION_PLAIN_PATH_MIN_BUILD),
                     "resumeState" to ExtraValue.BooleanLiteral(false)
                 )
             ),

@@ -1140,18 +1140,6 @@ class GameLauncher @Inject constructor(
     private fun parseBindingFormat(name: String): RomBindingFormat? =
         runCatching { RomBindingFormat.valueOf(name) }.getOrNull()
 
-    private val primaryRootSlash: String by lazy { "${StoragePathUtils.primaryExternalRoot}/" }
-
-    private fun isPathOpaqueToOtherApps(path: String): Boolean {
-        if (!path.startsWith("/storage/")) return false
-        val canonical = StoragePathUtils.canonicalize(path)
-        if (canonical.startsWith(primaryRootSlash)) {
-            val rel = canonical.removePrefix(primaryRootSlash)
-            return rel.startsWith("Android/data/") || rel.startsWith("Android/obb/")
-        }
-        return true
-    }
-
     private fun rewriteBindings(
         command: EffectiveLaunchCommand,
         romFile: File,
@@ -1161,17 +1149,7 @@ class GameLauncher @Inject constructor(
     ): EffectiveLaunchCommand {
         val absolutePath = romFile.absolutePath
         val grantUris = command.grantReadUriTo.toMutableList()
-
-        val needsContentUri = isPathOpaqueToOtherApps(absolutePath)
-        fun upgradeIfOpaque(b: RomBindingFormat?): RomBindingFormat? =
-            if (b == RomBindingFormat.ABSOLUTE_PATH && needsContentUri) {
-                Logger.warn(TAG, "ROM at $absolutePath is opaque to other apps; upgrading ABSOLUTE_PATH → FILE_PROVIDER")
-                RomBindingFormat.FILE_PROVIDER
-            } else b
-
-        @Suppress("NAME_SHADOWING") val dataBinding = upgradeIfOpaque(dataBinding)
-        @Suppress("NAME_SHADOWING") val extraBinding = upgradeIfOpaque(extraBinding)
-        @Suppress("NAME_SHADOWING") val clipDataBinding = upgradeIfOpaque(clipDataBinding)
+        val fileUriString = runCatching { getFileUri(romFile).toString() }.getOrNull()
 
         fun targetUriFor(format: RomBindingFormat): Uri? = when (format) {
             RomBindingFormat.NONE -> null
@@ -1201,7 +1179,7 @@ class GameLauncher @Inject constructor(
 
         fun isPathExtra(extra: ResolvedExtra): Boolean = when (extra) {
             is ResolvedExtra.UriExtra -> true
-            is ResolvedExtra.StringExtra -> extra.value == absolutePath
+            is ResolvedExtra.StringExtra -> extra.value == absolutePath || extra.value == fileUriString
             else -> false
         }
         val newExtras: List<ResolvedExtra> = when (extraBinding) {
@@ -1498,6 +1476,16 @@ class GameLauncher @Inject constructor(
                 }
                 is ExtraValue.FileUriString -> {
                     val value = if (romFile.extension.equals("m3u", ignoreCase = true)) {
+                        romFile.absolutePath
+                    } else {
+                        getFileUri(romFile).also { fileUri = it }.toString()
+                    }
+                    resolvedExtras += ResolvedExtra.StringExtra(key, value)
+                }
+                is ExtraValue.PathFromBuild -> {
+                    val plainPath = romFile.extension.equals("m3u", ignoreCase = true) ||
+                        (installedBuildNumber(emulator.packageName) ?: 0) >= extraValue.minBuild
+                    val value = if (plainPath) {
                         romFile.absolutePath
                     } else {
                         getFileUri(romFile).also { fileUri = it }.toString()
@@ -1869,6 +1857,10 @@ class GameLauncher @Inject constructor(
             throw e
         }
     }
+
+    private fun installedBuildNumber(packageName: String): Int? = runCatching {
+        buildNumberOf(context.packageManager.getPackageInfo(packageName, 0).versionName)
+    }.getOrNull()
 
     private fun getDocumentUri(file: File): Uri? {
         val (volumeId, relativePath) = StoragePathUtils.extractVolumeAndPath(file.absolutePath)

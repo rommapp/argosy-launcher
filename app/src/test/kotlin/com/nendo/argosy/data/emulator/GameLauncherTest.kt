@@ -702,6 +702,61 @@ class GameLauncherTest {
         }
     }
 
+    private suspend fun launchChdInDuckStation(versionName: String?) {
+        val chdPath = romFile("chd")
+        val game = createGame(localPath = chdPath, platformSlug = "psx")
+        coEvery { gameDao.getById(1L) } returns game
+        coEvery { variantResolver.getVariantOptions(game) } returns null
+        val duckstation = EmulatorRegistry.getById("duckstation")!!
+        coEvery { emulatorConfigDao.getByGameId(1L) } returns createConfig(
+            gameId = 1L,
+            packageName = duckstation.packageName,
+            displayName = duckstation.displayName
+        )
+        stubDetectorWith(installedEmulator(duckstation))
+        every { emulatorDetector.getByPackage(duckstation.packageName) } returns duckstation
+        val packageManager = mockk<android.content.pm.PackageManager>(relaxed = true)
+        every { context.packageManager } returns packageManager
+        every { packageManager.getPackageInfo(duckstation.packageName, 0) } returns
+            android.content.pm.PackageInfo().apply { this.versionName = versionName }
+        launcher.launch(1L)
+    }
+
+    @Test
+    fun `a current duckstation build is handed the plain rom path`() = runTest {
+        launchChdInDuckStation("0.1-12482-g2764526f7")
+
+        verify(exactly = 0) {
+            FileProvider.getUriForFile(any(), any(), match { it.extension.equals("chd", ignoreCase = true) })
+        }
+    }
+
+    @Test
+    fun `an old duckstation build keeps the content uri it can open`() = runTest {
+        launchChdInDuckStation("0.1-8974-g1efe969f7")
+
+        verify(exactly = 1) {
+            FileProvider.getUriForFile(any(), any(), match { it.extension.equals("chd", ignoreCase = true) })
+        }
+    }
+
+    @Test
+    fun `an unreadable duckstation version keeps the content uri`() = runTest {
+        launchChdInDuckStation(null)
+
+        verify(exactly = 1) {
+            FileProvider.getUriForFile(any(), any(), match { it.extension.equals("chd", ignoreCase = true) })
+        }
+    }
+
+    @Test
+    fun `build numbers are read from duckstation version names`() {
+        assertEquals(12482, buildNumberOf("0.1-12482-g2764526f7"))
+        assertEquals(8974, buildNumberOf("0.1-8974-g1efe969f7"))
+        assertEquals(null, buildNumberOf("1.6"))
+        assertEquals(null, buildNumberOf(null))
+    }
+
     @Test
     fun `flycast is handed the rom path rather than a content uri it cannot open`() = runTest {
         val chdPath = romFile("chd")

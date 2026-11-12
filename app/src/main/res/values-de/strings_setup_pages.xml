@@ -16,6 +16,11 @@
     <string name="setup_screens_role_menus">Menüs</string>
     <string name="setup_screens_role_games">Spiele und Details</string>
     <string name="setup_screens_footer_swap">Bildschirme tauschen</string>
+    <string name="setup_screens_footer_hold_swap">Halten, um Bildschirme zu tauschen</string>
+    <string name="setup_screens_swap_row">Bildschirme tauschen</string>
+    <string name="setup_screens_companion_title">Deine zwei Bildschirme</string>
+    <string name="setup_screens_companion_games_blurb">Cover, Spielinfos, Erfolge und Medien</string>
+    <string name="setup_screens_companion_menus_blurb">Listen, Einstellungen und Navigation</string>
 
     <string name="setup_controller_title">Ist das dein Controller?</string>
     <string name="setup_controller_purpose">Wähle das Layout, das auf deinem Controller aufgedruckt ist.</string>
@@ -31,14 +36,16 @@
 
     <string name="setup_check_title">Tasten prüfen</string>
     <string name="setup_check_purpose">Drück eine beliebige Taste, um zu sehen, wo sie landet. Beim Testen passiert nichts.</string>
-    <string name="setup_check_status_last">Letzter Druck: %1$s</string>
+    <string name="setup_check_purpose_testing">Test läuft. Halte eine beliebige Taste, um zu beenden.</string>
+    <string name="setup_check_test_row">Tasten testen</string>
+    <string name="setup_check_testing_hint">Halte eine beliebige Taste zum Beenden</string>
+    <string name="setup_check_status_last_label">Letzter Druck</string>
     <string name="setup_check_status_idle">Drück eine Taste</string>
-    <string name="setup_check_action_confirm">Bestätigen</string>
+    <string name="setup_check_action_choose">Auswählen</string>
     <string name="setup_check_action_back">Zurück</string>
-    <string name="setup_check_action_options">Optionen</string>
-    <string name="setup_check_action_quick">Schnellaktion</string>
     <string name="setup_check_action_menu">Menü</string>
-    <string name="setup_check_action_select">Select</string>
+    <string name="setup_check_action_swap_screens">Bildschirme tauschen</string>
+    <string name="setup_check_action_hold_swap_screens">Halten, um Bildschirme zu tauschen</string>
     <string name="setup_check_toggle_swap_ab">A/B tauschen</string>
     <string name="setup_check_toggle_swap_xy">X/Y tauschen</string>
     <string name="setup_check_toggle_swap_start_select">Start/Select tauschen</string>
@@ -69,6 +76,10 @@
     <string name="setup_look_more_in_settings">Weitere Designs, Sounds, Schriften und Hintergründe findest du in den Einstellungen.</string>
 
     <string name="setup_companion_brand">Die Einrichtung läuft auf dem anderen Bildschirm.</string>
+    <plurals name="setup_companion_platforms_selected">
+        <item quantity="one">%1$d von %2$d Plattform ausgewählt</item>
+        <item quantity="other">%1$d von %2$d Plattformen ausgewählt</item>
+    </plurals>
 
     <string name="settings_navigation_check_buttons_title">Tasten prüfen</string>
     <string name="settings_navigation_check_buttons_subtitle">Drück jede Taste, um zu sehen, wo sie landet</string>

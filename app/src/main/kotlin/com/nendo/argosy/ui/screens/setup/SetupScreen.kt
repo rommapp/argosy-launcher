@@ -33,7 +33,6 @@ import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.nendo.argosy.DualScreenManagerHolder
-import com.nendo.argosy.R
 import com.nendo.argosy.ui.components.FooterBar
 import com.nendo.argosy.ui.dualscreen.PresentOnCompanion
 import com.nendo.argosy.ui.dualscreen.PresentationSlot
@@ -46,6 +45,7 @@ import com.nendo.argosy.ui.filebrowser.FileBrowserMode
 import com.nendo.argosy.ui.filebrowser.FileBrowserScreen
 import com.nendo.argosy.ui.filebrowser.FileFilter
 import com.nendo.argosy.ui.input.LocalInputDispatcher
+import com.nendo.argosy.ui.navigation.Screen
 import com.nendo.argosy.ui.screens.setup.components.SetupAction
 import com.nendo.argosy.ui.screens.setup.components.SetupStepBody
 import com.nendo.argosy.ui.screens.setup.components.SetupStepScaffold
@@ -95,13 +95,16 @@ fun SetupScreen(
     val lifecycleOwner = LocalLifecycleOwner.current
     DisposableEffect(lifecycleOwner, inputHandler) {
         val observer = LifecycleEventObserver { _, event ->
-            if (event == Lifecycle.Event.ON_RESUME) inputDispatcher.subscribeView(inputHandler)
+            if (event == Lifecycle.Event.ON_RESUME) {
+                inputDispatcher.subscribeView(inputHandler, forRoute = Screen.FirstRun.route)
+            }
         }
         lifecycleOwner.lifecycle.addObserver(observer)
-        inputDispatcher.subscribeView(inputHandler)
+        inputDispatcher.subscribeView(inputHandler, forRoute = Screen.FirstRun.route)
         onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
     }
     LifecycleEventEffect(Lifecycle.Event.ON_RESUME) { viewModel.onResume() }
+    LaunchedEffect(state.loaded, state.page, state.focused) { viewModel.recordPosition() }
     LaunchedEffect(state.page, lifecycleOwner) {
         lifecycleOwner.repeatOnLifecycle(Lifecycle.State.RESUMED) {
             while (true) {
@@ -128,9 +131,11 @@ fun SetupScreen(
                 }
             }
         }
-        if (state.page != SetupPage.PLATFORMS && selectSwapModeState() != null && setupSwapAllowed(state)) {
+        val swapMode = selectSwapModeState()
+        val testingButtons = state.page == SetupPage.BUTTON_CHECK && state.buttonCheck.testing
+        if (state.page != SetupPage.PLATFORMS && !testingButtons && swapMode != null && setupSwapAllowed(state)) {
             FooterBar(
-                hints = listOf(InputButton.SELECT to stringResource(R.string.setup_screens_footer_swap)),
+                hints = listOf(InputButton.SELECT to stringResource(setupSwapFooterLabel(swapMode))),
                 onHintClick = { if (it == InputButton.SELECT) DualScreenManagerHolder.instance?.swapRoles() }
             )
         }
@@ -189,9 +194,10 @@ internal fun SetupPageBody(
     state: SetupUiState,
     viewModel: SetupViewModel,
     context: (@Composable () -> Unit)? = null,
-    contextOnCompanion: Boolean = false,
+    leadTrailing: (@Composable () -> Unit)? = null,
     content: @Composable ColumnScope.() -> Unit,
 ) {
+    val contextOnCompanion = setupShownOnCompanion()
     val focus = focusedTarget(state)
     val specs = actionsFor(state)
     SetupStepBody(
@@ -208,9 +214,14 @@ internal fun SetupPageBody(
         onAction = { index -> specs.getOrNull(index)?.let { viewModel.tap(SetupTarget.Action(it.id)) } },
         contextOnCompanion = contextOnCompanion,
         context = context,
+        leadTrailing = leadTrailing,
         content = content,
     )
 }
+
+@Composable
+internal fun setupShownOnCompanion(): Boolean =
+    DualScreenManagerHolder.instance?.presentationShowsHints?.collectAsState()?.value == true
 
 private fun homeRoleRequest(context: Context): Intent? {
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {

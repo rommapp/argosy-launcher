@@ -60,6 +60,10 @@ internal class ModalInputRouter(private val viewModel: SettingsViewModel) {
     private fun interceptButtonCheck(state: SettingsUiState, method: InputMethod): InputResult? {
         if (!state.controls.showButtonCheck) return null
         val check = viewModel.buttonCheck
+        if (check.state.value.testing) {
+            if (method == InputMethod.BACK) check.finishTest()
+            return InputResult.handled(SoundType.SILENT)
+        }
         return when (method) {
             InputMethod.UP -> check.move(0, -1)
             InputMethod.DOWN -> check.move(0, 1)
@@ -71,7 +75,7 @@ internal class ModalInputRouter(private val viewModel: SettingsViewModel) {
                 result
             }
             InputMethod.BACK -> {
-                if (!check.back()) viewModel.closeButtonCheck()
+                viewModel.closeButtonCheck()
                 InputResult.handled(SoundType.CLOSE_MODAL)
             }
             else -> InputResult.HANDLED

@@ -1,5 +1,7 @@
 package com.nendo.argosy.ui.screens.setup
 
+import com.nendo.argosy.R
+import com.nendo.argosy.data.preferences.SelectSwapMode
 import com.nendo.argosy.domain.model.SetupFacts
 import com.nendo.argosy.domain.model.SetupItem
 import com.nendo.argosy.domain.model.SetupState
@@ -61,6 +63,58 @@ class SetupStepsTest {
         val noPad = setupPlan(SetupOffers(buttonCheck = false))
         assertTrue(SetupPage.CONTROLLER in noPad)
         assertFalse(SetupPage.BUTTON_CHECK in noPad)
+    }
+
+    @Test
+    fun `a dual-screen device that already has Argosy as home skips the home page and keeps screens`() {
+        val held = setupPlan(SetupOffers(dualScreen = true, homeHeld = true))
+        assertFalse(SetupPage.DEFAULT_HOME in held)
+        assertTrue(SetupPage.SCREENS in held)
+        assertEquals(held.indexOf(SetupPage.SAVE_SYNC) + 1, held.indexOf(SetupPage.SCREENS))
+        assertTrue(SetupPage.DEFAULT_HOME in setupPlan(SetupOffers(dualScreen = true, homeHeld = false)))
+    }
+
+    @Test
+    fun `the home role held is read from the device facts`() {
+        assertTrue(SetupOffers().withDevice(SetupFacts(dualScreenDevice = true, defaultHome = true)).homeHeld)
+        assertFalse(SetupOffers(homeHeld = true).withDevice(SetupFacts(dualScreenDevice = true)).homeHeld)
+    }
+
+    @Test
+    fun `a page the plan dropped while open still leads forward and back`() {
+        val held = setupPlan(SetupOffers(dualScreen = true, homeHeld = true))
+        assertEquals(SetupPage.SCREENS, nextPage(SetupPage.DEFAULT_HOME, held, SetupState.Complete))
+        assertEquals(SetupPage.SAVE_SYNC, previousPage(SetupPage.DEFAULT_HOME, held))
+    }
+
+    @Test
+    fun `a setup composed again opens on the page it stood on`() {
+        val dual = setupPlan(SetupOffers(dualScreen = true, homeHeld = true))
+        assertEquals(SetupPage.SCREENS, resumePage(SetupPage.CONTROLLER, SetupPage.SCREENS, dual, SetupState.Complete))
+        assertEquals(SetupPage.SCREENS, resumePage(SetupPage.SAVE_SYNC, SetupPage.SCREENS, dual, SetupState.Complete))
+        assertEquals(SetupPage.CONTROLLER, resumePage(SetupPage.CONTROLLER, null, dual, SetupState.Complete))
+    }
+
+    @Test
+    fun `a carried page outside the plan falls back to the entry page`() {
+        val plan = setupPlan(SetupOffers(platforms = false))
+        assertEquals(SetupPage.SAVE_SYNC, resumePage(SetupPage.SAVE_SYNC, SetupPage.PLATFORMS, plan, SetupState.Complete))
+    }
+
+    @Test
+    fun `an earlier missing item wins over the carried page, a later one does not`() {
+        assertEquals(
+            SetupPage.PERMISSIONS,
+            resumePage(SetupPage.PERMISSIONS, SetupPage.FOLDERS, fullPlan, missing(SetupItem.USAGE_ACCESS))
+        )
+        assertEquals(
+            SetupPage.PERMISSIONS,
+            resumePage(SetupPage.SAVE_SYNC, SetupPage.PERMISSIONS, fullPlan, missing(SetupItem.SAVE_SYNC))
+        )
+        assertEquals(
+            SetupPage.FOLDERS,
+            resumePage(SetupPage.FOLDERS, SetupPage.FOLDERS, fullPlan, missing(SetupItem.ROM_FOLDER))
+        )
     }
 
     @Test
@@ -208,6 +262,12 @@ class SetupStepsTest {
         assertEquals(home.currentIndex, library.currentIndex)
         assertEquals(3, theme.segments[theme.currentIndex].subTicks)
         assertEquals(listOf(0, 1, 2), listOf(theme, home, library).map { it.currentSubTick })
+    }
+
+    @Test
+    fun `the select footer hint names the hold only when holding swaps`() {
+        assertEquals(R.string.setup_screens_footer_hold_swap, setupSwapFooterLabel(SelectSwapMode.HOLD))
+        assertEquals(R.string.setup_screens_footer_swap, setupSwapFooterLabel(SelectSwapMode.TAP))
     }
 
     @Test

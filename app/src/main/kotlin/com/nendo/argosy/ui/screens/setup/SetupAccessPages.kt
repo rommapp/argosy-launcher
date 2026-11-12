@@ -110,7 +110,7 @@ internal fun PermissionsPage(state: SetupUiState, viewModel: SetupViewModel) {
 }
 
 @Composable
-private fun PermissionContext(permission: ArgosyPermission) {
+internal fun PermissionContext(permission: ArgosyPermission) {
     Column(verticalArrangement = Arrangement.spacedBy(Dimens.spacingXs)) {
         permission.setupEnablesRes?.let { Text(stringResource(it)) }
         permission.setupLostRes?.let {
@@ -128,23 +128,28 @@ internal fun AccessibilityPage(state: SetupUiState, viewModel: SetupViewModel) {
         viewModel = viewModel,
         context = if (access.variant == AccessibilityVariant.ROOTED) null else ({ AccessibilityContext(access.variant) }),
     ) {
-        Column(verticalArrangement = Arrangement.spacedBy(Dimens.listGap)) {
-            when (access.variant) {
-                AccessibilityVariant.ROOTED -> RootedAccessibilityRow(access)
-                AccessibilityVariant.TWO_STEP -> {
-                    RestrictedStep(access, focus, viewModel)
-                    ServiceStep(access, number = 2, focus = focus, viewModel = viewModel)
-                }
-                AccessibilityVariant.ONE_STEP -> ServiceStep(access, number = null, focus = focus, viewModel = viewModel)
+        AccessibilitySteps(access = access, focus = focus, onTap = viewModel::tap)
+    }
+}
+
+@Composable
+internal fun AccessibilitySteps(access: SetupAccessState, focus: SetupTarget?, onTap: ((SetupTarget) -> Unit)?) {
+    Column(verticalArrangement = Arrangement.spacedBy(Dimens.listGap)) {
+        when (access.variant) {
+            AccessibilityVariant.ROOTED -> RootedAccessibilityRow(access)
+            AccessibilityVariant.TWO_STEP -> {
+                RestrictedStep(access, focus, onTap)
+                ServiceStep(access, number = 2, focus = focus, onTap = onTap)
             }
-            if (!access.accessibilityOn) {
-                Text(
-                    text = stringResource(R.string.setup_accessibility_lost),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = LocalArgosyTheme.current.textDim,
-                    modifier = Modifier.padding(horizontal = Dimens.spacingMd, vertical = Dimens.spacingSm),
-                )
-            }
+            AccessibilityVariant.ONE_STEP -> ServiceStep(access, number = null, focus = focus, onTap = onTap)
+        }
+        if (!access.accessibilityOn) {
+            Text(
+                text = stringResource(R.string.setup_accessibility_lost),
+                style = MaterialTheme.typography.bodyMedium,
+                color = LocalArgosyTheme.current.textDim,
+                modifier = Modifier.padding(horizontal = Dimens.spacingMd, vertical = Dimens.spacingSm),
+            )
         }
     }
 }
@@ -173,7 +178,7 @@ private fun RootedAccessibilityRow(access: SetupAccessState) {
 }
 
 @Composable
-private fun RestrictedStep(access: SetupAccessState, focus: SetupTarget?, viewModel: SetupViewModel) {
+private fun RestrictedStep(access: SetupAccessState, focus: SetupTarget?, onTap: ((SetupTarget) -> Unit)?) {
     val target = SetupTarget.AccessibilityStep(AccessibilityStepKind.RESTRICTED_SETTINGS)
     val done = access.restrictedStepDone || access.accessibilityOn
     SetupStepCard(
@@ -185,12 +190,12 @@ private fun RestrictedStep(access: SetupAccessState, focus: SetupTarget?, viewMo
         chip = stringResource(if (done) R.string.setup_accessibility_chip_done else R.string.setup_accessibility_chip_todo),
         chipPositive = done,
         focused = focus == target,
-        onClick = { viewModel.tap(target) },
+        onClick = onTap?.let { tap -> { tap(target) } },
     )
 }
 
 @Composable
-private fun ServiceStep(access: SetupAccessState, number: Int?, focus: SetupTarget?, viewModel: SetupViewModel) {
+private fun ServiceStep(access: SetupAccessState, number: Int?, focus: SetupTarget?, onTap: ((SetupTarget) -> Unit)?) {
     val target = SetupTarget.AccessibilityStep(AccessibilityStepKind.SERVICE)
     SetupStepCard(
         number = number,
@@ -199,12 +204,12 @@ private fun ServiceStep(access: SetupAccessState, number: Int?, focus: SetupTarg
         chip = stringResource(if (access.accessibilityOn) R.string.setup_accessibility_chip_on else R.string.setup_accessibility_chip_off),
         chipPositive = access.accessibilityOn,
         focused = focus == target,
-        onClick = { viewModel.tap(target) },
+        onClick = onTap?.let { tap -> { tap(target) } },
     )
 }
 
 @Composable
-private fun AccessibilityContext(variant: AccessibilityVariant) {
+internal fun AccessibilityContext(variant: AccessibilityVariant) {
     Column(verticalArrangement = Arrangement.spacedBy(Dimens.spacingXs)) {
         Text(
             text = stringResource(R.string.setup_accessibility_context_where),

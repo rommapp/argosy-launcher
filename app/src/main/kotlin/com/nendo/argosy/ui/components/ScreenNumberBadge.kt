@@ -12,18 +12,17 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import com.nendo.argosy.ui.theme.Dimens
-import com.nendo.argosy.ui.theme.LocalArgosyTheme
+import com.nendo.argosy.ui.theme.generated.ColorTokens
 
 @Composable
 fun ScreenNumberChip(number: Int, modifier: Modifier = Modifier) {
-    val theme = LocalArgosyTheme.current
     Box(
         modifier = modifier
             .clip(RoundedCornerShape(Dimens.radiusControl))
-            .background(theme.focusAccent.copy(alpha = 0.22f))
+            .background(ColorTokens.Domain.ScreenIndicator.fill)
             .border(
                 width = Dimens.borderThin,
-                color = theme.focusAccent,
+                color = ColorTokens.Domain.ScreenIndicator.border,
                 shape = RoundedCornerShape(Dimens.radiusControl)
             )
             .padding(horizontal = Dimens.spacingSm, vertical = Dimens.spacingXs),
@@ -32,21 +31,20 @@ fun ScreenNumberChip(number: Int, modifier: Modifier = Modifier) {
         Text(
             text = number.toString(),
             style = MaterialTheme.typography.labelLarge,
-            color = theme.textPrimary
+            color = ColorTokens.Domain.ScreenIndicator.text
         )
     }
 }
 
 @Composable
 fun ScreenNumberBadge(number: Int, modifier: Modifier = Modifier) {
-    val theme = LocalArgosyTheme.current
     Box(
         modifier = modifier
             .clip(RoundedCornerShape(Dimens.radiusPanel))
-            .background(theme.focusAccent.copy(alpha = 0.18f))
+            .background(ColorTokens.Domain.ScreenIndicator.fill)
             .border(
                 width = Dimens.borderMedium,
-                color = theme.focusAccent,
+                color = ColorTokens.Domain.ScreenIndicator.border,
                 shape = RoundedCornerShape(Dimens.radiusPanel)
             )
             .padding(horizontal = Dimens.spacingLg, vertical = Dimens.spacingSm),
@@ -55,7 +53,7 @@ fun ScreenNumberBadge(number: Int, modifier: Modifier = Modifier) {
         Text(
             text = number.toString(),
             style = MaterialTheme.typography.headlineMedium,
-            color = theme.textPrimary
+            color = ColorTokens.Domain.ScreenIndicator.text
         )
     }
 }

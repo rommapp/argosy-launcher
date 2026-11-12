@@ -168,7 +168,7 @@ fun ScreensSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
 
     ScreenSetupIdentity(
         number = hereNumber,
-        modifier = Modifier.align(Alignment.BottomEnd).padding(Dimens.spacingLg)
+        modifier = Modifier.align(Alignment.TopEnd).padding(Dimens.spacingLg)
     )
     }
 

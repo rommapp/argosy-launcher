@@ -132,6 +132,11 @@ object ColorTokens {
                 val light = Color(0xFF0E7490)
             }
         }
+        object ScreenIndicator {
+            val border = Color(0xFF40C6D6)
+            val fill = Color(0xFF1B343C)
+            val text = Color(0xFFE6E8EC)
+        }
         object Battery {
             val low = Color(0xFFE53935)
             val charging = Color(0xFF4CAF50)

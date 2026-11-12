@@ -83,7 +83,7 @@ internal fun LibraryPage(state: SetupUiState, viewModel: SetupViewModel) {
 }
 
 @Composable
-private fun RommContext() {
+internal fun RommContext() {
     Column(verticalArrangement = Arrangement.spacedBy(Dimens.spacingXs)) {
         Text(stringResource(R.string.setup_library_context_downloads))
         Text(stringResource(R.string.setup_library_context_saves))

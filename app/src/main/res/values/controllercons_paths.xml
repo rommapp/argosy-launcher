@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Controllercons (c) Kieran McClung, SIL Open Font License 1.1, modified.
+    Notice and license: assets/licenses/controllercons/OFL.txt
+-->
+<resources>
+    <string name="controllercons_series_bumper_path" translatable="false">M9.57 14.907s2.341-2.229 6.018-3.086c2.83-.66 6.29-.811 7.739-.846l-.987.009c-.792-.015-1.144-.602-1.379-.763 0 0-.317-.373-.66-.425-.653-.1-2.632.036-3.286.132-.864.126-2.43.59-3.359.997-2.201.965-2.919 2.098-3.418 2.728a4.239 4.239 0 0 0-.668 1.254z</string>
+</resources>

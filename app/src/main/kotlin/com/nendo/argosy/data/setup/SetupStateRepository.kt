@@ -1,6 +1,9 @@
 package com.nendo.argosy.data.setup
 
 import android.content.Context
+import android.hardware.display.DisplayManager
+import android.os.Handler
+import android.os.Looper
 import androidx.lifecycle.DefaultLifecycleObserver
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.ProcessLifecycleOwner
@@ -79,8 +82,15 @@ class SetupStateRepository @Inject constructor(
 
     val needsSetup: Flow<Boolean> = facts.map { SetupRouter.needsSetup(it) }.distinctUntilChanged()
 
+    private val displayObserver = object : DisplayManager.DisplayListener {
+        override fun onDisplayAdded(displayId: Int) = refresh()
+        override fun onDisplayRemoved(displayId: Int) = refresh()
+        override fun onDisplayChanged(displayId: Int) = refresh()
+    }
+
     fun start() {
         ProcessLifecycleOwner.get().lifecycle.addObserver(foregroundObserver)
+        displayAffinityHelper.registerDisplayListener(displayObserver, Handler(Looper.getMainLooper()))
     }
 
     fun refresh() {

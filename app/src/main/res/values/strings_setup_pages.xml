@@ -33,6 +33,17 @@
     <string name="setup_screens_role_games">Games and details</string>
     <!-- Footer hint beside the Select button glyph: swaps which screen shows menus. Verb phrase. -->
     <string name="setup_screens_footer_swap">Swap screens</string>
+    <!-- Footer hint beside the Select button glyph when Select must be held to swap which screen
+         shows menus. Verb phrase. -->
+    <string name="setup_screens_footer_hold_swap">Hold to swap screens</string>
+    <!-- Row on the Screens page that swaps which screen shows menus. Verb phrase. -->
+    <string name="setup_screens_swap_row">Swap screens</string>
+    <!-- Heading on the second screen while the Screens page is open. -->
+    <string name="setup_screens_companion_title">Your two screens</string>
+    <!-- What the games screen shows, under its role name on the second screen. -->
+    <string name="setup_screens_companion_games_blurb">Box art, game info, achievements and media</string>
+    <!-- What the menus screen shows, under its role name on the second screen. -->
+    <string name="setup_screens_companion_menus_blurb">Lists, settings and navigation</string>
 
     <!-- ===== Controller ===== -->
 
@@ -59,18 +70,24 @@
 
     <string name="setup_check_title">Check your buttons</string>
     <string name="setup_check_purpose">Press any button to see where it lands. Nothing happens while you test.</string>
-    <!-- Status under the button diagram. %1$s is the action the last press maps to, for example
-         Confirm. -->
-    <string name="setup_check_status_last">Last press: %1$s</string>
+    <!-- Shown while testing buttons, before the dual-screen controls list. -->
+    <string name="setup_check_purpose_testing">Testing. Hold any button to finish.</string>
+    <!-- Row that starts the button test. Verb phrase. -->
+    <string name="setup_check_test_row">Test buttons</string>
+    <!-- Hint under the button diagram while testing. -->
+    <string name="setup_check_testing_hint">Hold any button to finish</string>
+    <!-- Label before the glyph of the last button pressed, under the button diagram. -->
+    <string name="setup_check_status_last_label">Last press</string>
     <string name="setup_check_status_idle">Press a button</string>
-    <!-- Action names shown in the status line. Each is what the pressed button does in Argosy. -->
-    <string name="setup_check_action_confirm">Confirm</string>
+    <!-- Action shown after the A button glyph: what A does in Argosy's menus, picking the
+         highlighted item. Verb meaning "choose"; it does not name the Select button. -->
+    <string name="setup_check_action_choose">Select</string>
     <string name="setup_check_action_back">Back</string>
-    <string name="setup_check_action_options">Options</string>
-    <string name="setup_check_action_quick">Quick action</string>
     <string name="setup_check_action_menu">Menu</string>
-    <!-- The Select (view) button's action. "Select" names the button, not the verb "choose". -->
-    <string name="setup_check_action_select">Select</string>
+    <!-- The Select button's action when a tap swaps which screen shows menus. Verb phrase. -->
+    <string name="setup_check_action_swap_screens">Swap screens</string>
+    <!-- The Select button's action when holding it swaps which screen shows menus. Verb phrase. -->
+    <string name="setup_check_action_hold_swap_screens">Hold to swap screens</string>
     <!-- Toggle that swaps the A and B buttons. A and B name the buttons this row remaps; keep the letters. -->
     <string name="setup_check_toggle_swap_ab">Swap A/B</string>
     <!-- Toggle that swaps the X and Y buttons. X and Y name the buttons this row remaps; keep the letters. -->
@@ -119,6 +136,12 @@
 
     <!-- Shown on the second screen while setup runs on the other screen. -->
     <string name="setup_companion_brand">Setup runs on the other screen.</string>
+    <!-- Second-screen summary of the platform picker: how many platforms will sync out of all on
+         the server. %1$d is the selected count, %2$d the total. The plural follows the total. -->
+    <plurals name="setup_companion_platforms_selected">
+        <item quantity="one">%1$d of %2$d platform selected</item>
+        <item quantity="other">%1$d of %2$d platforms selected</item>
+    </plurals>
 
     <!-- ===== Settings: button check ===== -->
 

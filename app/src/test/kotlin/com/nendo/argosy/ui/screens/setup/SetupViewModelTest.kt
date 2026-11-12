@@ -1,6 +1,8 @@
 package com.nendo.argosy.ui.screens.setup
 
 import android.app.Application
+import com.nendo.argosy.DualScreenManager
+import com.nendo.argosy.DualScreenManagerHolder
 import com.nendo.argosy.R
 import com.nendo.argosy.core.input.ConnectedControllerTracker
 import com.nendo.argosy.core.input.ConnectedPad
@@ -18,9 +20,13 @@ import com.nendo.argosy.data.setup.SetupFolderProbe
 import com.nendo.argosy.data.setup.SetupStateRepository
 import com.nendo.argosy.domain.model.CoreDownloadProgress
 import com.nendo.argosy.domain.model.PermissionSnapshot
+import com.nendo.argosy.domain.model.ScreenLayout
+import com.nendo.argosy.domain.model.ScreenLayouts
+import com.nendo.argosy.domain.model.ScreenRole
 import com.nendo.argosy.domain.model.SetupFacts
 import com.nendo.argosy.ui.screens.setup.components.ButtonCheckFocus
 import com.nendo.argosy.ui.screens.setup.components.SetupDirection
+import com.nendo.argosy.util.AttachedScreen
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
@@ -37,6 +43,8 @@ import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 
@@ -90,6 +98,8 @@ class SetupViewModelTest {
     @After
     fun tearDown() = Dispatchers.resetMain()
 
+    private val handoff = SetupHandoff()
+
     private fun viewModel(facts: SetupFacts): SetupViewModel {
         every { setupState.facts } returns flowOf(facts)
         return SetupViewModel(
@@ -101,8 +111,62 @@ class SetupViewModelTest {
             access = SetupAccessDelegate(application, registry, setupState).also { it.ioDispatcher = dispatcher },
             folders = SetupFoldersDelegate(probe, preferences, setupState).also { it.ioDispatcher = dispatcher },
             platforms = SetupPlatformsDelegate(romM, platformRepository, coreDownloads).also { it.ioDispatcher = dispatcher },
-            personalize = SetupPersonalizeDelegate(preferences, controllerTracker)
+            personalize = SetupPersonalizeDelegate(preferences, controllerTracker),
+            handoff = handoff
         )
+    }
+
+    @Test
+    fun `a setup composed again after a swap opens on the recorded page and target`() = runTest(dispatcher) {
+        val facts = requiredMet
+        val first = viewModel(facts)
+        advanceUntilIdle()
+        assertEquals(SetupPage.SAVE_SYNC, first.currentState().page)
+        first.tap(SetupTarget.SaveSyncChoice(false))
+        first.back()
+        first.tap(SetupTarget.RomFolder(RomFolderKind.CUSTOM))
+        first.recordPosition()
+        assertEquals(SetupPage.FOLDERS, handoff.position.value?.page)
+
+        val rebuilt = viewModel(facts)
+        advanceUntilIdle()
+
+        assertEquals(SetupPage.FOLDERS, rebuilt.currentState().page)
+        assertEquals(SetupTarget.RomFolder(RomFolderKind.CUSTOM), rebuilt.currentState().focused)
+    }
+
+    @Test
+    fun `a setup that has not loaded records nothing`() = runTest(dispatcher) {
+        val vm = viewModel(requiredMet)
+        vm.recordPosition()
+        assertEquals(null, handoff.position.value)
+    }
+
+    @Test
+    fun `finishing the run clears the recorded position`() = runTest(dispatcher) {
+        every { setupState.needsSetup } returns flowOf(false)
+        val vm = viewModel(requiredMet.copy(saveSyncAnswered = true, defaultHome = true, pagesSeen = allOptionalSeen))
+        advanceUntilIdle()
+        vm.recordPosition()
+        assertEquals(SetupPage.DONE, handoff.position.value?.page)
+
+        vm.tap(SetupTarget.Action(SetupActionId.PRIMARY))
+        advanceUntilIdle()
+
+        assertEquals(null, handoff.position.value)
+    }
+
+    @Test
+    fun `a dual-screen device already home goes from save sync straight to screens`() = runTest(dispatcher) {
+        val vm = viewModel(requiredMet.copy(dualScreenDevice = true, defaultHome = true))
+        advanceUntilIdle()
+        assertEquals(SetupPage.SAVE_SYNC, vm.currentState().page)
+        assertEquals(false, SetupPage.DEFAULT_HOME in vm.currentState().plan)
+
+        vm.tap(SetupTarget.Action(SetupActionId.PRIMARY))
+        advanceUntilIdle()
+
+        assertEquals(SetupPage.SCREENS, vm.currentState().page)
     }
 
     @Test
@@ -322,6 +386,68 @@ class SetupViewModelTest {
         vm.startPress()
         advanceUntilIdle()
         assertEquals(SetupPage.THEME, vm.currentState().page)
+    }
+
+    @Test
+    fun `back while testing buttons ends the test and stays on the page`() = runTest(dispatcher) {
+        pads.value = listOf(mockk(relaxed = true))
+        val vm = viewModel(requiredMet.copy(saveSyncAnswered = true))
+        advanceUntilIdle()
+        vm.tap(SetupTarget.Action(SetupActionId.PRIMARY))
+        advanceUntilIdle()
+        assertEquals(SetupPage.BUTTON_CHECK, vm.currentState().page)
+        assertEquals(ButtonCheckFocus.TEST, vm.buttonCheck.state.value.focus)
+
+        vm.confirm()
+        assertTrue(vm.buttonCheck.state.value.testing)
+
+        vm.back()
+        assertFalse(vm.buttonCheck.state.value.testing)
+        assertEquals(SetupPage.BUTTON_CHECK, vm.currentState().page)
+
+        vm.back()
+        assertEquals(SetupPage.CONTROLLER, vm.currentState().page)
+    }
+
+    @Test
+    fun `the screens page re-reads the roles after a swap made while it is open`() = runTest(dispatcher) {
+        val swapped = MutableStateFlow(false)
+        val manager = mockk<DualScreenManager>(relaxed = true)
+        every { manager.isRolesSwapped } returns swapped
+        coEvery { manager.resolveScreenLayout() } returnsMany listOf(twoScreens(primary = "top"), twoScreens(primary = "bottom"))
+        DualScreenManagerHolder.instance = manager
+        try {
+            val vm = viewModel(requiredMet.copy(dualScreenDevice = true, defaultHome = true))
+            advanceUntilIdle()
+            vm.tap(SetupTarget.Action(SetupActionId.PRIMARY))
+            advanceUntilIdle()
+            assertEquals(SetupPage.SCREENS, vm.currentState().page)
+            assertEquals(ScreenRole.PRIMARY, vm.currentState().screens.first { it.key == "top" }.role)
+            assertEquals(SetupTarget.SwapScreens, focusedTarget(vm.currentState()))
+
+            swapped.value = true
+            advanceUntilIdle()
+
+            assertEquals(ScreenRole.PRIMARY, vm.currentState().screens.first { it.key == "bottom" }.role)
+            assertEquals(ScreenRole.PRESENTATION, vm.currentState().screens.first { it.key == "top" }.role)
+        } finally {
+            DualScreenManagerHolder.instance = null
+        }
+    }
+
+    private fun twoScreens(primary: String): DualScreenManager.ResolvedScreenLayout {
+        val attached = listOf(
+            AttachedScreen(key = "top", displayId = 0, number = 1, widthPx = 1920, heightPx = 1080, builtIn = true),
+            AttachedScreen(key = "bottom", displayId = 1, number = 2, widthPx = 1080, heightPx = 1240, builtIn = true)
+        )
+        val roles = attached.associate { it.key to if (it.key == primary) ScreenRole.PRIMARY else ScreenRole.PRESENTATION }
+        return DualScreenManager.ResolvedScreenLayout(
+            attached = attached,
+            setKey = "bottom|top",
+            stored = ScreenLayouts(),
+            known = null,
+            layout = ScreenLayout(roles)
+        )
     }
 
     @Test

@@ -30,25 +30,18 @@ import com.nendo.argosy.ui.theme.LocalUiScale
 import com.nendo.argosy.ui.theme.Motion
 import com.nendo.argosy.ui.theme.MotionTier
 import com.nendo.argosy.ui.theme.generated.ComponentDefaults
-import com.nendo.argosy.ui.theme.generated.DimensionTokens
 
 /**
  * Segmented setup progress. Not focusable and not tappable: pages change through Back and Next
- * only. [onCompanion] draws the taller second-screen variant.
+ * only.
  */
 @Composable
 fun SetupRail(
     state: SetupRailState,
     modifier: Modifier = Modifier,
-    onCompanion: Boolean = false,
 ) {
     val s = LocalUiScale.current.scale
-    val heightDp = if (onCompanion) {
-        DimensionTokens.Layout.companionProgressHeight
-    } else {
-        ComponentDefaults.Setup.railSegmentHeightDp
-    }
-    val segmentHeight = (heightDp * s).dp
+    val segmentHeight = (ComponentDefaults.Setup.railSegmentHeightDp * s).dp
     val gap = (ComponentDefaults.Setup.railSegmentGapDp * s).dp
     val description = stringResource(R.string.setup_rail_desc, state.stepNumber, state.stepCount)
     Row(

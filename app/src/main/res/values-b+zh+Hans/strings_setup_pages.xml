@@ -16,6 +16,11 @@
     <string name="setup_screens_role_menus">菜单</string>
     <string name="setup_screens_role_games">游戏和详情</string>
     <string name="setup_screens_footer_swap">交换屏幕</string>
+    <string name="setup_screens_footer_hold_swap">按住以交换屏幕</string>
+    <string name="setup_screens_swap_row">交换屏幕</string>
+    <string name="setup_screens_companion_title">你的两块屏幕</string>
+    <string name="setup_screens_companion_games_blurb">封面、游戏信息、成就和媒体</string>
+    <string name="setup_screens_companion_menus_blurb">列表、设置和导航</string>
 
     <string name="setup_controller_title">这是你的手柄吗？</string>
     <string name="setup_controller_purpose">选择手柄上印的按键布局。</string>
@@ -31,14 +36,16 @@
 
     <string name="setup_check_title">检查按键</string>
     <string name="setup_check_purpose">按任意键，看看它对应哪里。测试时不会触发任何操作。</string>
-    <string name="setup_check_status_last">上次按下：%1$s</string>
+    <string name="setup_check_purpose_testing">测试中。按住任意键结束。</string>
+    <string name="setup_check_test_row">测试按键</string>
+    <string name="setup_check_testing_hint">按住任意键结束</string>
+    <string name="setup_check_status_last_label">上次按下</string>
     <string name="setup_check_status_idle">请按一个键</string>
-    <string name="setup_check_action_confirm">确认</string>
+    <string name="setup_check_action_choose">选择</string>
     <string name="setup_check_action_back">返回</string>
-    <string name="setup_check_action_options">选项</string>
-    <string name="setup_check_action_quick">快捷操作</string>
     <string name="setup_check_action_menu">菜单</string>
-    <string name="setup_check_action_select">Select</string>
+    <string name="setup_check_action_swap_screens">交换屏幕</string>
+    <string name="setup_check_action_hold_swap_screens">按住以交换屏幕</string>
     <string name="setup_check_toggle_swap_ab">交换A/B</string>
     <string name="setup_check_toggle_swap_xy">交换X/Y</string>
     <string name="setup_check_toggle_swap_start_select">交换Start/Select</string>
@@ -69,6 +76,9 @@
     <string name="setup_look_more_in_settings">更多主题、音效、字体和背景可在设置中找到。</string>
 
     <string name="setup_companion_brand">设置正在另一块屏幕上进行。</string>
+    <plurals name="setup_companion_platforms_selected">
+        <item quantity="other">已选择 %1$d / %2$d 个平台</item>
+    </plurals>
 
     <string name="settings_navigation_check_buttons_title">检查按键</string>
     <string name="settings_navigation_check_buttons_subtitle">逐个按键，看看它对应哪里</string>

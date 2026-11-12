@@ -16,6 +16,11 @@
     <string name="setup_screens_role_menus">Menús</string>
     <string name="setup_screens_role_games">Juegos y detalles</string>
     <string name="setup_screens_footer_swap">Intercambiar pantallas</string>
+    <string name="setup_screens_footer_hold_swap">Mantén para intercambiar pantallas</string>
+    <string name="setup_screens_swap_row">Intercambiar pantallas</string>
+    <string name="setup_screens_companion_title">Tus dos pantallas</string>
+    <string name="setup_screens_companion_games_blurb">Carátulas, información del juego, logros y multimedia</string>
+    <string name="setup_screens_companion_menus_blurb">Listas, ajustes y navegación</string>
 
     <string name="setup_controller_title">¿Es este tu mando?</string>
     <string name="setup_controller_purpose">Elige la distribución impresa en tu mando.</string>
@@ -31,14 +36,16 @@
 
     <string name="setup_check_title">Prueba tus botones</string>
     <string name="setup_check_purpose">Pulsa cualquier botón para ver dónde cae. No pasa nada mientras pruebas.</string>
-    <string name="setup_check_status_last">Última pulsación: %1$s</string>
+    <string name="setup_check_purpose_testing">Probando. Mantén cualquier botón para terminar.</string>
+    <string name="setup_check_test_row">Probar botones</string>
+    <string name="setup_check_testing_hint">Mantén cualquier botón para terminar</string>
+    <string name="setup_check_status_last_label">Última pulsación</string>
     <string name="setup_check_status_idle">Pulsa un botón</string>
-    <string name="setup_check_action_confirm">Confirmar</string>
+    <string name="setup_check_action_choose">Seleccionar</string>
     <string name="setup_check_action_back">Atrás</string>
-    <string name="setup_check_action_options">Opciones</string>
-    <string name="setup_check_action_quick">Acción rápida</string>
     <string name="setup_check_action_menu">Menú</string>
-    <string name="setup_check_action_select">Select</string>
+    <string name="setup_check_action_swap_screens">Intercambiar pantallas</string>
+    <string name="setup_check_action_hold_swap_screens">Mantén para intercambiar pantallas</string>
     <string name="setup_check_toggle_swap_ab">Intercambiar A/B</string>
     <string name="setup_check_toggle_swap_xy">Intercambiar X/Y</string>
     <string name="setup_check_toggle_swap_start_select">Intercambiar Start/Select</string>
@@ -69,6 +76,11 @@
     <string name="setup_look_more_in_settings">Hay más temas, sonidos, fuentes y fondos en Ajustes.</string>
 
     <string name="setup_companion_brand">La configuración se hace en la otra pantalla.</string>
+    <plurals name="setup_companion_platforms_selected">
+        <item quantity="one">%1$d de %2$d plataforma seleccionada</item>
+        <item quantity="many">%1$d de %2$d plataformas seleccionadas</item>
+        <item quantity="other">%1$d de %2$d plataformas seleccionadas</item>
+    </plurals>
 
     <string name="settings_navigation_check_buttons_title">Probar botones</string>
     <string name="settings_navigation_check_buttons_subtitle">Pulsa cada botón para ver dónde cae</string>

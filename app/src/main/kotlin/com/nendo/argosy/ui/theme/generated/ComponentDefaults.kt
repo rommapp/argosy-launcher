@@ -585,6 +585,9 @@ object ComponentDefaults {
         const val chipGrantedFillAlpha = 0.15f
         const val permissionRecheckMs = 1000
         const val qrSizeDp = 180
+        const val checkExitHoldMs = 1500
+        const val checkTestingRowAlpha = 0.38f
+        const val padArtWidthDp = 576
     }
 
 }

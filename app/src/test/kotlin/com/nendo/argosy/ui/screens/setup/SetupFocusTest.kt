@@ -5,7 +5,9 @@ import com.nendo.argosy.data.local.entity.PlatformEntity
 import com.nendo.argosy.domain.model.ArgosyPermission
 import com.nendo.argosy.domain.model.PermissionAvailability
 import com.nendo.argosy.domain.model.PermissionSnapshot
+import com.nendo.argosy.domain.model.ScreenRole
 import com.nendo.argosy.domain.model.SetupFacts
+import com.nendo.argosy.ui.screens.settings.ScreenAssignment
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
@@ -200,5 +202,22 @@ class SetupFocusTest {
         val state = SetupUiState(page = SetupPage.FOLDERS, folders = folders)
         assertTrue(SetupTarget.RomFolder(RomFolderKind.SD_CARD) !in contentTargetsFor(state))
         assertTrue(SetupTarget.RomFolder(RomFolderKind.CUSTOM) in contentTargetsFor(state))
+    }
+
+    private fun builtInScreen(key: String, number: Int, role: ScreenRole) =
+        ScreenAssignment(key, displayId = number, number = number, widthPx = 1920, heightPx = 1080, builtIn = true, role = role)
+
+    @Test
+    fun `two built-in screens offer the swap row, three keep the screen sketch`() {
+        val two = SetupUiState(
+            page = SetupPage.SCREENS,
+            screens = listOf(builtInScreen("a", 1, ScreenRole.PRESENTATION), builtInScreen("b", 2, ScreenRole.PRIMARY))
+        )
+        assertEquals(listOf(SetupTarget.SwapScreens), contentTargetsFor(two))
+        assertEquals(SetupTarget.SwapScreens, focusedTarget(two))
+
+        val three = two.copy(screens = two.screens + builtInScreen("c", 3, ScreenRole.OFF))
+        assertEquals(listOf("a", "b", "c").map { SetupTarget.Screen(it) }, contentTargetsFor(three))
+        assertEquals(SetupTarget.Screen("b"), focusedTarget(three))
     }
 }

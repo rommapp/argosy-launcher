@@ -44,7 +44,6 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.nendo.argosy.R
-import com.nendo.argosy.ui.components.SystemStatusBar
 import com.nendo.argosy.ui.components.keyboard.ControllerKeyboard
 import com.nendo.argosy.ui.theme.AspectRatioClass
 import com.nendo.argosy.ui.theme.Dimens
@@ -177,7 +176,6 @@ private fun SetupHeaderBand(
             )
         }
         SetupRail(state = rail, modifier = Modifier.weight(1f))
-        SystemStatusBar(contentColor = theme.textDim, scrim = false, showsRunningSlots = false)
     }
 }
 

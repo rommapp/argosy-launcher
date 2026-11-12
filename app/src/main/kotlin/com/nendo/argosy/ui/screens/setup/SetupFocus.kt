@@ -22,6 +22,7 @@ sealed interface SetupTarget {
     data object CoreDownloads : SetupTarget
     data object SelectAllPlatforms : SetupTarget
     data class Screen(val key: String) : SetupTarget
+    data object SwapScreens : SetupTarget
     data class ControllerLayoutChoice(val nintendo: Boolean) : SetupTarget
     data object ThemeMode : SetupTarget
     data object Accent : SetupTarget
@@ -195,7 +196,11 @@ private fun primary(@StringRes label: Int, hiddenWhenDocked: Boolean = false) =
 
 fun contentTargetsFor(state: SetupUiState): List<SetupTarget> = when (state.page) {
     SetupPage.WELCOME, SetupPage.DONE, SetupPage.DEFAULT_HOME, SetupPage.BUTTON_CHECK -> emptyList()
-    SetupPage.SCREENS -> setupScreens(state).map { SetupTarget.Screen(it.key) }
+    SetupPage.SCREENS -> if (screensUseSwapRow(state)) {
+        listOf(SetupTarget.SwapScreens)
+    } else {
+        setupScreens(state).map { SetupTarget.Screen(it.key) }
+    }
     SetupPage.CONTROLLER -> if (state.gamepadConnected) {
         listOf(SetupTarget.ControllerLayoutChoice(false), SetupTarget.ControllerLayoutChoice(true))
     } else {
@@ -253,7 +258,7 @@ fun defaultFocus(state: SetupUiState): SetupTarget? {
         SetupPage.SAVE_SYNC -> SetupTarget.SaveSyncChoice(state.saveSyncOn)
         SetupPage.PLATFORMS -> content.firstOrNull { it is SetupTarget.Platform } ?: content.firstOrNull()
         SetupPage.SCREENS -> setupScreens(state).firstOrNull { it.role == ScreenRole.PRIMARY }
-            ?.let { SetupTarget.Screen(it.key) } ?: content.firstOrNull()
+            ?.let { SetupTarget.Screen(it.key) }?.takeIf { it in content } ?: content.firstOrNull()
         SetupPage.CONTROLLER -> if (state.gamepadConnected) {
             SetupTarget.ControllerLayoutChoice(state.controllerNintendo)
         } else {
@@ -269,6 +274,8 @@ fun defaultFocus(state: SetupUiState): SetupTarget? {
  * The built-in screens the Screens page maps. Attached monitors are left to Settings > Screens.
  */
 fun setupScreens(state: SetupUiState): List<ScreenAssignment> = state.screens.filter { it.builtIn }
+
+fun screensUseSwapRow(state: SetupUiState): Boolean = setupScreens(state).size == 2
 
 fun firstIncompleteStep(access: SetupAccessState): AccessibilityStepKind? = when (access.variant) {
     AccessibilityVariant.ROOTED -> null

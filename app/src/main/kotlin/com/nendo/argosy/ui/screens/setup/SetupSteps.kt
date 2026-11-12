@@ -1,5 +1,8 @@
 package com.nendo.argosy.ui.screens.setup
 
+import androidx.annotation.StringRes
+import com.nendo.argosy.R
+import com.nendo.argosy.data.preferences.SelectSwapMode
 import com.nendo.argosy.domain.model.SetupFacts
 import com.nendo.argosy.domain.model.SetupItem
 import com.nendo.argosy.domain.model.SetupState
@@ -37,20 +40,23 @@ private val CONTROLLER_PAGES: List<SetupPage> = listOf(SetupPage.CONTROLLER, Set
 
 /**
  * The optional pages one run offers. A page added to setup gets its flag here and its place in
- * [setupPlan]. [dualScreen] adds the default-home page and, unless the person declined it, the
- * Screens page; [buttonCheck] holds while a gamepad is connected.
+ * [setupPlan]. [dualScreen] adds the default-home page unless Argosy already holds the home role
+ * ([homeHeld]) and, unless the person declined home, the Screens page; [buttonCheck] holds while a
+ * gamepad is connected.
  */
 data class SetupOffers(
     val accessibility: Boolean = true,
     val platforms: Boolean = false,
     val dualScreen: Boolean = false,
     val homeDeclined: Boolean = false,
+    val homeHeld: Boolean = false,
     val buttonCheck: Boolean = false
 )
 
 fun SetupOffers.withDevice(facts: SetupFacts): SetupOffers = copy(
     dualScreen = facts.dualScreenDevice,
-    homeDeclined = homeDeclined || facts.defaultHomeDeclined
+    homeDeclined = homeDeclined || facts.defaultHomeDeclined,
+    homeHeld = facts.defaultHome
 )
 
 internal const val PLATFORM_SELECT_THRESHOLD = 10
@@ -72,7 +78,7 @@ fun setupPlan(offers: SetupOffers): List<SetupPage> = buildList {
     add(SetupPage.SAVE_SYNC)
     if (offers.platforms) add(SetupPage.PLATFORMS)
     if (offers.dualScreen) {
-        add(SetupPage.DEFAULT_HOME)
+        if (!offers.homeHeld) add(SetupPage.DEFAULT_HOME)
         if (!offers.homeDeclined) add(SetupPage.SCREENS)
     }
     add(SetupPage.CONTROLLER)
@@ -113,17 +119,32 @@ val CUSTOMIZATION_SEEN_TOKENS: Set<String> = CUSTOMIZATION_PAGES.mapNotNull { it
 
 /**
  * The page Next leads to. A required item on an earlier page that has become unsatisfied since
- * wins over the following page, so Next never carries the person past it.
+ * wins over the following page, so Next never carries the person past it. Pages compare in
+ * declaration order, the order every plan keeps, so a page the plan dropped while it was open
+ * still leads to the page after it.
  */
 fun nextPage(current: SetupPage, plan: List<SetupPage>, state: SetupState): SetupPage {
-    val index = plan.indexOf(current)
-    val blocker = (state as? SetupState.Incomplete)?.let { pageOwning(it.firstMissing) }
-    if (blocker != null && plan.indexOf(blocker) in 0 until index) return blocker
-    return plan.getOrNull(index + 1) ?: current
+    earlierBlocker(current, plan, state)?.let { return it }
+    return plan.firstOrNull { it > current } ?: current
 }
 
 fun previousPage(current: SetupPage, plan: List<SetupPage>): SetupPage =
-    plan.getOrNull(plan.indexOf(current) - 1) ?: current
+    plan.lastOrNull { it < current } ?: current
+
+/**
+ * The page a setup composed again mid-run opens on: the [carried] page it stood on, unless that
+ * page left the plan or a required item on an earlier page went missing, which win as they do for
+ * [entryPage] and [nextPage].
+ */
+fun resumePage(entry: SetupPage, carried: SetupPage?, plan: List<SetupPage>, state: SetupState): SetupPage {
+    if (carried == null || carried !in plan) return entry
+    return earlierBlocker(carried, plan, state) ?: carried
+}
+
+private fun earlierBlocker(current: SetupPage, plan: List<SetupPage>, state: SetupState): SetupPage? {
+    val blocker = (state as? SetupState.Incomplete)?.let { pageOwning(it.firstMissing) } ?: return null
+    return blocker.takeIf { it in plan && it < current }
+}
 
 /**
  * Whether the Select role swap is live on [state]'s page. Setup holds it off until the Screens
@@ -132,6 +153,12 @@ fun previousPage(current: SetupPage, plan: List<SetupPage>): SetupPage =
 fun setupSwapAllowed(state: SetupUiState): Boolean {
     val screensIndex = state.plan.indexOf(SetupPage.SCREENS)
     return screensIndex >= 0 && state.plan.indexOf(state.page) >= screensIndex
+}
+
+@StringRes
+fun setupSwapFooterLabel(mode: SelectSwapMode): Int = when (mode) {
+    SelectSwapMode.HOLD -> R.string.setup_screens_footer_hold_swap
+    SelectSwapMode.TAP -> R.string.setup_screens_footer_swap
 }
 
 private fun SetupPage.segmentGroup(): List<SetupPage>? = when (this) {

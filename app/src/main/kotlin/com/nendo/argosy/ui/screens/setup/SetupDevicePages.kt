@@ -21,13 +21,13 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material.icons.filled.SportsEsports
+import androidx.compose.material.icons.filled.SwapHoriz
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.DisposableEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -43,21 +43,30 @@ import com.nendo.argosy.R
 import com.nendo.argosy.data.preferences.BoxArtShape
 import com.nendo.argosy.data.preferences.LibraryLayout
 import com.nendo.argosy.data.preferences.ThemeMode
-import com.nendo.argosy.domain.model.ScreenRole
 import com.nendo.argosy.ui.components.HomeLayoutPreview
 import com.nendo.argosy.ui.components.HomeLayoutSelectorRow
 import com.nendo.argosy.ui.input.ButtonGlyphSwaps
 import com.nendo.argosy.ui.primitives.FocusIndicators
 import com.nendo.argosy.ui.primitives.SegmentedControl
 import com.nendo.argosy.ui.primitives.argosyFocusIndicators
+import com.nendo.argosy.ui.screens.settings.ScreenAssignment
 import com.nendo.argosy.ui.screens.settings.sections.ScreenCard
 import com.nendo.argosy.ui.screens.settings.sections.ScreenSetupIdentity
+import com.nendo.argosy.ui.screens.setup.components.ButtonCheckExit
+import com.nendo.argosy.ui.screens.setup.components.ButtonCheckFocus
+import com.nendo.argosy.ui.screens.setup.components.ButtonCheckKeyCapture
 import com.nendo.argosy.ui.screens.setup.components.ButtonCheckPanel
+import com.nendo.argosy.ui.screens.setup.components.ButtonCheckRows
 import com.nendo.argosy.ui.screens.setup.components.ControllerDiagram
 import com.nendo.argosy.ui.screens.setup.components.ControllerDiagramSize
 import com.nendo.argosy.ui.screens.setup.components.LibraryLookPreview
+import com.nendo.argosy.ui.screens.setup.components.PadReading
+import com.nendo.argosy.ui.screens.setup.components.SetupAction
+import com.nendo.argosy.ui.screens.setup.components.SetupChoiceRow
 import com.nendo.argosy.ui.screens.setup.components.SetupCompanionBody
 import com.nendo.argosy.ui.screens.setup.components.SetupCompanionState
+import com.nendo.argosy.ui.screens.setup.components.SetupScreenBlock
+import com.nendo.argosy.ui.screens.setup.components.SetupStepBody
 import com.nendo.argosy.ui.screens.setup.components.screenRoleLabelRes
 import com.nendo.argosy.ui.theme.AccentHue
 import com.nendo.argosy.ui.theme.Dimens
@@ -77,11 +86,18 @@ private val NINTENDO_GLYPHS = ButtonGlyphSwaps(ab = true, xy = true, startSelect
 
 fun companionFor(state: SetupUiState, swaps: ButtonGlyphSwaps): SetupCompanionState {
     val focus = focusedTarget(state)
+    val lead = leadFor(state)
     val body = when (state.page) {
+        SetupPage.LIBRARY -> if (state.signIn.view == LibraryView.CHOICE) {
+            SetupCompanionBody.LibraryContext
+        } else {
+            SetupCompanionBody.Brand
+        }
         SetupPage.PERMISSIONS -> {
             val permission = (focus as? SetupTarget.Permission)?.permission ?: SETUP_REQUIRED_PERMISSIONS.first()
             SetupCompanionBody.Permission(permission, state.access.availabilityOf(permission))
         }
+        SetupPage.ACCESSIBILITY -> SetupCompanionBody.Accessibility(lead.purpose, state.access)
         SetupPage.FOLDERS -> {
             val kind = (focus as? SetupTarget.RomFolder)?.kind ?: state.folders.selectedRom
             val path = state.folders.pathOf(kind)
@@ -89,24 +105,49 @@ fun companionFor(state: SetupUiState, swaps: ButtonGlyphSwaps): SetupCompanionSt
                 SetupCompanionBody.Brand
             } else {
                 val space = state.folders.space[path]
-                SetupCompanionBody.Folder(path, space?.freeBytes, space?.totalBytes)
+                SetupCompanionBody.Folder(path, space?.freeBytes, space?.totalBytes, space?.exists ?: true)
             }
         }
         SetupPage.SAVE_SYNC -> SetupCompanionBody.SyncDiagram(state.signIn.serverName)
-        SetupPage.SCREENS -> SetupCompanionBody.Screens(ScreenRole.PRESENTATION)
-        SetupPage.CONTROLLER -> SetupCompanionBody.Controller(null, swaps)
-        SetupPage.BUTTON_CHECK -> SetupCompanionBody.Controller(state.buttonCheck.lit, swaps)
+        SetupPage.PLATFORMS -> SetupCompanionBody.Platforms(
+            selected = state.platforms.all.count { it.syncEnabled },
+            total = state.platforms.all.size
+        )
+        SetupPage.SCREENS -> SetupCompanionBody.Screens(
+            setupScreens(state).sortedBy { it.number }.map { SetupScreenBlock(it.number, it.role) }
+        )
+        SetupPage.CONTROLLER -> SetupCompanionBody.Controller(
+            reading = PadReading(),
+            swaps = swaps,
+            swapped = emptySet(),
+            showsLastPress = false,
+            testing = false
+        )
+        SetupPage.BUTTON_CHECK -> SetupCompanionBody.Controller(
+            reading = state.buttonCheck.reading,
+            swaps = swaps,
+            swapped = state.buttonCheck.swappedButtons,
+            showsLastPress = true,
+            testing = state.buttonCheck.testing
+        )
         SetupPage.THEME, SetupPage.HOME_LAYOUT -> SetupCompanionBody.HomePreview(state.look.homeLayout)
         SetupPage.LIBRARY_LOOK -> SetupCompanionBody.LibraryPreview(state.look.libraryLayout, state.look.boxArtShape)
-        SetupPage.WELCOME, SetupPage.LIBRARY, SetupPage.ACCESSIBILITY, SetupPage.PLATFORMS,
-        SetupPage.DEFAULT_HOME, SetupPage.DONE -> SetupCompanionBody.Brand
+        SetupPage.DONE -> SetupCompanionBody.Done(
+            serverName = state.signIn.serverName,
+            gameCount = state.signIn.gameCount,
+            romPath = state.folders.selectedRomPath,
+            saveSyncOn = state.saveSyncOn,
+            cores = state.cores
+        )
+        SetupPage.WELCOME, SetupPage.DEFAULT_HOME -> SetupCompanionBody.Brand
     }
-    return SetupCompanionState(rail = railFor(state.page, state.plan), title = leadFor(state).title, body = body)
+    val title = if (state.page == SetupPage.SCREENS && screensUseSwapRow(state)) {
+        R.string.setup_screens_companion_title
+    } else {
+        lead.title
+    }
+    return SetupCompanionState(title = title, body = body)
 }
-
-@Composable
-private fun previewOnCompanion(): Boolean =
-    DualScreenManagerHolder.instance?.isCompanionActive?.collectAsState()?.value == true
 
 @Composable
 internal fun DefaultHomePage(state: SetupUiState, viewModel: SetupViewModel) {
@@ -134,48 +175,65 @@ internal fun ScreensPage(state: SetupUiState, viewModel: SetupViewModel) {
     val focus = focusedTarget(state)
     val context = LocalContext.current
     val hereDisplayId = remember(context) { ContextCompat.getDisplayOrDefault(context).displayId }
-    DisposableEffect(hereDisplayId) {
-        val manager = DualScreenManagerHolder.instance
+    val swapRow = screensUseSwapRow(state)
+    val companionShowsNumbers = swapRow && setupShownOnCompanion()
+    DisposableEffect(hereDisplayId, companionShowsNumbers) {
+        val manager = DualScreenManagerHolder.instance.takeUnless { companionShowsNumbers }
         manager?.showScreenNumbers(inContentDisplayId = hereDisplayId)
         onDispose { manager?.hideScreenNumbers() }
     }
-    Box(modifier = Modifier.fillMaxSize()) {
-        SetupPageBody(state = state, viewModel = viewModel) {
-            BoxWithConstraints(
-                modifier = Modifier.fillMaxWidth().weight(1f),
-                contentAlignment = Alignment.Center,
-            ) {
-                val widestPx = screens.maxOfOrNull { it.widthPx }?.coerceAtLeast(1) ?: 1
-                val stackedPx = screens.sumOf { it.heightPx }.coerceAtLeast(1)
-                val gaps = Dimens.spacingSm * (screens.size - 1).coerceAtLeast(0)
-                val perPixel = minOf(maxWidth / widestPx.toFloat(), (maxHeight - gaps) / stackedPx.toFloat())
-                Column(
-                    verticalArrangement = Arrangement.spacedBy(Dimens.spacingSm),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                ) {
-                    screens.forEach { screen ->
-                        ScreenCard(
-                            screen = screen,
-                            perPixel = perPixel,
-                            isFocused = focus == SetupTarget.Screen(screen.key),
-                            onClick = { viewModel.tap(SetupTarget.Screen(screen.key)) },
-                            roleLabelRes = screenRoleLabelRes(screen.role),
-                        )
-                    }
-                }
-            }
-            Text(
-                text = stringResource(R.string.setup_screens_line),
-                style = MaterialTheme.typography.bodySmall,
-                color = LocalArgosyTheme.current.textDim,
-                modifier = Modifier.padding(top = Dimens.spacingSm),
+    val hereNumber = state.screens.find { it.displayId == hereDisplayId }?.number
+    SetupPageBody(
+        state = state,
+        viewModel = viewModel,
+        leadTrailing = hereNumber?.let { { ScreenSetupIdentity(number = it) } },
+    ) {
+        if (swapRow) {
+            SetupChoiceRow(
+                icon = Icons.Default.SwapHoriz,
+                title = stringResource(R.string.setup_screens_swap_row),
+                subtitle = null,
+                selected = false,
+                focused = focus == SetupTarget.SwapScreens,
+                onClick = { viewModel.tap(SetupTarget.SwapScreens) },
             )
+        } else {
+            ScreenSketch(screens = screens, focus = focus, viewModel = viewModel)
         }
-        ScreenSetupIdentity(
-            number = state.screens.find { it.displayId == hereDisplayId }?.number,
-            modifier = Modifier.align(Alignment.BottomEnd).padding(Dimens.spacingLg),
-        )
     }
+}
+
+@Composable
+private fun ColumnScope.ScreenSketch(screens: List<ScreenAssignment>, focus: SetupTarget?, viewModel: SetupViewModel) {
+    BoxWithConstraints(
+        modifier = Modifier.fillMaxWidth().weight(1f),
+        contentAlignment = Alignment.Center,
+    ) {
+        val widestPx = screens.maxOfOrNull { it.widthPx }?.coerceAtLeast(1) ?: 1
+        val stackedPx = screens.sumOf { it.heightPx }.coerceAtLeast(1)
+        val gaps = Dimens.spacingSm * (screens.size - 1).coerceAtLeast(0)
+        val perPixel = minOf(maxWidth / widestPx.toFloat(), (maxHeight - gaps) / stackedPx.toFloat())
+        Column(
+            verticalArrangement = Arrangement.spacedBy(Dimens.spacingSm),
+            horizontalAlignment = Alignment.CenterHorizontally,
+        ) {
+            screens.forEach { screen ->
+                ScreenCard(
+                    screen = screen,
+                    perPixel = perPixel,
+                    isFocused = focus == SetupTarget.Screen(screen.key),
+                    onClick = { viewModel.tap(SetupTarget.Screen(screen.key)) },
+                    roleLabelRes = screenRoleLabelRes(screen.role),
+                )
+            }
+        }
+    }
+    Text(
+        text = stringResource(R.string.setup_screens_line),
+        style = MaterialTheme.typography.bodySmall,
+        color = LocalArgosyTheme.current.textDim,
+        modifier = Modifier.padding(top = Dimens.spacingSm),
+    )
 }
 
 @Composable
@@ -238,9 +296,6 @@ private fun LayoutChoiceCard(
         verticalArrangement = Arrangement.spacedBy(Dimens.spacingSm),
     ) {
         ControllerDiagram(
-            litPosition = null,
-            focused = false,
-            onPress = null,
             swaps = if (nintendo) NINTENDO_GLYPHS else XBOX_GLYPHS,
             variant = ControllerDiagramSize.MINI,
         )
@@ -261,20 +316,42 @@ private fun LayoutChoiceCard(
 
 @Composable
 internal fun ButtonCheckPage(state: SetupUiState, viewModel: SetupViewModel) {
-    SetupPageBody(state = state, viewModel = viewModel) {
-        ButtonCheckPanel(
-            state = state.buttonCheck,
-            controller = viewModel.buttonCheck,
-            continueLabel = R.string.setup_check_button_continue,
-            backLabel = R.string.setup_check_button_back,
-            onExit = viewModel::exitButtonCheck,
-        )
+    val check = state.buttonCheck
+    if (!setupShownOnCompanion()) {
+        SetupPageBody(state = state, viewModel = viewModel) {
+            ButtonCheckPanel(
+                state = check,
+                controller = viewModel.buttonCheck,
+                continueLabel = R.string.setup_check_button_continue,
+                backLabel = R.string.setup_check_button_back,
+                onExit = viewModel::exitButtonCheck,
+            )
+        }
+        return
+    }
+    ButtonCheckKeyCapture(state = check, controller = viewModel.buttonCheck)
+    val lead = leadFor(state)
+    SetupStepBody(
+        lead = if (check.testing) lead.copy(purpose = R.string.setup_check_purpose_testing) else lead,
+        actions = check.actions.map { exit ->
+            SetupAction(
+                label = if (exit == ButtonCheckFocus.BACK) R.string.setup_check_button_back else R.string.setup_check_button_continue,
+                primary = exit == ButtonCheckFocus.CONTINUE,
+                focused = check.focus == exit,
+            )
+        },
+        onAction = { index ->
+            val exit = if (check.actions.getOrNull(index) == ButtonCheckFocus.BACK) ButtonCheckExit.BACK else ButtonCheckExit.CONTINUE
+            viewModel.exitButtonCheck(exit)
+        },
+    ) {
+        ButtonCheckRows(state = check, controller = viewModel.buttonCheck)
     }
 }
 
 @Composable
 private fun ColumnScope.LookPreview(content: @Composable () -> Unit) {
-    if (previewOnCompanion()) return
+    if (setupShownOnCompanion()) return
     val maxHeight = (DimensionTokens.Layout.setupPreviewMaxHeight * LocalUiScale.current.scale).dp
     Box(
         modifier = Modifier

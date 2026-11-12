@@ -16,6 +16,11 @@
     <string name="setup_screens_role_menus">Меню</string>
     <string name="setup_screens_role_games">Игры и подробности</string>
     <string name="setup_screens_footer_swap">Поменять экраны</string>
+    <string name="setup_screens_footer_hold_swap">Удерживайте, чтобы поменять экраны</string>
+    <string name="setup_screens_swap_row">Поменять экраны</string>
+    <string name="setup_screens_companion_title">Ваши два экрана</string>
+    <string name="setup_screens_companion_games_blurb">Обложки, сведения об игре, достижения и медиа</string>
+    <string name="setup_screens_companion_menus_blurb">Списки, настройки и навигация</string>
 
     <string name="setup_controller_title">Это ваш контроллер?</string>
     <string name="setup_controller_purpose">Выберите раскладку, напечатанную на контроллере.</string>
@@ -31,14 +36,16 @@
 
     <string name="setup_check_title">Проверьте кнопки</string>
     <string name="setup_check_purpose">Нажмите любую кнопку, чтобы увидеть, куда она попадает. Во время проверки ничего не происходит.</string>
-    <string name="setup_check_status_last">Последнее нажатие: %1$s</string>
+    <string name="setup_check_purpose_testing">Идёт проверка. Удерживайте любую кнопку, чтобы закончить.</string>
+    <string name="setup_check_test_row">Проверить кнопки</string>
+    <string name="setup_check_testing_hint">Удерживайте любую кнопку, чтобы закончить</string>
+    <string name="setup_check_status_last_label">Последнее нажатие</string>
     <string name="setup_check_status_idle">Нажмите кнопку</string>
-    <string name="setup_check_action_confirm">Подтвердить</string>
+    <string name="setup_check_action_choose">Выбрать</string>
     <string name="setup_check_action_back">Назад</string>
-    <string name="setup_check_action_options">Параметры</string>
-    <string name="setup_check_action_quick">Быстрое действие</string>
     <string name="setup_check_action_menu">Меню</string>
-    <string name="setup_check_action_select">Select</string>
+    <string name="setup_check_action_swap_screens">Поменять экраны</string>
+    <string name="setup_check_action_hold_swap_screens">Удерживайте, чтобы поменять экраны</string>
     <string name="setup_check_toggle_swap_ab">Поменять местами A/B</string>
     <string name="setup_check_toggle_swap_xy">Поменять местами X/Y</string>
     <string name="setup_check_toggle_swap_start_select">Поменять местами Start/Select</string>
@@ -69,6 +76,12 @@
     <string name="setup_look_more_in_settings">Другие темы, звуки, шрифты и фоны есть в настройках.</string>
 
     <string name="setup_companion_brand">Настройка идёт на другом экране.</string>
+    <plurals name="setup_companion_platforms_selected">
+        <item quantity="one">Выбрано платформ: %1$d из %2$d</item>
+        <item quantity="few">Выбрано платформ: %1$d из %2$d</item>
+        <item quantity="many">Выбрано платформ: %1$d из %2$d</item>
+        <item quantity="other">Выбрано платформ: %1$d из %2$d</item>
+    </plurals>
 
     <string name="settings_navigation_check_buttons_title">Проверить кнопки</string>
     <string name="settings_navigation_check_buttons_subtitle">Нажимайте кнопки, чтобы увидеть, куда они попадают</string>

@@ -1,44 +1,55 @@
 package com.nendo.argosy.ui.screens.setup.components
 
-import android.view.KeyEvent
+import android.view.InputDevice
+import android.view.MotionEvent
 import androidx.annotation.StringRes
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.SportsEsports
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.res.stringResource
 import com.nendo.argosy.R
+import com.nendo.argosy.data.preferences.SelectSwapMode
+import com.nendo.argosy.ui.components.ActionPreference
 import com.nendo.argosy.ui.components.InputButton
 import com.nendo.argosy.ui.components.SwitchPreference
+import com.nendo.argosy.ui.dualscreen.selectSwapModeState
 import com.nendo.argosy.ui.input.ButtonGlyphSwaps
 import com.nendo.argosy.ui.input.LocalABIconsSwapped
 import com.nendo.argosy.ui.input.LocalGamepadInputHandler
 import com.nendo.argosy.ui.input.LocalSwapStartSelect
 import com.nendo.argosy.ui.input.LocalXYIconsSwapped
-import com.nendo.argosy.ui.input.intentButton
-import com.nendo.argosy.ui.input.positionUnder
 import com.nendo.argosy.ui.primitives.ActionButton
+import com.nendo.argosy.ui.primitives.InputGlyph
 import com.nendo.argosy.ui.theme.Dimens
 import com.nendo.argosy.ui.theme.LocalArgosyTheme
-import com.nendo.argosy.ui.util.clickableNoFocus
+import com.nendo.argosy.ui.theme.generated.ComponentDefaults
 
+/**
+ * The action Argosy's menus give [this] button, for the button check's status line. Select's
+ * action follows [swapMode]; X, Y and buttons without a fixed menu action have none.
+ */
 @StringRes
-fun InputButton.checkActionRes(): Int = when (this) {
-    InputButton.A -> R.string.setup_check_action_confirm
+fun InputButton.checkActionRes(swapMode: SelectSwapMode?): Int? = when (this) {
+    InputButton.A -> R.string.setup_check_action_choose
     InputButton.B -> R.string.setup_check_action_back
-    InputButton.X -> R.string.setup_check_action_options
-    InputButton.Y -> R.string.setup_check_action_quick
     InputButton.START -> R.string.setup_check_action_menu
-    else -> R.string.setup_check_action_select
+    InputButton.SELECT -> when (swapMode) {
+        SelectSwapMode.HOLD -> R.string.setup_check_action_hold_swap_screens
+        SelectSwapMode.TAP -> R.string.setup_check_action_swap_screens
+        null -> null
+    }
+    else -> null
 }
 
 @StringRes
@@ -55,36 +66,123 @@ fun currentGlyphSwaps(): ButtonGlyphSwaps = ButtonGlyphSwaps(
     startSelect = LocalSwapStartSelect.current,
 )
 
+private fun MotionEvent.padAxes(): PadAxes = PadAxes(
+    leftX = getAxisValue(MotionEvent.AXIS_X),
+    leftY = getAxisValue(MotionEvent.AXIS_Y),
+    rightX = getAxisValue(MotionEvent.AXIS_Z),
+    rightY = getAxisValue(MotionEvent.AXIS_RZ),
+    leftTrigger = maxOf(getAxisValue(MotionEvent.AXIS_LTRIGGER), getAxisValue(MotionEvent.AXIS_BRAKE)),
+    rightTrigger = maxOf(getAxisValue(MotionEvent.AXIS_RTRIGGER), getAxisValue(MotionEvent.AXIS_GAS)),
+    hatX = getAxisValue(MotionEvent.AXIS_HAT_X),
+    hatY = getAxisValue(MotionEvent.AXIS_HAT_Y),
+)
+
 /**
- * Lights the diagram while a face, Start or Select button is held and [state] holds focus on the
- * diagram, consuming those presses so none of them navigates or activates anything. D-pad keys
- * pass through to navigation.
+ * Routes raw pad input to [controller] while [state] captures keys: in test mode every pad key and
+ * every joystick sample lights the drawing and nothing navigates, and after it the release of a
+ * key still held is consumed. Keys with no pad button pass through.
  */
 @Composable
 fun ButtonCheckKeyCapture(state: ButtonCheckState, controller: ButtonCheckController) {
     val interceptor = LocalGamepadInputHandler.current
-    val swaps by rememberUpdatedState(currentGlyphSwaps())
-    val capturing = state.focus == ButtonCheckFocus.DIAGRAM
-    DisposableEffect(interceptor, controller, capturing) {
-        if (!capturing || interceptor == null) return@DisposableEffect onDispose {}
+    DisposableEffect(interceptor, controller, state.capturesKeys) {
+        if (!state.capturesKeys || interceptor == null) return@DisposableEffect onDispose {}
         interceptor.setRawKeyEventFilter { event ->
-            val intent = checkedKeyButton(event.keyCode, interceptor::mapKeyToEvent)
-                ?: return@setRawKeyEventFilter false
-            val position = intent.positionUnder(swaps)
-            when {
-                position == null -> Unit
-                event.action == KeyEvent.ACTION_DOWN && event.repeatCount == 0 -> controller.light(position, intent)
-                event.action == KeyEvent.ACTION_UP -> controller.release(position)
-            }
-            true
+            val button = checkedPadButton(event.keyCode, interceptor::mapKeyToEvent)
+            controller.onKey(event.keyCode, event.action, event.repeatCount, button)
         }
         onDispose { interceptor.setRawKeyEventFilter(null) }
+    }
+    DisposableEffect(interceptor, controller, state.testing) {
+        if (!state.testing || interceptor == null) return@DisposableEffect onDispose {}
+        interceptor.setRawMotionEventListener { event ->
+            if (!event.isFromSource(InputDevice.SOURCE_CLASS_JOYSTICK)) return@setRawMotionEventListener false
+            controller.onMotion(event.padAxes())
+            true
+        }
+        onDispose { interceptor.setRawMotionEventListener(null) }
     }
 }
 
 /**
- * The button check: diagram and status on the left, swap toggles and the exit buttons on the
- * right. [backLabel] null leaves the Back button out.
+ * The status under a controller drawing: the last button pressed and its menu action, or a prompt
+ * while a test waits for its first press.
+ */
+@Composable
+fun ButtonCheckLastPress(lastPress: InputButton?, testing: Boolean, modifier: Modifier = Modifier) {
+    val theme = LocalArgosyTheme.current
+    val swapMode = selectSwapModeState()
+    if (lastPress == null) {
+        if (testing) {
+            Text(
+                text = stringResource(R.string.setup_check_status_idle),
+                style = MaterialTheme.typography.bodyMedium,
+                color = theme.textDim,
+                modifier = modifier,
+            )
+        }
+        return
+    }
+    Row(
+        modifier = modifier,
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(Dimens.spacingSm),
+    ) {
+        Text(
+            text = stringResource(R.string.setup_check_status_last_label),
+            style = MaterialTheme.typography.bodyMedium,
+            color = theme.textDim,
+        )
+        InputGlyph(button = lastPress, size = Dimens.iconMd, tint = theme.textPrimary)
+        lastPress.checkActionRes(swapMode)?.let { action ->
+            Text(
+                text = stringResource(action),
+                style = MaterialTheme.typography.bodyMedium,
+                color = theme.textPrimary,
+            )
+        }
+    }
+}
+
+/**
+ * The Test buttons row and the three swap toggles, dimmed while a test runs. Taps reach
+ * [controller] in and out of test mode.
+ */
+@Composable
+fun ButtonCheckRows(state: ButtonCheckState, controller: ButtonCheckController, modifier: Modifier = Modifier) {
+    Column(
+        modifier = modifier
+            .fillMaxWidth()
+            .alpha(if (state.testing) ComponentDefaults.Setup.checkTestingRowAlpha else 1f),
+        verticalArrangement = Arrangement.spacedBy(Dimens.spacingXs),
+    ) {
+        ActionPreference(
+            title = stringResource(R.string.setup_check_test_row),
+            subtitle = null,
+            isFocused = state.focus == ButtonCheckFocus.TEST,
+            icon = Icons.Default.SportsEsports,
+            onClick = {
+                controller.focus(ButtonCheckFocus.TEST)
+                controller.startTest()
+            },
+        )
+        state.toggles.forEach { toggle ->
+            SwitchPreference(
+                title = stringResource(toggle.toggleTitleRes()),
+                isEnabled = state.isOn(toggle),
+                isFocused = state.focus == toggle,
+                onToggle = { on ->
+                    controller.focus(toggle)
+                    controller.setToggle(toggle, on)
+                },
+            )
+        }
+    }
+}
+
+/**
+ * The button check with its drawing: diagram and status on the left, the test row, swap toggles
+ * and exit buttons on the right. [backLabel] null leaves the Back button out.
  */
 @Composable
 fun ButtonCheckPanel(
@@ -106,35 +204,18 @@ fun ButtonCheckPanel(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(Dimens.spacingSm),
         ) {
-            ControllerDiagram(
-                litPosition = state.lit,
-                focused = state.focus == ButtonCheckFocus.DIAGRAM,
-                onPress = null,
-                modifier = Modifier.clickableNoFocus { controller.focus(ButtonCheckFocus.DIAGRAM) },
-            )
-            Text(
-                text = state.lastPress?.let {
-                    stringResource(R.string.setup_check_status_last, stringResource(it.checkActionRes()))
-                } ?: stringResource(R.string.setup_check_status_idle),
-                style = MaterialTheme.typography.bodyMedium,
-                color = theme.textDim,
-            )
-        }
-        Column(
-            modifier = Modifier.weight(1f),
-            verticalArrangement = Arrangement.spacedBy(Dimens.spacingXs),
-        ) {
-            state.toggles.forEach { toggle ->
-                SwitchPreference(
-                    title = stringResource(toggle.toggleTitleRes()),
-                    isEnabled = state.isOn(toggle),
-                    isFocused = state.focus == toggle,
-                    onToggle = { on ->
-                        controller.focus(toggle)
-                        controller.setToggle(toggle, on)
-                    },
+            ControllerDiagram(reading = state.reading, swapped = state.swappedButtons)
+            ButtonCheckLastPress(lastPress = state.reading.lastPress, testing = state.testing)
+            if (state.testing) {
+                Text(
+                    text = stringResource(R.string.setup_check_testing_hint),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = theme.focusAccent,
                 )
             }
+        }
+        Column(modifier = Modifier.weight(1f)) {
+            ButtonCheckRows(state = state, controller = controller)
             Row(
                 modifier = Modifier.fillMaxWidth().padding(top = Dimens.spacingMd),
                 horizontalArrangement = Arrangement.spacedBy(Dimens.spacingMd, Alignment.End),

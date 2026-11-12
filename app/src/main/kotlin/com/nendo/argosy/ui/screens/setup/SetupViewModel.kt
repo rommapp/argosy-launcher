@@ -31,10 +31,13 @@ import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
@@ -71,7 +74,8 @@ class SetupViewModel @Inject constructor(
     private val access: SetupAccessDelegate,
     private val folders: SetupFoldersDelegate,
     private val platforms: SetupPlatformsDelegate,
-    private val personalize: SetupPersonalizeDelegate
+    private val personalize: SetupPersonalizeDelegate,
+    private val handoff: SetupHandoff
 ) : ViewModel() {
 
     private val _core = MutableStateFlow(SetupUiState())
@@ -125,8 +129,13 @@ class SetupViewModel @Inject constructor(
             signIn.state.map { it.view to (it.error?.certificate == true) }
                 .distinctUntilChanged()
                 .drop(1)
-                .collect { _core.update { it.copy(focused = null, openField = null) } }
+                .collect {
+                    _core.update { core ->
+                        if (core.page == SetupPage.LIBRARY) core.copy(focused = null, openField = null) else core
+                    }
+                }
         }
+        followLiveScreenRoles()
         viewModelScope.launch { openAtFirstMissingItem() }
     }
 
@@ -149,9 +158,22 @@ class SetupViewModel @Inject constructor(
                 offers = it.offers.withDevice(facts).copy(buttonCheck = personalize.gamepadConnected)
             )
         }
-        val entry = entryPage(SetupRouter.derive(facts), facts, currentState().plan)
+        val derived = SetupRouter.derive(facts)
+        val plan = currentState().plan
+        val carried = handoff.position.value
+        val page = resumePage(entryPage(derived, facts, plan), carried?.page, plan, derived)
         _core.update { it.copy(loaded = true) }
-        goTo(entry, SetupDirection.FORWARD)
+        goTo(page, SetupDirection.FORWARD)
+        if (carried != null && carried.page == page) _core.update { it.copy(focused = carried.focused) }
+    }
+
+    /**
+     * Records where this run stands for a setup composed on the other screen. Called by the setup
+     * on screen only, once it has loaded.
+     */
+    fun recordPosition() {
+        val core = _core.value
+        if (core.loaded) handoff.record(SetupPosition(core.page, core.focused))
     }
 
     private fun goTo(page: SetupPage, direction: SetupDirection) {
@@ -175,10 +197,31 @@ class SetupViewModel @Inject constructor(
     }
 
     private fun refreshScreens() {
+        viewModelScope.launch { resolveScreens() }
+    }
+
+    private suspend fun resolveScreens() {
+        val resolved = DualScreenManagerHolder.instance?.resolveScreenLayout() ?: return
+        _core.update { it.copy(screens = screenAssignmentsOf(resolved)) }
+    }
+
+    @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
+    private fun followLiveScreenRoles() {
         viewModelScope.launch {
-            val resolved = DualScreenManagerHolder.instance?.resolveScreenLayout() ?: return@launch
-            _core.update { it.copy(screens = screenAssignmentsOf(resolved)) }
+            combine(
+                DualScreenManagerHolder.instanceFlow.flatMapLatest { it?.isRolesSwapped ?: flowOf(false) },
+                preferencesRepository.userPreferences.map { it.screenLayouts }.distinctUntilChanged()
+            ) { swapped, layouts -> swapped to layouts }
+                .distinctUntilChanged()
+                .drop(1)
+                .collectLatest { if (_core.value.page == SetupPage.SCREENS) resolveScreens() }
         }
+    }
+
+    private fun swapScreens(): InputResult {
+        val manager = DualScreenManagerHolder.instance ?: return SILENT
+        manager.swapRoles()
+        return InputResult.HANDLED
     }
 
     private fun makeControlsScreen(key: String): InputResult {
@@ -228,6 +271,7 @@ class SetupViewModel @Inject constructor(
     private fun finishSetup() {
         viewModelScope.launch {
             setupStateRepository.finishFlow()
+            handoff.clear()
             withTimeoutOrNull(FINISH_SETTLE_MS) { setupStateRepository.needsSetup.first { !it } }
             _effects.tryEmit(SetupEffect.Finish)
         }
@@ -358,6 +402,7 @@ class SetupViewModel @Inject constructor(
     }
 
     fun exitButtonCheck(exit: ButtonCheckExit) {
+        buttonCheck.reset()
         when (exit) {
             ButtonCheckExit.BACK -> goTo(previousPage(SetupPage.BUTTON_CHECK, currentState().plan), SetupDirection.BACK)
             ButtonCheckExit.CONTINUE -> advance()
@@ -402,6 +447,7 @@ class SetupViewModel @Inject constructor(
             InputResult.HANDLED
         }
         is SetupTarget.Screen -> makeControlsScreen(target.key)
+        SetupTarget.SwapScreens -> swapScreens()
         is SetupTarget.ControllerLayoutChoice -> {
             selectControllerLayout(target.nintendo)
             InputResult.HANDLED
@@ -535,7 +581,7 @@ class SetupViewModel @Inject constructor(
             state.page == SetupPage.PLATFORMS && state.platforms.sortMenuOpen -> platforms.closeSortMenu()
             state.page == SetupPage.PLATFORMS && state.platforms.searchActive -> platforms.closeSearch()
             state.page == SetupPage.LIBRARY && signIn.back() -> resetFocus()
-            state.page == SetupPage.BUTTON_CHECK && buttonCheck.back() -> Unit
+            state.page == SetupPage.BUTTON_CHECK && buttonCheck.state.value.testing -> buttonCheck.finishTest()
             else -> goTo(previousPage(state.page, state.plan), SetupDirection.BACK)
         }
         return InputResult.handled(SoundType.BACK)

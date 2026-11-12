@@ -60,6 +60,7 @@ fun SetupStepBody(
     contextOnCompanion: Boolean = false,
     stackLead: Boolean = false,
     context: (@Composable () -> Unit)? = null,
+    leadTrailing: (@Composable () -> Unit)? = null,
     content: @Composable ColumnScope.() -> Unit,
 ) {
     val frame = LocalSetupStepFrame.current
@@ -72,6 +73,7 @@ fun SetupStepBody(
     val shownActions = remember(actions, frame.docked) {
         actions.withIndex().filter { !frame.docked || !it.value.hiddenWhenDocked }
     }
+    val companionHoldsContext = contextOnCompanion && context != null
     val shownContext = context.takeUnless { contextOnCompanion }
     if (frame.layout == SetupLayout.WIDE && !stackLead) {
         WideBody(
@@ -81,8 +83,9 @@ fun SetupStepBody(
             keyboardPadding = keyboardPadding,
             actions = shownActions,
             onAction = onAction,
-            contextOnCompanion = contextOnCompanion,
+            contextOnCompanion = companionHoldsContext,
             context = shownContext,
+            leadTrailing = leadTrailing,
             modifier = modifier,
             content = content,
         )
@@ -94,8 +97,9 @@ fun SetupStepBody(
             keyboardPadding = keyboardPadding,
             actions = shownActions,
             onAction = onAction,
-            contextOnCompanion = contextOnCompanion,
+            contextOnCompanion = companionHoldsContext,
             context = shownContext,
+            leadTrailing = leadTrailing,
             modifier = modifier,
             content = content,
         )
@@ -112,6 +116,7 @@ private fun WideBody(
     onAction: (Int) -> Unit,
     contextOnCompanion: Boolean,
     context: (@Composable () -> Unit)?,
+    leadTrailing: (@Composable () -> Unit)?,
     modifier: Modifier,
     content: @Composable ColumnScope.() -> Unit,
 ) {
@@ -136,7 +141,7 @@ private fun WideBody(
             ) {
                 Row {
                     Column(modifier = Modifier.width(leadWidth).fillMaxHeight()) {
-                        LeadBlock(lead = lead, rail = frame.rail)
+                        LeadBlock(lead = lead, rail = frame.rail, trailing = leadTrailing)
                         if (contextOnCompanion) {
                             CompanionContextNote()
                         } else if (context != null) {
@@ -167,6 +172,7 @@ private fun StackedBody(
     onAction: (Int) -> Unit,
     contextOnCompanion: Boolean,
     context: (@Composable () -> Unit)?,
+    leadTrailing: (@Composable () -> Unit)?,
     modifier: Modifier,
     content: @Composable ColumnScope.() -> Unit,
 ) {
@@ -180,7 +186,7 @@ private fun StackedBody(
     ) {
         AnimatedVisibility(visible = !frame.docked, enter = enter, exit = exit) {
             Column(modifier = Modifier.padding(bottom = Dimens.spacingMd)) {
-                LeadBlock(lead = lead, rail = frame.rail)
+                LeadBlock(lead = lead, rail = frame.rail, trailing = leadTrailing)
                 if (contextOnCompanion) CompanionContextNote()
             }
         }
@@ -202,9 +208,17 @@ private fun StackedBody(
 }
 
 @Composable
-private fun LeadBlock(lead: SetupStepLead, rail: SetupRailState) {
+private fun LeadBlock(lead: SetupStepLead, rail: SetupRailState, trailing: (@Composable () -> Unit)?) {
+    Row(horizontalArrangement = Arrangement.spacedBy(Dimens.spacingMd)) {
+        LeadText(lead = lead, rail = rail, modifier = Modifier.weight(1f))
+        trailing?.invoke()
+    }
+}
+
+@Composable
+private fun LeadText(lead: SetupStepLead, rail: SetupRailState, modifier: Modifier) {
     val theme = LocalArgosyTheme.current
-    Column(verticalArrangement = Arrangement.spacedBy(Dimens.spacingSm)) {
+    Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(Dimens.spacingSm)) {
         if (rail.stepCount > 0) {
             Text(
                 text = stringResource(R.string.setup_lead_eyebrow, rail.stepNumber, rail.stepCount)

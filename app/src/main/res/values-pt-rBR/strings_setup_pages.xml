@@ -16,6 +16,11 @@
     <string name="setup_screens_role_menus">Menus</string>
     <string name="setup_screens_role_games">Jogos e detalhes</string>
     <string name="setup_screens_footer_swap">Trocar telas</string>
+    <string name="setup_screens_footer_hold_swap">Segure para trocar telas</string>
+    <string name="setup_screens_swap_row">Trocar telas</string>
+    <string name="setup_screens_companion_title">Suas duas telas</string>
+    <string name="setup_screens_companion_games_blurb">Capas, informações do jogo, conquistas e mídia</string>
+    <string name="setup_screens_companion_menus_blurb">Listas, configurações e navegação</string>
 
     <string name="setup_controller_title">Este é o seu controle?</string>
     <string name="setup_controller_purpose">Escolha o layout impresso no seu controle.</string>
@@ -31,14 +36,16 @@
 
     <string name="setup_check_title">Teste seus botões</string>
     <string name="setup_check_purpose">Aperte qualquer botão para ver onde ele cai. Nada acontece enquanto você testa.</string>
-    <string name="setup_check_status_last">Último toque: %1$s</string>
+    <string name="setup_check_purpose_testing">Testando. Segure qualquer botão para terminar.</string>
+    <string name="setup_check_test_row">Testar botões</string>
+    <string name="setup_check_testing_hint">Segure qualquer botão para terminar</string>
+    <string name="setup_check_status_last_label">Último toque</string>
     <string name="setup_check_status_idle">Aperte um botão</string>
-    <string name="setup_check_action_confirm">Confirmar</string>
+    <string name="setup_check_action_choose">Selecionar</string>
     <string name="setup_check_action_back">Voltar</string>
-    <string name="setup_check_action_options">Opções</string>
-    <string name="setup_check_action_quick">Ação rápida</string>
     <string name="setup_check_action_menu">Menu</string>
-    <string name="setup_check_action_select">Select</string>
+    <string name="setup_check_action_swap_screens">Trocar telas</string>
+    <string name="setup_check_action_hold_swap_screens">Segure para trocar telas</string>
     <string name="setup_check_toggle_swap_ab">Trocar A/B</string>
     <string name="setup_check_toggle_swap_xy">Trocar X/Y</string>
     <string name="setup_check_toggle_swap_start_select">Trocar Start/Select</string>
@@ -69,6 +76,11 @@
     <string name="setup_look_more_in_settings">Mais temas, sons, fontes e fundos estão nas Configurações.</string>
 
     <string name="setup_companion_brand">A configuração acontece na outra tela.</string>
+    <plurals name="setup_companion_platforms_selected">
+        <item quantity="one">%1$d de %2$d plataforma selecionada</item>
+        <item quantity="many">%1$d de %2$d plataformas selecionadas</item>
+        <item quantity="other">%1$d de %2$d plataformas selecionadas</item>
+    </plurals>
 
     <string name="settings_navigation_check_buttons_title">Testar botões</string>
     <string name="settings_navigation_check_buttons_subtitle">Aperte cada botão para ver onde ele cai</string>

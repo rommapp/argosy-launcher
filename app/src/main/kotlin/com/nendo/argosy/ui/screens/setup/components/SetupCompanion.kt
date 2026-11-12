@@ -19,13 +19,17 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.SwapHoriz
 import androidx.compose.material3.Icon
+import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ProvideTextStyle
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.style.TextAlign
@@ -33,6 +37,7 @@ import com.nendo.argosy.R
 import com.nendo.argosy.data.preferences.BoxArtShape
 import com.nendo.argosy.data.preferences.LibraryLayout
 import com.nendo.argosy.domain.model.ArgosyPermission
+import com.nendo.argosy.domain.model.CoreDownloadProgress
 import com.nendo.argosy.domain.model.HomeLayoutSettings
 import com.nendo.argosy.domain.model.PermissionAvailability
 import com.nendo.argosy.domain.model.ScreenRole
@@ -41,10 +46,17 @@ import com.nendo.argosy.ui.common.icon
 import com.nendo.argosy.ui.common.rowState
 import com.nendo.argosy.ui.common.titleRes
 import com.nendo.argosy.ui.components.HomeLayoutPreview
+import com.nendo.argosy.ui.components.InputButton
 import com.nendo.argosy.ui.components.PermissionRow
+import com.nendo.argosy.ui.components.ScreenNumberBadge
 import com.nendo.argosy.ui.input.ButtonGlyphSwaps
-import com.nendo.argosy.ui.input.ControllerPosition
 import com.nendo.argosy.ui.primitives.ArgosyProgressBar
+import com.nendo.argosy.ui.screens.setup.AccessibilityContext
+import com.nendo.argosy.ui.screens.setup.AccessibilitySteps
+import com.nendo.argosy.ui.screens.setup.AccessibilityVariant
+import com.nendo.argosy.ui.screens.setup.PermissionContext
+import com.nendo.argosy.ui.screens.setup.RommContext
+import com.nendo.argosy.ui.screens.setup.SetupAccessState
 import com.nendo.argosy.ui.theme.Dimens
 import com.nendo.argosy.ui.theme.LocalArgosyTheme
 import com.nendo.argosy.ui.theme.LocalMotionTier
@@ -57,24 +69,41 @@ import com.nendo.argosy.ui.theme.MotionTier
  */
 sealed interface SetupCompanionBody {
     data object Brand : SetupCompanionBody
+    data object LibraryContext : SetupCompanionBody
     data class Permission(val permission: ArgosyPermission, val availability: PermissionAvailability) : SetupCompanionBody
-    data class Folder(val path: String, val freeBytes: Long?, val totalBytes: Long?) : SetupCompanionBody
+    data class Accessibility(@StringRes val purpose: Int?, val access: SetupAccessState) : SetupCompanionBody
+    data class Folder(val path: String, val freeBytes: Long?, val totalBytes: Long?, val exists: Boolean) : SetupCompanionBody
     data class SyncDiagram(val server: String) : SetupCompanionBody
-    data class Screens(val role: ScreenRole) : SetupCompanionBody
-    data class Controller(val lit: ControllerPosition?, val swaps: ButtonGlyphSwaps) : SetupCompanionBody
+    data class Platforms(val selected: Int, val total: Int) : SetupCompanionBody
+    data class Screens(val blocks: List<SetupScreenBlock>) : SetupCompanionBody
+    data class Controller(
+        val reading: PadReading,
+        val swaps: ButtonGlyphSwaps,
+        val swapped: Set<InputButton>,
+        val showsLastPress: Boolean,
+        val testing: Boolean
+    ) : SetupCompanionBody
     data class HomePreview(val settings: HomeLayoutSettings) : SetupCompanionBody
     data class LibraryPreview(val layout: LibraryLayout, val shape: BoxArtShape) : SetupCompanionBody
+    data class Done(
+        val serverName: String,
+        val gameCount: Int,
+        val romPath: String?,
+        val saveSyncOn: Boolean,
+        val cores: CoreDownloadProgress
+    ) : SetupCompanionBody
 }
 
+data class SetupScreenBlock(val number: Int, val role: ScreenRole)
+
 data class SetupCompanionState(
-    val rail: SetupRailState,
     @StringRes val title: Int,
     val body: SetupCompanionBody
 )
 
 /**
- * The setup page on the second screen: the rail along the top, the page title, and the page's
- * context body at glance size. It takes no input.
+ * The setup page on the second screen: the page title and the page's context body at glance
+ * size. It takes no input.
  */
 @Composable
 fun SetupCompanion(state: SetupCompanionState, modifier: Modifier = Modifier) {
@@ -86,7 +115,6 @@ fun SetupCompanion(state: SetupCompanionState, modifier: Modifier = Modifier) {
             .padding(Dimens.spacingXl),
         verticalArrangement = Arrangement.spacedBy(Dimens.spacingLg),
     ) {
-        SetupRail(state = state.rail, onCompanion = true, modifier = Modifier.fillMaxWidth())
         Text(
             text = stringResource(state.title),
             style = MaterialTheme.typography.headlineSmall,
@@ -131,7 +159,11 @@ private fun CompanionBody(body: SetupCompanionBody) {
                 modifier = Modifier.padding(top = Dimens.spacingMd),
             )
         }
-        is SetupCompanionBody.Permission -> {
+        SetupCompanionBody.LibraryContext -> CompanionContextText { RommContext() }
+        is SetupCompanionBody.Permission -> Column(
+            modifier = Modifier.fillMaxWidth(),
+            verticalArrangement = Arrangement.spacedBy(Dimens.spacingMd),
+        ) {
             val permission = body.permission
             PermissionRow(
                 icon = permission.icon,
@@ -142,46 +174,79 @@ private fun CompanionBody(body: SetupCompanionBody) {
                 onClick = null,
                 modifier = Modifier.fillMaxWidth(),
             )
+            CompanionContextText { PermissionContext(permission) }
+        }
+        is SetupCompanionBody.Accessibility -> Column(
+            modifier = Modifier.fillMaxWidth(),
+            verticalArrangement = Arrangement.spacedBy(Dimens.spacingMd),
+        ) {
+            body.purpose?.let { CompanionContextText { Text(stringResource(it)) } }
+            AccessibilitySteps(access = body.access, focus = null, onTap = null)
+            if (body.access.variant != AccessibilityVariant.ROOTED) {
+                CompanionContextText { AccessibilityContext(body.access.variant) }
+            }
         }
         is SetupCompanionBody.Folder -> FolderBody(body)
-        is SetupCompanionBody.SyncDiagram -> Row(
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(Dimens.spacingMd),
-        ) {
-            Text(
-                text = stringResource(R.string.setup_save_sync_context_device),
-                style = MaterialTheme.typography.headlineSmall,
-                color = theme.textPrimary,
-            )
-            Icon(
-                imageVector = Icons.Default.SwapHoriz,
-                contentDescription = null,
-                tint = theme.focusAccent,
-                modifier = Modifier.size(Dimens.iconXl),
-            )
-            Text(text = body.server, style = MaterialTheme.typography.headlineSmall, color = theme.textPrimary)
-        }
-        is SetupCompanionBody.Screens -> Column(
+        is SetupCompanionBody.SyncDiagram -> Column(
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(Dimens.spacingSm),
+            verticalArrangement = Arrangement.spacedBy(Dimens.spacingMd),
         ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(Dimens.spacingMd),
+            ) {
+                Text(
+                    text = stringResource(R.string.setup_save_sync_context_device),
+                    style = MaterialTheme.typography.headlineSmall,
+                    color = theme.textPrimary,
+                )
+                Icon(
+                    imageVector = Icons.Default.SwapHoriz,
+                    contentDescription = null,
+                    tint = theme.focusAccent,
+                    modifier = Modifier.size(Dimens.iconXl),
+                )
+                Text(text = body.server, style = MaterialTheme.typography.headlineSmall, color = theme.textPrimary)
+            }
             Text(
-                text = stringResource(screenRoleLabelRes(body.role)),
-                style = MaterialTheme.typography.headlineSmall,
-                color = theme.focusAccent,
-            )
-            Text(
-                text = stringResource(R.string.setup_screens_line),
+                text = stringResource(R.string.setup_save_sync_context_when),
                 style = MaterialTheme.typography.bodyLarge,
                 color = theme.textDim,
+                textAlign = TextAlign.Center,
             )
         }
-        is SetupCompanionBody.Controller -> ControllerDiagram(
-            litPosition = body.lit,
-            focused = false,
-            onPress = null,
-            swaps = body.swaps,
+        is SetupCompanionBody.Platforms -> Text(
+            text = pluralStringResource(R.plurals.setup_companion_platforms_selected, body.total, body.selected, body.total),
+            style = MaterialTheme.typography.headlineSmall,
+            color = theme.textPrimary,
+            textAlign = TextAlign.Center,
         )
+        is SetupCompanionBody.Done -> SetupDoneSummary(
+            serverName = body.serverName,
+            gameCount = body.gameCount,
+            romPath = body.romPath,
+            saveSyncOn = body.saveSyncOn,
+            cores = body.cores,
+        )
+        is SetupCompanionBody.Screens -> Column(
+            modifier = Modifier.fillMaxWidth(),
+            verticalArrangement = Arrangement.spacedBy(Dimens.spacingLg),
+        ) {
+            body.blocks.forEach { block -> ScreenBlock(block) }
+        }
+        is SetupCompanionBody.Controller -> Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(Dimens.spacingMd),
+        ) {
+            FullControllerDiagram(
+                reading = body.reading,
+                swaps = body.swaps,
+                swapped = body.swapped,
+            )
+            if (body.showsLastPress) {
+                ButtonCheckLastPress(lastPress = body.reading.lastPress, testing = body.testing)
+            }
+        }
         is SetupCompanionBody.HomePreview -> HomeLayoutPreview(settings = body.settings, modifier = Modifier.fillMaxWidth())
         is SetupCompanionBody.LibraryPreview -> LibraryLookPreview(
             layout = body.layout,
@@ -218,10 +283,52 @@ private fun FolderBody(body: SetupCompanionBody.Folder) {
                 style = MaterialTheme.typography.bodyLarge,
                 color = theme.textDim,
             )
+            if (!body.exists) {
+                Text(
+                    text = stringResource(R.string.setup_folders_creates),
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = theme.textDim,
+                )
+            }
         }
+    }
+}
+
+@Composable
+private fun ScreenBlock(block: SetupScreenBlock) {
+    val theme = LocalArgosyTheme.current
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(Dimens.spacingLg),
+    ) {
+        ScreenNumberBadge(number = block.number)
+        Column(verticalArrangement = Arrangement.spacedBy(Dimens.spacingXs)) {
+            Text(
+                text = stringResource(screenRoleLabelRes(block.role)),
+                style = MaterialTheme.typography.headlineSmall,
+                color = theme.textPrimary,
+            )
+            Text(
+                text = stringResource(screenRoleBlurbRes(block.role)),
+                style = MaterialTheme.typography.bodyLarge,
+                color = theme.textDim,
+            )
+        }
+    }
+}
+
+@Composable
+private fun CompanionContextText(content: @Composable () -> Unit) {
+    CompositionLocalProvider(LocalContentColor provides LocalArgosyTheme.current.textDim) {
+        ProvideTextStyle(MaterialTheme.typography.bodyLarge, content)
     }
 }
 
 @StringRes
 fun screenRoleLabelRes(role: ScreenRole): Int =
     if (role == ScreenRole.PRIMARY) R.string.setup_screens_role_menus else R.string.setup_screens_role_games
+
+@StringRes
+private fun screenRoleBlurbRes(role: ScreenRole): Int =
+    if (role == ScreenRole.PRIMARY) R.string.setup_screens_companion_menus_blurb else R.string.setup_screens_companion_games_blurb

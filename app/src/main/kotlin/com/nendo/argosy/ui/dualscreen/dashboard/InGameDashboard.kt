@@ -129,6 +129,7 @@ fun InGameDashboard(
     val readerOpen = readerState != null
     var section by remember(state.gameId) { mutableStateOf(DashboardSection.SESSION) }
     var quitArmedUntil by remember(state.gameId) { mutableLongStateOf(0L) }
+    ClearAt(quitArmedUntil) { quitArmedUntil = 0L }
     var sessionMillis by remember { mutableLongStateOf(sessionTimer?.getActiveMillis() ?: 0L) }
 
     LaunchedEffect(sessionTimer) {

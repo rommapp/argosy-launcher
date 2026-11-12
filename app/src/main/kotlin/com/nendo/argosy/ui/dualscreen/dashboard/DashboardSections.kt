@@ -27,6 +27,7 @@ import androidx.compose.material.icons.filled.Check
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableLongStateOf
@@ -61,6 +62,7 @@ import com.nendo.argosy.ui.util.verticalEdgeFade
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import java.io.File
+import kotlinx.coroutines.delay
 
 private val SESSION_COVER_WIDTH = DimensionTokens.Layout.companionSessionCoverWidth.dp
 private const val STATE_THUMB_ASPECT = 4f / 3f
@@ -120,6 +122,7 @@ internal fun StatesSection(content: DashboardContent, wide: Boolean) {
             return@Column
         }
         var armed by remember { mutableStateOf(ArmedState()) }
+        ClearAt(armed.until) { armed = ArmedState() }
         val gridState = rememberLazyGridState()
         LazyVerticalGrid(
             state = gridState,
@@ -331,6 +334,7 @@ private fun RecentStates(content: DashboardContent) {
     if (recent.isEmpty()) return
     val theme = LocalArgosyTheme.current
     var armed by remember { mutableStateOf(ArmedState()) }
+    ClearAt(armed.until) { armed = ArmedState() }
     Column(verticalArrangement = Arrangement.spacedBy(Dimens.spacingSm)) {
         Row {
             Text(
@@ -678,3 +682,12 @@ private fun DashboardContent.achievementFraction(): Float =
     if (achievementTotal > 0) achievementEarned.toFloat() / achievementTotal else 0f
 
 private fun now(): Long = android.os.SystemClock.elapsedRealtime()
+
+@Composable
+internal fun ClearAt(until: Long, onExpired: () -> Unit) {
+    LaunchedEffect(until) {
+        if (until <= 0L) return@LaunchedEffect
+        delay((until - now()).coerceAtLeast(0L))
+        onExpired()
+    }
+}

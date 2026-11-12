@@ -354,7 +354,8 @@ data class GameDetailUiState(
     val perGameSettings: com.nendo.argosy.ui.screens.gamedetail.delegates.PerGameSettingsState =
         com.nendo.argosy.ui.screens.gamedetail.delegates.PerGameSettingsState(),
     val running: com.nendo.argosy.ui.common.RunningGameUi? = null,
-    val runningMoveTargets: List<com.nendo.argosy.ui.screens.running.RunningMoveTarget> = emptyList()
+    val runningMoveTargets: List<com.nendo.argosy.ui.screens.running.RunningMoveTarget> = emptyList(),
+    val stream: com.nendo.argosy.ui.screens.stream.StreamOffer? = null
 ) {
     val hasPreviousGame: Boolean get() = currentGameIndex > 0
     val hasNextGame: Boolean get() = currentGameIndex >= 0 && currentGameIndex < siblingGameIds.size - 1
@@ -387,7 +388,8 @@ data class GameDetailUiState(
                     downloadStatus == GameDownloadStatus.DOWNLOADED,
                 hasDocuments = documents.isNotEmpty(),
                 isRunning = running != null,
-                moveTargetCount = if (running != null) runningMoveTargets.size else 0
+                moveTargetCount = if (running != null) runningMoveTargets.size else 0,
+                stream = stream
             )
         }
 }

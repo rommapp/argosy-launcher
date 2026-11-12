@@ -2,6 +2,7 @@ package com.nendo.argosy.ui.screens.library
 
 enum class LibraryQuickMenuRow(val isDangerous: Boolean = false) {
     PRIMARY,
+    STREAM,
     MOVE_TO_DISPLAY,
     FAVORITE,
     DETAILS,
@@ -25,9 +26,11 @@ fun libraryQuickMenuRows(
     isCustomGridHome: Boolean,
     hasSiblingGroup: Boolean,
     isRunning: Boolean = false,
-    moveTargetCount: Int = 0
+    moveTargetCount: Int = 0,
+    streamable: Boolean = false
 ): List<LibraryQuickMenuRow> = buildList {
     add(LibraryQuickMenuRow.PRIMARY)
+    if (streamable) add(LibraryQuickMenuRow.STREAM)
     if (isRunning) repeat(moveTargetCount) { add(LibraryQuickMenuRow.MOVE_TO_DISPLAY) }
     add(LibraryQuickMenuRow.FAVORITE)
     add(LibraryQuickMenuRow.DETAILS)

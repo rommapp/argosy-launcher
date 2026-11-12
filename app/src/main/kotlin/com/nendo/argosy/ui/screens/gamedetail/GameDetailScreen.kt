@@ -614,6 +614,7 @@ private fun GameDetailContent(
                                 onItemClick = { item ->
                                     when (item) {
                                         MenuItem.Play -> viewModel.primaryAction()
+                                        MenuItem.Stream -> viewModel.openStream()
                                         is MenuItem.MoveToDisplay -> viewModel.moveRunningGame(item.slot)
                                         MenuItem.Saves -> viewModel.syncSavesNow()
                                         MenuItem.Favorite -> viewModel.toggleFavorite()
@@ -864,7 +865,7 @@ private fun GameDetailContent(
                             MenuItem.PerGameSettings -> add(InputButton.A to configureHint)
                             MenuItem.Options -> add(InputButton.A to optionsHint)
                             MenuItem.Screenshots -> add(InputButton.A to viewScreenshotHint)
-                            MenuItem.Documents, is MenuItem.MoveToDisplay -> Unit
+                            MenuItem.Documents, MenuItem.Stream, is MenuItem.MoveToDisplay -> Unit
                             MenuItem.Reviews -> add(InputButton.A to viewReviewsHint)
                             MenuItem.Achievements -> add(InputButton.A to viewAllAchievementsHint)
                             MenuItem.RelatedGames -> add(InputButton.A to openRelatedHint)
@@ -1378,6 +1379,8 @@ private fun GameDetailModals(
     com.nendo.argosy.ui.common.GameConfirmHost(viewModel.gameConfirm)
 
     com.nendo.argosy.ui.screens.running.RunningGameCloseHost(viewModel.runningGameMenu)
+
+    com.nendo.argosy.ui.screens.stream.StreamLaunchHost(viewModel.streamLauncher)
 
     if (uiState.showCreateCollectionDialog) {
         CreateCollectionDialog(

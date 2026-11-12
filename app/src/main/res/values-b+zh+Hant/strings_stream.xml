@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="stream_entry_home_menu">在 %1$s 上串流</string>
+    <string name="stream_entry_home_menu_resume">繼續串流</string>
+    <string name="stream_entry_library_menu">在 %1$s 上串流</string>
+    <string name="stream_entry_library_menu_resume">繼續串流</string>
+    <string name="stream_entry_gamedetail_menu">在 %1$s 上串流</string>
+    <string name="stream_entry_gamedetail_menu_resume">繼續串流</string>
+    <string name="stream_running_label">在 %1$s 上串流</string>
+
+    <string name="stream_launch_title">在 %1$s 上串流</string>
+    <string name="stream_launch_loading">正在檢查存檔與即時存檔</string>
+    <string name="stream_launch_starting">正在啟動串流</string>
+    <string name="stream_launch_ready">串流將從你在伺服器上的存檔開始。</string>
+    <string name="stream_launch_state_label">即時存檔</string>
+    <string name="stream_launch_save_label">存檔</string>
+    <string name="stream_launch_state_fresh">不使用即時存檔，從存檔開始</string>
+    <string name="stream_launch_option_by_owner">%1$s，來自 %2$s</string>
+    <string name="stream_launch_busy_playing_since">%1$s 自 %2$s 起一直在遊玩。</string>
+    <string name="stream_launch_busy_draining">上一個工作階段仍在關閉中。請稍後再試。</string>
+    <string name="stream_launch_busy_fallback">目前有其他人正在遊玩。請稍後再試。</string>
+    <plurals name="stream_launch_card_found">
+        <item quantity="other">這台伺服器主機上已有一張記憶卡，內含 %d 個存檔檔案。要匯入到你的遊戲庫，還是用一張新卡開始？</item>
+    </plurals>
+    <string name="stream_launch_card_games">此卡上的遊戲：%1$s</string>
+    <string name="stream_launch_card_unreadable">RomM 無法讀取這台伺服器主機上的記憶卡，因此無法判斷其中是否有存檔。請稍後再試，或重新開始並清除卡上的內容。</string>
+    <string name="stream_launch_card_reason">原因：%1$s</string>
+    <string name="stream_launch_card_erase_warning">現有的卡將被清除且無法復原。</string>
+    <string name="stream_launch_notice_start_refused">此帳號無法在這台伺服器上啟動串流。RomM 管理員可以為你的群組授予 Streaming 讀取與寫入權限來允許此操作。</string>
+    <string name="stream_launch_notice_refused">RomM 無法使用該存檔或即時存檔啟動串流。</string>
+    <string name="stream_launch_notice_not_found">RomM 找不到可串流的此遊戲。</string>
+    <string name="stream_launch_notice_unreachable">無法連線到 RomM。</string>
+    <string name="stream_launch_notice_failed">無法啟動串流。</string>
+    <string name="stream_launch_notice_join_ended">該工作階段已結束或不再開放加入。</string>
+    <string name="stream_launch_action_start">串流</string>
+    <string name="stream_launch_action_cancel">取消</string>
+    <string name="stream_launch_action_join">加入</string>
+    <string name="stream_launch_action_back">返回</string>
+    <string name="stream_launch_action_import_card">匯入此卡</string>
+    <string name="stream_launch_action_fresh_card">重新開始</string>
+    <string name="stream_launch_action_dismiss">確定</string>
+
+    <string name="stream_player_starting">正在 %1$s 上啟動</string>
+    <string name="stream_player_preparing">正在準備遊戲</string>
+    <string name="stream_player_cancel">取消</string>
+    <string name="stream_player_launch_failed">串流無法啟動。</string>
+    <string name="stream_player_ended">串流已結束。</string>
+    <string name="stream_player_close">關閉</string>
+
+    <string name="stream_controls_subtitle">正在 %1$s 上串流</string>
+    <string name="stream_controls_resume">返回遊戲</string>
+    <string name="stream_controls_save_state">即時存檔</string>
+    <string name="stream_controls_load_state">讀取即時存檔</string>
+    <string name="stream_controls_next_disc">下一張光碟</string>
+    <string name="stream_controls_mute">靜音</string>
+    <string name="stream_controls_unmute">取消靜音</string>
+    <string name="stream_controls_save_and_exit">儲存並離開</string>
+    <string name="stream_controls_leave">離開工作階段</string>
+    <string name="stream_controls_notice_state_saved">即時存檔已儲存</string>
+    <string name="stream_controls_notice_state_loaded">即時存檔已讀取</string>
+    <string name="stream_controls_notice_disc_swapped">已更換光碟</string>
+    <string name="stream_controls_notice_failed">RomM 未接受此操作。</string>
+
+    <string name="stream_dashboard_rail_next_disc">下一張光碟</string>
+    <string name="stream_dashboard_rail_mute">靜音</string>
+    <string name="stream_dashboard_rail_unmute">取消靜音</string>
+</resources>

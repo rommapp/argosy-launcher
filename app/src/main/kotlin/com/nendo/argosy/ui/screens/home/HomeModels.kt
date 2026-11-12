@@ -335,6 +335,7 @@ data class HomeUiState(
     val gameMenuFocusIndex: Int = 0,
     val gameMenuDisplays: List<com.nendo.argosy.ui.components.AppLaunchTarget> = emptyList(),
     val gameMenuHasSiblingGroup: Boolean = false,
+    val gameMenuStream: com.nendo.argosy.ui.screens.stream.StreamOffer? = null,
     val gameMenuRunning: com.nendo.argosy.ui.common.RunningGameUi? = null,
     val gameMenuMoveTargets: List<com.nendo.argosy.ui.screens.running.RunningMoveTarget> = emptyList(),
     val showAddToCollectionModal: Boolean = false,

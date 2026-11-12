@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="stream_entry_home_menu">Auf %1$s streamen</string>
+    <string name="stream_entry_home_menu_resume">Stream fortsetzen</string>
+    <string name="stream_entry_library_menu">Auf %1$s streamen</string>
+    <string name="stream_entry_library_menu_resume">Stream fortsetzen</string>
+    <string name="stream_entry_gamedetail_menu">Auf %1$s streamen</string>
+    <string name="stream_entry_gamedetail_menu_resume">Stream fortsetzen</string>
+    <string name="stream_running_label">Stream auf %1$s</string>
+
+    <string name="stream_launch_title">Auf %1$s streamen</string>
+    <string name="stream_launch_loading">Spielstände und Zustände werden geprüft</string>
+    <string name="stream_launch_starting">Stream wird gestartet</string>
+    <string name="stream_launch_ready">Der Stream startet mit deinem Spielstand auf dem Server.</string>
+    <string name="stream_launch_state_label">Zustand</string>
+    <string name="stream_launch_save_label">Spielstand</string>
+    <string name="stream_launch_state_fresh">Kein Zustand, ab dem Spielstand starten</string>
+    <string name="stream_launch_option_by_owner">%1$s, von %2$s</string>
+    <string name="stream_launch_busy_playing_since">%1$s wird seit %2$s gespielt.</string>
+    <string name="stream_launch_busy_draining">Die vorherige Sitzung wird noch beendet. Versuche es gleich noch einmal.</string>
+    <string name="stream_launch_busy_fallback">Jemand anderes spielt gerade. Versuche es später erneut.</string>
+    <plurals name="stream_launch_card_found">
+        <item quantity="one">Auf dieser Server-Box liegt bereits eine Speicherkarte mit %d Speicherdatei. In deine Bibliothek importieren oder mit einer neuen Karte beginnen?</item>
+        <item quantity="other">Auf dieser Server-Box liegt bereits eine Speicherkarte mit %d Speicherdateien. In deine Bibliothek importieren oder mit einer neuen Karte beginnen?</item>
+    </plurals>
+    <string name="stream_launch_card_games">Spiele auf dieser Karte: %1$s</string>
+    <string name="stream_launch_card_unreadable">RomM konnte die Speicherkarte auf dieser Server-Box nicht lesen und weiß daher nicht, ob sie Spielstände enthält. Versuche es später erneut oder beginne neu und lösche, was darauf liegt.</string>
+    <string name="stream_launch_card_reason">Grund: %1$s</string>
+    <string name="stream_launch_card_erase_warning">Die vorhandene Karte wird gelöscht und kann nicht wiederhergestellt werden.</string>
+    <string name="stream_launch_notice_start_refused">Dieses Konto kann auf diesem Server keine Streams starten. Ein RomM-Admin kann es erlauben, indem er deiner Gruppe die Streaming-Lese- und Schreibrechte gibt.</string>
+    <string name="stream_launch_notice_refused">RomM konnte den Stream mit diesem Spielstand oder Zustand nicht starten.</string>
+    <string name="stream_launch_notice_not_found">RomM hat dieses Spiel zum Streamen nicht gefunden.</string>
+    <string name="stream_launch_notice_unreachable">RomM ist nicht erreichbar.</string>
+    <string name="stream_launch_notice_failed">Der Stream konnte nicht gestartet werden.</string>
+    <string name="stream_launch_notice_join_ended">Diese Sitzung ist beendet oder nicht mehr zum Beitreten offen.</string>
+    <string name="stream_launch_action_start">Streamen</string>
+    <string name="stream_launch_action_cancel">Abbrechen</string>
+    <string name="stream_launch_action_join">Beitreten</string>
+    <string name="stream_launch_action_back">Zurück</string>
+    <string name="stream_launch_action_import_card">Diese Karte importieren</string>
+    <string name="stream_launch_action_fresh_card">Neu beginnen</string>
+    <string name="stream_launch_action_dismiss">OK</string>
+
+    <string name="stream_player_starting">Wird auf %1$s gestartet</string>
+    <string name="stream_player_preparing">Spiel wird vorbereitet</string>
+    <string name="stream_player_cancel">Abbrechen</string>
+    <string name="stream_player_launch_failed">Der Stream konnte nicht starten.</string>
+    <string name="stream_player_ended">Der Stream ist beendet.</string>
+    <string name="stream_player_close">Schließen</string>
+
+    <string name="stream_controls_subtitle">Stream auf %1$s</string>
+    <string name="stream_controls_resume">Zurück zum Spiel</string>
+    <string name="stream_controls_save_state">Zustand speichern</string>
+    <string name="stream_controls_load_state">Zustand laden</string>
+    <string name="stream_controls_next_disc">Nächste Disc</string>
+    <string name="stream_controls_mute">Stummschalten</string>
+    <string name="stream_controls_unmute">Ton an</string>
+    <string name="stream_controls_save_and_exit">Speichern und beenden</string>
+    <string name="stream_controls_leave">Sitzung verlassen</string>
+    <string name="stream_controls_notice_state_saved">Zustand gespeichert</string>
+    <string name="stream_controls_notice_state_loaded">Zustand geladen</string>
+    <string name="stream_controls_notice_disc_swapped">Disc gewechselt</string>
+    <string name="stream_controls_notice_failed">RomM hat das nicht angenommen.</string>
+
+    <string name="stream_dashboard_rail_next_disc">Nächste Disc</string>
+    <string name="stream_dashboard_rail_mute">Stummschalten</string>
+    <string name="stream_dashboard_rail_unmute">Ton an</string>
+</resources>

@@ -17,6 +17,7 @@ import androidx.compose.runtime.staticCompositionLocalOf
 import com.nendo.argosy.R
 import com.nendo.argosy.data.emulator.EmulatorRegistry
 import com.nendo.argosy.data.emulator.background.RunningGamesSnapshot
+import com.nendo.argosy.data.streaming.StreamSessionManager
 import com.nendo.argosy.libretro.slot.GameSlots
 import com.nendo.argosy.ui.theme.LocalMotionTier
 import com.nendo.argosy.ui.theme.MotionTier
@@ -69,6 +70,7 @@ data class RunningGamesUi(
 
 fun RunningGamesSnapshot.toRunningGamesUi(): RunningGamesUi {
     val games = apps.mapIndexedNotNull { index, app ->
+        if (app.packageName == StreamSessionManager.STREAM_PACKAGE) return@mapIndexedNotNull null
         val game = app.game ?: return@mapIndexedNotNull null
         RunningGameUi(
             gameId = game.gameId,
@@ -90,7 +92,8 @@ fun RunningGamesSnapshot.toRunningGamesUi(): RunningGamesUi {
         games = games,
         appCount = apps.size,
         slotUnits = loaded.map { RunningStripUnit(GameSlots.weightOf(it.platformSlug), it.taskId in closingTaskIds) },
-        outsidePoolUnits = apps.filter { it.game != null && (it.slotIndex ?: 0) == 0 }
+        outsidePoolUnits = apps
+            .filter { it.game != null && (it.slotIndex ?: 0) == 0 && it.packageName != StreamSessionManager.STREAM_PACKAGE }
             .map { RunningStripUnit(1, it.taskId in closingTaskIds) },
         freeUnits = (GameSlots.CAPACITY_UNITS - usedUnits).coerceAtLeast(0)
     )

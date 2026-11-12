@@ -148,12 +148,15 @@ class HomeViewModel @Inject constructor(
     private val monthlyRecap: com.nendo.argosy.ui.components.recap.MonthlyRecapController,
     gameActions: com.nendo.argosy.ui.screens.common.GameActionsDelegate,
     runningGames: com.nendo.argosy.data.emulator.background.RunningGames,
-    val runningGameMenu: com.nendo.argosy.ui.screens.running.RunningGameMenu
+    val runningGameMenu: com.nendo.argosy.ui.screens.running.RunningGameMenu,
+    streamLaunch: com.nendo.argosy.ui.screens.stream.StreamLaunchController.Factory
 ) : ViewModel(), HomeInputActions {
 
     val gameConfirm = com.nendo.argosy.ui.common.GameConfirmController(
         gameActions::deleteDownloadConfirm, gameActions::hideConfirm, viewModelScope
     )
+
+    val streamLauncher = streamLaunch.create(viewModelScope)
 
     private val selectDoubleTap = com.nendo.argosy.ui.screens.home.delegates.SelectDoubleTap(
         scope = viewModelScope,
@@ -2120,13 +2123,22 @@ class HomeViewModel @Inject constructor(
         if (gameMenuDelegate.state.value.showGameMenu) {
             gameMenuOpenJob?.cancel()
             _uiState.update {
-                it.copy(gameMenuDisplays = emptyList(), gameMenuRunning = null, gameMenuMoveTargets = emptyList())
+                it.copy(
+                    gameMenuDisplays = emptyList(),
+                    gameMenuRunning = null,
+                    gameMenuMoveTargets = emptyList(),
+                    gameMenuStream = null
+                )
             }
             gameMenuDelegate.toggleGameMenu()
             return
         }
         if (gameMenuOpenJob?.isActive == true) return
-        val gameId = _uiState.value.focusedGame?.id
+        val focused = _uiState.value.focusedGame
+        val gameId = focused?.id
+        val stream = focused
+            ?.takeIf { it.isRommGame && !it.isDownloaded && !it.needsInstall }
+            ?.let { streamLauncher.offerFor(it.id, it.platformSlug) }
         gameMenuOpenJob = viewModelScope.launch {
             val hasChoice = gameId != null && siblingChoice.hasChoice(gameId)
             val running = gameId?.let { runningGameMenu.markFor(it) }
@@ -2142,6 +2154,7 @@ class HomeViewModel @Inject constructor(
                 it.copy(
                     gameMenuDisplays = displays,
                     gameMenuHasSiblingGroup = hasChoice,
+                    gameMenuStream = stream,
                     gameMenuRunning = running,
                     gameMenuMoveTargets = moveTargets
                 )
@@ -2158,7 +2171,8 @@ class HomeViewModel @Inject constructor(
             state.focusedGame,
             isPlatformRow,
             state.gameMenuRunningRows(),
-            state.gameMenuHasSiblingGroup
+            state.gameMenuHasSiblingGroup,
+            state.gameMenuStream != null
         )
     }
 
@@ -2203,9 +2217,14 @@ class HomeViewModel @Inject constructor(
             game,
             isPlatformRow,
             state.gameMenuRunningRows(),
-            state.gameMenuHasSiblingGroup
+            state.gameMenuHasSiblingGroup,
+            state.gameMenuStream != null
         )
         when (action) {
+            is GameMenuAction.Stream -> {
+                toggleGameMenu()
+                streamLauncher.open(action.gameId)
+            }
             is GameMenuAction.MoveToDisplay -> {
                 moveRunningGame(action.target)
                 toggleGameMenu()

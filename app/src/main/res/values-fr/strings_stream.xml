@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="stream_entry_home_menu">Diffuser sur %1$s</string>
+    <string name="stream_entry_home_menu_resume">Reprendre la diffusion</string>
+    <string name="stream_entry_library_menu">Diffuser sur %1$s</string>
+    <string name="stream_entry_library_menu_resume">Reprendre la diffusion</string>
+    <string name="stream_entry_gamedetail_menu">Diffuser sur %1$s</string>
+    <string name="stream_entry_gamedetail_menu_resume">Reprendre la diffusion</string>
+    <string name="stream_running_label">Diffusion sur %1$s</string>
+
+    <string name="stream_launch_title">Diffuser sur %1$s</string>
+    <string name="stream_launch_loading">Vérification des sauvegardes et des états</string>
+    <string name="stream_launch_starting">Lancement de la diffusion</string>
+    <string name="stream_launch_ready">La diffusion démarre depuis votre sauvegarde sur le serveur.</string>
+    <string name="stream_launch_state_label">État</string>
+    <string name="stream_launch_save_label">Sauvegarde</string>
+    <string name="stream_launch_state_fresh">Aucun état, démarrer depuis la sauvegarde</string>
+    <string name="stream_launch_option_by_owner">%1$s, par %2$s</string>
+    <string name="stream_launch_busy_playing_since">%1$s est en cours de partie depuis %2$s.</string>
+    <string name="stream_launch_busy_draining">La session précédente est encore en cours de fermeture. Réessayez dans un instant.</string>
+    <string name="stream_launch_busy_fallback">Quelqu\'un d\'autre joue actuellement. Réessayez plus tard.</string>
+    <plurals name="stream_launch_card_found">
+        <item quantity="one">Ce poste du serveur contient déjà une carte mémoire avec %d fichier de sauvegarde. L\'importer dans votre bibliothèque ou commencer avec une carte vierge ?</item>
+        <item quantity="many">Ce poste du serveur contient déjà une carte mémoire avec %d fichiers de sauvegarde. L\'importer dans votre bibliothèque ou commencer avec une carte vierge ?</item>
+        <item quantity="other">Ce poste du serveur contient déjà une carte mémoire avec %d fichiers de sauvegarde. L\'importer dans votre bibliothèque ou commencer avec une carte vierge ?</item>
+    </plurals>
+    <string name="stream_launch_card_games">Jeux sur cette carte : %1$s</string>
+    <string name="stream_launch_card_unreadable">RomM n\'a pas pu lire la carte mémoire de ce poste du serveur et ne sait donc pas si elle contient des sauvegardes. Réessayez plus tard, ou repartez de zéro en effaçant son contenu.</string>
+    <string name="stream_launch_card_reason">Raison : %1$s</string>
+    <string name="stream_launch_card_erase_warning">La carte existante sera effacée et ne pourra pas être récupérée.</string>
+    <string name="stream_launch_notice_start_refused">Ce compte ne peut pas lancer de diffusion sur ce serveur. Un administrateur RomM peut l\'autoriser en accordant à votre groupe les droits de lecture et d\'écriture Streaming.</string>
+    <string name="stream_launch_notice_refused">RomM n\'a pas pu lancer la diffusion avec cette sauvegarde ou cet état.</string>
+    <string name="stream_launch_notice_not_found">RomM n\'a pas trouvé ce jeu pour la diffusion.</string>
+    <string name="stream_launch_notice_unreachable">Impossible de joindre RomM.</string>
+    <string name="stream_launch_notice_failed">La diffusion n\'a pas pu être lancée.</string>
+    <string name="stream_launch_notice_join_ended">Cette session est terminée ou n\'accepte plus de joueurs.</string>
+    <string name="stream_launch_action_start">Diffuser</string>
+    <string name="stream_launch_action_cancel">Annuler</string>
+    <string name="stream_launch_action_join">Rejoindre</string>
+    <string name="stream_launch_action_back">Retour</string>
+    <string name="stream_launch_action_import_card">Importer cette carte</string>
+    <string name="stream_launch_action_fresh_card">Repartir de zéro</string>
+    <string name="stream_launch_action_dismiss">OK</string>
+
+    <string name="stream_player_starting">Lancement sur %1$s</string>
+    <string name="stream_player_preparing">Préparation du jeu</string>
+    <string name="stream_player_cancel">Annuler</string>
+    <string name="stream_player_launch_failed">La diffusion n\'a pas pu démarrer.</string>
+    <string name="stream_player_ended">La diffusion est terminée.</string>
+    <string name="stream_player_close">Fermer</string>
+
+    <string name="stream_controls_subtitle">Diffusion sur %1$s</string>
+    <string name="stream_controls_resume">Retour au jeu</string>
+    <string name="stream_controls_save_state">Sauvegarder l\'état</string>
+    <string name="stream_controls_load_state">Charger l\'état</string>
+    <string name="stream_controls_next_disc">Disque suivant</string>
+    <string name="stream_controls_mute">Couper le son</string>
+    <string name="stream_controls_unmute">Rétablir le son</string>
+    <string name="stream_controls_save_and_exit">Sauvegarder et quitter</string>
+    <string name="stream_controls_leave">Quitter la session</string>
+    <string name="stream_controls_notice_state_saved">État sauvegardé</string>
+    <string name="stream_controls_notice_state_loaded">État chargé</string>
+    <string name="stream_controls_notice_disc_swapped">Disque changé</string>
+    <string name="stream_controls_notice_failed">RomM n\'a pas accepté cette action.</string>
+
+    <string name="stream_dashboard_rail_next_disc">Disque suivant</string>
+    <string name="stream_dashboard_rail_mute">Couper le son</string>
+    <string name="stream_dashboard_rail_unmute">Rétablir le son</string>
+</resources>

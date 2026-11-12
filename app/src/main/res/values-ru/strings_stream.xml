@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="stream_entry_home_menu">Стриминг на %1$s</string>
+    <string name="stream_entry_home_menu_resume">Продолжить стриминг</string>
+    <string name="stream_entry_library_menu">Стриминг на %1$s</string>
+    <string name="stream_entry_library_menu_resume">Продолжить стриминг</string>
+    <string name="stream_entry_gamedetail_menu">Стриминг на %1$s</string>
+    <string name="stream_entry_gamedetail_menu_resume">Продолжить стриминг</string>
+    <string name="stream_running_label">Стриминг на %1$s</string>
+
+    <string name="stream_launch_title">Стриминг на %1$s</string>
+    <string name="stream_launch_loading">Проверка сохранений и состояний</string>
+    <string name="stream_launch_starting">Запуск стриминга</string>
+    <string name="stream_launch_ready">Стриминг начнётся с вашего сохранения на сервере.</string>
+    <string name="stream_launch_state_label">Состояние</string>
+    <string name="stream_launch_save_label">Сохранение</string>
+    <string name="stream_launch_state_fresh">Без состояния, начать с сохранения</string>
+    <string name="stream_launch_option_by_owner">%1$s, от %2$s</string>
+    <string name="stream_launch_busy_playing_since">В %1$s играют с %2$s.</string>
+    <string name="stream_launch_busy_draining">Предыдущая сессия ещё завершается. Попробуйте снова через несколько секунд.</string>
+    <string name="stream_launch_busy_fallback">Сейчас играет кто-то другой. Повторите попытку позже.</string>
+    <plurals name="stream_launch_card_found">
+        <item quantity="one">На этой машине сервера уже есть карта памяти с %d файлом сохранения. Импортировать её в библиотеку или начать с новой карты?</item>
+        <item quantity="few">На этой машине сервера уже есть карта памяти с %d файлами сохранений. Импортировать её в библиотеку или начать с новой карты?</item>
+        <item quantity="many">На этой машине сервера уже есть карта памяти с %d файлами сохранений. Импортировать её в библиотеку или начать с новой карты?</item>
+        <item quantity="other">На этой машине сервера уже есть карта памяти с %d файлами сохранений. Импортировать её в библиотеку или начать с новой карты?</item>
+    </plurals>
+    <string name="stream_launch_card_games">Игры на этой карте: %1$s</string>
+    <string name="stream_launch_card_unreadable">RomM не смог прочитать карту памяти на этой машине сервера и не знает, есть ли на ней сохранения. Попробуйте позже или начните заново, стерев всё, что на ней есть.</string>
+    <string name="stream_launch_card_reason">Причина: %1$s</string>
+    <string name="stream_launch_card_erase_warning">Существующая карта будет стёрта без возможности восстановления.</string>
+    <string name="stream_launch_notice_start_refused">Эта учётная запись не может запускать стриминг на этом сервере. Администратор RomM может разрешить это, выдав вашей группе права на чтение и запись Streaming.</string>
+    <string name="stream_launch_notice_refused">RomM не смог запустить стриминг с этим сохранением или состоянием.</string>
+    <string name="stream_launch_notice_not_found">RomM не нашёл эту игру для стриминга.</string>
+    <string name="stream_launch_notice_unreachable">Не удалось связаться с RomM.</string>
+    <string name="stream_launch_notice_failed">Не удалось запустить стриминг.</string>
+    <string name="stream_launch_notice_join_ended">Эта сессия завершена или больше не открыта для подключения.</string>
+    <string name="stream_launch_action_start">Запустить</string>
+    <string name="stream_launch_action_cancel">Отмена</string>
+    <string name="stream_launch_action_join">Подключиться</string>
+    <string name="stream_launch_action_back">Назад</string>
+    <string name="stream_launch_action_import_card">Импортировать карту</string>
+    <string name="stream_launch_action_fresh_card">Начать заново</string>
+    <string name="stream_launch_action_dismiss">ОК</string>
+
+    <string name="stream_player_starting">Запуск на %1$s</string>
+    <string name="stream_player_preparing">Подготовка игры</string>
+    <string name="stream_player_cancel">Отмена</string>
+    <string name="stream_player_launch_failed">Не удалось запустить стриминг.</string>
+    <string name="stream_player_ended">Стриминг завершён.</string>
+    <string name="stream_player_close">Закрыть</string>
+
+    <string name="stream_controls_subtitle">Стриминг на %1$s</string>
+    <string name="stream_controls_resume">Вернуться в игру</string>
+    <string name="stream_controls_save_state">Сохранить состояние</string>
+    <string name="stream_controls_load_state">Загрузить состояние</string>
+    <string name="stream_controls_next_disc">Следующий диск</string>
+    <string name="stream_controls_mute">Выключить звук</string>
+    <string name="stream_controls_unmute">Включить звук</string>
+    <string name="stream_controls_save_and_exit">Сохранить и выйти</string>
+    <string name="stream_controls_leave">Покинуть сессию</string>
+    <string name="stream_controls_notice_state_saved">Состояние сохранено</string>
+    <string name="stream_controls_notice_state_loaded">Состояние загружено</string>
+    <string name="stream_controls_notice_disc_swapped">Диск сменён</string>
+    <string name="stream_controls_notice_failed">RomM не принял это действие.</string>
+
+    <string name="stream_dashboard_rail_next_disc">Следующий диск</string>
+    <string name="stream_dashboard_rail_mute">Выключить звук</string>
+    <string name="stream_dashboard_rail_unmute">Включить звук</string>
+</resources>

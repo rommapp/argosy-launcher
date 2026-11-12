@@ -332,6 +332,15 @@
             android:excludeFromRecents="true"
             android:exported="false" />
 
+        <activity
+            android:name=".ui.screens.stream.StreamPlayerActivity"
+            android:configChanges="orientation|screenSize|screenLayout|smallestScreenSize|density|uiMode|colorMode|keyboard|keyboardHidden|navigation|touchscreen|fontScale|fontWeightAdjustment|layoutDirection|locale|mcc|mnc"
+            android:launchMode="singleTask"
+            android:screenOrientation="fullUser"
+            android:theme="@style/Theme.Argosy.Game"
+            android:taskAffinity=".stream"
+            android:exported="false" />
+
         <activity android:name=".hardware.FocusDirectorActivity"
             android:exported="false" android:excludeFromRecents="true"
             android:taskAffinity="" android:theme="@style/Theme.Argosy.FocusDirector" />

@@ -22,6 +22,9 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ExitToApp
 import androidx.compose.material.icons.automirrored.filled.MenuBook
+import androidx.compose.material.icons.automirrored.filled.VolumeOff
+import androidx.compose.material.icons.automirrored.filled.VolumeUp
+import androidx.compose.material.icons.filled.Album
 import androidx.compose.material.icons.filled.EmojiEvents
 import androidx.compose.material.icons.filled.Map
 import androidx.compose.material.icons.filled.Save
@@ -92,7 +95,9 @@ class DashboardActions(
     val onOpenCheats: () -> Unit,
     val onOpenSettings: () -> Unit,
     val onQuit: () -> Unit,
-    val onOpenDocument: (GameDocument) -> Unit
+    val onOpenDocument: (GameDocument) -> Unit,
+    val onNextDisc: () -> Unit,
+    val onToggleMute: () -> Unit
 )
 
 private val RAIL_WIDTH = DimensionTokens.Layout.companionRailWidth.dp
@@ -195,6 +200,8 @@ fun InGameDashboard(
                 onSelect = selectSection,
                 onCheats = actions.onOpenCheats,
                 onSettings = actions.onOpenSettings,
+                onNextDisc = actions.onNextDisc,
+                onToggleMute = actions.onToggleMute,
                 onQuit = {
                     if (android.os.SystemClock.elapsedRealtime() < quitArmedUntil) {
                         quitArmedUntil = 0L
@@ -266,6 +273,8 @@ private fun DashboardRail(
     onSelect: (DashboardSection) -> Unit,
     onCheats: () -> Unit,
     onSettings: () -> Unit,
+    onNextDisc: () -> Unit,
+    onToggleMute: () -> Unit,
     onQuit: () -> Unit
 ) {
     val theme = LocalArgosyTheme.current
@@ -301,6 +310,30 @@ private fun DashboardRail(
                         label = stringResource(R.string.dual_dashboard_rail_cheats),
                         wide = wide,
                         onTap = onCheats
+                    )
+                }
+            }
+            if (controls.discSwapAvailable) {
+                item(key = "next_disc") {
+                    RailItem(
+                        icon = Icons.Filled.Album,
+                        label = stringResource(R.string.stream_dashboard_rail_next_disc),
+                        wide = wide,
+                        onTap = onNextDisc
+                    )
+                }
+            }
+            if (controls.muteAvailable) {
+                item(key = "mute") {
+                    RailItem(
+                        icon = if (controls.isMuted) Icons.AutoMirrored.Filled.VolumeOff else Icons.AutoMirrored.Filled.VolumeUp,
+                        label = if (controls.isMuted) {
+                            stringResource(R.string.stream_dashboard_rail_unmute)
+                        } else {
+                            stringResource(R.string.stream_dashboard_rail_mute)
+                        },
+                        wide = wide,
+                        onTap = onToggleMute
                     )
                 }
             }

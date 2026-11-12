@@ -24,8 +24,11 @@ import kotlinx.coroutines.async
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
@@ -148,6 +151,9 @@ class RomMConnectionManager @Inject constructor(
 
     private val _connectionState = MutableStateFlow<ConnectionState>(ConnectionState.Disconnected)
     val connectionState: StateFlow<ConnectionState> = _connectionState.asStateFlow()
+
+    private val _capabilityRefreshes = MutableSharedFlow<Unit>(extraBufferCapacity = 1)
+    val capabilityRefreshes: SharedFlow<Unit> = _capabilityRefreshes.asSharedFlow()
 
     fun getApi(): RomMApi? = api
 
@@ -511,6 +517,7 @@ class RomMConnectionManager @Inject constructor(
             _connectionState.value = ConnectionState.Connected(version, capabilities)
             saveSyncRepository.get().setCapabilities(capabilities)
             rememberSnapshots(normalizedUrl, capabilities)
+            _capabilityRefreshes.tryEmit(Unit)
             reconnectPending = false
             lastConnectedAt = SystemClock.elapsedRealtime()
             Logger.info(TAG, "connect: success at $normalizedUrl, version=$version, capabilities=$capabilities")
@@ -735,6 +742,7 @@ class RomMConnectionManager @Inject constructor(
         saveSyncRepository.get().setDeviceId(body.deviceId)
         _connectionState.value = ConnectionState.Connected(version, capabilities)
         rememberSnapshots(base, capabilities)
+        _capabilityRefreshes.tryEmit(Unit)
 
         deviceAuthApi = null
         deviceAuthBaseUrl = null
@@ -899,6 +907,7 @@ class RomMConnectionManager @Inject constructor(
                 _connectionState.value = ConnectionState.Connected(version, capabilities)
                 saveSyncRepository.get().setCapabilities(capabilities)
                 rememberSnapshots(baseUrl, capabilities)
+                _capabilityRefreshes.tryEmit(Unit)
                 reconnectPending = false
                 Logger.info(TAG, "checkConnection: connected, version=$version")
             } else {

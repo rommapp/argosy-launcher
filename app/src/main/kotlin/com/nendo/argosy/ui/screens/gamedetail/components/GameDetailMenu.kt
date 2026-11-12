@@ -25,6 +25,7 @@ import androidx.compose.material.icons.automirrored.filled.MenuBook
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Description
 import androidx.compose.material.icons.filled.Download
+import androidx.compose.material.icons.filled.Cast
 import androidx.compose.material.icons.filled.EmojiEvents
 import androidx.compose.material.icons.filled.ThumbUp
 import androidx.compose.material.icons.filled.Favorite
@@ -85,7 +86,8 @@ data class MenuLayoutState(
     val hasPerGameSettings: Boolean = false,
     val hasDocuments: Boolean = false,
     val isRunning: Boolean = false,
-    val moveTargetCount: Int = 0
+    val moveTargetCount: Int = 0,
+    val stream: com.nendo.argosy.ui.screens.stream.StreamOffer? = null
 )
 
 sealed class MenuItem(
@@ -93,6 +95,7 @@ sealed class MenuItem(
     val visibleWhen: (MenuLayoutState) -> Boolean = { true }
 ) {
     data object Play : MenuItem("play")
+    data object Stream : MenuItem("stream", visibleWhen = { it.stream != null })
 
     /**
      * The Move to Display row for the [slot]th move target of the running game.
@@ -120,7 +123,7 @@ sealed class MenuItem(
         private const val MOVE_TARGET_SLOTS = 3
 
         val ALL: List<MenuItem>
-            get() = listOf<MenuItem>(Play) + List(MOVE_TARGET_SLOTS) { MoveToDisplay(it) } + listOf(
+            get() = listOf<MenuItem>(Play, Stream) + List(MOVE_TARGET_SLOTS) { MoveToDisplay(it) } + listOf(
                 Saves, Favorite, Privacy, PerGameSettings, Options, Details,
                 Description, Screenshots, Documents, Reviews, Achievements, RelatedGames, CloseGame
             )
@@ -202,6 +205,21 @@ fun GameDetailMenu(
                         downloadSizeBytes = displayState.downloadSizeBytes,
                         isCompact = isCompact,
                         running = displayState.running,
+                        onClick = { onFocusChange(focusIndex); onItemClick(item) }
+                    )
+                }
+
+                MenuItem.Stream -> {
+                    val offer = layoutState.stream
+                    IconTextMenuItem(
+                        label = if (offer?.isLive == true) {
+                            stringResource(R.string.stream_entry_gamedetail_menu_resume)
+                        } else {
+                            stringResource(R.string.stream_entry_gamedetail_menu, offer?.containerLabel.orEmpty())
+                        },
+                        icon = Icons.Default.Cast,
+                        isFocused = isFocused,
+                        isCompact = isCompact,
                         onClick = { onFocusChange(focusIndex); onItemClick(item) }
                     )
                 }

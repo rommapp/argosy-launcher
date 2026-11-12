@@ -311,7 +311,7 @@ private fun ActionRow(content: DashboardContent) {
     if (!content.state.quickActionsAvailable) return
     Row(horizontalArrangement = Arrangement.spacedBy(Dimens.spacingSm)) {
         if (content.statesAllowed) SaveButton(content, Modifier.weight(1f))
-        ScreenshotButton(content, Modifier.weight(1f))
+        if (content.controls.screenshotAvailable) ScreenshotButton(content, Modifier.weight(1f))
     }
 }
 
@@ -320,7 +320,7 @@ private fun HeaderActions(content: DashboardContent, modifier: Modifier) {
     if (!content.state.quickActionsAvailable) return
     Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(Dimens.spacingSm)) {
         if (content.statesAllowed) SaveButton(content, Modifier.fillMaxWidth())
-        ScreenshotButton(content, Modifier.fillMaxWidth())
+        if (content.controls.screenshotAvailable) ScreenshotButton(content, Modifier.fillMaxWidth())
     }
 }
 

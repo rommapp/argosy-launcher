@@ -1,0 +1,102 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!--
+      Owner: ui/screens/stream and the "Stream on" rows it adds to Home, Library and game details
+      Key prefix: stream_
+      Keys are named for the usage site, never for the English text, and identical English
+      is never shared between two usage sites.
+      "Stream" is a verb: play the game on a RomM server that sends the picture to this device.
+      %1$s in the "Stream on" strings is the name a RomM admin gave the server box; never translate it.
+    -->
+
+    <!-- Home hold-A game menu row beside Download. %1$s is the server box's name. -->
+    <string name="stream_entry_home_menu">Stream on %1$s</string>
+    <!-- Home hold-A game menu row while this game's stream is already running. -->
+    <string name="stream_entry_home_menu_resume">Resume stream</string>
+    <!-- Library hold-A game menu row beside Download. %1$s is the server box's name. -->
+    <string name="stream_entry_library_menu">Stream on %1$s</string>
+    <!-- Library hold-A game menu row while this game's stream is already running. -->
+    <string name="stream_entry_library_menu_resume">Resume stream</string>
+    <!-- Game details menu row under Download. %1$s is the server box's name. -->
+    <string name="stream_entry_gamedetail_menu">Stream on %1$s</string>
+    <!-- Game details menu row while this game's stream is already running. -->
+    <string name="stream_entry_gamedetail_menu_resume">Resume stream</string>
+    <!-- Name of a running stream in the Resume list. %1$s is the server box's name. -->
+    <string name="stream_running_label">Stream on %1$s</string>
+
+    <!-- Title of the dialog that starts a stream. %1$s is the server box's name. -->
+    <string name="stream_launch_title">Stream on %1$s</string>
+    <string name="stream_launch_loading">Checking saves and states</string>
+    <string name="stream_launch_starting">Starting the stream</string>
+    <string name="stream_launch_ready">The stream starts from your save on the server.</string>
+    <!-- Label of the picker for a save state (a snapshot of the running game) to resume from. Noun. -->
+    <string name="stream_launch_state_label">State</string>
+    <!-- Label of the picker for the game save (battery or memory save) to restore. Noun. -->
+    <string name="stream_launch_save_label">Save</string>
+    <!-- Choice in the state picker that starts the game without loading a state. -->
+    <string name="stream_launch_state_fresh">No state, start from the save</string>
+    <!-- A state shared by another user. %1$s is the date and time, %2$s is the user's name. -->
+    <string name="stream_launch_option_by_owner">%1$s, by %2$s</string>
+    <!-- %1$s is the game's name, %2$s is a time of day. -->
+    <string name="stream_launch_busy_playing_since">%1$s has been playing since %2$s.</string>
+    <string name="stream_launch_busy_draining">The previous session is still shutting down. Try again in a moment.</string>
+    <string name="stream_launch_busy_fallback">Someone else is currently playing. Try again later.</string>
+    <plurals name="stream_launch_card_found">
+        <item quantity="one">This server box already has a memory card holding %d save file. Import it into your library, or start with a fresh card?</item>
+        <item quantity="other">This server box already has a memory card holding %d save files. Import it into your library, or start with a fresh card?</item>
+    </plurals>
+    <!-- %1$s is a list of game codes. -->
+    <string name="stream_launch_card_games">Games on this card: %1$s</string>
+    <string name="stream_launch_card_unreadable">RomM could not read the memory card on this server box, so it cannot tell whether it holds saves. Try again later, or start fresh and erase whatever is on it.</string>
+    <!-- %1$s is the reason RomM gave. -->
+    <string name="stream_launch_card_reason">Reason: %1$s</string>
+    <string name="stream_launch_card_erase_warning">The existing card will be erased and cannot be recovered.</string>
+    <string name="stream_launch_notice_start_refused">This account cannot start streams on this server. A RomM admin can allow it by giving your group the Streaming read and write permissions.</string>
+    <string name="stream_launch_notice_refused">RomM could not start the stream with that save or state.</string>
+    <string name="stream_launch_notice_not_found">RomM could not find this game for streaming.</string>
+    <string name="stream_launch_notice_unreachable">RomM could not be reached.</string>
+    <string name="stream_launch_notice_failed">The stream could not be started.</string>
+    <string name="stream_launch_notice_join_ended">That session has ended or is no longer open to join.</string>
+    <!-- Button that starts the stream. Verb. -->
+    <string name="stream_launch_action_start">Stream</string>
+    <string name="stream_launch_action_cancel">Cancel</string>
+    <!-- Button that joins another player's stream as a second player. -->
+    <string name="stream_launch_action_join">Join</string>
+    <string name="stream_launch_action_back">Back</string>
+    <string name="stream_launch_action_import_card">Import this card</string>
+    <string name="stream_launch_action_fresh_card">Start fresh</string>
+    <string name="stream_launch_action_dismiss">OK</string>
+
+    <!-- Shown while the server starts the game. %1$s is the server box's name. -->
+    <string name="stream_player_starting">Starting on %1$s</string>
+    <string name="stream_player_preparing">Preparing the game</string>
+    <string name="stream_player_cancel">Cancel</string>
+    <string name="stream_player_launch_failed">The stream could not start.</string>
+    <string name="stream_player_ended">The stream has ended.</string>
+    <string name="stream_player_close">Close</string>
+
+    <!-- Line under the game's name in the stream controls. %1$s is the server box's name. -->
+    <string name="stream_controls_subtitle">Streaming on %1$s</string>
+    <string name="stream_controls_resume">Back to the game</string>
+    <!-- Saves a snapshot of the running game. Verb phrase. -->
+    <string name="stream_controls_save_state">Save state</string>
+    <!-- Loads the snapshot saved last. Verb phrase. -->
+    <string name="stream_controls_load_state">Load state</string>
+    <!-- Puts the next disc of a multi-disc game in the drive. -->
+    <string name="stream_controls_next_disc">Next disc</string>
+    <string name="stream_controls_mute">Mute</string>
+    <string name="stream_controls_unmute">Unmute</string>
+    <!-- Saves the game on the server and ends the stream. -->
+    <string name="stream_controls_save_and_exit">Save and exit</string>
+    <!-- Leaves another player's stream this device joined. -->
+    <string name="stream_controls_leave">Leave session</string>
+    <string name="stream_controls_notice_state_saved">State saved</string>
+    <string name="stream_controls_notice_state_loaded">State loaded</string>
+    <string name="stream_controls_notice_disc_swapped">Disc changed</string>
+    <string name="stream_controls_notice_failed">RomM did not accept that.</string>
+
+    <!-- In-game dashboard rail entry on the second screen. -->
+    <string name="stream_dashboard_rail_next_disc">Next disc</string>
+    <string name="stream_dashboard_rail_mute">Mute</string>
+    <string name="stream_dashboard_rail_unmute">Unmute</string>
+</resources>

@@ -45,6 +45,7 @@ import androidx.compose.material.icons.automirrored.filled.PlaylistAdd
 import androidx.compose.material.icons.filled.DeleteOutline
 import androidx.compose.material.icons.filled.RemoveCircleOutline
 import androidx.compose.material.icons.filled.Download
+import androidx.compose.material.icons.filled.Cast
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material.icons.filled.GridView
@@ -657,8 +658,14 @@ fun LibraryScreen(
                         isCustomGridHome = uiState.isCustomGridHome,
                         hasSiblingGroup = uiState.quickMenuHasSiblingGroup,
                         isRunning = uiState.quickMenuRunning != null,
-                        moveTargetCount = uiState.quickMenuMoveTargets.size
+                        moveTargetCount = uiState.quickMenuMoveTargets.size,
+                        streamable = uiState.quickMenuStream != null
                     ),
+                    stream = uiState.quickMenuStream,
+                    onStream = {
+                        viewModel.toggleQuickMenu()
+                        viewModel.streamLauncher.open(game.id)
+                    },
                     moveTargets = uiState.quickMenuMoveTargets,
                     onMoveToDisplay = { target ->
                         viewModel.moveRunningGame(target)
@@ -717,6 +724,8 @@ fun LibraryScreen(
         com.nendo.argosy.ui.common.GameConfirmHost(viewModel.gameConfirm)
 
         com.nendo.argosy.ui.screens.running.RunningGameCloseHost(viewModel.runningGameMenu)
+
+        com.nendo.argosy.ui.screens.stream.StreamLaunchHost(viewModel.streamLauncher)
 
         AnimatedVisibility(
             visible = uiState.showAddToCollectionModal,
@@ -1767,6 +1776,8 @@ private fun FilterOptionItem(
 private fun QuickMenuOverlay(
     game: LibraryGameUi,
     rows: List<LibraryQuickMenuRow>,
+    stream: com.nendo.argosy.ui.screens.stream.StreamOffer?,
+    onStream: () -> Unit,
     moveTargets: List<com.nendo.argosy.ui.screens.running.RunningMoveTarget>,
     onMoveToDisplay: (com.nendo.argosy.ui.screens.running.RunningMoveTarget) -> Unit,
     focusIndex: Int,
@@ -1822,6 +1833,11 @@ private fun QuickMenuOverlay(
     }
     val removeFromLibraryLabel = stringResource(R.string.library_quickmenu_remove_from_library)
     val closeGameLabel = stringResource(R.string.library_quickmenu_close_game)
+    val streamLabel = when {
+        stream == null -> ""
+        stream.isLive -> stringResource(R.string.stream_entry_library_menu_resume)
+        else -> stringResource(R.string.stream_entry_library_menu, stream.containerLabel)
+    }
     val moveLabels = moveTargets.map { stringResource(R.string.library_quickmenu_move_to_display, it.screenNumber) }
     val hideLabel = if (game.isHidden) {
         stringResource(R.string.library_quickmenu_show)
@@ -1831,6 +1847,7 @@ private fun QuickMenuOverlay(
 
     fun LibraryQuickMenuRow.toEntry(position: Int): MenuEntry = when (this) {
         LibraryQuickMenuRow.PRIMARY -> MenuEntry(primaryIcon, primaryLabel, onClick = onPrimaryAction)
+        LibraryQuickMenuRow.STREAM -> MenuEntry(Icons.Default.Cast, streamLabel, onClick = onStream)
         LibraryQuickMenuRow.MOVE_TO_DISPLAY -> {
             val targetIndex = rows.moveTargetIndexAt(position)
             MenuEntry(

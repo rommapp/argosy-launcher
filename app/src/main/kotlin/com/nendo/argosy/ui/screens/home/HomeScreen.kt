@@ -49,6 +49,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.DeleteOutline
 import androidx.compose.material.icons.filled.RemoveCircleOutline
 import androidx.compose.material.icons.filled.Download
+import androidx.compose.material.icons.filled.Cast
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material.icons.filled.Home
@@ -1471,6 +1472,11 @@ fun HomeScreen(
                         viewModel.toggleGameMenu()
                         viewModel.activateFocusedGame(focusedGame)
                     },
+                    stream = uiState.gameMenuStream,
+                    onStream = {
+                        viewModel.toggleGameMenu()
+                        viewModel.streamLauncher.open(focusedGame.id)
+                    },
                     playDisplays = uiState.gameMenuDisplays,
                     onPlayOnDisplay = { index ->
                         viewModel.moveGameMenuFocus(index + 1 - uiState.gameMenuFocusIndex)
@@ -1524,6 +1530,7 @@ fun HomeScreen(
 
         com.nendo.argosy.ui.common.GameConfirmHost(viewModel.gameConfirm)
         com.nendo.argosy.ui.screens.running.RunningGameCloseHost(viewModel.runningGameMenu)
+        com.nendo.argosy.ui.screens.stream.StreamLaunchHost(viewModel.streamLauncher)
 
         val siblingChoiceState by viewModel.siblingChoiceState.collectAsState()
         com.nendo.argosy.ui.screens.common.SiblingChoiceModalHost(
@@ -2015,6 +2022,8 @@ private fun GameSelectOverlay(
     focusIndex: Int,
     onDismiss: () -> Unit,
     onPrimaryAction: () -> Unit,
+    stream: com.nendo.argosy.ui.screens.stream.StreamOffer?,
+    onStream: () -> Unit,
     playDisplays: List<com.nendo.argosy.ui.components.AppLaunchTarget>,
     onPlayOnDisplay: (Int) -> Unit,
     moveTargets: List<com.nendo.argosy.ui.screens.running.RunningMoveTarget>,
@@ -2070,8 +2079,16 @@ private fun GameSelectOverlay(
         val onClick: () -> Unit
     )
 
+    val streamLabel = stream?.let {
+        if (it.isLive) {
+            stringResource(R.string.stream_entry_home_menu_resume)
+        } else {
+            stringResource(R.string.stream_entry_home_menu, it.containerLabel)
+        }
+    }
     val options = buildList {
         add(MenuEntry(primaryIcon, primaryLabel, onClick = onPrimaryAction))
+        if (streamLabel != null) add(MenuEntry(Icons.Default.Cast, streamLabel, onClick = onStream))
         if (playDisplays.size > 1 && game.isDownloaded) {
             playDisplays.forEachIndexed { index, target ->
                 add(

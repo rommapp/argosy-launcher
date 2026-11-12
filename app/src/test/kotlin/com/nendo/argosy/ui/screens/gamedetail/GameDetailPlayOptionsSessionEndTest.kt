@@ -230,6 +230,7 @@ class GameDetailPlayOptionsSessionEndTest {
         runningGames = mockk {
             every { state } returns MutableStateFlow(com.nendo.argosy.data.emulator.background.RunningGamesSnapshot())
         },
-        runningGameMenu = mockk(relaxed = true)
+        runningGameMenu = mockk(relaxed = true),
+        streamLaunch = com.nendo.argosy.ui.screens.stream.noStreamLaunch()
     )
 }

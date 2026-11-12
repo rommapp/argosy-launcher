@@ -879,6 +879,13 @@ class DualScreenManager(
         fun quit()
     }
 
+    interface StreamDashboardActions {
+        fun nextDisc()
+        fun toggleMute()
+    }
+
+    var streamDashboardActions: StreamDashboardActions? = null
+
     var sessionQuickActions: SessionQuickActions? = null
         set(value) {
             field = value

@@ -286,6 +286,7 @@ data class LibraryUiState(
     val quickMenuHasSiblingGroup: Boolean = false,
     val quickMenuRunning: com.nendo.argosy.ui.common.RunningGameUi? = null,
     val quickMenuMoveTargets: List<com.nendo.argosy.ui.screens.running.RunningMoveTarget> = emptyList(),
+    val quickMenuStream: com.nendo.argosy.ui.screens.stream.StreamOffer? = null,
     val isCustomGridHome: Boolean = false,
     val gridDensity: GridDensity = GridDensity.NORMAL,
     val libraryLayout: LibraryLayout = LibraryLayout.GRID,
@@ -509,7 +510,8 @@ class LibraryViewModel @Inject constructor(
     private val reorderPlatforms: com.nendo.argosy.domain.usecase.platform.ReorderPlatformsUseCase,
     private val quickNavigation: com.nendo.argosy.data.preferences.QuickNavigationSource,
     private val launchProgressTracker: com.nendo.argosy.data.emulator.LaunchProgressTracker,
-    val runningGameMenu: com.nendo.argosy.ui.screens.running.RunningGameMenu
+    val runningGameMenu: com.nendo.argosy.ui.screens.running.RunningGameMenu,
+    streamLaunch: com.nendo.argosy.ui.screens.stream.StreamLaunchController.Factory
 ) : ViewModel() {
 
     val siblingChoiceState = siblingChoice.state
@@ -517,6 +519,8 @@ class LibraryViewModel @Inject constructor(
     val gameConfirm = com.nendo.argosy.ui.common.GameConfirmController(
         gameActions::deleteDownloadConfirm, gameActions::hideConfirm, viewModelScope
     )
+
+    val streamLauncher = streamLaunch.create(viewModelScope)
 
     private val companionOwner = SlotOwner.of("library", this)
     private val platformShowcaseOwner = SlotOwner.of("library.platforms", this)
@@ -1992,7 +1996,11 @@ class LibraryViewModel @Inject constructor(
             return
         }
         if (quickMenuOpenJob?.isActive == true) return
-        val gameId = _uiState.value.focusedGame?.id ?: return
+        val focused = _uiState.value.focusedGame ?: return
+        val gameId = focused.id
+        val stream = focused
+            .takeIf { it.isRommGame && !it.isDownloaded && !it.needsInstall }
+            ?.let { streamLauncher.offerFor(it.id, it.platformSlug) }
         quickMenuOpenJob = viewModelScope.launch {
             val hasChoice = siblingChoice.hasChoice(gameId)
             val running = runningGameMenu.markFor(gameId)
@@ -2004,7 +2012,8 @@ class LibraryViewModel @Inject constructor(
                     quickMenuFocusIndex = 0,
                     quickMenuHasSiblingGroup = hasChoice,
                     quickMenuRunning = running,
-                    quickMenuMoveTargets = moveTargets
+                    quickMenuMoveTargets = moveTargets,
+                    quickMenuStream = stream
                 )
             }
             soundManager.play(SoundType.OPEN_MODAL)
@@ -2018,7 +2027,8 @@ class LibraryViewModel @Inject constructor(
             state.isCustomGridHome,
             state.quickMenuHasSiblingGroup,
             isRunning = state.quickMenuRunning != null,
-            moveTargetCount = state.quickMenuMoveTargets.size
+            moveTargetCount = state.quickMenuMoveTargets.size,
+            streamable = state.quickMenuStream != null
         )
     }
 
@@ -2064,6 +2074,11 @@ class LibraryViewModel @Inject constructor(
                     else -> downloadGame(game.id)
                 }
                 toggleQuickMenu()
+                InputResult.HANDLED
+            }
+            LibraryQuickMenuRow.STREAM -> {
+                toggleQuickMenu()
+                streamLauncher.open(game.id)
                 InputResult.HANDLED
             }
             LibraryQuickMenuRow.FAVORITE -> {

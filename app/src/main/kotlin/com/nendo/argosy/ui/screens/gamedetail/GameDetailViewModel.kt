@@ -78,6 +78,7 @@ import com.nendo.argosy.ui.common.toRunningGamesUi
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onEach
+import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
@@ -147,10 +148,13 @@ class GameDetailViewModel @Inject constructor(
     private val steamInstallReports: com.nendo.argosy.data.launcher.SteamInstallReports,
     private val appsRepository: com.nendo.argosy.data.repository.AppsRepository,
     private val runningGames: com.nendo.argosy.data.emulator.background.RunningGames,
-    val runningGameMenu: com.nendo.argosy.ui.screens.running.RunningGameMenu
+    val runningGameMenu: com.nendo.argosy.ui.screens.running.RunningGameMenu,
+    streamLaunch: com.nendo.argosy.ui.screens.stream.StreamLaunchController.Factory
 ) : ViewModel() {
 
     val siblingChoiceState = siblingChoice.state
+
+    val streamLauncher = streamLaunch.create(viewModelScope)
 
     private val companionOwner = com.nendo.argosy.ui.dualscreen.SlotOwner.of("game.detail", this)
     private var isDescribing = false
@@ -265,6 +269,25 @@ class GameDetailViewModel @Inject constructor(
             ) { snapshot, gameId ->
                 gameId?.let { snapshot.toRunningGamesUi().markFor(it) }
             }.distinctUntilChanged().collect { mark -> applyRunningMark(mark) }
+        }
+
+        viewModelScope.launch {
+            kotlinx.coroutines.flow.combine(
+                streamLauncher.offers.onStart { emit(Unit) },
+                _uiState.map { state ->
+                    state.game?.takeIf {
+                        it.isRommGame && state.downloadStatus == GameDownloadStatus.NOT_DOWNLOADED
+                    }?.let { it.id to it.platformSlug }
+                }.distinctUntilChanged()
+            ) { _, streamable ->
+                streamable?.let { (gameId, platformSlug) -> streamLauncher.offerFor(gameId, platformSlug) }
+            }.distinctUntilChanged().collect { offer ->
+                _uiState.update { state ->
+                    val next = state.copy(stream = offer)
+                    val maxIndex = menuLayout.maxFocusIndex(next.menuLayoutState)
+                    if (next.menuFocusIndex > maxIndex) next.copy(menuFocusIndex = maxIndex) else next
+                }
+            }
         }
 
         viewModelScope.launch {
@@ -2256,6 +2279,7 @@ class GameDetailViewModel @Inject constructor(
         val state = menuLayoutState()
         when (val item = menuLayout.itemAtFocusIndex(_uiState.value.menuFocusIndex, state)) {
             MenuItem.Play -> primaryAction()
+            MenuItem.Stream -> openStream()
             is MenuItem.MoveToDisplay -> moveRunningGame(item.slot)
             MenuItem.Saves -> syncSavesNow()
             MenuItem.Favorite -> toggleFavorite()
@@ -2272,6 +2296,11 @@ class GameDetailViewModel @Inject constructor(
             MenuItem.CloseGame -> requestCloseRunningGame()
             null -> {}
         }
+    }
+
+    fun openStream() {
+        if (_uiState.value.stream == null) return
+        streamLauncher.open(currentGameId)
     }
 
     private var moveTargetsJob: kotlinx.coroutines.Job? = null

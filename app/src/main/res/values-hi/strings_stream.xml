@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="stream_entry_home_menu">%1$s पर स्ट्रीम करें</string>
+    <string name="stream_entry_home_menu_resume">स्ट्रीम फिर से शुरू करें</string>
+    <string name="stream_entry_library_menu">%1$s पर स्ट्रीम करें</string>
+    <string name="stream_entry_library_menu_resume">स्ट्रीम फिर से शुरू करें</string>
+    <string name="stream_entry_gamedetail_menu">%1$s पर स्ट्रीम करें</string>
+    <string name="stream_entry_gamedetail_menu_resume">स्ट्रीम फिर से शुरू करें</string>
+    <string name="stream_running_label">%1$s पर स्ट्रीम</string>
+
+    <string name="stream_launch_title">%1$s पर स्ट्रीम करें</string>
+    <string name="stream_launch_loading">सेव और स्टेट जाँचे जा रहे हैं</string>
+    <string name="stream_launch_starting">स्ट्रीम शुरू हो रही है</string>
+    <string name="stream_launch_ready">स्ट्रीम सर्वर पर रखे आपके सेव से शुरू होगी।</string>
+    <string name="stream_launch_state_label">स्टेट</string>
+    <string name="stream_launch_save_label">सेव</string>
+    <string name="stream_launch_state_fresh">कोई स्टेट नहीं, सेव से शुरू करें</string>
+    <string name="stream_launch_option_by_owner">%1$s, %2$s द्वारा</string>
+    <string name="stream_launch_busy_playing_since">%1$s %2$s से खेला जा रहा है।</string>
+    <string name="stream_launch_busy_draining">पिछला सत्र अभी बंद हो रहा है। थोड़ी देर में फिर कोशिश करें।</string>
+    <string name="stream_launch_busy_fallback">अभी कोई और खेल रहा है। बाद में फिर कोशिश करें।</string>
+    <plurals name="stream_launch_card_found">
+        <item quantity="one">इस सर्वर मशीन में पहले से एक मेमोरी कार्ड है जिसमें %d सेव फ़ाइल है। इसे अपनी लाइब्रेरी में इम्पोर्ट करें या नए कार्ड से शुरू करें?</item>
+        <item quantity="other">इस सर्वर मशीन में पहले से एक मेमोरी कार्ड है जिसमें %d सेव फ़ाइलें हैं। इसे अपनी लाइब्रेरी में इम्पोर्ट करें या नए कार्ड से शुरू करें?</item>
+    </plurals>
+    <string name="stream_launch_card_games">इस कार्ड पर गेम: %1$s</string>
+    <string name="stream_launch_card_unreadable">RomM इस सर्वर मशीन का मेमोरी कार्ड नहीं पढ़ सका, इसलिए उसे पता नहीं कि उसमें सेव हैं या नहीं। बाद में कोशिश करें, या नए सिरे से शुरू करके उस पर जो है उसे मिटा दें।</string>
+    <string name="stream_launch_card_reason">कारण: %1$s</string>
+    <string name="stream_launch_card_erase_warning">मौजूदा कार्ड मिटा दिया जाएगा और वापस नहीं मिलेगा।</string>
+    <string name="stream_launch_notice_start_refused">यह खाता इस सर्वर पर स्ट्रीम शुरू नहीं कर सकता। RomM एडमिन आपके समूह को Streaming पढ़ने और लिखने की अनुमति देकर इसे चालू कर सकते हैं।</string>
+    <string name="stream_launch_notice_refused">RomM उस सेव या स्टेट के साथ स्ट्रीम शुरू नहीं कर सका।</string>
+    <string name="stream_launch_notice_not_found">RomM को स्ट्रीमिंग के लिए यह गेम नहीं मिला।</string>
+    <string name="stream_launch_notice_unreachable">RomM से संपर्क नहीं हो सका।</string>
+    <string name="stream_launch_notice_failed">स्ट्रीम शुरू नहीं की जा सकी।</string>
+    <string name="stream_launch_notice_join_ended">वह सत्र खत्म हो गया है या अब जुड़ने के लिए खुला नहीं है।</string>
+    <string name="stream_launch_action_start">स्ट्रीम करें</string>
+    <string name="stream_launch_action_cancel">रद्द करें</string>
+    <string name="stream_launch_action_join">जुड़ें</string>
+    <string name="stream_launch_action_back">वापस</string>
+    <string name="stream_launch_action_import_card">यह कार्ड इम्पोर्ट करें</string>
+    <string name="stream_launch_action_fresh_card">नए सिरे से शुरू करें</string>
+    <string name="stream_launch_action_dismiss">ठीक है</string>
+
+    <string name="stream_player_starting">%1$s पर शुरू हो रहा है</string>
+    <string name="stream_player_preparing">गेम तैयार हो रहा है</string>
+    <string name="stream_player_cancel">रद्द करें</string>
+    <string name="stream_player_launch_failed">स्ट्रीम शुरू नहीं हो सकी।</string>
+    <string name="stream_player_ended">स्ट्रीम खत्म हो गई है।</string>
+    <string name="stream_player_close">बंद करें</string>
+
+    <string name="stream_controls_subtitle">%1$s पर स्ट्रीम हो रहा है</string>
+    <string name="stream_controls_resume">गेम पर वापस जाएँ</string>
+    <string name="stream_controls_save_state">स्टेट सेव करें</string>
+    <string name="stream_controls_load_state">स्टेट लोड करें</string>
+    <string name="stream_controls_next_disc">अगली डिस्क</string>
+    <string name="stream_controls_mute">आवाज़ बंद करें</string>
+    <string name="stream_controls_unmute">आवाज़ चालू करें</string>
+    <string name="stream_controls_save_and_exit">सेव करें और बाहर निकलें</string>
+    <string name="stream_controls_leave">सत्र छोड़ें</string>
+    <string name="stream_controls_notice_state_saved">स्टेट सेव हुई</string>
+    <string name="stream_controls_notice_state_loaded">स्टेट लोड हुई</string>
+    <string name="stream_controls_notice_disc_swapped">डिस्क बदली गई</string>
+    <string name="stream_controls_notice_failed">RomM ने इसे स्वीकार नहीं किया।</string>
+
+    <string name="stream_dashboard_rail_next_disc">अगली डिस्क</string>
+    <string name="stream_dashboard_rail_mute">आवाज़ बंद करें</string>
+    <string name="stream_dashboard_rail_unmute">आवाज़ चालू करें</string>
+</resources>

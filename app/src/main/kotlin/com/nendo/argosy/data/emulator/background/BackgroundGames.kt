@@ -12,6 +12,8 @@ import com.nendo.argosy.data.emulator.EmulatorRegistry
 import com.nendo.argosy.data.emulator.GameLauncher
 import com.nendo.argosy.data.emulator.PlaySessionTracker
 import com.nendo.argosy.data.repository.AppsRepository
+import com.nendo.argosy.data.streaming.StreamPhase
+import com.nendo.argosy.data.streaming.StreamSessionManager
 import com.nendo.argosy.hardware.builtInGameAppTask
 import com.nendo.argosy.libretro.LibretroActivity
 import com.nendo.argosy.libretro.slot.SlotRegistry
@@ -61,7 +63,8 @@ class BackgroundGames @Inject constructor(
     private val keepAlivePolicy: KeepAlivePolicy,
     private val gameLauncher: GameLauncher,
     private val slotRegistry: SlotRegistry,
-    private val appsRepository: AppsRepository
+    private val appsRepository: AppsRepository,
+    private val streamSessions: dagger.Lazy<StreamSessionManager>
 ) {
     private val scope = SafeCoroutineScope(Dispatchers.IO, "BackgroundGames")
     private var started = false
@@ -148,7 +151,7 @@ class BackgroundGames @Inject constructor(
             packageManager.getLeanbackLaunchIntentForPackage(packageName) != null
     }
 
-    fun builtInApps(): List<RunningApp> = listOfNotNull(mainProcessGame()) + liveSlots()
+    fun builtInApps(): List<RunningApp> = listOfNotNull(mainProcessGame(), streamApp()) + liveSlots()
         .sortedBy { it.slotIndex }
         .map { slot ->
             builtInRunningApp(
@@ -194,6 +197,29 @@ class BackgroundGames @Inject constructor(
             startedAtMillis = live.startedAtMillis,
             hardcore = live.hardcore,
             slotIndex = 0
+        )
+    }
+
+    private fun streamApp(): RunningApp? {
+        val session = streamSessions.get().session.value
+            ?.takeIf { it.isHost && it.phase != StreamPhase.ENDED } ?: return null
+        val taskId = session.taskId ?: return null
+        return RunningApp(
+            taskId = taskId,
+            packageName = StreamSessionManager.STREAM_PACKAGE,
+            displayId = Display.INVALID_DISPLAY,
+            rssKb = null,
+            game = BackgroundGame(
+                emulatorPackage = StreamSessionManager.STREAM_PACKAGE,
+                gameId = session.target.gameId,
+                variantFileId = null,
+                pid = Process.myPid(),
+                endedAtMillis = 0L
+            ),
+            runStartedAtMillis = session.startedAtMillis,
+            hardcore = false,
+            slotIndex = null,
+            platformSlug = session.target.platform
         )
     }
 
@@ -247,7 +273,7 @@ class BackgroundGames @Inject constructor(
      */
     suspend fun liveGame(gameId: Long, variantFileId: Long?, emulatorPackage: String): RunningApp? {
         val candidates = if (emulatorPackage == EmulatorRegistry.BUILTIN_PACKAGE) {
-            builtInApps()
+            builtInApps().filter { it.packageName == EmulatorRegistry.BUILTIN_PACKAGE }
         } else {
             listOfNotNull(liveApp(emulatorPackage))
         }
@@ -328,6 +354,10 @@ class BackgroundGames @Inject constructor(
      * process has its task removed; an external app is force-stopped.
      */
     suspend fun close(app: RunningApp) {
+        if (app.packageName == StreamSessionManager.STREAM_PACKAGE) {
+            streamSessions.get().saveAndExit()
+            return
+        }
         when (app.slotIndex) {
             null -> {
                 store.remove(app.packageName)

@@ -34,6 +34,7 @@ private const val MENU_INDEX_MAX_REMOTE = 4
 
 sealed class GameMenuAction {
     data class Play(val gameId: Long, val needsInstall: Boolean, val isDownloaded: Boolean) : GameMenuAction()
+    data class Stream(val gameId: Long) : GameMenuAction()
     data class PlayOnDisplay(val gameId: Long, val displayId: Int) : GameMenuAction()
     data class ToggleFavorite(val gameId: Long) : GameMenuAction()
     data class ViewDetails(val gameId: Long) : GameMenuAction()
@@ -99,7 +100,8 @@ class HomeGameMenuDelegate @Inject constructor(
         focusedGame: HomeGameUi?,
         isPlatformRow: Boolean,
         runningRows: GameMenuRunningRows = GameMenuRunningRows(),
-        hasSiblingGroup: Boolean = false
+        hasSiblingGroup: Boolean = false,
+        streamable: Boolean = false
     ) {
         _state.update {
             val isDownloaded = focusedGame?.isDownloaded == true
@@ -112,6 +114,7 @@ class HomeGameMenuDelegate @Inject constructor(
             maxIndex += runningRows.moveTargets.size
             if (runningRows.closesGame) maxIndex++
             if (hasSiblingGroup) maxIndex++
+            if (streamable) maxIndex++
             if (isRommGame || isAndroidApp) maxIndex++
             if (isAndroidApp) maxIndex++
             if (isSyncable) maxIndex++
@@ -126,11 +129,13 @@ class HomeGameMenuDelegate @Inject constructor(
         game: HomeGameUi,
         isPlatformRow: Boolean,
         runningRows: GameMenuRunningRows = GameMenuRunningRows(),
-        hasSiblingGroup: Boolean = false
+        hasSiblingGroup: Boolean = false,
+        streamable: Boolean = false
     ): GameMenuAction {
         val playDisplays = runningRows.playDisplays
         var currentIdx = 0
         val playIdx = currentIdx++
+        val streamIdx = if (streamable) currentIdx++ else -1
         val playOnDisplayRange = if (playDisplays.size > 1 && game.isDownloaded) {
             val start = currentIdx
             currentIdx += playDisplays.size
@@ -164,6 +169,7 @@ class HomeGameMenuDelegate @Inject constructor(
         return when (focusIndex) {
             closeIdx -> GameMenuAction.CloseGame
             playIdx -> GameMenuAction.Play(game.id, game.needsInstall, game.isDownloaded)
+            streamIdx -> GameMenuAction.Stream(game.id)
             favoriteIdx -> GameMenuAction.ToggleFavorite(game.id)
             detailsIdx -> GameMenuAction.ViewDetails(game.id)
             addToCollectionIdx -> GameMenuAction.AddToCollection(game.id)

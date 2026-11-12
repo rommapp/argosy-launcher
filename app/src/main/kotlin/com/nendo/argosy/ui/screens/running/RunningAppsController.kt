@@ -19,6 +19,7 @@ import com.nendo.argosy.data.repository.GameRepository
 import com.nendo.argosy.data.repository.PlatformRepository
 import com.nendo.argosy.data.repository.SaveCacheManager
 import com.nendo.argosy.data.social.SocialRepository
+import com.nendo.argosy.data.streaming.StreamSessionManager
 import com.nendo.argosy.domain.model.MakeRoomStage
 import com.nendo.argosy.ui.input.InputHandler
 import com.nendo.argosy.ui.input.InputResult
@@ -237,18 +238,25 @@ class RunningAppsController private constructor(
         playedThisRunMs: Long
     ): RunningAppUi {
         val entity = game?.gameId?.let { deps.gameRepository.getById(it) }
+        val isStream = packageName == StreamSessionManager.STREAM_PACKAGE
         return RunningAppUi(
             taskId = taskId,
             packageName = packageName,
-            iconPackageName = if (packageName == EmulatorRegistry.BUILTIN_PACKAGE) {
+            iconPackageName = if (packageName == EmulatorRegistry.BUILTIN_PACKAGE || isStream) {
                 com.nendo.argosy.BuildConfig.APPLICATION_ID
             } else {
                 packageName
             },
-            label = labels.getOrPut(packageName) {
-                deps.appsRepository.getAppLabel(packageName)
-                    ?: EmulatorRegistry.getByPackage(packageName)?.displayName
+            label = if (isStream) {
+                deps.streamSessions.session.value?.target?.containerLabel
+                    ?.let { deps.context.getString(R.string.stream_running_label, it) }
                     ?: packageName
+            } else {
+                labels.getOrPut(packageName) {
+                    deps.appsRepository.getAppLabel(packageName)
+                        ?: EmulatorRegistry.getByPackage(packageName)?.displayName
+                        ?: packageName
+                }
             },
             gameId = entity?.id,
             gameTitle = entity?.title,
@@ -360,7 +368,7 @@ class RunningAppsController private constructor(
 
     private fun bringForward(app: RunningAppUi) {
         val gameId = app.gameId
-        if (gameId != null) {
+        if (gameId != null && app.packageName != StreamSessionManager.STREAM_PACKAGE) {
             gameLaunchDelegate.launchGame(
                 scope = launchScope,
                 gameId = gameId,
@@ -581,6 +589,8 @@ class RunningAppsController private constructor(
     }
 
     class Factory @Inject constructor(
+        @dagger.hilt.android.qualifiers.ApplicationContext internal val context: android.content.Context,
+        internal val streamSessions: StreamSessionManager,
         internal val backgroundGames: BackgroundGames,
         internal val runningGames: RunningGames,
         internal val appsRepository: AppsRepository,

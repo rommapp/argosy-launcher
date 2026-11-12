@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="stream_entry_home_menu">Transmitir en %1$s</string>
+    <string name="stream_entry_home_menu_resume">Reanudar transmisión</string>
+    <string name="stream_entry_library_menu">Transmitir en %1$s</string>
+    <string name="stream_entry_library_menu_resume">Reanudar transmisión</string>
+    <string name="stream_entry_gamedetail_menu">Transmitir en %1$s</string>
+    <string name="stream_entry_gamedetail_menu_resume">Reanudar transmisión</string>
+    <string name="stream_running_label">Transmisión en %1$s</string>
+
+    <string name="stream_launch_title">Transmitir en %1$s</string>
+    <string name="stream_launch_loading">Comprobando partidas y estados</string>
+    <string name="stream_launch_starting">Iniciando la transmisión</string>
+    <string name="stream_launch_ready">La transmisión empieza desde tu partida guardada en el servidor.</string>
+    <string name="stream_launch_state_label">Estado</string>
+    <string name="stream_launch_save_label">Partida guardada</string>
+    <string name="stream_launch_state_fresh">Sin estado, empezar desde la partida guardada</string>
+    <string name="stream_launch_option_by_owner">%1$s, de %2$s</string>
+    <string name="stream_launch_busy_playing_since">%1$s se está jugando desde las %2$s.</string>
+    <string name="stream_launch_busy_draining">La sesión anterior aún se está cerrando. Inténtalo de nuevo en un momento.</string>
+    <string name="stream_launch_busy_fallback">Otra persona está jugando en este momento. Inténtalo de nuevo más tarde.</string>
+    <plurals name="stream_launch_card_found">
+        <item quantity="one">Este equipo del servidor ya tiene una tarjeta de memoria con %d archivo de guardado. ¿Importarla a tu biblioteca o empezar con una tarjeta nueva?</item>
+        <item quantity="many">Este equipo del servidor ya tiene una tarjeta de memoria con %d archivos de guardado. ¿Importarla a tu biblioteca o empezar con una tarjeta nueva?</item>
+        <item quantity="other">Este equipo del servidor ya tiene una tarjeta de memoria con %d archivos de guardado. ¿Importarla a tu biblioteca o empezar con una tarjeta nueva?</item>
+    </plurals>
+    <string name="stream_launch_card_games">Juegos en esta tarjeta: %1$s</string>
+    <string name="stream_launch_card_unreadable">RomM no pudo leer la tarjeta de memoria de este equipo del servidor, así que no sabe si contiene partidas. Inténtalo más tarde o empieza de cero y borra lo que contenga.</string>
+    <string name="stream_launch_card_reason">Motivo: %1$s</string>
+    <string name="stream_launch_card_erase_warning">La tarjeta existente se borrará y no se podrá recuperar.</string>
+    <string name="stream_launch_notice_start_refused">Esta cuenta no puede iniciar transmisiones en este servidor. Un administrador de RomM puede permitirlo dando a tu grupo los permisos de lectura y escritura de Streaming.</string>
+    <string name="stream_launch_notice_refused">RomM no pudo iniciar la transmisión con esa partida o ese estado.</string>
+    <string name="stream_launch_notice_not_found">RomM no encontró este juego para transmitirlo.</string>
+    <string name="stream_launch_notice_unreachable">No se pudo conectar con RomM.</string>
+    <string name="stream_launch_notice_failed">No se pudo iniciar la transmisión.</string>
+    <string name="stream_launch_notice_join_ended">Esa sesión ha terminado o ya no admite más jugadores.</string>
+    <string name="stream_launch_action_start">Transmitir</string>
+    <string name="stream_launch_action_cancel">Cancelar</string>
+    <string name="stream_launch_action_join">Unirse</string>
+    <string name="stream_launch_action_back">Atrás</string>
+    <string name="stream_launch_action_import_card">Importar esta tarjeta</string>
+    <string name="stream_launch_action_fresh_card">Empezar de cero</string>
+    <string name="stream_launch_action_dismiss">Aceptar</string>
+
+    <string name="stream_player_starting">Iniciando en %1$s</string>
+    <string name="stream_player_preparing">Preparando el juego</string>
+    <string name="stream_player_cancel">Cancelar</string>
+    <string name="stream_player_launch_failed">No se pudo iniciar la transmisión.</string>
+    <string name="stream_player_ended">La transmisión ha terminado.</string>
+    <string name="stream_player_close">Cerrar</string>
+
+    <string name="stream_controls_subtitle">Transmitiendo en %1$s</string>
+    <string name="stream_controls_resume">Volver al juego</string>
+    <string name="stream_controls_save_state">Guardar estado</string>
+    <string name="stream_controls_load_state">Cargar estado</string>
+    <string name="stream_controls_next_disc">Siguiente disco</string>
+    <string name="stream_controls_mute">Silenciar</string>
+    <string name="stream_controls_unmute">Activar sonido</string>
+    <string name="stream_controls_save_and_exit">Guardar y salir</string>
+    <string name="stream_controls_leave">Salir de la sesión</string>
+    <string name="stream_controls_notice_state_saved">Estado guardado</string>
+    <string name="stream_controls_notice_state_loaded">Estado cargado</string>
+    <string name="stream_controls_notice_disc_swapped">Disco cambiado</string>
+    <string name="stream_controls_notice_failed">RomM no lo aceptó.</string>
+
+    <string name="stream_dashboard_rail_next_disc">Siguiente disco</string>
+    <string name="stream_dashboard_rail_mute">Silenciar</string>
+    <string name="stream_dashboard_rail_unmute">Activar sonido</string>
+</resources>

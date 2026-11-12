@@ -80,6 +80,14 @@ class LibraryQuickMenuRowsTest {
     }
 
     @Test
+    fun `a streamable game offers the stream row right after download`() {
+        val rows = libraryQuickMenuRows(game(), isCustomGridHome = false, hasSiblingGroup = false, streamable = true)
+
+        assertEquals(listOf(LibraryQuickMenuRow.PRIMARY, LibraryQuickMenuRow.STREAM), rows.take(2))
+        assertFalse(libraryQuickMenuRows(game(), isCustomGridHome = false, hasSiblingGroup = false).contains(LibraryQuickMenuRow.STREAM))
+    }
+
+    @Test
     fun `a game that is not removable never offers remove from library`() {
         val rows = libraryQuickMenuRows(game(), isCustomGridHome = false, hasSiblingGroup = false)
 

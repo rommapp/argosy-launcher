@@ -155,6 +155,7 @@ object DimensionTokens {
         const val runningCartridgeHeight = 34
         const val setupLeadColumnWidth = 280
         const val setupContentMaxWidth = 560
+        const val setupPreviewMaxHeight = 340
     }
 
     object Elevation {

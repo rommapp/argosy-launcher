@@ -101,16 +101,15 @@
         <item quantity="many">%d emuladores para tus plataformas</item>
         <item quantity="other">%d emuladores para tus plataformas</item>
     </plurals>
-    <string name="setup_platforms_footer_select_all">Seleccionar todo</string>
     <string name="setup_platforms_button_next">Siguiente</string>
     <string name="setup_done_title">Todo listo</string>
     <string name="setup_done_body_home">Haz de Argosy tu app de inicio para que Inicio y el botón de inicio lo abran.</string>
     <string name="setup_done_body_ready">Tu biblioteca está lista para jugar.</string>
     <string name="setup_done_summary_library">Biblioteca</string>
     <plurals name="setup_done_library_value">
-        <item quantity="one">%1$s, %2$d juego</item>
-        <item quantity="many">%1$s, %2$d juegos</item>
-        <item quantity="other">%1$s, %2$d juegos</item>
+        <item quantity="one">%1$s, %2$,d juego</item>
+        <item quantity="many">%1$s, %2$,d juegos</item>
+        <item quantity="other">%1$s, %2$,d juegos</item>
     </plurals>
     <string name="setup_done_summary_games">Juegos</string>
     <string name="setup_done_summary_save_sync">Sincronización de partidas</string>

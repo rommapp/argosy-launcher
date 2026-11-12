@@ -36,9 +36,12 @@ import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.nendo.argosy.ui.icons.InputIcons
+import com.nendo.argosy.ui.input.ButtonGlyphSwaps
+import com.nendo.argosy.ui.input.ControllerPosition
 import com.nendo.argosy.ui.input.LocalABIconsSwapped
 import com.nendo.argosy.ui.input.LocalXYIconsSwapped
 import com.nendo.argosy.ui.input.LocalSwapStartSelect
+import com.nendo.argosy.ui.input.positionUnder
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.rememberTextMeasurer
@@ -96,14 +99,15 @@ private fun InputButton.category(): HintCategory = when (this) {
  */
 @Composable
 fun InputButton.toPainter(): Painter? {
-    val abIconsSwapped = LocalABIconsSwapped.current
-    val xyIconsSwapped = LocalXYIconsSwapped.current
-    val swapStartSelect = LocalSwapStartSelect.current
+    val swaps = ButtonGlyphSwaps(
+        ab = LocalABIconsSwapped.current,
+        xy = LocalXYIconsSwapped.current,
+        startSelect = LocalSwapStartSelect.current
+    )
+    positionUnder(swaps)?.let { return it.glyph() }
     return when (this) {
-        InputButton.A -> if (abIconsSwapped) InputIcons.FaceRight else InputIcons.FaceBottom
-        InputButton.B -> if (abIconsSwapped) InputIcons.FaceBottom else InputIcons.FaceRight
-        InputButton.X -> if (xyIconsSwapped) InputIcons.FaceTop else InputIcons.FaceLeft
-        InputButton.Y -> if (xyIconsSwapped) InputIcons.FaceLeft else InputIcons.FaceTop
+        InputButton.A, InputButton.B, InputButton.X, InputButton.Y,
+        InputButton.START, InputButton.SELECT -> null
         InputButton.DPAD -> InputIcons.Dpad
         InputButton.DPAD_UP -> InputIcons.DpadUp
         InputButton.DPAD_DOWN -> InputIcons.DpadDown
@@ -120,9 +124,17 @@ fun InputButton.toPainter(): Painter? {
         InputButton.RIGHT_STICK_VERTICAL -> InputIcons.RightStickVertical
         InputButton.LEFT_STICK_CLICK -> InputIcons.LeftStickPress
         InputButton.RIGHT_STICK_CLICK -> InputIcons.RightStickPress
-        InputButton.START -> if (swapStartSelect) InputIcons.Options else InputIcons.Menu
-        InputButton.SELECT -> if (swapStartSelect) InputIcons.Menu else InputIcons.Options
     }
+}
+
+@Composable
+private fun ControllerPosition.glyph(): Painter = when (this) {
+    ControllerPosition.TOP -> InputIcons.FaceTop
+    ControllerPosition.LEFT -> InputIcons.FaceLeft
+    ControllerPosition.RIGHT -> InputIcons.FaceRight
+    ControllerPosition.BOTTOM -> InputIcons.FaceBottom
+    ControllerPosition.MENU_LEFT -> InputIcons.Options
+    ControllerPosition.MENU_RIGHT -> InputIcons.Menu
 }
 
 private fun InputButton.isComposite(): Boolean = this == InputButton.LB_RB || this == InputButton.LT_RT

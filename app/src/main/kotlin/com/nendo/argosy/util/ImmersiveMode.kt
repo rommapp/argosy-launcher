@@ -16,8 +16,9 @@ import com.nendo.argosy.data.preferences.UserPreferences
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
-import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 
 /**
@@ -37,10 +38,15 @@ data class SystemBarVisibility(
     companion object {
         val IMMERSIVE = SystemBarVisibility(hideStatusBar = true, hideNavigationBar = true)
 
-        fun forLauncher(prefs: UserPreferences): SystemBarVisibility = SystemBarVisibility(
-            hideStatusBar = prefs.hideSystemStatusBar,
-            hideNavigationBar = prefs.hideSystemNavigationBar
-        )
+        /**
+         * The launcher's bars from the stored preferences. [statusHeldHidden] keeps the status bar
+         * off whatever the preference says, for a screen that draws its own clock and battery.
+         */
+        fun forLauncher(prefs: UserPreferences, statusHeldHidden: Boolean = false): SystemBarVisibility =
+            SystemBarVisibility(
+                hideStatusBar = prefs.hideSystemStatusBar || statusHeldHidden,
+                hideNavigationBar = prefs.hideSystemNavigationBar
+            )
 
         private fun typesFor(status: Boolean, navigation: Boolean): Int {
             val top = if (status) {
@@ -104,14 +110,18 @@ class LauncherSystemBars(private val window: Window) {
         private set
 
     private var followJob: Job? = null
+    private val statusHeldHidden = MutableStateFlow(false)
 
     fun apply() = window.applySystemBars(visibility)
+
+    fun holdStatusBarHidden(hold: Boolean) {
+        statusHeldHidden.value = hold
+    }
 
     fun follow(scope: CoroutineScope, preferences: Flow<UserPreferences>) {
         followJob?.cancel()
         followJob = scope.launch {
-            preferences
-                .map(SystemBarVisibility::forLauncher)
+            combine(preferences, statusHeldHidden) { prefs, held -> SystemBarVisibility.forLauncher(prefs, held) }
                 .distinctUntilChanged()
                 .collect { next ->
                     visibility = next

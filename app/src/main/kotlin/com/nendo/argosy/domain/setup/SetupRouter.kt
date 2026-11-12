@@ -3,12 +3,14 @@ package com.nendo.argosy.domain.setup
 import com.nendo.argosy.domain.model.SetupFacts
 import com.nendo.argosy.domain.model.SetupItem
 import com.nendo.argosy.domain.model.SetupState
+import com.nendo.argosy.domain.model.isComplete
 
 object SetupRouter {
 
     /**
-     * The items routing holds the person to, in setup order. [SetupItem.DEFAULT_HOME] is judged by
-     * [isSatisfied] but stays out of this list until its setup page exists.
+     * The items routing holds the person to, in setup order. [SetupItem.DEFAULT_HOME] is offered
+     * during setup but never enforced: an Argosy that is not the home app runs as a single-screen
+     * app on whichever display opened it.
      */
     val ENFORCED_ITEMS: List<SetupItem> = SetupItem.entries - SetupItem.DEFAULT_HOME
 
@@ -34,4 +36,10 @@ object SetupRouter {
             .firstOrNull { !isSatisfied(it, facts) }
             ?.let { SetupState.Incomplete(it) }
             ?: SetupState.Complete
+
+    /**
+     * Whether launch opens setup: a required item is unsatisfied, or the flow has not reached Done
+     * yet, in which case setup resumes at its first optional page not yet seen.
+     */
+    fun needsSetup(facts: SetupFacts): Boolean = !derive(facts).isComplete || !facts.flowFinished
 }

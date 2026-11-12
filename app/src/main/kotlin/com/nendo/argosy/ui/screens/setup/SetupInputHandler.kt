@@ -1,5 +1,7 @@
 package com.nendo.argosy.ui.screens.setup
 
+import com.nendo.argosy.ui.dualscreen.selectHoldSwapsRoles
+import com.nendo.argosy.ui.dualscreen.selectSwapsRoles
 import com.nendo.argosy.ui.input.InputDispatcher
 import com.nendo.argosy.ui.input.InputHandler
 import com.nendo.argosy.ui.input.InputResult
@@ -25,8 +27,15 @@ class SetupInputHandler(private val viewModel: SetupViewModel) : InputHandler {
 
     override fun onContextMenu(): InputResult = viewModel.toggleAllPlatforms()
 
-    override fun onMenu() = InputResult.HANDLED
-    override fun onSelect() = InputResult.HANDLED
+    override fun onSelect(): InputResult =
+        if (viewModel.swapAllowed() && selectSwapsRoles()) InputResult.UNHANDLED else InputResult.HANDLED
+
+    override fun onLongSelect(): InputResult =
+        if (viewModel.swapAllowed() && selectHoldSwapsRoles()) InputResult.UNHANDLED else InputResult.HANDLED
+
+    override fun onMenu(): InputResult =
+        if (InputDispatcher.currentIsRepeat) InputResult.HANDLED else viewModel.startPress()
+
     override fun onSecondaryAction() = InputResult.HANDLED
     override fun onPrevSection() = InputResult.HANDLED
     override fun onNextSection() = InputResult.HANDLED
@@ -35,5 +44,4 @@ class SetupInputHandler(private val viewModel: SetupViewModel) : InputHandler {
     override fun onLeftStickClick() = InputResult.HANDLED
     override fun onRightStickClick() = InputResult.HANDLED
     override fun onLongConfirm() = InputResult.HANDLED
-    override fun onLongSelect() = InputResult.HANDLED
 }

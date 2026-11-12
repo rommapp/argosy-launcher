@@ -212,6 +212,10 @@ fun ArgosyApp(
         wasOnWizard = isOnWizard
     }
 
+    LaunchedEffect(isOnWizard) {
+        activity?.holdStatusBarHidden(isOnWizard)
+    }
+
     LaunchedEffect(isOnHomeScreen) {
         activity?.isOnHomeScreen = isOnHomeScreen
         dsm?.setPrimaryOnHome(isOnHomeScreen)
@@ -358,9 +362,10 @@ fun ArgosyApp(
 
     var screenSetPromptVisible by remember { mutableStateOf(false) }
 
-    LaunchedEffect(unconfiguredScreenSet) {
-        if (unconfiguredScreenSet == null) {
+    LaunchedEffect(unconfiguredScreenSet, setupActive) {
+        if (unconfiguredScreenSet == null || setupActive) {
             screenSetPromptVisible = false
+            if (unconfiguredScreenSet != null) dsm?.clearUnconfiguredScreenSet()
             return@LaunchedEffect
         }
         screenSetPromptVisible = true
@@ -1381,7 +1386,8 @@ fun ArgosyApp(
                     modifier = Modifier
                         .align(Alignment.BottomEnd)
                         .padding(bottom = keyboardHeight),
-                    mutedKeys = mutedNotificationKeys
+                    mutedKeys = mutedNotificationKeys,
+                    criticalOnly = isOnWizard
                 )
             }
 

@@ -104,7 +104,8 @@ class SettingsBackupKeysTest {
 
     private val setupConfirmations = setOf(
         "romm_library_confirmed", "rom_storage_path_confirmed", "save_sync_answered",
-        "default_home_declined", "legacy_setup_migrated"
+        "default_home_declined", "legacy_setup_migrated", "setup_flow_finished",
+        "setup_pages_seen"
     )
 
     private val recordedPermissionState = setOf(

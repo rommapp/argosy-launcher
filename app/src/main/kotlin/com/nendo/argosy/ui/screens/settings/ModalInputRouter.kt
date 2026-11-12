@@ -21,6 +21,7 @@ internal class ModalInputRouter(private val viewModel: SettingsViewModel) {
             state.controls.systemComboCaptureTarget != null
         ) return null
 
+        interceptButtonCheck(state, method)?.let { return it }
         interceptNavRingModal(state, method)?.let { return it }
         interceptGpuDriverPrompt(state, method)?.let { return it }
         interceptDriverPicker(state, method)?.let { return it }
@@ -54,6 +55,27 @@ internal class ModalInputRouter(private val viewModel: SettingsViewModel) {
         interceptInstallerAddModal(state, method)?.let { return it }
 
         return null
+    }
+
+    private fun interceptButtonCheck(state: SettingsUiState, method: InputMethod): InputResult? {
+        if (!state.controls.showButtonCheck) return null
+        val check = viewModel.buttonCheck
+        return when (method) {
+            InputMethod.UP -> check.move(0, -1)
+            InputMethod.DOWN -> check.move(0, 1)
+            InputMethod.LEFT -> check.move(-1, 0)
+            InputMethod.RIGHT -> check.move(1, 0)
+            InputMethod.CONFIRM -> {
+                val (result, exit) = check.confirm()
+                if (exit != null) viewModel.closeButtonCheck()
+                result
+            }
+            InputMethod.BACK -> {
+                if (!check.back()) viewModel.closeButtonCheck()
+                InputResult.handled(SoundType.CLOSE_MODAL)
+            }
+            else -> InputResult.HANDLED
+        }
     }
 
     private fun interceptNavRingModal(state: SettingsUiState, method: InputMethod): InputResult? {

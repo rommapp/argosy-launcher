@@ -12,11 +12,12 @@ class LegacySetupMigration @Inject constructor(
 ) {
     suspend fun run() {
         if (appPreferences.isLegacySetupMigrated()) return
-        if (finishedBeforeUpdate()) {
+        val finished = finishedBeforeUpdate()
+        if (finished) {
             syncPreferences.confirmExistingSetupValues()
             storagePreferences.confirmExistingRomStoragePath()
         }
-        appPreferences.finishLegacySetupMigration()
+        appPreferences.finishLegacySetupMigration(finishedBeforeUpdate = finished)
     }
 
     private suspend fun finishedBeforeUpdate(): Boolean =

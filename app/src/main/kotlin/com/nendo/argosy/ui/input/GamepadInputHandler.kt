@@ -24,6 +24,13 @@ import javax.inject.Singleton
 
 interface RawInputInterceptor {
     fun setRawKeyEventListener(listener: ((KeyEvent) -> Boolean)?)
+
+    /**
+     * Installs [filter] in the raw key listener slot. A key the filter returns true for is consumed;
+     * a key it declines continues through normal mapping and dispatch, where a raw key listener's
+     * decline goes back to the platform unmapped. Null clears the slot.
+     */
+    fun setRawKeyEventFilter(filter: ((KeyEvent) -> Boolean)?)
     fun setRawMotionEventListener(listener: ((MotionEvent) -> Boolean)?)
     fun mapKeyToEvent(keyCode: Int): GamepadEvent?
 }
@@ -86,6 +93,7 @@ class GamepadInputHandler @Inject constructor(
     private val selectModifier = SelectModifier()
 
     private var rawKeyEventListener: ((KeyEvent) -> Boolean)? = null
+    private var rawKeyDeclinesPassThrough = false
     private var rawMotionEventListener: ((MotionEvent) -> Boolean)? = null
 
     init {
@@ -141,7 +149,16 @@ class GamepadInputHandler @Inject constructor(
     }
 
     override fun setRawKeyEventListener(listener: ((KeyEvent) -> Boolean)?) {
+        installRawKeyListener(listener, passDeclined = false)
+    }
+
+    override fun setRawKeyEventFilter(filter: ((KeyEvent) -> Boolean)?) {
+        installRawKeyListener(filter, passDeclined = true)
+    }
+
+    private fun installRawKeyListener(listener: ((KeyEvent) -> Boolean)?, passDeclined: Boolean) {
         rawKeyEventListener = listener
+        rawKeyDeclinesPassThrough = passDeclined && listener != null
         if (listener != null) {
             selectHoldJob?.cancel()
             selectModifier.reset()
@@ -304,7 +321,8 @@ class GamepadInputHandler @Inject constructor(
         }
 
         rawKeyEventListener?.let { listener ->
-            return listener(event)
+            val consumed = listener(event)
+            if (consumed || !rawKeyDeclinesPassThrough) return consumed
         }
 
         if (claimShortcutKey(event)) return true

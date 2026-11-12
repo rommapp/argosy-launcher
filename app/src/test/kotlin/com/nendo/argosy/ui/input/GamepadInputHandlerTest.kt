@@ -288,6 +288,47 @@ class GamepadInputHandlerTest {
         assertTrue(emitted.isEmpty())
     }
 
+    private fun keyDown(code: Int): KeyEvent = mockk(relaxed = true) {
+        every { keyCode } returns code
+        every { action } returns KeyEvent.ACTION_DOWN
+        every { repeatCount } returns 0
+        every { deviceId } returns PAD_A
+        every { device } returns null
+    }
+
+    @Test
+    fun `a d-pad key a raw key filter declines still reaches navigation`() {
+        collectEmitted()
+        handler.setRawKeyEventFilter { it.keyCode == KeyEvent.KEYCODE_BUTTON_A }
+
+        assertTrue(handler.handleKeyEvent(keyDown(KeyEvent.KEYCODE_DPAD_RIGHT)))
+        scheduler.runCurrent()
+
+        assertEquals(listOf(GamepadEvent.Right), emitted.map { it.event })
+    }
+
+    @Test
+    fun `a key a raw key filter consumes is never dispatched`() {
+        collectEmitted()
+        handler.setRawKeyEventFilter { it.keyCode == KeyEvent.KEYCODE_BUTTON_B }
+
+        assertTrue(handler.handleKeyEvent(keyDown(KeyEvent.KEYCODE_BUTTON_B)))
+        scheduler.advanceTimeBy(1000)
+
+        assertTrue(emitted.isEmpty())
+    }
+
+    @Test
+    fun `a raw key listener's decline still goes back to the platform unmapped`() {
+        collectEmitted()
+        handler.setRawKeyEventListener { false }
+
+        assertFalse(handler.handleKeyEvent(keyDown(KeyEvent.KEYCODE_DPAD_RIGHT)))
+        scheduler.runCurrent()
+
+        assertTrue(emitted.isEmpty())
+    }
+
     private companion object {
         const val PAD_A = 7
         const val PAD_B = 8

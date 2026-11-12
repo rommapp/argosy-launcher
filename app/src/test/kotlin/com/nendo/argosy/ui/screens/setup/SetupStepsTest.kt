@@ -15,19 +15,101 @@ class SetupStepsTest {
 
     private val fullPlan = setupPlan(SetupOffers(accessibility = true, platforms = true))
 
+    private val customization = listOf(SetupPage.THEME, SetupPage.HOME_LAYOUT, SetupPage.LIBRARY_LOOK)
+
     @Test
     fun `the plan carries optional pages only when offered`() {
         assertEquals(
             listOf(
                 SetupPage.WELCOME, SetupPage.LIBRARY, SetupPage.PERMISSIONS, SetupPage.ACCESSIBILITY,
-                SetupPage.FOLDERS, SetupPage.SAVE_SYNC, SetupPage.PLATFORMS, SetupPage.DONE
-            ),
+                SetupPage.FOLDERS, SetupPage.SAVE_SYNC, SetupPage.PLATFORMS, SetupPage.CONTROLLER
+            ) + customization + SetupPage.DONE,
             fullPlan
         )
         val bare = setupPlan(SetupOffers(accessibility = false, platforms = false))
         assertFalse(SetupPage.ACCESSIBILITY in bare)
         assertFalse(SetupPage.PLATFORMS in bare)
         assertEquals(SetupPage.DONE, bare.last())
+    }
+
+    @Test
+    fun `a single-screen device never sees the home or screens pages`() {
+        val single = setupPlan(SetupOffers(dualScreen = false, buttonCheck = true))
+        assertFalse(SetupPage.DEFAULT_HOME in single)
+        assertFalse(SetupPage.SCREENS in single)
+    }
+
+    @Test
+    fun `a dual-screen device asks for home right before screens`() {
+        val dual = setupPlan(SetupOffers(dualScreen = true, buttonCheck = true))
+        assertEquals(dual.indexOf(SetupPage.DEFAULT_HOME) + 1, dual.indexOf(SetupPage.SCREENS))
+        assertEquals(dual.indexOf(SetupPage.SCREENS) + 1, dual.indexOf(SetupPage.CONTROLLER))
+    }
+
+    @Test
+    fun `declining home skips the screens page and keeps the home page`() {
+        val declined = setupPlan(SetupOffers(dualScreen = true, homeDeclined = true))
+        assertTrue(SetupPage.DEFAULT_HOME in declined)
+        assertFalse(SetupPage.SCREENS in declined)
+        assertEquals(declined.indexOf(SetupPage.DEFAULT_HOME) + 1, declined.indexOf(SetupPage.CONTROLLER))
+    }
+
+    @Test
+    fun `the button check is planned only while a gamepad is connected`() {
+        val withPad = setupPlan(SetupOffers(buttonCheck = true))
+        assertEquals(withPad.indexOf(SetupPage.CONTROLLER) + 1, withPad.indexOf(SetupPage.BUTTON_CHECK))
+        val noPad = setupPlan(SetupOffers(buttonCheck = false))
+        assertTrue(SetupPage.CONTROLLER in noPad)
+        assertFalse(SetupPage.BUTTON_CHECK in noPad)
+    }
+
+    @Test
+    fun `a stored decline sticks even before the offers saw it`() {
+        val offers = SetupOffers(homeDeclined = true).withDevice(SetupFacts(dualScreenDevice = true))
+        assertTrue(offers.dualScreen)
+        assertTrue(offers.homeDeclined)
+        assertTrue(SetupOffers().withDevice(SetupFacts(defaultHomeDeclined = true)).homeDeclined)
+    }
+
+    private val requiredMet = SetupFacts(
+        librarySignedIn = true,
+        librarySourceConfirmed = true,
+        allFilesAccess = true,
+        usageAccess = true,
+        notifications = true,
+        romFolderPresent = true,
+        romFolderConfirmed = true,
+        saveSyncAnswered = true
+    )
+
+    @Test
+    fun `required items met resume at the first optional page not yet seen`() {
+        val plan = setupPlan(SetupOffers(accessibility = false, buttonCheck = true))
+        assertEquals(SetupPage.CONTROLLER, entryPage(SetupState.Complete, requiredMet, plan))
+        val controllerSeen = requiredMet.copy(pagesSeen = setOf("controller"))
+        assertEquals(SetupPage.BUTTON_CHECK, entryPage(SetupState.Complete, controllerSeen, plan))
+        val allSeen = requiredMet.copy(pagesSeen = plan.mapNotNull { it.seenToken }.toSet())
+        assertEquals(SetupPage.DONE, entryPage(SetupState.Complete, allSeen, plan))
+    }
+
+    @Test
+    fun `skipping customization marks all three pages seen`() {
+        assertEquals(customization.mapNotNull { it.seenToken }.toSet(), CUSTOMIZATION_SEEN_TOKENS)
+        val plan = setupPlan(SetupOffers(accessibility = false))
+        val skipped = requiredMet.copy(pagesSeen = setOf("controller") + CUSTOMIZATION_SEEN_TOKENS)
+        assertEquals(SetupPage.DONE, entryPage(SetupState.Complete, skipped, plan))
+    }
+
+    @Test
+    fun `required pages carry no seen token and optional pages carry distinct ones`() {
+        val required = listOf(
+            SetupPage.WELCOME, SetupPage.LIBRARY, SetupPage.PERMISSIONS, SetupPage.FOLDERS,
+            SetupPage.SAVE_SYNC, SetupPage.DONE
+        )
+        required.forEach { assertFalse("$it is optional", it.optional) }
+        assertTrue(SetupPage.DEFAULT_HOME.optional)
+        val tokens = SetupPage.entries.mapNotNull { it.seenToken }
+        assertEquals(tokens.size, tokens.toSet().size)
     }
 
     @Test
@@ -39,37 +121,38 @@ class SetupStepsTest {
 
     @Test
     fun `a fresh install opens on welcome`() {
-        assertEquals(SetupPage.WELCOME, entryPage(missing(SetupItem.LIBRARY_SOURCE), SetupFacts()))
+        assertEquals(SetupPage.WELCOME, entryPage(missing(SetupItem.LIBRARY_SOURCE), SetupFacts(), fullPlan))
     }
 
     @Test
     fun `a library signed in or answered before opens on the library page`() {
         assertEquals(
             SetupPage.LIBRARY,
-            entryPage(missing(SetupItem.LIBRARY_SOURCE), SetupFacts(librarySignedIn = true))
+            entryPage(missing(SetupItem.LIBRARY_SOURCE), SetupFacts(librarySignedIn = true), fullPlan)
         )
         assertEquals(
             SetupPage.LIBRARY,
-            entryPage(missing(SetupItem.LIBRARY_SOURCE), SetupFacts(saveSyncAnswered = true))
+            entryPage(missing(SetupItem.LIBRARY_SOURCE), SetupFacts(saveSyncAnswered = true), fullPlan)
         )
     }
 
     @Test
     fun `each missing item opens the page that owns it`() {
         val facts = SetupFacts(librarySignedIn = true, librarySourceConfirmed = true)
-        assertEquals(SetupPage.PERMISSIONS, entryPage(missing(SetupItem.ALL_FILES_ACCESS), facts))
-        assertEquals(SetupPage.PERMISSIONS, entryPage(missing(SetupItem.USAGE_ACCESS), facts))
-        assertEquals(SetupPage.PERMISSIONS, entryPage(missing(SetupItem.NOTIFICATIONS), facts))
-        assertEquals(SetupPage.FOLDERS, entryPage(missing(SetupItem.ROM_FOLDER), facts))
-        assertEquals(SetupPage.SAVE_SYNC, entryPage(missing(SetupItem.SAVE_SYNC), facts))
-        assertEquals(SetupPage.DONE, entryPage(missing(SetupItem.DEFAULT_HOME), facts))
+        assertEquals(SetupPage.PERMISSIONS, entryPage(missing(SetupItem.ALL_FILES_ACCESS), facts, fullPlan))
+        assertEquals(SetupPage.PERMISSIONS, entryPage(missing(SetupItem.USAGE_ACCESS), facts, fullPlan))
+        assertEquals(SetupPage.PERMISSIONS, entryPage(missing(SetupItem.NOTIFICATIONS), facts, fullPlan))
+        assertEquals(SetupPage.FOLDERS, entryPage(missing(SetupItem.ROM_FOLDER), facts, fullPlan))
+        assertEquals(SetupPage.SAVE_SYNC, entryPage(missing(SetupItem.SAVE_SYNC), facts, fullPlan))
+        assertEquals(SetupPage.DEFAULT_HOME, entryPage(missing(SetupItem.DEFAULT_HOME), facts, fullPlan))
     }
 
     @Test
     fun `next follows the plan while nothing earlier is missing`() {
         assertEquals(SetupPage.ACCESSIBILITY, nextPage(SetupPage.PERMISSIONS, fullPlan, SetupState.Complete))
         assertEquals(SetupPage.PLATFORMS, nextPage(SetupPage.SAVE_SYNC, fullPlan, SetupState.Complete))
-        assertEquals(SetupPage.DONE, nextPage(SetupPage.PLATFORMS, fullPlan, SetupState.Complete))
+        assertEquals(SetupPage.CONTROLLER, nextPage(SetupPage.PLATFORMS, fullPlan, SetupState.Complete))
+        assertEquals(SetupPage.DONE, nextPage(SetupPage.LIBRARY_LOOK, fullPlan, SetupState.Complete))
         assertEquals(SetupPage.DONE, nextPage(SetupPage.DONE, fullPlan, SetupState.Complete))
     }
 
@@ -97,7 +180,8 @@ class SetupStepsTest {
     fun `back steps to the previous planned page and stays on welcome`() {
         assertEquals(SetupPage.WELCOME, previousPage(SetupPage.WELCOME, fullPlan))
         assertEquals(SetupPage.SAVE_SYNC, previousPage(SetupPage.PLATFORMS, fullPlan))
-        assertEquals(SetupPage.SAVE_SYNC, previousPage(SetupPage.DONE, setupPlan(SetupOffers(platforms = false))))
+        assertEquals(SetupPage.SAVE_SYNC, previousPage(SetupPage.CONTROLLER, setupPlan(SetupOffers(platforms = false))))
+        assertEquals(SetupPage.LIBRARY_LOOK, previousPage(SetupPage.DONE, fullPlan))
         fullPlan.drop(1).forEach { page ->
             assertTrue("$page went back", fullPlan.indexOf(previousPage(page, fullPlan)) < fullPlan.indexOf(page))
         }
@@ -106,12 +190,33 @@ class SetupStepsTest {
     @Test
     fun `the rail counts every planned page and leaves welcome empty`() {
         val welcome = railFor(SetupPage.WELCOME, fullPlan)
-        assertEquals(fullPlan.size, welcome.stepCount)
-        assertTrue(fullPlan.indices.all { welcome.stateOf(it) == SetupSegmentState.UPCOMING })
+        assertEquals(fullPlan.size - customization.size + 1, welcome.stepCount)
+        assertTrue((0 until welcome.stepCount).all { welcome.stateOf(it) == SetupSegmentState.UPCOMING })
 
         val library = railFor(SetupPage.LIBRARY, fullPlan)
         assertEquals(2, library.stepNumber)
         assertEquals(SetupSegmentState.DONE, library.stateOf(0))
         assertEquals(SetupSegmentState.CURRENT, library.stateOf(1))
+    }
+
+    @Test
+    fun `the customization pages share one rail segment with a tick each`() {
+        val theme = railFor(SetupPage.THEME, fullPlan)
+        val home = railFor(SetupPage.HOME_LAYOUT, fullPlan)
+        val library = railFor(SetupPage.LIBRARY_LOOK, fullPlan)
+        assertEquals(theme.currentIndex, home.currentIndex)
+        assertEquals(home.currentIndex, library.currentIndex)
+        assertEquals(3, theme.segments[theme.currentIndex].subTicks)
+        assertEquals(listOf(0, 1, 2), listOf(theme, home, library).map { it.currentSubTick })
+    }
+
+    @Test
+    fun `the controller and button check share one rail segment`() {
+        val plan = setupPlan(SetupOffers(buttonCheck = true))
+        val controller = railFor(SetupPage.CONTROLLER, plan)
+        val check = railFor(SetupPage.BUTTON_CHECK, plan)
+        assertEquals(controller.currentIndex, check.currentIndex)
+        assertEquals(2, check.segments[check.currentIndex].subTicks)
+        assertEquals(1, check.currentSubTick)
     }
 }

@@ -54,4 +54,11 @@ data class Notification(
     val progress: NotificationProgress? = null,
     val accentColor: Int? = null,
     val category: NotificationCategory = NotificationCategory.GENERAL
-)
+) {
+    /**
+     * An error or a battery notice: the notices that still show where a screen asks for only the
+     * ones that cannot wait.
+     */
+    val isCritical: Boolean
+        get() = type == NotificationType.ERROR || category == NotificationCategory.BATTERY
+}

@@ -99,14 +99,13 @@
     <plurals name="setup_platforms_cores_subtitle">
         <item quantity="other">适用于你的平台的 %d 个模拟器</item>
     </plurals>
-    <string name="setup_platforms_footer_select_all">全选</string>
     <string name="setup_platforms_button_next">下一步</string>
     <string name="setup_done_title">一切就绪</string>
     <string name="setup_done_body_home">将 Argosy 设为主屏幕应用，这样主页和主页键都会打开它。</string>
     <string name="setup_done_body_ready">你的游戏库已可以开始游玩。</string>
     <string name="setup_done_summary_library">游戏库</string>
     <plurals name="setup_done_library_value">
-        <item quantity="other">%1$s，%2$d 款游戏</item>
+        <item quantity="other">%1$s，%2$,d 款游戏</item>
     </plurals>
     <string name="setup_done_summary_games">游戏</string>
     <string name="setup_done_summary_save_sync">存档同步</string>

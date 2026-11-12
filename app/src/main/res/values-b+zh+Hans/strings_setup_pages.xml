@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="setup_home_title">主屏幕应用</string>
+    <string name="setup_home_purpose">Argosy 需要成为主屏幕应用才能同时运行两块屏幕。</string>
+    <string name="setup_home_body">将 Argosy 设为主屏幕应用，按主页键即可打开它，两块屏幕也能协同工作。</string>
+    <string name="setup_home_body_set">Argosy 已是你的主屏幕应用。</string>
+    <string name="setup_home_decline_note">不设为主屏幕应用时，Argosy 仍会下载和同步游戏，但不会运行第二块屏幕。从其他应用启动的游戏只有在关闭 Secure Saves 时才会同步存档。</string>
+    <string name="setup_home_button_set">设为主屏幕应用</string>
+    <string name="setup_home_button_decline">不设为主屏幕</string>
+    <string name="setup_home_button_next">下一步</string>
+
+    <string name="setup_screens_title">屏幕</string>
+    <string name="setup_screens_purpose">选择显示菜单的屏幕。游戏和详情显示在另一块屏幕上。</string>
+    <string name="setup_screens_line">你可以随时交换。</string>
+    <string name="setup_screens_button_next">下一步</string>
+    <string name="setup_screens_role_menus">菜单</string>
+    <string name="setup_screens_role_games">游戏和详情</string>
+    <string name="setup_screens_footer_swap">交换屏幕</string>
+
+    <string name="setup_controller_title">这是你的手柄吗？</string>
+    <string name="setup_controller_purpose">选择手柄上印的按键布局。</string>
+    <string name="setup_controller_none_title">未检测到手柄</string>
+    <string name="setup_controller_none_body">连接手柄即可现在设置，也可以跳过，改用触屏或遥控器。</string>
+    <string name="setup_controller_button_next">下一步</string>
+    <string name="setup_controller_button_check_again">重新检测</string>
+    <string name="setup_controller_button_skip">跳过</string>
+    <string name="setup_controller_xbox">Xbox 布局</string>
+    <string name="setup_controller_xbox_detail">确认键在下方</string>
+    <string name="setup_controller_nintendo">Nintendo 布局</string>
+    <string name="setup_controller_nintendo_detail">确认键在右侧</string>
+
+    <string name="setup_check_title">检查按键</string>
+    <string name="setup_check_purpose">按任意键，看看它对应哪里。测试时不会触发任何操作。</string>
+    <string name="setup_check_status_last">上次按下：%1$s</string>
+    <string name="setup_check_status_idle">请按一个键</string>
+    <string name="setup_check_action_confirm">确认</string>
+    <string name="setup_check_action_back">返回</string>
+    <string name="setup_check_action_options">选项</string>
+    <string name="setup_check_action_quick">快捷操作</string>
+    <string name="setup_check_action_menu">菜单</string>
+    <string name="setup_check_action_select">Select</string>
+    <string name="setup_check_toggle_swap_ab">交换A/B</string>
+    <string name="setup_check_toggle_swap_xy">交换X/Y</string>
+    <string name="setup_check_toggle_swap_start_select">交换Start/Select</string>
+    <string name="setup_check_button_back">返回</string>
+    <string name="setup_check_button_continue">继续</string>
+
+    <string name="setup_look_theme_title">主题</string>
+    <string name="setup_look_theme_purpose">选择 Argosy 的外观。</string>
+    <string name="setup_look_home_title">主页布局</string>
+    <string name="setup_look_home_purpose">选择主页如何排列你的游戏。</string>
+    <string name="setup_look_library_title">游戏库</string>
+    <string name="setup_look_library_purpose">选择游戏库的外观。</string>
+    <string name="setup_look_button_skip">跳过个性化</string>
+    <string name="setup_look_button_next">下一步</string>
+    <string name="setup_look_theme_mode_label">模式</string>
+    <string name="setup_look_theme_light">浅色</string>
+    <string name="setup_look_theme_dark">深色</string>
+    <string name="setup_look_theme_system">跟随系统</string>
+    <string name="setup_look_accent_label">强调色</string>
+    <string name="setup_look_accent_default_desc">默认强调色</string>
+    <string name="setup_look_library_layout_label">布局</string>
+    <string name="setup_look_library_grid">网格</string>
+    <string name="setup_look_library_list">列表</string>
+    <string name="setup_look_shape_label">封面形状</string>
+    <string name="setup_look_shape_tall">竖长</string>
+    <string name="setup_look_shape_standard">标准</string>
+    <string name="setup_look_shape_square">方形</string>
+    <string name="setup_look_more_in_settings">更多主题、音效、字体和背景可在设置中找到。</string>
+
+    <string name="setup_companion_brand">设置正在另一块屏幕上进行。</string>
+
+    <string name="settings_navigation_check_buttons_title">检查按键</string>
+    <string name="settings_navigation_check_buttons_subtitle">逐个按键，看看它对应哪里</string>
+    <string name="settings_navigation_check_buttons_done">完成</string>
+</resources>

@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="setup_home_title">Главный экран</string>
+    <string name="setup_home_purpose">Чтобы работали оба экрана, Argosy должен быть приложением главного экрана.</string>
+    <string name="setup_home_body">Сделайте Argosy приложением главного экрана, чтобы кнопка «Домой» открывала его, а оба экрана работали вместе.</string>
+    <string name="setup_home_body_set">Argosy уже приложение главного экрана.</string>
+    <string name="setup_home_decline_note">Без этого Argosy скачивает и синхронизирует игры, но не управляет вторым экраном. Игры, запущенные из других приложений, синхронизируют сохранения, только когда Secure Saves выключен.</string>
+    <string name="setup_home_button_set">Сделать главным экраном</string>
+    <string name="setup_home_button_decline">Без главного экрана</string>
+    <string name="setup_home_button_next">Далее</string>
+
+    <string name="setup_screens_title">Экраны</string>
+    <string name="setup_screens_purpose">Выберите экран для меню. Игры и подробности будут на другом.</string>
+    <string name="setup_screens_line">Их можно поменять в любой момент.</string>
+    <string name="setup_screens_button_next">Далее</string>
+    <string name="setup_screens_role_menus">Меню</string>
+    <string name="setup_screens_role_games">Игры и подробности</string>
+    <string name="setup_screens_footer_swap">Поменять экраны</string>
+
+    <string name="setup_controller_title">Это ваш контроллер?</string>
+    <string name="setup_controller_purpose">Выберите раскладку, напечатанную на контроллере.</string>
+    <string name="setup_controller_none_title">Контроллер не найден</string>
+    <string name="setup_controller_none_body">Подключите контроллер, чтобы настроить его сейчас, или пропустите шаг и пользуйтесь сенсорным экраном или пультом.</string>
+    <string name="setup_controller_button_next">Далее</string>
+    <string name="setup_controller_button_check_again">Проверить снова</string>
+    <string name="setup_controller_button_skip">Пропустить</string>
+    <string name="setup_controller_xbox">Раскладка Xbox</string>
+    <string name="setup_controller_xbox_detail">Подтверждение снизу</string>
+    <string name="setup_controller_nintendo">Раскладка Nintendo</string>
+    <string name="setup_controller_nintendo_detail">Подтверждение справа</string>
+
+    <string name="setup_check_title">Проверьте кнопки</string>
+    <string name="setup_check_purpose">Нажмите любую кнопку, чтобы увидеть, куда она попадает. Во время проверки ничего не происходит.</string>
+    <string name="setup_check_status_last">Последнее нажатие: %1$s</string>
+    <string name="setup_check_status_idle">Нажмите кнопку</string>
+    <string name="setup_check_action_confirm">Подтвердить</string>
+    <string name="setup_check_action_back">Назад</string>
+    <string name="setup_check_action_options">Параметры</string>
+    <string name="setup_check_action_quick">Быстрое действие</string>
+    <string name="setup_check_action_menu">Меню</string>
+    <string name="setup_check_action_select">Select</string>
+    <string name="setup_check_toggle_swap_ab">Поменять местами A/B</string>
+    <string name="setup_check_toggle_swap_xy">Поменять местами X/Y</string>
+    <string name="setup_check_toggle_swap_start_select">Поменять местами Start/Select</string>
+    <string name="setup_check_button_back">Назад</string>
+    <string name="setup_check_button_continue">Продолжить</string>
+
+    <string name="setup_look_theme_title">Тема</string>
+    <string name="setup_look_theme_purpose">Выберите, как выглядит Argosy.</string>
+    <string name="setup_look_home_title">Вид главной</string>
+    <string name="setup_look_home_purpose">Выберите, как главная располагает игры.</string>
+    <string name="setup_look_library_title">Библиотека</string>
+    <string name="setup_look_library_purpose">Выберите, как выглядит библиотека.</string>
+    <string name="setup_look_button_skip">Пропустить оформление</string>
+    <string name="setup_look_button_next">Далее</string>
+    <string name="setup_look_theme_mode_label">Режим</string>
+    <string name="setup_look_theme_light">Светлая</string>
+    <string name="setup_look_theme_dark">Тёмная</string>
+    <string name="setup_look_theme_system">Как в системе</string>
+    <string name="setup_look_accent_label">Акцентный цвет</string>
+    <string name="setup_look_accent_default_desc">Акцентный цвет по умолчанию</string>
+    <string name="setup_look_library_layout_label">Вид</string>
+    <string name="setup_look_library_grid">Сетка</string>
+    <string name="setup_look_library_list">Список</string>
+    <string name="setup_look_shape_label">Форма обложек</string>
+    <string name="setup_look_shape_tall">Высокая</string>
+    <string name="setup_look_shape_standard">Стандартная</string>
+    <string name="setup_look_shape_square">Квадратная</string>
+    <string name="setup_look_more_in_settings">Другие темы, звуки, шрифты и фоны есть в настройках.</string>
+
+    <string name="setup_companion_brand">Настройка идёт на другом экране.</string>
+
+    <string name="settings_navigation_check_buttons_title">Проверить кнопки</string>
+    <string name="settings_navigation_check_buttons_subtitle">Нажимайте кнопки, чтобы увидеть, куда они попадают</string>
+    <string name="settings_navigation_check_buttons_done">Готово</string>
+</resources>

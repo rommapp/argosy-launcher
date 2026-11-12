@@ -57,6 +57,40 @@ class LegacySetupMigrationTest {
         assertTrue(sync.saveSyncAnswered)
         assertTrue(stores.storage.preferences.first().romStoragePathConfirmed)
         assertFalse(stores.app.isLegacyFirstRunComplete())
+        assertTrue(stores.app.preferences.first().setupFlowFinished)
+    }
+
+    @Test
+    fun `an install set up before the flag existed is marked finished`() = runTest {
+        val stores = stores()
+        stores.seedFinishedInstall(flag = false)
+
+        stores.migration.run()
+
+        assertTrue(stores.app.preferences.first().setupFlowFinished)
+    }
+
+    @Test
+    fun `an install that never finished setup is not marked finished`() = runTest {
+        val stores = stores()
+        stores.sync.setRomMCredentials("https://romm.example.com/", "token", "player", 7)
+
+        stores.migration.run()
+
+        assertFalse(stores.app.preferences.first().setupFlowFinished)
+    }
+
+    @Test
+    fun `seen pages accumulate and finishing the flow sets its marker`() = runTest {
+        val stores = stores()
+
+        stores.app.markSetupPagesSeen(setOf("controller"))
+        stores.app.markSetupPagesSeen(setOf("theme", "home_layout"))
+        stores.app.finishSetupFlow()
+
+        val app = stores.app.preferences.first()
+        assertTrue(app.setupFlowFinished)
+        assertTrue(app.setupPagesSeen == setOf("controller", "theme", "home_layout"))
     }
 
     @Test

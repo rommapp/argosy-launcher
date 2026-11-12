@@ -193,6 +193,8 @@ private fun PresentationSlotScene(
             ) {
                 HomeLayoutPreview(settings = slot.settings, modifier = Modifier.fillMaxWidth())
             }
+            is PresentationSlot.Setup ->
+                com.nendo.argosy.ui.screens.setup.components.SetupCompanion(state = slot.state)
             is PresentationSlot.PlayTime -> PlayTimeSlot(slot)
             is PresentationSlot.PlayTimeline -> PlayTimelineSlot(slot)
             is PresentationSlot.PlayShare -> PlayShareSlot(slot)

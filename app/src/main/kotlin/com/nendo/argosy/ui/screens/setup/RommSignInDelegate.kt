@@ -4,6 +4,7 @@ import android.app.Application
 import android.content.Intent
 import android.net.Uri
 import com.nendo.argosy.R
+import com.nendo.argosy.data.remote.romm.ConnectionState
 import com.nendo.argosy.data.remote.romm.DeviceAuthOutcome
 import com.nendo.argosy.data.remote.romm.RomMCapabilities
 import com.nendo.argosy.data.remote.romm.RomMErrorKind
@@ -18,9 +19,11 @@ import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withTimeoutOrNull
 import javax.inject.Inject
 
 private fun RomMResult.Error.toProbeError(): SetupError = when (kind) {
@@ -43,6 +46,7 @@ class RommSignInDelegate @Inject constructor(
 
     private lateinit var scope: CoroutineScope
     private var devicePollJob: Job? = null
+    private var summaryJob: Job? = null
 
     fun bind(scope: CoroutineScope) {
         this.scope = scope
@@ -58,7 +62,31 @@ class RommSignInDelegate @Inject constructor(
                 view = if (signedIn) LibraryView.SIGNED_IN else it.view
             )
         }
-        if (signedIn) scope.launch { loadLibrarySummary() }
+        if (signedIn) refreshSummary()
+    }
+
+    /**
+     * Loads the signed-in library's game and platform counts unless they are loaded or loading. A
+     * first call that fails waits for the RomM connection and tries once more.
+     */
+    fun refreshSummary() {
+        if (_state.value.summaryLoaded || summaryJob?.isActive == true) return
+        summaryJob = scope.launch {
+            val first = romMRepository.getLibrarySummary()
+            val summary = if (first is RomMResult.Success) {
+                first
+            } else {
+                withTimeoutOrNull(SUMMARY_CONNECT_WAIT_MS) {
+                    romMRepository.initialize()
+                    romMRepository.connectionState.first { it is ConnectionState.Connected }
+                    romMRepository.getLibrarySummary()
+                } ?: first
+            }
+            when (summary) {
+                is RomMResult.Success -> applySummary(summary.data)
+                is RomMResult.Error -> _state.update { it.copy(error = summaryError(summary.message)) }
+            }
+        }
     }
 
     fun chooseRomm() {
@@ -245,32 +273,24 @@ class RommSignInDelegate @Inject constructor(
     private suspend fun onAuthSuccess() {
         when (val summary = romMRepository.getLibrarySummary()) {
             is RomMResult.Success -> {
-                val (platformCount, gameCount) = summary.data
-                _state.update {
-                    it.copy(
-                        isConnecting = false,
-                        view = LibraryView.SIGNED_IN,
-                        gameCount = gameCount,
-                        platformCount = platformCount,
-                        pairingCode = ""
-                    )
-                }
+                _state.update { it.copy(isConnecting = false, view = LibraryView.SIGNED_IN, pairingCode = "") }
+                applySummary(summary.data)
             }
             is RomMResult.Error -> _state.update {
-                it.copy(
-                    isConnecting = false,
-                    error = SetupError(textRes = R.string.firstrun_romm_success_error_library_fetch, arg = summary.message)
-                )
+                it.copy(isConnecting = false, error = summaryError(summary.message))
             }
         }
     }
 
-    private suspend fun loadLibrarySummary() {
-        val summary = romMRepository.getLibrarySummary()
-        if (summary !is RomMResult.Success) return
-        val (platformCount, gameCount) = summary.data
-        _state.update { it.copy(gameCount = gameCount, platformCount = platformCount) }
+    private fun applySummary(summary: Pair<Int, Int>) {
+        val (platformCount, gameCount) = summary
+        _state.update {
+            it.copy(gameCount = gameCount, platformCount = platformCount, summaryLoaded = true, error = null)
+        }
     }
+
+    private fun summaryError(message: String): SetupError =
+        SetupError(textRes = R.string.firstrun_romm_success_error_library_fetch, arg = message)
 
     private fun stopPolling() {
         devicePollJob?.cancel()
@@ -285,4 +305,8 @@ class RommSignInDelegate @Inject constructor(
     }
 
     private fun normalized(code: String): String = code.replace("-", "").replace(" ", "")
+
+    private companion object {
+        const val SUMMARY_CONNECT_WAIT_MS = 15_000L
+    }
 }

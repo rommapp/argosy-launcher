@@ -176,6 +176,10 @@ class ControlsSettingsDelegate @Inject constructor(
         }
     }
 
+    fun setButtonCheckOpen(open: Boolean) {
+        _state.update { it.copy(showButtonCheck = open) }
+    }
+
     fun showNavRingModal() {
         _state.update {
             it.copy(

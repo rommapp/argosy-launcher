@@ -192,7 +192,8 @@ internal fun ScreenCard(
     screen: ScreenAssignment,
     perPixel: Dp,
     isFocused: Boolean,
-    onClick: () -> Unit
+    onClick: () -> Unit,
+    roleLabelRes: Int = screenRoleTitleRes(screen.role)
 ) {
     val dimmed = screen.role == ScreenRole.OFF
     Box(
@@ -221,7 +222,7 @@ internal fun ScreenCard(
                 .padding(Dimens.spacingSm)
         )
         Text(
-            text = stringResource(screenRoleTitleRes(screen.role)),
+            text = stringResource(roleLabelRes),
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurface,
             textAlign = TextAlign.Center,

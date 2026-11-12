@@ -3,6 +3,7 @@ package com.nendo.argosy.ui.screens.setup
 import android.app.Application
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.nendo.argosy.DualScreenManagerHolder
 import com.nendo.argosy.core.input.SoundType
 import com.nendo.argosy.data.permissions.PermissionGrant
 import com.nendo.argosy.data.preferences.UserPreferencesRepository
@@ -10,9 +11,15 @@ import com.nendo.argosy.data.setup.SetupCoreDownloads
 import com.nendo.argosy.data.setup.SetupStateRepository
 import com.nendo.argosy.domain.model.ArgosyPermission
 import com.nendo.argosy.domain.model.PermissionAvailability
+import com.nendo.argosy.domain.model.ScreenRole
 import com.nendo.argosy.domain.setup.SetupRouter
 import com.nendo.argosy.ui.input.HapticPattern
 import com.nendo.argosy.ui.input.InputResult
+import com.nendo.argosy.ui.screens.settings.screenAssignmentsOf
+import com.nendo.argosy.ui.screens.settings.screenLayoutWithRole
+import com.nendo.argosy.ui.screens.settings.storeScreenLayout
+import com.nendo.argosy.ui.screens.setup.components.ButtonCheckController
+import com.nendo.argosy.ui.screens.setup.components.ButtonCheckExit
 import com.nendo.argosy.ui.screens.setup.components.SetupDirection
 import com.nendo.argosy.util.PlatformFilterLogic
 import com.nendo.argosy.util.SecondaryHomeComponent
@@ -33,6 +40,7 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.withTimeoutOrNull
 import javax.inject.Inject
 
 sealed interface SetupEffect {
@@ -62,7 +70,8 @@ class SetupViewModel @Inject constructor(
     private val signIn: RommSignInDelegate,
     private val access: SetupAccessDelegate,
     private val folders: SetupFoldersDelegate,
-    private val platforms: SetupPlatformsDelegate
+    private val platforms: SetupPlatformsDelegate,
+    private val personalize: SetupPersonalizeDelegate
 ) : ViewModel() {
 
     private val _core = MutableStateFlow(SetupUiState())
@@ -73,10 +82,13 @@ class SetupViewModel @Inject constructor(
         },
         folders.state,
         platforms.state,
-        coreDownloads.progress
-    ) { base, folderState, platformState, cores ->
-        base.copy(folders = folderState, platforms = platformState, cores = cores)
+        coreDownloads.progress,
+        personalize.state
+    ) { base, folderState, platformState, cores, personal ->
+        base.withPersonal(personal).copy(folders = folderState, platforms = platformState, cores = cores)
     }.stateIn(viewModelScope, SharingStarted.Eagerly, SetupUiState())
+
+    val buttonCheck: ButtonCheckController get() = personalize.buttonCheck
 
     private val _effects = MutableSharedFlow<SetupEffect>(extraBufferCapacity = 4)
     val effects: SharedFlow<SetupEffect> = _effects.asSharedFlow()
@@ -88,8 +100,21 @@ class SetupViewModel @Inject constructor(
         access.bind(viewModelScope)
         folders.bind(viewModelScope)
         platforms.bind(viewModelScope)
+        personalize.bind(viewModelScope)
         viewModelScope.launch {
-            setupStateRepository.facts.collect { facts -> _core.update { it.copy(facts = facts) } }
+            setupStateRepository.facts.collect { facts ->
+                _core.update { it.copy(facts = facts, offers = it.offers.withDevice(facts)) }
+            }
+        }
+        viewModelScope.launch {
+            personalize.state.map { it.gamepadConnected }.distinctUntilChanged().collect { connected ->
+                _core.update {
+                    it.copy(
+                        offers = it.offers.copy(buttonCheck = connected),
+                        focused = if (it.page == SetupPage.CONTROLLER) null else it.focused
+                    )
+                }
+            }
         }
         viewModelScope.launch {
             access.state.map { it.accessibilityOffered }.distinctUntilChanged().collect { offered ->
@@ -105,7 +130,7 @@ class SetupViewModel @Inject constructor(
         viewModelScope.launch { openAtFirstMissingItem() }
     }
 
-    fun currentState(): SetupUiState = _core.value.copy(
+    fun currentState(): SetupUiState = _core.value.withPersonal(personalize.state.value).copy(
         signIn = signIn.state.value,
         access = access.state.value,
         folders = folders.state.value,
@@ -118,8 +143,14 @@ class SetupViewModel @Inject constructor(
         val prefs = preferencesRepository.userPreferences.first()
         signIn.prefill(prefs.rommBaseUrl, facts.librarySignedIn)
         if (facts.librarySignedIn) requestPlatforms()
-        val entry = entryPage(SetupRouter.derive(facts), facts)
-        _core.update { it.copy(facts = facts, loaded = true) }
+        _core.update {
+            it.copy(
+                facts = facts,
+                offers = it.offers.withDevice(facts).copy(buttonCheck = personalize.gamepadConnected)
+            )
+        }
+        val entry = entryPage(SetupRouter.derive(facts), facts, currentState().plan)
+        _core.update { it.copy(loaded = true) }
         goTo(entry, SetupDirection.FORWARD)
     }
 
@@ -128,16 +159,38 @@ class SetupViewModel @Inject constructor(
         if (leaving == SetupPage.PERMISSIONS || leaving == SetupPage.ACCESSIBILITY) access.leave()
         _core.update { it.copy(page = page, direction = direction, focused = null, openField = null) }
         when (page) {
+            SetupPage.LIBRARY -> if (signIn.state.value.view == LibraryView.SIGNED_IN) signIn.refreshSummary()
             SetupPage.PERMISSIONS -> access.enterPermissions()
             SetupPage.ACCESSIBILITY -> access.enterAccessibility()
             SetupPage.FOLDERS -> folders.enter()
             SetupPage.SAVE_SYNC -> showSavedSaveSyncAnswer(onlyWhenAnswered = true)
+            SetupPage.SCREENS -> refreshScreens()
+            SetupPage.BUTTON_CHECK -> buttonCheck.reset()
             SetupPage.DONE -> {
                 folders.enter()
                 showSavedSaveSyncAnswer(onlyWhenAnswered = false)
             }
             else -> Unit
         }
+    }
+
+    private fun refreshScreens() {
+        viewModelScope.launch {
+            val resolved = DualScreenManagerHolder.instance?.resolveScreenLayout() ?: return@launch
+            _core.update { it.copy(screens = screenAssignmentsOf(resolved)) }
+        }
+    }
+
+    private fun makeControlsScreen(key: String): InputResult {
+        val screens = _core.value.screens
+        val target = screens.firstOrNull { it.key == key } ?: return SILENT
+        if (target.role == ScreenRole.PRIMARY) return SILENT
+        val next = screenLayoutWithRole(screens, key, ScreenRole.PRIMARY) ?: return SILENT
+        _core.update { state ->
+            state.copy(screens = screens.map { it.copy(role = next.roleFor(it.key) ?: it.role) })
+        }
+        viewModelScope.launch { storeScreenLayout(preferencesRepository, screens, next) }
+        return InputResult.HANDLED
     }
 
     private fun showSavedSaveSyncAnswer(onlyWhenAnswered: Boolean) {
@@ -158,7 +211,32 @@ class SetupViewModel @Inject constructor(
 
     private fun advance() {
         val state = currentState()
+        markSeen(setOfNotNull(state.page.seenToken))
         goTo(nextPage(state.page, state.plan, SetupRouter.derive(state.facts)), SetupDirection.FORWARD)
+    }
+
+    private fun markSeen(tokens: Set<String>) {
+        if (tokens.isEmpty()) return
+        viewModelScope.launch { setupStateRepository.markPagesSeen(tokens) }
+    }
+
+    private fun skipCustomization() {
+        markSeen(CUSTOMIZATION_SEEN_TOKENS)
+        goTo(SetupPage.DONE, SetupDirection.FORWARD)
+    }
+
+    private fun finishSetup() {
+        viewModelScope.launch {
+            setupStateRepository.finishFlow()
+            withTimeoutOrNull(FINISH_SETTLE_MS) { setupStateRepository.needsSetup.first { !it } }
+            _effects.tryEmit(SetupEffect.Finish)
+        }
+    }
+
+    private fun declineDefaultHome() {
+        _core.update { it.copy(offers = it.offers.copy(homeDeclined = true)) }
+        viewModelScope.launch { setupStateRepository.declineDefaultHome() }
+        advance()
     }
 
     private fun requestPlatforms() {
@@ -178,9 +256,48 @@ class SetupViewModel @Inject constructor(
     fun move(move: SetupMove): InputResult {
         val state = currentState()
         if (state.page == SetupPage.PLATFORMS) platformMove(state, move)?.let { return it }
+        if (state.page == SetupPage.BUTTON_CHECK) return buttonCheck.move(move.dx, move.dy)
+        personalMove(state, move)?.let { return it }
         val next = moveFocus(state, move) ?: return BOUNDARY
         _core.update { it.copy(focused = next) }
         return InputResult.HANDLED
+    }
+
+    private fun personalMove(state: SetupUiState, move: SetupMove): InputResult? {
+        val horizontal = move == SetupMove.LEFT || move == SetupMove.RIGHT
+        return when (val target = focusedTarget(state)) {
+            is SetupTarget.ControllerLayoutChoice -> when {
+                horizontal -> {
+                    val nintendo = move == SetupMove.RIGHT
+                    if (nintendo == target.nintendo) return BOUNDARY
+                    _core.update { it.copy(focused = SetupTarget.ControllerLayoutChoice(nintendo)) }
+                    InputResult.HANDLED
+                }
+                move == SetupMove.DOWN -> {
+                    _core.update { it.copy(focused = SetupTarget.Action(SetupActionId.PRIMARY)) }
+                    InputResult.HANDLED
+                }
+                else -> BOUNDARY
+            }
+            SetupTarget.ThemeMode, SetupTarget.Accent, SetupTarget.HomeLayout,
+            SetupTarget.LibraryLayout, SetupTarget.BoxArtShape -> if (horizontal) {
+                if (personalize.step(target, if (move == SetupMove.RIGHT) 1 else -1)) InputResult.HANDLED else BOUNDARY
+            } else {
+                null
+            }
+            is SetupTarget.Action -> if (move == SetupMove.UP && state.page == SetupPage.CONTROLLER && state.gamepadConnected) {
+                _core.update { it.copy(focused = SetupTarget.ControllerLayoutChoice(state.controllerNintendo)) }
+                InputResult.HANDLED
+            } else {
+                null
+            }
+            else -> null
+        }
+    }
+
+    private fun selectControllerLayout(nintendo: Boolean) {
+        personalize.selectLayout(nintendo)
+        _core.update { it.copy(focused = SetupTarget.ControllerLayoutChoice(nintendo)) }
     }
 
     private fun platformMove(state: SetupUiState, move: SetupMove): InputResult? {
@@ -213,8 +330,38 @@ class SetupViewModel @Inject constructor(
             platforms.closeSearch()
             return InputResult.HANDLED
         }
+        if (state.page == SetupPage.BUTTON_CHECK) {
+            val (result, exit) = buttonCheck.confirm()
+            exit?.let(::exitButtonCheck)
+            return result
+        }
         val target = focusedTarget(state) ?: return SILENT
         return activate(state, target)
+    }
+
+    /**
+     * Start moves focus to the page's primary action, and activates it once focus is already there.
+     */
+    fun startPress(): InputResult {
+        val state = currentState()
+        if (state.page == SetupPage.BUTTON_CHECK) {
+            buttonCheck.startPress()?.let(::exitButtonCheck)
+            return InputResult.HANDLED
+        }
+        if (state.page == SetupPage.PLATFORMS && (state.platforms.sortMenuOpen || state.platforms.searchActive)) {
+            return InputResult.HANDLED
+        }
+        val primary = primaryTarget(state) ?: return SILENT
+        if (focusedTarget(state) == primary) return activate(state, primary)
+        _core.update { it.copy(focused = primary) }
+        return InputResult.HANDLED
+    }
+
+    fun exitButtonCheck(exit: ButtonCheckExit) {
+        when (exit) {
+            ButtonCheckExit.BACK -> goTo(previousPage(SetupPage.BUTTON_CHECK, currentState().plan), SetupDirection.BACK)
+            ButtonCheckExit.CONTINUE -> advance()
+        }
     }
 
     fun tap(target: SetupTarget) {
@@ -254,8 +401,42 @@ class SetupViewModel @Inject constructor(
             platforms.toggleAll()
             InputResult.HANDLED
         }
+        is SetupTarget.Screen -> makeControlsScreen(target.key)
+        is SetupTarget.ControllerLayoutChoice -> {
+            selectControllerLayout(target.nintendo)
+            InputResult.HANDLED
+        }
+        SetupTarget.ThemeMode, SetupTarget.Accent, SetupTarget.HomeLayout,
+        SetupTarget.LibraryLayout, SetupTarget.BoxArtShape -> SILENT
         is SetupTarget.Action -> activateAction(state, target.id)
     }
+
+    fun setThemeMode(mode: com.nendo.argosy.data.preferences.ThemeMode) {
+        _core.update { it.copy(focused = SetupTarget.ThemeMode) }
+        personalize.setThemeMode(mode)
+    }
+
+    fun setAccent(color: Int?) {
+        _core.update { it.copy(focused = SetupTarget.Accent) }
+        personalize.setAccent(color)
+    }
+
+    fun setHomeLayout(kind: com.nendo.argosy.domain.model.HomeLayoutKind) {
+        _core.update { it.copy(focused = SetupTarget.HomeLayout) }
+        personalize.setHomeLayout(kind)
+    }
+
+    fun setLibraryLayout(layout: com.nendo.argosy.data.preferences.LibraryLayout) {
+        _core.update { it.copy(focused = SetupTarget.LibraryLayout) }
+        personalize.setLibraryLayout(layout)
+    }
+
+    fun setBoxArtShape(shape: com.nendo.argosy.data.preferences.BoxArtShape) {
+        _core.update { it.copy(focused = SetupTarget.BoxArtShape) }
+        personalize.setBoxArtShape(shape)
+    }
+
+    fun swapAllowed(): Boolean = setupSwapAllowed(_core.value)
 
     private fun openField(field: SetupField): InputResult {
         _core.update { it.copy(openField = field) }
@@ -295,7 +476,10 @@ class SetupViewModel @Inject constructor(
                 resetFocus()
             }
             SetupActionId.APPROVE_ON_DEVICE -> signIn.useDevicePairing()
-            SetupActionId.NOT_NOW -> _effects.tryEmit(SetupEffect.Finish)
+            SetupActionId.NOT_NOW -> finishSetup()
+            SetupActionId.DECLINE_HOME -> declineDefaultHome()
+            SetupActionId.CHECK_AGAIN -> personalize.recheckControllers()
+            SetupActionId.SKIP_CUSTOMIZATION -> skipCustomization()
         }
         return InputResult.HANDLED
     }
@@ -320,9 +504,10 @@ class SetupViewModel @Inject constructor(
                 platforms.startCoreDownloads()
                 advance()
             }
-            SetupPage.DONE -> _effects.tryEmit(
-                if (offersHomeRole(state)) SetupEffect.RequestHomeRole else SetupEffect.Finish
-            )
+            SetupPage.DEFAULT_HOME -> if (state.facts.defaultHome) advance() else _effects.tryEmit(SetupEffect.RequestHomeRole)
+            SetupPage.SCREENS, SetupPage.CONTROLLER, SetupPage.BUTTON_CHECK,
+            SetupPage.THEME, SetupPage.HOME_LAYOUT, SetupPage.LIBRARY_LOOK -> advance()
+            SetupPage.DONE -> if (offersHomeRole(state)) _effects.tryEmit(SetupEffect.RequestHomeRole) else finishSetup()
         }
     }
 
@@ -350,6 +535,7 @@ class SetupViewModel @Inject constructor(
             state.page == SetupPage.PLATFORMS && state.platforms.sortMenuOpen -> platforms.closeSortMenu()
             state.page == SetupPage.PLATFORMS && state.platforms.searchActive -> platforms.closeSearch()
             state.page == SetupPage.LIBRARY && signIn.back() -> resetFocus()
+            state.page == SetupPage.BUTTON_CHECK && buttonCheck.back() -> Unit
             else -> goTo(previousPage(state.page, state.plan), SetupDirection.BACK)
         }
         return InputResult.handled(SoundType.BACK)
@@ -418,9 +604,19 @@ class SetupViewModel @Inject constructor(
         setupStateRepository.refresh()
         viewModelScope.launch {
             val isHome = withContext(Dispatchers.IO) { SecondaryHomeComponent.isDefaultHome(application) }
-            if (isHome) _effects.tryEmit(SetupEffect.Finish)
+            if (!isHome) return@launch
+            if (_core.value.page == SetupPage.DEFAULT_HOME) {
+                _core.update { it.copy(facts = it.facts.copy(defaultHome = true)) }
+                advance()
+            } else {
+                finishSetup()
+            }
         }
     }
 
     fun createInputHandler() = SetupInputHandler(this)
+
+    private companion object {
+        const val FINISH_SETTLE_MS = 2_000L
+    }
 }

@@ -20,6 +20,8 @@ import javax.inject.Singleton
 
 data class AppPreferences(
     val defaultHomeDeclined: Boolean = false,
+    val setupFlowFinished: Boolean = false,
+    val setupPagesSeen: Set<String> = emptySet(),
     val betaUpdatesEnabled: Boolean = false,
     val closeEmulatorOnSessionEnd: Boolean = false,
     val hiddenApps: Set<String> = emptySet(),
@@ -56,6 +58,8 @@ class AppPreferencesRepository @Inject constructor(
         val LEGACY_FIRST_RUN_COMPLETE = booleanPreferencesKey("first_run_complete")
         val LEGACY_SETUP_MIGRATED = booleanPreferencesKey("legacy_setup_migrated")
         val DEFAULT_HOME_DECLINED = booleanPreferencesKey("default_home_declined")
+        val SETUP_FLOW_FINISHED = booleanPreferencesKey("setup_flow_finished")
+        val SETUP_PAGES_SEEN = stringPreferencesKey("setup_pages_seen")
         val BETA_UPDATES_ENABLED = booleanPreferencesKey("beta_updates_enabled")
         val CLOSE_EMULATOR_ON_SESSION_END = booleanPreferencesKey("close_emulator_on_session_end")
         val HIDDEN_APPS = stringPreferencesKey("hidden_apps")
@@ -93,6 +97,8 @@ class AppPreferencesRepository @Inject constructor(
     val preferences: Flow<AppPreferences> = dataStore.data.map { prefs ->
         AppPreferences(
             defaultHomeDeclined = prefs[Keys.DEFAULT_HOME_DECLINED] ?: false,
+            setupFlowFinished = prefs[Keys.SETUP_FLOW_FINISHED] ?: false,
+            setupPagesSeen = parseTokens(prefs[Keys.SETUP_PAGES_SEEN]),
             betaUpdatesEnabled = prefs[Keys.BETA_UPDATES_ENABLED] ?: false,
             closeEmulatorOnSessionEnd = prefs[Keys.CLOSE_EMULATOR_ON_SESSION_END] ?: false,
             hiddenApps = prefs[Keys.HIDDEN_APPS]
@@ -148,12 +154,32 @@ class AppPreferencesRepository @Inject constructor(
     suspend fun isLegacySetupMigrated(): Boolean =
         dataStore.data.first()[Keys.LEGACY_SETUP_MIGRATED] ?: false
 
-    suspend fun finishLegacySetupMigration() {
+    suspend fun finishLegacySetupMigration(finishedBeforeUpdate: Boolean) {
         dataStore.edit {
             it.remove(Keys.LEGACY_FIRST_RUN_COMPLETE)
             it[Keys.LEGACY_SETUP_MIGRATED] = true
+            if (finishedBeforeUpdate) it[Keys.SETUP_FLOW_FINISHED] = true
         }
     }
+
+    suspend fun declineDefaultHome() {
+        dataStore.edit { it[Keys.DEFAULT_HOME_DECLINED] = true }
+    }
+
+    suspend fun finishSetupFlow() {
+        dataStore.edit { it[Keys.SETUP_FLOW_FINISHED] = true }
+    }
+
+    suspend fun markSetupPagesSeen(tokens: Set<String>) {
+        if (tokens.isEmpty()) return
+        dataStore.edit { prefs ->
+            val seen = parseTokens(prefs[Keys.SETUP_PAGES_SEEN]) + tokens
+            prefs[Keys.SETUP_PAGES_SEEN] = seen.sorted().joinToString(",")
+        }
+    }
+
+    private fun parseTokens(raw: String?): Set<String> =
+        raw?.split(",")?.map { it.trim() }?.filter { it.isNotEmpty() }?.toSet().orEmpty()
 
     suspend fun permissionRecord(): PermissionRecord {
         val prefs = dataStore.data.first()

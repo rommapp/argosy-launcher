@@ -39,10 +39,6 @@ import kotlinx.coroutines.launch
 import javax.inject.Inject
 import javax.inject.Singleton
 
-/**
- * The single source of setup progress. [state] is derived from stored confirmations and live
- * access each time either changes; nothing records "setup finished".
- */
 @Singleton
 class SetupStateRepository @Inject constructor(
     @ApplicationContext private val context: Context,
@@ -81,6 +77,8 @@ class SetupStateRepository @Inject constructor(
 
     val state: Flow<SetupState> = facts.map { SetupRouter.derive(it) }.distinctUntilChanged()
 
+    val needsSetup: Flow<Boolean> = facts.map { SetupRouter.needsSetup(it) }.distinctUntilChanged()
+
     fun start() {
         ProcessLifecycleOwner.get().lifecycle.addObserver(foregroundObserver)
     }
@@ -92,6 +90,12 @@ class SetupStateRepository @Inject constructor(
     suspend fun confirmLibrarySource() = syncPreferences.confirmRommLibrary()
 
     suspend fun confirmRomFolder(path: String) = storagePreferences.confirmRomStoragePath(path)
+
+    suspend fun declineDefaultHome() = appPreferences.declineDefaultHome()
+
+    suspend fun markPagesSeen(tokens: Set<String>) = appPreferences.markSetupPagesSeen(tokens)
+
+    suspend fun finishFlow() = appPreferences.finishSetupFlow()
 
     /**
      * Records the save sync answer. An answer of on goes through [SaveSyncGate] first and is not
@@ -147,7 +151,9 @@ class SetupStateRepository @Inject constructor(
             saveSyncAnswered = sync.saveSyncAnswered,
             dualScreenDevice = access.dualScreenDevice,
             defaultHome = access.defaultHome,
-            defaultHomeDeclined = app.defaultHomeDeclined
+            defaultHomeDeclined = app.defaultHomeDeclined,
+            flowFinished = app.setupFlowFinished,
+            pagesSeen = app.setupPagesSeen
         )
     }
 }

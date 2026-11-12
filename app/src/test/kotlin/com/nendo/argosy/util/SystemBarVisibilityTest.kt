@@ -42,6 +42,15 @@ class SystemBarVisibilityTest {
     }
 
     @Test
+    fun `a held status bar stays hidden over a preference that shows it and leaves navigation alone`() {
+        val prefs = UserPreferences(hideSystemStatusBar = false, hideSystemNavigationBar = false)
+        val held = SystemBarVisibility.forLauncher(prefs, statusHeldHidden = true)
+        assertEquals(topBars, held.hiddenTypes)
+        assertEquals(Type.navigationBars(), held.shownTypes)
+        assertEquals(launcher(hideStatus = false, hideNavigation = false), SystemBarVisibility.forLauncher(prefs, statusHeldHidden = false))
+    }
+
+    @Test
     fun `every preference pair splits the system bars into disjoint hidden and shown sets`() {
         for (hideStatus in listOf(true, false)) {
             for (hideNavigation in listOf(true, false)) {

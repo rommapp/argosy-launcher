@@ -81,13 +81,17 @@ class SetupRouterTest {
     }
 
     @Test
-    fun `default home is modelled but not enforced`() {
+    fun `default home is never enforced, so a dual-screen install that is not home stays complete`() {
         assertFalse(SetupItem.DEFAULT_HOME in SetupRouter.ENFORCED_ITEMS)
+        assertEquals(SetupState.Complete, SetupRouter.derive(satisfied))
         assertEquals(SetupState.Complete, SetupRouter.derive(satisfied.copy(dualScreenDevice = true)))
-        assertEquals(
-            SetupState.Incomplete(SetupItem.DEFAULT_HOME),
-            SetupRouter.derive(satisfied.copy(dualScreenDevice = true), SetupItem.entries)
-        )
+    }
+
+    @Test
+    fun `satisfied required items still need the flow finished`() {
+        assertTrue(SetupRouter.needsSetup(satisfied))
+        assertFalse(SetupRouter.needsSetup(satisfied.copy(flowFinished = true)))
+        assertTrue(SetupRouter.needsSetup(satisfied.copy(flowFinished = true, notifications = false)))
     }
 
     @Test
@@ -119,7 +123,7 @@ class SetupRouterTest {
     }
 
     @Test
-    fun `the enforced set is setup order without default home`() {
+    fun `the enforced set is setup order ending at default home`() {
         assertEquals(
             listOf(
                 SetupItem.LIBRARY_SOURCE,

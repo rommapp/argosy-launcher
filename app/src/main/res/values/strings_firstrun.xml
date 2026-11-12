@@ -81,8 +81,8 @@
     <!-- How many games the server holds, used only inside firstrun_romm_success_library.
          "Game" here means one title in the library. -->
     <plurals name="firstrun_romm_success_game_count">
-        <item quantity="one">%d game</item>
-        <item quantity="other">%d games</item>
+        <item quantity="one">%,d game</item>
+        <item quantity="other">%,d games</item>
     </plurals>
     <!-- How many platforms the server holds, used only inside firstrun_romm_success_library.
          A "platform" is a games console or computer system, for example a handheld console,

@@ -453,7 +453,8 @@ data class ControlsState(
     val systemComboCaptureTarget: com.nendo.argosy.hardware.SystemHotkeyAction? = null,
     val showNavRingModal: Boolean = false,
     val navRingFocusIndex: Int = 0,
-    val navRingReorder: com.nendo.argosy.ui.components.ListReorder<String>? = null
+    val navRingReorder: com.nendo.argosy.ui.components.ListReorder<String>? = null,
+    val showButtonCheck: Boolean = false
 ) {
     val navRingHeld: String?
         get() = navRingReorder?.let { navRingRoutes.getOrNull(it.heldIndex) }

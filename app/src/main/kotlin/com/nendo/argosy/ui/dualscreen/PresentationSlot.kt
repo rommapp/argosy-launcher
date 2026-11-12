@@ -24,6 +24,8 @@ sealed interface PresentationSlot {
 
     data class HomeLayoutPreview(val settings: HomeLayoutSettings) : PresentationSlot
 
+    data class Setup(val state: com.nendo.argosy.ui.screens.setup.components.SetupCompanionState) : PresentationSlot
+
     data class PlayTime(
         val sectionLabel: String,
         val games: List<PlayTimeSlotGame>,

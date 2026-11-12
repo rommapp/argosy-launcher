@@ -102,17 +102,16 @@
         <item quantity="many">%d эмуляторов для ваших платформ</item>
         <item quantity="other">%d эмулятора для ваших платформ</item>
     </plurals>
-    <string name="setup_platforms_footer_select_all">Выбрать все</string>
     <string name="setup_platforms_button_next">Далее</string>
     <string name="setup_done_title">Всё готово</string>
     <string name="setup_done_body_home">Сделайте Argosy главным экраном, чтобы его открывали «Домой» и кнопка «Домой».</string>
     <string name="setup_done_body_ready">Ваша библиотека готова к игре.</string>
     <string name="setup_done_summary_library">Библиотека</string>
     <plurals name="setup_done_library_value">
-        <item quantity="one">%1$s, %2$d игра</item>
-        <item quantity="few">%1$s, %2$d игры</item>
-        <item quantity="many">%1$s, %2$d игр</item>
-        <item quantity="other">%1$s, %2$d игры</item>
+        <item quantity="one">%1$s, %2$,d игра</item>
+        <item quantity="few">%1$s, %2$,d игры</item>
+        <item quantity="many">%1$s, %2$,d игр</item>
+        <item quantity="other">%1$s, %2$,d игры</item>
     </plurals>
     <string name="setup_done_summary_games">Игры</string>
     <string name="setup_done_summary_save_sync">Синхронизация сохранений</string>

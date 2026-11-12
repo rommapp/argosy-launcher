@@ -23,7 +23,6 @@ import com.nendo.argosy.data.social.NetplaySession
 import com.nendo.argosy.data.social.SocialConnectionState
 import com.nendo.argosy.data.social.SocialRepository
 import com.nendo.argosy.data.social.SocialUser
-import com.nendo.argosy.domain.model.isComplete
 import com.nendo.argosy.domain.usecase.game.LaunchGameUseCase
 import com.nendo.argosy.libretro.LibretroActivity
 import com.nendo.argosy.core.notification.NotificationDuration
@@ -341,11 +340,11 @@ class ArgosyViewModel @Inject constructor(
         connectedControllerTracker.activeLayout,
         launcherStartup.complete,
         launcherStartup.status,
-        setupStateRepository.state
-    ) { prefs, detectedLayout, startupDone, status, setup ->
+        setupStateRepository.needsSetup
+    ) { prefs, detectedLayout, startupDone, status, needsSetup ->
         val glyphSwaps = prefs.buttonGlyphSwaps(detectedLayout)
         ArgosyUiState(
-            setupIncomplete = !setup.isComplete,
+            setupIncomplete = needsSetup,
             isLoading = !startupDone,
             startupStatusRes = status,
             showStatusClock = prefs.showStatusClock,

@@ -21,7 +21,7 @@
 
     <string name="firstrun_romm_success_library">%1$s，橫跨%2$s</string>
     <plurals name="firstrun_romm_success_game_count">
-        <item quantity="other">%d款遊戲</item>
+        <item quantity="other">%,d款遊戲</item>
     </plurals>
     <plurals name="firstrun_romm_success_platform_count">
         <item quantity="other">%d個平台</item>

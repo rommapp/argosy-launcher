@@ -4,6 +4,8 @@ import androidx.annotation.StringRes
 import com.nendo.argosy.R
 import com.nendo.argosy.domain.model.ArgosyPermission
 import com.nendo.argosy.domain.model.PermissionAvailability
+import com.nendo.argosy.domain.model.ScreenRole
+import com.nendo.argosy.ui.screens.settings.ScreenAssignment
 import com.nendo.argosy.ui.screens.setup.components.SetupStepLead
 
 sealed interface SetupTarget {
@@ -19,6 +21,13 @@ sealed interface SetupTarget {
     data class Platform(val id: Long) : SetupTarget
     data object CoreDownloads : SetupTarget
     data object SelectAllPlatforms : SetupTarget
+    data class Screen(val key: String) : SetupTarget
+    data class ControllerLayoutChoice(val nintendo: Boolean) : SetupTarget
+    data object ThemeMode : SetupTarget
+    data object Accent : SetupTarget
+    data object HomeLayout : SetupTarget
+    data object LibraryLayout : SetupTarget
+    data object BoxArtShape : SetupTarget
     data class Action(val id: SetupActionId) : SetupTarget
 }
 
@@ -29,7 +38,10 @@ enum class SetupActionId {
     EDIT_ADDRESS,
     APPROVE_ON_DEVICE,
     DIFFERENT_SERVER,
-    NOT_NOW
+    NOT_NOW,
+    DECLINE_HOME,
+    CHECK_AGAIN,
+    SKIP_CUSTOMIZATION
 }
 
 data class SetupActionSpec(
@@ -40,7 +52,12 @@ data class SetupActionSpec(
     val labelCount: Int? = null
 )
 
-enum class SetupMove { UP, DOWN, LEFT, RIGHT }
+enum class SetupMove(val dx: Int, val dy: Int) {
+    UP(0, -1),
+    DOWN(0, 1),
+    LEFT(-1, 0),
+    RIGHT(1, 0)
+}
 
 val SETUP_REQUIRED_PERMISSIONS: List<ArgosyPermission> = listOf(
     ArgosyPermission.ALL_FILES_ACCESS,
@@ -83,6 +100,28 @@ fun actionsFor(state: SetupUiState): List<SetupActionSpec> = when (state.page) {
     SetupPage.FOLDERS -> listOf(primary(R.string.setup_folders_button_next))
     SetupPage.SAVE_SYNC -> listOf(primary(R.string.setup_save_sync_button_next))
     SetupPage.PLATFORMS -> listOf(primary(R.string.setup_platforms_button_next))
+    SetupPage.DEFAULT_HOME -> if (state.facts.defaultHome) {
+        listOf(primary(R.string.setup_home_button_next))
+    } else {
+        listOf(
+            SetupActionSpec(SetupActionId.DECLINE_HOME, R.string.setup_home_button_decline),
+            primary(R.string.setup_home_button_set)
+        )
+    }
+    SetupPage.SCREENS -> listOf(primary(R.string.setup_screens_button_next))
+    SetupPage.CONTROLLER -> if (state.gamepadConnected) {
+        listOf(primary(R.string.setup_controller_button_next))
+    } else {
+        listOf(
+            SetupActionSpec(SetupActionId.CHECK_AGAIN, R.string.setup_controller_button_check_again),
+            primary(R.string.setup_controller_button_skip)
+        )
+    }
+    SetupPage.BUTTON_CHECK -> emptyList()
+    SetupPage.THEME, SetupPage.HOME_LAYOUT, SetupPage.LIBRARY_LOOK -> listOf(
+        SetupActionSpec(SetupActionId.SKIP_CUSTOMIZATION, R.string.setup_look_button_skip),
+        primary(R.string.setup_look_button_next)
+    )
     SetupPage.DONE -> if (offersHomeRole(state)) {
         listOf(
             SetupActionSpec(SetupActionId.NOT_NOW, R.string.setup_done_button_not_now),
@@ -93,10 +132,6 @@ fun actionsFor(state: SetupUiState): List<SetupActionSpec> = when (state.page) {
     }
 }
 
-/**
- * Done asks for the home role on a single-screen device that does not hold it yet. Dual-screen
- * devices ask on a page of their own.
- */
 fun offersHomeRole(state: SetupUiState): Boolean = !state.facts.dualScreenDevice && !state.facts.defaultHome
 
 private fun libraryActions(state: SetupUiState): List<SetupActionSpec> {
@@ -159,7 +194,16 @@ private fun primary(@StringRes label: Int, hiddenWhenDocked: Boolean = false) =
     SetupActionSpec(SetupActionId.PRIMARY, label, primary = true, hiddenWhenDocked = hiddenWhenDocked)
 
 fun contentTargetsFor(state: SetupUiState): List<SetupTarget> = when (state.page) {
-    SetupPage.WELCOME, SetupPage.DONE -> emptyList()
+    SetupPage.WELCOME, SetupPage.DONE, SetupPage.DEFAULT_HOME, SetupPage.BUTTON_CHECK -> emptyList()
+    SetupPage.SCREENS -> setupScreens(state).map { SetupTarget.Screen(it.key) }
+    SetupPage.CONTROLLER -> if (state.gamepadConnected) {
+        listOf(SetupTarget.ControllerLayoutChoice(false), SetupTarget.ControllerLayoutChoice(true))
+    } else {
+        emptyList()
+    }
+    SetupPage.THEME -> listOf(SetupTarget.ThemeMode, SetupTarget.Accent)
+    SetupPage.HOME_LAYOUT -> listOf(SetupTarget.HomeLayout)
+    SetupPage.LIBRARY_LOOK -> listOf(SetupTarget.LibraryLayout, SetupTarget.BoxArtShape)
     SetupPage.LIBRARY -> when (state.signIn.view) {
         LibraryView.CHOICE -> listOf(SetupTarget.RommSource)
         LibraryView.ADDRESS -> listOf(SetupTarget.ServerField)
@@ -183,16 +227,16 @@ fun contentTargetsFor(state: SetupUiState): List<SetupTarget> = when (state.page
     SetupPage.SAVE_SYNC -> listOf(SetupTarget.SaveSyncChoice(true), SetupTarget.SaveSyncChoice(false))
     SetupPage.PLATFORMS -> buildList<SetupTarget> {
         add(SetupTarget.PlatformHeader)
+        add(SetupTarget.SelectAllPlatforms)
         state.platforms.shown.forEach { add(SetupTarget.Platform(it.id)) }
         if (state.platforms.missingCoreIds.isNotEmpty()) add(SetupTarget.CoreDownloads)
-        add(SetupTarget.SelectAllPlatforms)
     }
 }
 
 fun targetsFor(state: SetupUiState): List<SetupTarget> =
     contentTargetsFor(state) + actionsFor(state).map { SetupTarget.Action(it.id) }
 
-private fun primaryTarget(state: SetupUiState): SetupTarget? =
+fun primaryTarget(state: SetupUiState): SetupTarget? =
     actionsFor(state).lastOrNull { it.primary }?.let { SetupTarget.Action(it.id) }
 
 fun defaultFocus(state: SetupUiState): SetupTarget? {
@@ -208,10 +252,23 @@ fun defaultFocus(state: SetupUiState): SetupTarget? {
         SetupPage.FOLDERS -> SetupTarget.RomFolder(state.folders.selectedRom)
         SetupPage.SAVE_SYNC -> SetupTarget.SaveSyncChoice(state.saveSyncOn)
         SetupPage.PLATFORMS -> content.firstOrNull { it is SetupTarget.Platform } ?: content.firstOrNull()
-        SetupPage.WELCOME, SetupPage.DONE -> null
+        SetupPage.SCREENS -> setupScreens(state).firstOrNull { it.role == ScreenRole.PRIMARY }
+            ?.let { SetupTarget.Screen(it.key) } ?: content.firstOrNull()
+        SetupPage.CONTROLLER -> if (state.gamepadConnected) {
+            SetupTarget.ControllerLayoutChoice(state.controllerNintendo)
+        } else {
+            null
+        }
+        SetupPage.THEME, SetupPage.HOME_LAYOUT, SetupPage.LIBRARY_LOOK -> content.firstOrNull()
+        SetupPage.WELCOME, SetupPage.DONE, SetupPage.DEFAULT_HOME, SetupPage.BUTTON_CHECK -> null
     }
     return preferred ?: primaryTarget(state)
 }
+
+/**
+ * The built-in screens the Screens page maps. Attached monitors are left to Settings > Screens.
+ */
+fun setupScreens(state: SetupUiState): List<ScreenAssignment> = state.screens.filter { it.builtIn }
 
 fun firstIncompleteStep(access: SetupAccessState): AccessibilityStepKind? = when (access.variant) {
     AccessibilityVariant.ROOTED -> null
@@ -259,5 +316,16 @@ fun leadFor(state: SetupUiState): SetupStepLead = when (state.page) {
     SetupPage.FOLDERS -> SetupStepLead(R.string.setup_folders_title, R.string.setup_folders_purpose)
     SetupPage.SAVE_SYNC -> SetupStepLead(R.string.firstrun_save_sync_title)
     SetupPage.PLATFORMS -> SetupStepLead(R.string.setup_platforms_title, R.string.setup_platforms_purpose)
+    SetupPage.DEFAULT_HOME -> SetupStepLead(R.string.setup_home_title, R.string.setup_home_purpose)
+    SetupPage.SCREENS -> SetupStepLead(R.string.setup_screens_title, R.string.setup_screens_purpose)
+    SetupPage.CONTROLLER -> if (state.gamepadConnected) {
+        SetupStepLead(R.string.setup_controller_title, R.string.setup_controller_purpose)
+    } else {
+        SetupStepLead(R.string.setup_controller_none_title, R.string.setup_controller_none_body)
+    }
+    SetupPage.BUTTON_CHECK -> SetupStepLead(R.string.setup_check_title, R.string.setup_check_purpose)
+    SetupPage.THEME -> SetupStepLead(R.string.setup_look_theme_title, R.string.setup_look_theme_purpose)
+    SetupPage.HOME_LAYOUT -> SetupStepLead(R.string.setup_look_home_title, R.string.setup_look_home_purpose)
+    SetupPage.LIBRARY_LOOK -> SetupStepLead(R.string.setup_look_library_title, R.string.setup_look_library_purpose)
     SetupPage.DONE -> SetupStepLead(R.string.setup_done_title)
 }

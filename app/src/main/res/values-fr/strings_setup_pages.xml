@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="setup_home_title">Application d\'accueil</string>
+    <string name="setup_home_purpose">Argosy doit être votre application d\'accueil pour gérer les deux écrans.</string>
+    <string name="setup_home_body">Faites d\'Argosy votre application d\'accueil pour que le bouton d\'accueil l\'ouvre et que les deux écrans fonctionnent ensemble.</string>
+    <string name="setup_home_body_set">Argosy est votre application d\'accueil.</string>
+    <string name="setup_home_decline_note">Sans être l\'application d\'accueil, Argosy télécharge et synchronise vos jeux, mais ne gère pas le second écran. Les jeux lancés depuis d\'autres applications ne synchronisent les sauvegardes que si Secure Saves est désactivé.</string>
+    <string name="setup_home_button_set">Définir comme accueil</string>
+    <string name="setup_home_button_decline">Utiliser sans accueil</string>
+    <string name="setup_home_button_next">Suivant</string>
+
+    <string name="setup_screens_title">Écrans</string>
+    <string name="setup_screens_purpose">Choisissez l\'écran des menus. Les jeux et les détails s\'affichent sur l\'autre.</string>
+    <string name="setup_screens_line">Vous pouvez les inverser à tout moment.</string>
+    <string name="setup_screens_button_next">Suivant</string>
+    <string name="setup_screens_role_menus">Menus</string>
+    <string name="setup_screens_role_games">Jeux et détails</string>
+    <string name="setup_screens_footer_swap">Inverser les écrans</string>
+
+    <string name="setup_controller_title">Est-ce votre manette ?</string>
+    <string name="setup_controller_purpose">Choisissez la disposition imprimée sur votre manette.</string>
+    <string name="setup_controller_none_title">Aucune manette détectée</string>
+    <string name="setup_controller_none_body">Connectez une manette pour la configurer maintenant, ou passez cette étape et utilisez l\'écran tactile ou une télécommande.</string>
+    <string name="setup_controller_button_next">Suivant</string>
+    <string name="setup_controller_button_check_again">Vérifier à nouveau</string>
+    <string name="setup_controller_button_skip">Passer</string>
+    <string name="setup_controller_xbox">Disposition Xbox</string>
+    <string name="setup_controller_xbox_detail">Valider en bas</string>
+    <string name="setup_controller_nintendo">Disposition Nintendo</string>
+    <string name="setup_controller_nintendo_detail">Valider à droite</string>
+
+    <string name="setup_check_title">Testez vos boutons</string>
+    <string name="setup_check_purpose">Appuyez sur un bouton pour voir où il tombe. Rien ne se passe pendant le test.</string>
+    <string name="setup_check_status_last">Dernier appui : %1$s</string>
+    <string name="setup_check_status_idle">Appuyez sur un bouton</string>
+    <string name="setup_check_action_confirm">Valider</string>
+    <string name="setup_check_action_back">Retour</string>
+    <string name="setup_check_action_options">Options</string>
+    <string name="setup_check_action_quick">Action rapide</string>
+    <string name="setup_check_action_menu">Menu</string>
+    <string name="setup_check_action_select">Select</string>
+    <string name="setup_check_toggle_swap_ab">Inverser A/B</string>
+    <string name="setup_check_toggle_swap_xy">Inverser X/Y</string>
+    <string name="setup_check_toggle_swap_start_select">Inverser Start/Select</string>
+    <string name="setup_check_button_back">Retour</string>
+    <string name="setup_check_button_continue">Continuer</string>
+
+    <string name="setup_look_theme_title">Thème</string>
+    <string name="setup_look_theme_purpose">Choisissez l\'apparence d\'Argosy.</string>
+    <string name="setup_look_home_title">Disposition de l\'accueil</string>
+    <string name="setup_look_home_purpose">Choisissez comment l\'accueil organise vos jeux.</string>
+    <string name="setup_look_library_title">Bibliothèque</string>
+    <string name="setup_look_library_purpose">Choisissez l\'apparence de votre bibliothèque.</string>
+    <string name="setup_look_button_skip">Passer la personnalisation</string>
+    <string name="setup_look_button_next">Suivant</string>
+    <string name="setup_look_theme_mode_label">Mode</string>
+    <string name="setup_look_theme_light">Clair</string>
+    <string name="setup_look_theme_dark">Sombre</string>
+    <string name="setup_look_theme_system">Système</string>
+    <string name="setup_look_accent_label">Couleur d\'accent</string>
+    <string name="setup_look_accent_default_desc">Couleur d\'accent par défaut</string>
+    <string name="setup_look_library_layout_label">Disposition</string>
+    <string name="setup_look_library_grid">Grille</string>
+    <string name="setup_look_library_list">Liste</string>
+    <string name="setup_look_shape_label">Forme des jaquettes</string>
+    <string name="setup_look_shape_tall">Haute</string>
+    <string name="setup_look_shape_standard">Standard</string>
+    <string name="setup_look_shape_square">Carrée</string>
+    <string name="setup_look_more_in_settings">D\'autres thèmes, sons, polices et arrière-plans sont dans les Paramètres.</string>
+
+    <string name="setup_companion_brand">La configuration se fait sur l\'autre écran.</string>
+
+    <string name="settings_navigation_check_buttons_title">Tester les boutons</string>
+    <string name="settings_navigation_check_buttons_subtitle">Appuyez sur chaque bouton pour voir où il tombe</string>
+    <string name="settings_navigation_check_buttons_done">Terminé</string>
+</resources>

@@ -109,6 +109,7 @@ LAW: inside `ArgosyApp` and anything it hosts, reach DSM through the Holder, nev
 |---|---|
 | `Fallback` | nobody; draws wallpaper via `surfaceBackdrop(BackdropRole.WALLPAPER)` |
 | `HomeLayoutPreview` | `HomeScreenSection` via `PresentOnCompanion` |
+| `Setup` | `SetupScreen` via `PresentOnCompanion`, built by `companionFor` per setup page |
 | `PlayTime` | `PlayTimePresentation` via `PresentOnCompanion` |
 | `ScreenIdentity` | `ScreensSection`, the numbered badge |
 | `Detail` | `setCompanionDetail` from Home, Library, Media, and the Collections screens (collection detail, genre/mode game lists) through `PresentationFocus` |
@@ -240,7 +241,8 @@ immediately, then sets `unconfiguredScreenSet` when the set has no stored layout
 screen. `ArgosyApp` shows a 5-second countdown offering the display setup screen on X, registered
 as the intercept handler so every other button still reaches the screen behind it.
 
-Known-set changes never prompt; they just apply the stored profile.
+Known-set changes never prompt; they just apply the stored profile. Nothing prompts while
+`isWizardActive` holds (setup unfinished or on screen); the layout still applies.
 
 UNPROVEN: this path has not been exercised with real hardware. `overlay_display_devices` cannot
 fake it, because `ScreenCatalog` filters to BUILT_IN/EXTERNAL and the listener gates on the

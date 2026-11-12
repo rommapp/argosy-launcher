@@ -32,4 +32,14 @@ object AccentHue {
     fun colorAt(hue: Float): Int = Color.hsl(hue.mod(360f), SATURATION, LIGHTNESS).toArgb()
 
     fun shifted(color: Int?, delta: Float): Int = colorAt(hueOf(color) + delta)
+
+    val SWATCHES: List<Int?> = listOf(
+        null,
+        0xFF9575CD.toInt(),
+        0xFF4DB6AC.toInt(),
+        0xFFFFB74D.toInt(),
+        0xFF81C784.toInt(),
+        0xFFF06292.toInt(),
+        0xFF64B5F6.toInt()
+    )
 }

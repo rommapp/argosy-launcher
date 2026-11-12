@@ -255,8 +255,6 @@
         <item quantity="one">%d emulator for your platforms</item>
         <item quantity="other">%d emulators for your platforms</item>
     </plurals>
-    <!-- Footer hint for the button that switches every platform on or off. Verb phrase. -->
-    <string name="setup_platforms_footer_select_all">Select all</string>
     <!-- Button that confirms the platform choice and goes on. Verb. -->
     <string name="setup_platforms_button_next">Next</string>
 
@@ -274,8 +272,8 @@
     <!-- Summary value for the library. %1$s is the server address and is never translated;
          %2$d is the number of games. -->
     <plurals name="setup_done_library_value">
-        <item quantity="one">%1$s, %2$d game</item>
-        <item quantity="other">%1$s, %2$d games</item>
+        <item quantity="one">%1$s, %2$,d game</item>
+        <item quantity="other">%1$s, %2$,d games</item>
     </plurals>
     <!-- Summary label for the game folder. Noun, plural. -->
     <string name="setup_done_summary_games">Games</string>

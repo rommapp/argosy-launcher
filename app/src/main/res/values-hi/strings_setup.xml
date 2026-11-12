@@ -100,15 +100,14 @@
         <item quantity="one">आपके प्लेटफ़ॉर्म के लिए %d एमुलेटर</item>
         <item quantity="other">आपके प्लेटफ़ॉर्म के लिए %d एमुलेटर</item>
     </plurals>
-    <string name="setup_platforms_footer_select_all">सभी चुनें</string>
     <string name="setup_platforms_button_next">आगे</string>
     <string name="setup_done_title">सब तैयार है</string>
     <string name="setup_done_body_home">Argosy को अपना होम ऐप बनाएँ ताकि Home और होम बटन इसे खोलें।</string>
     <string name="setup_done_body_ready">आपकी लाइब्रेरी खेलने के लिए तैयार है।</string>
     <string name="setup_done_summary_library">लाइब्रेरी</string>
     <plurals name="setup_done_library_value">
-        <item quantity="one">%1$s, %2$d गेम</item>
-        <item quantity="other">%1$s, %2$d गेम</item>
+        <item quantity="one">%1$s, %2$,d गेम</item>
+        <item quantity="other">%1$s, %2$,d गेम</item>
     </plurals>
     <string name="setup_done_summary_games">गेम</string>
     <string name="setup_done_summary_save_sync">सेव सिंक</string>

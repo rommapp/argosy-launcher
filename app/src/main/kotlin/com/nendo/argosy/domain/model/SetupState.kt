@@ -26,7 +26,9 @@ data class SetupFacts(
     val saveSyncAnswered: Boolean = false,
     val dualScreenDevice: Boolean = false,
     val defaultHome: Boolean = false,
-    val defaultHomeDeclined: Boolean = false
+    val defaultHomeDeclined: Boolean = false,
+    val flowFinished: Boolean = false,
+    val pagesSeen: Set<String> = emptySet()
 ) {
     val anyConfirmed: Boolean
         get() = librarySourceConfirmed || romFolderConfirmed || saveSyncAnswered

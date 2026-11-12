@@ -90,7 +90,7 @@ class DisplaySettingsDelegate @Inject constructor(
     private val _previewGame = MutableStateFlow<SettingsPreviewGame?>(null)
     val previewGame: StateFlow<SettingsPreviewGame?> = _previewGame.asStateFlow()
 
-    private val colorCount = 7
+    private val colorCount = AccentHue.SWATCHES.size
     private var _colorFocusIndex = 0
     val colorFocusIndex: Int get() = _colorFocusIndex
 
@@ -161,16 +161,7 @@ class DisplaySettingsDelegate @Inject constructor(
     }
 
     fun selectFocusedColor(scope: CoroutineScope) {
-        val colors = listOf<Int?>(
-            null,
-            0xFF9575CD.toInt(),
-            0xFF4DB6AC.toInt(),
-            0xFFFFB74D.toInt(),
-            0xFF81C784.toInt(),
-            0xFFF06292.toInt(),
-            0xFF64B5F6.toInt()
-        )
-        val color = colors.getOrNull(_colorFocusIndex)
+        val color = AccentHue.SWATCHES.getOrNull(_colorFocusIndex)
         setPrimaryColor(scope, color)
     }
 

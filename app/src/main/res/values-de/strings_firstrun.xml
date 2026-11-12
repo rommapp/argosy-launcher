@@ -21,8 +21,8 @@
 
     <string name="firstrun_romm_success_library">%1$s auf %2$s</string>
     <plurals name="firstrun_romm_success_game_count">
-        <item quantity="one">%d Spiel</item>
-        <item quantity="other">%d Spiele</item>
+        <item quantity="one">%,d Spiel</item>
+        <item quantity="other">%,d Spiele</item>
     </plurals>
     <plurals name="firstrun_romm_success_platform_count">
         <item quantity="one">%d Plattform</item>

@@ -47,11 +47,16 @@ fun NotificationText.resolve(context: android.content.Context): String = when (t
     is NotificationText.Plural -> context.resources.getQuantityString(id, count, *args.toTypedArray())
 }
 
+/**
+ * The in-app notice cards, bottom end. [criticalOnly] draws only [Notification.isCritical] notices;
+ * the others keep their timers and expire unseen, and persistent cards return once it clears.
+ */
 @Composable
 fun NotificationHost(
     manager: NotificationManager,
     modifier: Modifier = Modifier,
-    mutedKeys: Set<String> = emptySet()
+    mutedKeys: Set<String> = emptySet(),
+    criticalOnly: Boolean = false
 ) {
     val lifecycleState by LocalLifecycleOwner.current.lifecycle.currentStateAsState()
     val started = lifecycleState.isAtLeast(Lifecycle.State.STARTED)
@@ -64,7 +69,7 @@ fun NotificationHost(
     val persistentAll by manager.persistentNotifications.collectAsState()
     val noticePreferences by manager.preferences.collectAsState()
     val visiblePersistent = if (started && noticePreferences.enabled) {
-        persistentAll.filterNot { it.key in mutedKeys }
+        persistentAll.filterNot { it.key in mutedKeys || (criticalOnly && !it.isCritical) }
     } else {
         emptyList()
     }
@@ -78,7 +83,8 @@ fun NotificationHost(
         }
     }
 
-    val shownTransient = rememberLatest(current)
+    val drawnTransient = current?.takeIf { !criticalOnly || it.isCritical }
+    val shownTransient = rememberLatest(drawnTransient)
     val shownPersistent = rememberLatest(persistent)
 
     Box(modifier = modifier.fillMaxSize()) {
@@ -92,7 +98,7 @@ fun NotificationHost(
             shownTransient?.let { notification ->
                 TransientNotificationCard(
                     notification = notification,
-                    visible = current != null
+                    visible = drawnTransient != null
                 )
             }
             shownPersistent?.let { notification ->

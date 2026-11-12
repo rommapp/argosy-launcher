@@ -2,10 +2,13 @@ package com.nendo.argosy.ui.screens.setup
 
 import android.app.Application
 import com.nendo.argosy.R
+import com.nendo.argosy.core.input.ConnectedControllerTracker
+import com.nendo.argosy.core.input.ConnectedPad
 import com.nendo.argosy.core.input.SoundType
 import com.nendo.argosy.data.permissions.PermissionRegistry
 import com.nendo.argosy.data.preferences.UserPreferences
 import com.nendo.argosy.data.preferences.UserPreferencesRepository
+import com.nendo.argosy.data.remote.romm.ConnectionState
 import com.nendo.argosy.data.remote.romm.RomMRepository
 import com.nendo.argosy.data.remote.romm.RomMResult
 import com.nendo.argosy.data.remote.ssl.UserCertStore
@@ -16,6 +19,7 @@ import com.nendo.argosy.data.setup.SetupStateRepository
 import com.nendo.argosy.domain.model.CoreDownloadProgress
 import com.nendo.argosy.domain.model.PermissionSnapshot
 import com.nendo.argosy.domain.model.SetupFacts
+import com.nendo.argosy.ui.screens.setup.components.ButtonCheckFocus
 import com.nendo.argosy.ui.screens.setup.components.SetupDirection
 import io.mockk.coEvery
 import io.mockk.coVerify
@@ -25,8 +29,10 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.StandardTestDispatcher
+import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.resetMain
+import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
 import org.junit.After
@@ -46,6 +52,8 @@ class SetupViewModelTest {
     private val coreDownloads = mockk<SetupCoreDownloads>(relaxed = true)
     private val probe = mockk<SetupFolderProbe>(relaxed = true)
     private val platformRepository = mockk<PlatformRepository>(relaxed = true)
+    private val controllerTracker = mockk<ConnectedControllerTracker>(relaxed = true)
+    private val pads = MutableStateFlow<List<ConnectedPad>>(emptyList())
 
     private val requiredMet = SetupFacts(
         librarySignedIn = true,
@@ -54,7 +62,8 @@ class SetupViewModelTest {
         usageAccess = true,
         notifications = true,
         romFolderPresent = true,
-        romFolderConfirmed = true
+        romFolderConfirmed = true,
+        pagesSeen = setOf("accessibility")
     )
 
     @Before
@@ -70,7 +79,13 @@ class SetupViewModelTest {
         coEvery { romM.getLibrarySummary() } returns RomMResult.Success(3 to 40)
         coEvery { romM.fetchAndStorePlatforms(any()) } returns RomMResult.Success(emptyList())
         coEvery { setupState.answerSaveSync(any()) } returns true
+        every { registry.accessibilityScreen() } returns null
+        every { controllerTracker.controllers } returns pads
+        every { controllerTracker.activeLayout } returns MutableStateFlow(null)
+        every { romM.connectionState } returns connection
     }
+
+    private val connection = MutableStateFlow<ConnectionState>(ConnectionState.Connected("4.0.0"))
 
     @After
     fun tearDown() = Dispatchers.resetMain()
@@ -85,7 +100,8 @@ class SetupViewModelTest {
             signIn = RommSignInDelegate(application, romM, certStore),
             access = SetupAccessDelegate(application, registry, setupState).also { it.ioDispatcher = dispatcher },
             folders = SetupFoldersDelegate(probe, preferences, setupState).also { it.ioDispatcher = dispatcher },
-            platforms = SetupPlatformsDelegate(romM, platformRepository, coreDownloads).also { it.ioDispatcher = dispatcher }
+            platforms = SetupPlatformsDelegate(romM, platformRepository, coreDownloads).also { it.ioDispatcher = dispatcher },
+            personalize = SetupPersonalizeDelegate(preferences, controllerTracker)
         )
     }
 
@@ -172,8 +188,85 @@ class SetupViewModelTest {
 
         coVerify(exactly = 1) { setupState.answerSaveSync(false) }
         coVerify(exactly = 0) { preferences.setSaveSyncEnabled(any()) }
+        assertEquals(SetupPage.CONTROLLER, vm.currentState().page)
+    }
+
+    @Test
+    fun `a run killed after save sync resumes at the next optional page`() = runTest(dispatcher) {
+        val vm = viewModel(requiredMet.copy(saveSyncAnswered = true))
+        advanceUntilIdle()
+        assertEquals(SetupPage.CONTROLLER, vm.currentState().page)
+    }
+
+    @Test
+    fun `leaving an optional page forward records it as seen`() = runTest(dispatcher) {
+        val vm = viewModel(requiredMet.copy(saveSyncAnswered = true))
+        advanceUntilIdle()
+
+        vm.tap(SetupTarget.Action(SetupActionId.PRIMARY))
+        advanceUntilIdle()
+
+        coVerify(exactly = 1) { setupState.markPagesSeen(setOf("controller")) }
+        assertEquals(SetupPage.THEME, vm.currentState().page)
+    }
+
+    @Test
+    fun `skip customization jumps to done and marks all three pages seen`() = runTest(dispatcher) {
+        val vm = viewModel(requiredMet.copy(saveSyncAnswered = true, pagesSeen = setOf("accessibility", "controller")))
+        advanceUntilIdle()
+        assertEquals(SetupPage.THEME, vm.currentState().page)
+
+        vm.tap(SetupTarget.Action(SetupActionId.SKIP_CUSTOMIZATION))
+        advanceUntilIdle()
+
+        coVerify(exactly = 1) { setupState.markPagesSeen(CUSTOMIZATION_SEEN_TOKENS) }
         assertEquals(SetupPage.DONE, vm.currentState().page)
     }
+
+    @Test
+    fun `done writes the finished marker before it leaves setup`() = runTest(dispatcher) {
+        every { setupState.needsSetup } returns flowOf(false)
+        val vm = viewModel(requiredMet.copy(saveSyncAnswered = true, defaultHome = true, pagesSeen = allOptionalSeen))
+        advanceUntilIdle()
+        assertEquals(SetupPage.DONE, vm.currentState().page)
+
+        vm.tap(SetupTarget.Action(SetupActionId.PRIMARY))
+        advanceUntilIdle()
+
+        coVerify(exactly = 1) { setupState.finishFlow() }
+    }
+
+    @Test
+    fun `a connected gamepad adds the button check after the controller page`() = runTest(dispatcher) {
+        pads.value = listOf(mockk(relaxed = true))
+        val vm = viewModel(requiredMet.copy(saveSyncAnswered = true))
+        advanceUntilIdle()
+        assertEquals(SetupPage.CONTROLLER, vm.currentState().page)
+        assertEquals(true, vm.currentState().gamepadConnected)
+
+        vm.tap(SetupTarget.Action(SetupActionId.PRIMARY))
+        advanceUntilIdle()
+
+        assertEquals(SetupPage.BUTTON_CHECK, vm.currentState().page)
+    }
+
+    @Test
+    fun `declining home on a dual-screen device records it and skips screens`() = runTest(dispatcher) {
+        val dual = requiredMet.copy(saveSyncAnswered = true, dualScreenDevice = true)
+        val vm = viewModel(dual)
+        advanceUntilIdle()
+        assertEquals(SetupPage.DEFAULT_HOME, vm.currentState().page)
+
+        vm.tap(SetupTarget.Action(SetupActionId.DECLINE_HOME))
+        advanceUntilIdle()
+
+        coVerify(exactly = 1) { setupState.declineDefaultHome() }
+        coVerify(exactly = 0) { preferences.setDualScreenEnabled(any()) }
+        assertEquals(SetupPage.CONTROLLER, vm.currentState().page)
+        assertEquals(false, SetupPage.SCREENS in vm.currentState().plan)
+    }
+
+    private val allOptionalSeen: Set<String> = SetupPage.entries.mapNotNull { it.seenToken }.toSet()
 
     @Test
     fun `turning sync on stays on the page while the gate refuses`() = runTest(dispatcher) {
@@ -194,6 +287,75 @@ class SetupViewModelTest {
         advanceUntilIdle()
         vm.back()
         assertEquals(SetupPage.FOLDERS, vm.currentState().page)
+    }
+
+    @Test
+    fun `start moves focus to the primary and a second start activates it`() = runTest(dispatcher) {
+        val vm = viewModel(requiredMet)
+        advanceUntilIdle()
+        assertEquals(SetupTarget.SaveSyncChoice(true), focusedTarget(vm.currentState()))
+
+        vm.startPress()
+        assertEquals(SetupTarget.Action(SetupActionId.PRIMARY), focusedTarget(vm.currentState()))
+        assertEquals(SetupPage.SAVE_SYNC, vm.currentState().page)
+        coVerify(exactly = 0) { setupState.answerSaveSync(any()) }
+
+        vm.startPress()
+        advanceUntilIdle()
+        coVerify(exactly = 1) { setupState.answerSaveSync(true) }
+        assertEquals(SetupPage.CONTROLLER, vm.currentState().page)
+    }
+
+    @Test
+    fun `start on the button check moves to continue, then continues`() = runTest(dispatcher) {
+        pads.value = listOf(mockk(relaxed = true))
+        val vm = viewModel(requiredMet.copy(saveSyncAnswered = true))
+        advanceUntilIdle()
+        vm.tap(SetupTarget.Action(SetupActionId.PRIMARY))
+        advanceUntilIdle()
+        assertEquals(SetupPage.BUTTON_CHECK, vm.currentState().page)
+
+        vm.startPress()
+        assertEquals(ButtonCheckFocus.CONTINUE, vm.buttonCheck.state.value.focus)
+        assertEquals(SetupPage.BUTTON_CHECK, vm.currentState().page)
+
+        vm.startPress()
+        advanceUntilIdle()
+        assertEquals(SetupPage.THEME, vm.currentState().page)
+    }
+
+    @Test
+    fun `an already signed-in library shows the server counts once they load`() = runTest(dispatcher) {
+        val vm = viewModel(SetupFacts(librarySignedIn = true))
+        advanceUntilIdle()
+
+        val signIn = vm.currentState().signIn
+        assertEquals(LibraryView.SIGNED_IN, signIn.view)
+        assertEquals(true, signIn.summaryLoaded)
+        assertEquals(40, signIn.gameCount)
+        assertEquals(3, signIn.platformCount)
+    }
+
+    @Test
+    fun `a summary asked for before RomM connects loads once the connection lands`() = runTest(dispatcher) {
+        connection.value = ConnectionState.Connecting
+        coEvery { romM.getLibrarySummary() } returnsMany listOf(
+            RomMResult.Error("Not connected"),
+            RomMResult.Success(31 to 11_842)
+        )
+        val vm = viewModel(SetupFacts(librarySignedIn = true))
+        advanceTimeBy(1_000)
+        assertEquals(false, vm.currentState().signIn.summaryLoaded)
+        assertEquals(null, vm.currentState().signIn.error)
+        coVerify(atLeast = 1) { romM.initialize(any()) }
+
+        connection.value = ConnectionState.Connected("4.0.0")
+        runCurrent()
+
+        val signIn = vm.currentState().signIn
+        assertEquals(true, signIn.summaryLoaded)
+        assertEquals(11_842, signIn.gameCount)
+        assertEquals(31, signIn.platformCount)
     }
 
     @Test

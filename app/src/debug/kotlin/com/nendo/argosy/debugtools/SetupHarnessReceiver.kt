@@ -7,6 +7,7 @@ import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
+import androidx.datastore.preferences.core.stringPreferencesKey
 import dagger.hilt.EntryPoint
 import dagger.hilt.InstallIn
 import dagger.hilt.android.EntryPointAccessors
@@ -38,8 +39,11 @@ class SetupHarnessReceiver : BroadcastReceiver() {
         val pending = goAsync()
         CoroutineScope(SupervisorJob() + Dispatchers.IO).launch {
             try {
-                dataStore.edit { prefs -> MARKERS.forEach { prefs.remove(booleanPreferencesKey(it)) } }
-                android.util.Log.i(TAG, "cleared ${MARKERS.joinToString()}")
+                dataStore.edit { prefs ->
+                    MARKERS.forEach { prefs.remove(booleanPreferencesKey(it)) }
+                    STRING_MARKERS.forEach { prefs.remove(stringPreferencesKey(it)) }
+                }
+                android.util.Log.i(TAG, "cleared ${(MARKERS + STRING_MARKERS).joinToString()}")
             } finally {
                 pending.finish()
             }
@@ -48,6 +52,13 @@ class SetupHarnessReceiver : BroadcastReceiver() {
 
     private companion object {
         const val TAG = "SetupHarness"
-        val MARKERS = listOf("romm_library_confirmed", "rom_storage_path_confirmed", "save_sync_answered")
+        val MARKERS = listOf(
+            "romm_library_confirmed",
+            "rom_storage_path_confirmed",
+            "save_sync_answered",
+            "default_home_declined",
+            "setup_flow_finished"
+        )
+        val STRING_MARKERS = listOf("setup_pages_seen")
     }
 }

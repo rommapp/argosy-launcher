@@ -211,16 +211,20 @@ private fun SignedInView(state: SetupUiState) {
             style = MaterialTheme.typography.bodyLarge,
             color = theme.textPrimary,
         )
-        Text(
-            text = stringResource(
-                R.string.firstrun_romm_success_library,
-                pluralStringResource(R.plurals.firstrun_romm_success_game_count, signIn.gameCount, signIn.gameCount),
-                pluralStringResource(R.plurals.firstrun_romm_success_platform_count, signIn.platformCount, signIn.platformCount)
-            ),
-            style = MaterialTheme.typography.bodyMedium,
-            color = theme.textDim,
-        )
-        setupErrorText(signIn.error)?.let { SetupErrorLine(it) }
+        val error = setupErrorText(signIn.error)
+        when {
+            signIn.summaryLoaded -> Text(
+                text = stringResource(
+                    R.string.firstrun_romm_success_library,
+                    pluralStringResource(R.plurals.firstrun_romm_success_game_count, signIn.gameCount, signIn.gameCount),
+                    pluralStringResource(R.plurals.firstrun_romm_success_platform_count, signIn.platformCount, signIn.platformCount)
+                ),
+                style = MaterialTheme.typography.bodyMedium,
+                color = theme.textDim,
+            )
+            error == null -> ArgosyIndeterminateProgressBar(modifier = Modifier.fillMaxWidth())
+        }
+        error?.let { SetupErrorLine(it) }
     }
 }
 

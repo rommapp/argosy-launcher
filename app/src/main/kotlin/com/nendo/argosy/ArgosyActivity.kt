@@ -210,6 +210,8 @@ class ArgosyActivity : ComponentActivity() {
 
     var isOnHomeScreen = false
 
+    fun holdStatusBarHidden(hold: Boolean) = systemBars.holdStatusBarHidden(hold)
+
     var isOverlayFocused: Boolean
         get() = dualScreenManager.isOverlayFocused
         set(value) {

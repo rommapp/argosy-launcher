@@ -1,6 +1,7 @@
 package com.nendo.argosy.ui.screens.setup
 
 import com.nendo.argosy.R
+import com.nendo.argosy.data.local.entity.PlatformEntity
 import com.nendo.argosy.domain.model.ArgosyPermission
 import com.nendo.argosy.domain.model.PermissionAvailability
 import com.nendo.argosy.domain.model.PermissionSnapshot
@@ -161,6 +162,36 @@ class SetupFocusTest {
 
         val home = single.copy(facts = SetupFacts(defaultHome = true))
         assertEquals(R.string.setup_done_button_go_home, actionsFor(home).single().label)
+    }
+
+    private fun platform(id: Long) = PlatformEntity(
+        id = id,
+        slug = "p$id",
+        name = "p$id",
+        shortName = "p$id",
+        romExtensions = "bin",
+        syncEnabled = true
+    )
+
+    @Test
+    fun `select all is the first row under the header, above every platform`() {
+        val shown = listOf(platform(1), platform(2))
+        val state = SetupUiState(
+            page = SetupPage.PLATFORMS,
+            platforms = SetupPlatformsState(all = shown, shown = shown, missingCoreIds = listOf("core"))
+        )
+        assertEquals(
+            listOf(
+                SetupTarget.PlatformHeader,
+                SetupTarget.SelectAllPlatforms,
+                SetupTarget.Platform(1),
+                SetupTarget.Platform(2),
+                SetupTarget.CoreDownloads
+            ),
+            contentTargetsFor(state)
+        )
+        assertEquals(SetupTarget.SelectAllPlatforms, moveFocus(state.copy(focused = SetupTarget.Platform(1)), SetupMove.UP))
+        assertEquals(primary, primaryTarget(state))
     }
 
     @Test

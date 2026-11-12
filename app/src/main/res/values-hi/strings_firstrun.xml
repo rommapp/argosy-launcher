@@ -29,8 +29,8 @@
 
     <string name="firstrun_romm_success_library">%2$s में %1$s</string>
     <plurals name="firstrun_romm_success_game_count">
-        <item quantity="one">%d गेम</item>
-        <item quantity="other">%d गेम</item>
+        <item quantity="one">%,d गेम</item>
+        <item quantity="other">%,d गेम</item>
     </plurals>
     <plurals name="firstrun_romm_success_platform_count">
         <item quantity="one">%d प्लेटफ़ॉर्म</item>

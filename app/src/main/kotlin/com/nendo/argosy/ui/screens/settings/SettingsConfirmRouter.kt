@@ -1061,6 +1061,10 @@ private fun routeNavigationConfirm(vm: SettingsViewModel, state: SettingsUiState
             vm.setSwapStartSelect(swapped)
             return InputResult.toggled(swapped)
         }
+        NavigationItem.CheckButtons -> {
+            vm.openButtonCheck()
+            return InputResult.handled(SoundType.OPEN_MODAL)
+        }
         NavigationItem.IgnoreControllerTouchpad -> {
             val enabled = !state.controls.ignoreControllerTouchpad
             vm.setIgnoreControllerTouchpad(enabled)

@@ -26,7 +26,6 @@ import com.nendo.argosy.hardware.CompanionGuardService
 import com.nendo.argosy.util.DisplayRoleResolver
 import com.nendo.argosy.util.Logger
 import com.nendo.argosy.domain.model.CompletionStatus
-import com.nendo.argosy.domain.model.isComplete
 import com.nendo.argosy.data.remote.ra.RAConsoleIds
 import com.nendo.argosy.ui.common.displayTitleId
 import com.nendo.argosy.ui.common.reportTitleIdRecheck
@@ -379,7 +378,7 @@ class DualScreenManager(
                 hasPresentation = !layout.isSingleDisplay
             )
             _unconfiguredScreenSet.value = setKey.takeIf {
-                promptWhenUnknown && known == null && attached.size > 1
+                promptWhenUnknown && !isWizardActive.value && known == null && attached.size > 1
             }
             ensureAppScreenLaunched()
         }
@@ -2281,7 +2280,7 @@ class DualScreenManager(
      * other screen that must stay out of its way.
      */
     val isWizardActive: StateFlow<Boolean> = kotlinx.coroutines.flow.combine(
-        setupStateRepository?.state?.map { !it.isComplete } ?: kotlinx.coroutines.flow.flowOf(false),
+        setupStateRepository?.needsSetup ?: kotlinx.coroutines.flow.flowOf(false),
         _primaryRoute.map { it == com.nendo.argosy.ui.navigation.Screen.FirstRun.route }
     ) { incomplete, onWizard -> incomplete || onWizard }
         .distinctUntilChanged()

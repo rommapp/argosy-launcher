@@ -33,6 +33,8 @@ import androidx.compose.ui.unit.dp
 import com.nendo.argosy.R
 import com.nendo.argosy.ui.components.InputButton
 import com.nendo.argosy.ui.input.ButtonGlyphSwaps
+import com.nendo.argosy.ui.input.ControllerPosition
+import com.nendo.argosy.ui.input.intentButton
 import com.nendo.argosy.ui.input.LocalABIconsSwapped
 import com.nendo.argosy.ui.input.LocalSwapStartSelect
 import com.nendo.argosy.ui.input.LocalXYIconsSwapped
@@ -47,22 +49,7 @@ import com.nendo.argosy.ui.theme.MotionTier
 import com.nendo.argosy.ui.theme.generated.ComponentDefaults
 import com.nendo.argosy.ui.util.clickableNoFocus
 
-enum class ControllerPosition { TOP, LEFT, RIGHT, BOTTOM, MENU_LEFT, MENU_RIGHT }
-
 enum class ControllerDiagramSize { FULL, MINI }
-
-/**
- * The intent button a physical position carries under [swaps], matching the icon-side resolution
- * in `InputButton.toPainter()`.
- */
-fun ControllerPosition.intentButton(swaps: ButtonGlyphSwaps): InputButton = when (this) {
-    ControllerPosition.TOP -> if (swaps.xy) InputButton.X else InputButton.Y
-    ControllerPosition.LEFT -> if (swaps.xy) InputButton.Y else InputButton.X
-    ControllerPosition.RIGHT -> if (swaps.ab) InputButton.A else InputButton.B
-    ControllerPosition.BOTTOM -> if (swaps.ab) InputButton.B else InputButton.A
-    ControllerPosition.MENU_LEFT -> if (swaps.startSelect) InputButton.START else InputButton.SELECT
-    ControllerPosition.MENU_RIGHT -> if (swaps.startSelect) InputButton.SELECT else InputButton.START
-}
 
 /**
  * Face-button diamond with Start and Select pills below. Positions are physical; labels follow

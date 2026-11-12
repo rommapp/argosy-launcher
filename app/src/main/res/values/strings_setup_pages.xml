@@ -1,0 +1,130 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- ===== Default home (dual-screen devices) ===== -->
+
+    <!-- Title of the setup page that asks to make Argosy the home app. "Home app" is Android's
+         launcher role. -->
+    <string name="setup_home_title">Home app</string>
+    <string name="setup_home_purpose">Argosy needs to be your home app to run both screens.</string>
+    <string name="setup_home_body">Make Argosy your home app so the home button opens it and both screens work together.</string>
+    <!-- Shown when Argosy already holds the home role. -->
+    <string name="setup_home_body_set">Argosy is your home app.</string>
+    <!-- Explains what declining the home role means. "Secure Saves" is the name of an Argosy
+         setting; keep it as a name. -->
+    <string name="setup_home_decline_note">Without Home, Argosy downloads and syncs your games but does not run the second screen. Games started from other apps sync saves only when Secure Saves is off.</string>
+    <!-- Main button that asks Android to make Argosy the home app. Verb phrase. -->
+    <string name="setup_home_button_set">Set as home app</string>
+    <!-- Button that continues setup without making Argosy the home app. -->
+    <string name="setup_home_button_decline">Use without Home</string>
+    <!-- Main button that moves to the next setup page. Verb. -->
+    <string name="setup_home_button_next">Next</string>
+
+    <!-- ===== Screens ===== -->
+
+    <!-- Title of the setup page for the two built-in screens. Noun, plural. -->
+    <string name="setup_screens_title">Screens</string>
+    <string name="setup_screens_purpose">Pick the screen for menus. Games and details show on the other one.</string>
+    <string name="setup_screens_line">You can swap them any time.</string>
+    <!-- Main button that moves to the next setup page. Verb. -->
+    <string name="setup_screens_button_next">Next</string>
+    <!-- Role label on a screen card: this screen shows Argosy's menus. Noun, plural. -->
+    <string name="setup_screens_role_menus">Menus</string>
+    <!-- Role label on a screen card: this screen shows games and game details. -->
+    <string name="setup_screens_role_games">Games and details</string>
+    <!-- Footer hint beside the Select button glyph: swaps which screen shows menus. Verb phrase. -->
+    <string name="setup_screens_footer_swap">Swap screens</string>
+
+    <!-- ===== Controller ===== -->
+
+    <string name="setup_controller_title">Is this your controller?</string>
+    <string name="setup_controller_purpose">Pick the layout printed on your controller.</string>
+    <string name="setup_controller_none_title">No controller detected</string>
+    <string name="setup_controller_none_body">Connect a controller to set it up now, or skip and use touch or a remote.</string>
+    <!-- Main button that moves to the next setup page. Verb. -->
+    <string name="setup_controller_button_next">Next</string>
+    <!-- Button that looks for a connected controller again. Verb phrase. -->
+    <string name="setup_controller_button_check_again">Check again</string>
+    <!-- Main button that skips the controller step. Verb. -->
+    <string name="setup_controller_button_skip">Skip</string>
+    <!-- Name of a controller layout. "Xbox" is a brand name; keep it. -->
+    <string name="setup_controller_xbox">Xbox layout</string>
+    <!-- Describes the Xbox layout: the confirm button sits at the bottom of the diamond. -->
+    <string name="setup_controller_xbox_detail">Confirm at the bottom</string>
+    <!-- Name of a controller layout. "Nintendo" is a brand name; keep it. -->
+    <string name="setup_controller_nintendo">Nintendo layout</string>
+    <!-- Describes the Nintendo layout: the confirm button sits on the right of the diamond. -->
+    <string name="setup_controller_nintendo_detail">Confirm on the right</string>
+
+    <!-- ===== Button check ===== -->
+
+    <string name="setup_check_title">Check your buttons</string>
+    <string name="setup_check_purpose">Press any button to see where it lands. Nothing happens while you test.</string>
+    <!-- Status under the button diagram. %1$s is the action the last press maps to, for example
+         Confirm. -->
+    <string name="setup_check_status_last">Last press: %1$s</string>
+    <string name="setup_check_status_idle">Press a button</string>
+    <!-- Action names shown in the status line. Each is what the pressed button does in Argosy. -->
+    <string name="setup_check_action_confirm">Confirm</string>
+    <string name="setup_check_action_back">Back</string>
+    <string name="setup_check_action_options">Options</string>
+    <string name="setup_check_action_quick">Quick action</string>
+    <string name="setup_check_action_menu">Menu</string>
+    <!-- The Select (view) button's action. "Select" names the button, not the verb "choose". -->
+    <string name="setup_check_action_select">Select</string>
+    <!-- Toggle that swaps the A and B buttons. A and B name the buttons this row remaps; keep the letters. -->
+    <string name="setup_check_toggle_swap_ab">Swap A/B</string>
+    <!-- Toggle that swaps the X and Y buttons. X and Y name the buttons this row remaps; keep the letters. -->
+    <string name="setup_check_toggle_swap_xy">Swap X/Y</string>
+    <!-- Toggle that swaps the Start and Select buttons. Start and Select are button names; keep them. -->
+    <string name="setup_check_toggle_swap_start_select">Swap Start/Select</string>
+    <!-- Button that returns to the previous setup page. -->
+    <string name="setup_check_button_back">Back</string>
+    <!-- Main button that leaves the button check and continues setup. Verb. -->
+    <string name="setup_check_button_continue">Continue</string>
+
+    <!-- ===== Customization ===== -->
+
+    <string name="setup_look_theme_title">Theme</string>
+    <string name="setup_look_theme_purpose">Pick how Argosy looks.</string>
+    <string name="setup_look_home_title">Home layout</string>
+    <string name="setup_look_home_purpose">Pick how Home arranges your games.</string>
+    <string name="setup_look_library_title">Library</string>
+    <string name="setup_look_library_purpose">Pick how your library looks.</string>
+    <!-- Button that skips the remaining appearance pages and goes to the last setup page. -->
+    <string name="setup_look_button_skip">Skip customization</string>
+    <!-- Main button that moves to the next setup page. Verb. -->
+    <string name="setup_look_button_next">Next</string>
+    <!-- Label over the light, dark or system theme choice. -->
+    <string name="setup_look_theme_mode_label">Mode</string>
+    <string name="setup_look_theme_light">Light</string>
+    <string name="setup_look_theme_dark">Dark</string>
+    <!-- Theme option that follows the device's own light or dark setting. -->
+    <string name="setup_look_theme_system">System</string>
+    <!-- Label over the accent colour swatches. -->
+    <string name="setup_look_accent_label">Accent color</string>
+    <!-- Accessibility description of the swatch that keeps Argosy's default accent colour. -->
+    <string name="setup_look_accent_default_desc">Default accent color</string>
+    <!-- Label over the grid or list choice for the library. -->
+    <string name="setup_look_library_layout_label">Layout</string>
+    <string name="setup_look_library_grid">Grid</string>
+    <string name="setup_look_library_list">List</string>
+    <!-- Label over the box art proportion choice. "Box art" is the game cover image. -->
+    <string name="setup_look_shape_label">Box art shape</string>
+    <string name="setup_look_shape_tall">Tall</string>
+    <string name="setup_look_shape_standard">Standard</string>
+    <string name="setup_look_shape_square">Square</string>
+    <string name="setup_look_more_in_settings">More themes, sounds, fonts and backdrops are in Settings.</string>
+
+    <!-- ===== Second screen during setup ===== -->
+
+    <!-- Shown on the second screen while setup runs on the other screen. -->
+    <string name="setup_companion_brand">Setup runs on the other screen.</string>
+
+    <!-- ===== Settings: button check ===== -->
+
+    <!-- Settings row that opens the controller button check. Verb phrase. -->
+    <string name="settings_navigation_check_buttons_title">Check buttons</string>
+    <string name="settings_navigation_check_buttons_subtitle">Press each button to see where it lands</string>
+    <!-- Button that closes the button check in Settings. -->
+    <string name="settings_navigation_check_buttons_done">Done</string>
+</resources>

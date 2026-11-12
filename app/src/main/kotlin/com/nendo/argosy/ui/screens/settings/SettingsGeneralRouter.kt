@@ -459,14 +459,12 @@ internal fun routeToggleGradientAdvancedMode(vm: SettingsViewModel) {
 
 internal fun routeSetDualScreenEnabled(vm: SettingsViewModel, enabled: Boolean) {
     vm.viewModelScope.launch {
-        vm.preferencesRepository.setDualScreenEnabled(enabled)
-        vm.displayAffinityHelper.dualScreenEnabled = enabled
-        val sessionStore = com.nendo.argosy.data.preferences.SessionStateStore(vm.context)
-        sessionStore.setDualScreenEnabled(enabled)
-        if (enabled) {
-            sessionStore.setSecondaryDisplayUsable(true)
-            vm.displayAffinityHelper.secondaryDisplayUsable = true
-        }
+        com.nendo.argosy.util.applyDualScreenEnabled(
+            vm.context,
+            vm.preferencesRepository,
+            vm.displayAffinityHelper,
+            enabled
+        )
         val hasSecondary = vm.displayAffinityHelper.hasSecondaryDisplay
         vm.displayDelegate.updateState(vm._uiState.value.display.copy(
             dualScreenEnabled = enabled,

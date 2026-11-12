@@ -2,6 +2,12 @@ package com.nendo.argosy.ui.screens.setup
 
 import androidx.annotation.StringRes
 import com.nendo.argosy.data.local.entity.PlatformEntity
+import com.nendo.argosy.data.preferences.BoxArtShape
+import com.nendo.argosy.data.preferences.LibraryLayout
+import com.nendo.argosy.data.preferences.ThemeMode
+import com.nendo.argosy.domain.model.HomeLayoutSettings
+import com.nendo.argosy.ui.screens.settings.ScreenAssignment
+import com.nendo.argosy.ui.screens.setup.components.ButtonCheckState
 import com.nendo.argosy.domain.model.ArgosyPermission
 import com.nendo.argosy.domain.model.CoreDownloadProgress
 import com.nendo.argosy.domain.model.FolderSpace
@@ -40,7 +46,8 @@ data class RommSignInState(
     val error: SetupError? = null,
     val importedCertCount: Int = 0,
     val gameCount: Int = 0,
-    val platformCount: Int = 0
+    val platformCount: Int = 0,
+    val summaryLoaded: Boolean = false
 ) {
     val serverName: String get() = url.substringAfter("://").trimEnd('/')
 }
@@ -175,6 +182,16 @@ data class SetupPlatformsState(
     val loaded: Boolean = false
 )
 
+data class SetupLookState(
+    val themeMode: ThemeMode = ThemeMode.SYSTEM,
+    val primaryColor: Int? = null,
+    val homeLayout: HomeLayoutSettings = HomeLayoutSettings(),
+    val libraryLayout: LibraryLayout = LibraryLayout.GRID,
+    val boxArtShape: BoxArtShape = BoxArtShape.STANDARD
+)
+
+val SETUP_BOX_ART_SHAPES: List<BoxArtShape> = listOf(BoxArtShape.TALL, BoxArtShape.STANDARD, BoxArtShape.SQUARE)
+
 data class SetupUiState(
     val page: SetupPage = SetupPage.WELCOME,
     val direction: SetupDirection = SetupDirection.FORWARD,
@@ -188,7 +205,19 @@ data class SetupUiState(
     val access: SetupAccessState = SetupAccessState(),
     val folders: FolderChoices = FolderChoices(),
     val platforms: SetupPlatformsState = SetupPlatformsState(),
-    val cores: CoreDownloadProgress = CoreDownloadProgress()
+    val cores: CoreDownloadProgress = CoreDownloadProgress(),
+    val screens: List<ScreenAssignment> = emptyList(),
+    val gamepadConnected: Boolean = false,
+    val controllerNintendo: Boolean = false,
+    val buttonCheck: ButtonCheckState = ButtonCheckState(),
+    val look: SetupLookState = SetupLookState()
 ) {
     val plan: List<SetupPage> get() = setupPlan(offers)
+
+    fun withPersonal(personal: SetupPersonalizeState): SetupUiState = copy(
+        gamepadConnected = personal.gamepadConnected,
+        controllerNintendo = personal.controllerNintendo,
+        buttonCheck = personal.buttonCheck,
+        look = personal.look
+    )
 }

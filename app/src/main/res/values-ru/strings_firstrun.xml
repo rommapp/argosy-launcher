@@ -21,10 +21,10 @@
 
     <string name="firstrun_romm_success_library">%1$s на %2$s</string>
     <plurals name="firstrun_romm_success_game_count">
-        <item quantity="one">%d игра</item>
-        <item quantity="few">%d игры</item>
-        <item quantity="many">%d игр</item>
-        <item quantity="other">%d игры</item>
+        <item quantity="one">%,d игра</item>
+        <item quantity="few">%,d игры</item>
+        <item quantity="many">%,d игр</item>
+        <item quantity="other">%,d игры</item>
     </plurals>
     <plurals name="firstrun_romm_success_platform_count">
         <item quantity="one">%d платформа</item>

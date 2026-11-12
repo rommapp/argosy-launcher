@@ -42,9 +42,9 @@ internal fun PlatformsPage(state: SetupUiState, viewModel: SetupViewModel) {
         )
         val listState = rememberLazyListState()
         val focusedIndex = when (focus) {
-            is SetupTarget.Platform -> list.shown.indexOfFirst { it.id == focus.id }
-            SetupTarget.CoreDownloads -> list.shown.size
-            SetupTarget.SelectAllPlatforms -> list.shown.size + if (list.missingCoreIds.isEmpty()) 0 else 1
+            SetupTarget.SelectAllPlatforms -> 0
+            is SetupTarget.Platform -> list.shown.indexOfFirst { it.id == focus.id }.let { if (it < 0) -1 else it + 1 }
+            SetupTarget.CoreDownloads -> list.shown.size + 1
             else -> -1
         }
         FocusedScroll(listState = listState, focusedIndex = focusedIndex)
@@ -54,6 +54,19 @@ internal fun PlatformsPage(state: SetupUiState, viewModel: SetupViewModel) {
             modifier = Modifier.fillMaxWidth().weight(1f),
             verticalArrangement = Arrangement.spacedBy(Dimens.listGap),
         ) {
+            item(key = "select-all") {
+                RowButton(
+                    label = stringResource(
+                        if (allEnabled) {
+                            R.string.firstrun_platform_select_button_deselect_all
+                        } else {
+                            R.string.firstrun_platform_select_button_select_all
+                        }
+                    ),
+                    focused = focus == SetupTarget.SelectAllPlatforms,
+                    onClick = { viewModel.tap(SetupTarget.SelectAllPlatforms) },
+                )
+            }
             items(list.shown, key = { it.id }) { platform ->
                 SwitchPreference(
                     title = platform.name,
@@ -81,19 +94,6 @@ internal fun PlatformsPage(state: SetupUiState, viewModel: SetupViewModel) {
                         onToggle = { viewModel.tap(SetupTarget.CoreDownloads) }
                     )
                 }
-            }
-            item(key = "select-all") {
-                RowButton(
-                    label = stringResource(
-                        if (allEnabled) {
-                            R.string.firstrun_platform_select_button_deselect_all
-                        } else {
-                            R.string.firstrun_platform_select_button_select_all
-                        }
-                    ),
-                    focused = focus == SetupTarget.SelectAllPlatforms,
-                    onClick = { viewModel.tap(SetupTarget.SelectAllPlatforms) },
-                )
             }
         }
     }

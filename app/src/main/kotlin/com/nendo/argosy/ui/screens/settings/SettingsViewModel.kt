@@ -208,6 +208,12 @@ class SettingsViewModel @Inject constructor(
         scope = viewModelScope
     )
 
+    val buttonCheck = com.nendo.argosy.ui.screens.setup.components.ButtonCheckController(
+        preferences = preferencesRepository,
+        scope = viewModelScope,
+        showsBack = false
+    )
+
     val networkConnections = QuickConnectionsController(
         radioController = radioController,
         scope = viewModelScope
@@ -1639,6 +1645,13 @@ class SettingsViewModel @Inject constructor(
     fun setSelectSwapMode(mode: com.nendo.argosy.data.preferences.SelectSwapMode) = controlsDelegate.setSelectSwapMode(viewModelScope, mode)
     fun startShortcutCapture(shortcut: com.nendo.argosy.ui.input.UiShortcut) = controlsDelegate.startShortcutCapture(shortcut)
     fun cancelShortcutCapture() = controlsDelegate.cancelShortcutCapture()
+    fun openButtonCheck() {
+        buttonCheck.reset()
+        controlsDelegate.setButtonCheckOpen(true)
+    }
+
+    fun closeButtonCheck() = controlsDelegate.setButtonCheckOpen(false)
+
     fun showNavRingModal() = controlsDelegate.showNavRingModal()
     fun backNavRing() = controlsDelegate.backNavRing()
     fun focusNavRing(index: Int) = controlsDelegate.focusNavRing(index)

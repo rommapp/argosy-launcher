@@ -13,12 +13,19 @@ class LibretroGamepadInputHandler(
 ) : RawInputInterceptor {
 
     private var rawKeyEventListener: ((KeyEvent) -> Boolean)? = null
+    private var rawKeyDeclinesPassThrough = false
     private var rawMotionEventListener: ((MotionEvent) -> Boolean)? = null
 
     val hasRawKeyListener: Boolean get() = rawKeyEventListener != null
 
     override fun setRawKeyEventListener(listener: ((KeyEvent) -> Boolean)?) {
         rawKeyEventListener = listener
+        rawKeyDeclinesPassThrough = false
+    }
+
+    override fun setRawKeyEventFilter(filter: ((KeyEvent) -> Boolean)?) {
+        rawKeyEventListener = filter
+        rawKeyDeclinesPassThrough = filter != null
     }
 
     override fun setRawMotionEventListener(listener: ((MotionEvent) -> Boolean)?) {
@@ -29,7 +36,10 @@ class LibretroGamepadInputHandler(
         menuInputHandler.mapKeyToEvent(keyCode)
 
     fun handleKeyEvent(event: KeyEvent): Boolean {
-        rawKeyEventListener?.let { return it(event) }
+        rawKeyEventListener?.let { listener ->
+            val consumed = listener(event)
+            if (consumed || !rawKeyDeclinesPassThrough) return consumed
+        }
 
         if (event.action != KeyEvent.ACTION_DOWN) return false
 

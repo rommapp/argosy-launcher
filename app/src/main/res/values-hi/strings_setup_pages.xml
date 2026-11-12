@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="setup_home_title">होम ऐप</string>
+    <string name="setup_home_purpose">दोनों स्क्रीन चलाने के लिए Argosy को आपका होम ऐप होना चाहिए।</string>
+    <string name="setup_home_body">Argosy को अपना होम ऐप बनाएं, ताकि होम बटन इसे खोले और दोनों स्क्रीन साथ काम करें।</string>
+    <string name="setup_home_body_set">Argosy आपका होम ऐप है।</string>
+    <string name="setup_home_decline_note">होम ऐप बने बिना Argosy आपके गेम डाउनलोड और सिंक करता है, पर दूसरी स्क्रीन नहीं चलाता। दूसरे ऐप से शुरू किए गए गेम सेव तभी सिंक करते हैं जब Secure Saves बंद हो।</string>
+    <string name="setup_home_button_set">होम ऐप बनाएं</string>
+    <string name="setup_home_button_decline">होम के बिना इस्तेमाल करें</string>
+    <string name="setup_home_button_next">आगे</string>
+
+    <string name="setup_screens_title">स्क्रीन</string>
+    <string name="setup_screens_purpose">मेन्यू के लिए स्क्रीन चुनें। गेम और विवरण दूसरी स्क्रीन पर दिखते हैं।</string>
+    <string name="setup_screens_line">आप इन्हें कभी भी बदल सकते हैं।</string>
+    <string name="setup_screens_button_next">आगे</string>
+    <string name="setup_screens_role_menus">मेन्यू</string>
+    <string name="setup_screens_role_games">गेम और विवरण</string>
+    <string name="setup_screens_footer_swap">स्क्रीन बदलें</string>
+
+    <string name="setup_controller_title">क्या यह आपका कंट्रोलर है?</string>
+    <string name="setup_controller_purpose">अपने कंट्रोलर पर छपा लेआउट चुनें।</string>
+    <string name="setup_controller_none_title">कोई कंट्रोलर नहीं मिला</string>
+    <string name="setup_controller_none_body">अभी सेट अप करने के लिए कंट्रोलर जोड़ें, या छोड़ दें और टच या रिमोट इस्तेमाल करें।</string>
+    <string name="setup_controller_button_next">आगे</string>
+    <string name="setup_controller_button_check_again">फिर से जांचें</string>
+    <string name="setup_controller_button_skip">छोड़ें</string>
+    <string name="setup_controller_xbox">Xbox लेआउट</string>
+    <string name="setup_controller_xbox_detail">पुष्टि नीचे</string>
+    <string name="setup_controller_nintendo">Nintendo लेआउट</string>
+    <string name="setup_controller_nintendo_detail">पुष्टि दाईं ओर</string>
+
+    <string name="setup_check_title">अपने बटन जांचें</string>
+    <string name="setup_check_purpose">कोई भी बटन दबाकर देखें कि वह कहां पड़ता है। जांचते समय कुछ नहीं होता।</string>
+    <string name="setup_check_status_last">पिछला दबाव: %1$s</string>
+    <string name="setup_check_status_idle">कोई बटन दबाएं</string>
+    <string name="setup_check_action_confirm">पुष्टि</string>
+    <string name="setup_check_action_back">वापस</string>
+    <string name="setup_check_action_options">विकल्प</string>
+    <string name="setup_check_action_quick">त्वरित क्रिया</string>
+    <string name="setup_check_action_menu">मेन्यू</string>
+    <string name="setup_check_action_select">Select</string>
+    <string name="setup_check_toggle_swap_ab">A/B बदलें</string>
+    <string name="setup_check_toggle_swap_xy">X/Y बदलें</string>
+    <string name="setup_check_toggle_swap_start_select">Start/Select बदलें</string>
+    <string name="setup_check_button_back">वापस</string>
+    <string name="setup_check_button_continue">जारी रखें</string>
+
+    <string name="setup_look_theme_title">थीम</string>
+    <string name="setup_look_theme_purpose">चुनें कि Argosy कैसा दिखे।</string>
+    <string name="setup_look_home_title">होम लेआउट</string>
+    <string name="setup_look_home_purpose">चुनें कि होम आपके गेम कैसे सजाए।</string>
+    <string name="setup_look_library_title">लाइब्रेरी</string>
+    <string name="setup_look_library_purpose">चुनें कि आपकी लाइब्रेरी कैसी दिखे।</string>
+    <string name="setup_look_button_skip">कस्टमाइज़ेशन छोड़ें</string>
+    <string name="setup_look_button_next">आगे</string>
+    <string name="setup_look_theme_mode_label">मोड</string>
+    <string name="setup_look_theme_light">हल्का</string>
+    <string name="setup_look_theme_dark">गहरा</string>
+    <string name="setup_look_theme_system">सिस्टम</string>
+    <string name="setup_look_accent_label">एक्सेंट रंग</string>
+    <string name="setup_look_accent_default_desc">डिफ़ॉल्ट एक्सेंट रंग</string>
+    <string name="setup_look_library_layout_label">लेआउट</string>
+    <string name="setup_look_library_grid">ग्रिड</string>
+    <string name="setup_look_library_list">सूची</string>
+    <string name="setup_look_shape_label">बॉक्स आर्ट का आकार</string>
+    <string name="setup_look_shape_tall">लंबा</string>
+    <string name="setup_look_shape_standard">सामान्य</string>
+    <string name="setup_look_shape_square">वर्गाकार</string>
+    <string name="setup_look_more_in_settings">और थीम, ध्वनियां, फ़ॉन्ट और बैकड्रॉप सेटिंग में हैं।</string>
+
+    <string name="setup_companion_brand">सेटअप दूसरी स्क्रीन पर चल रहा है।</string>
+
+    <string name="settings_navigation_check_buttons_title">बटन जांचें</string>
+    <string name="settings_navigation_check_buttons_subtitle">हर बटन दबाकर देखें कि वह कहां पड़ता है</string>
+    <string name="settings_navigation_check_buttons_done">हो गया</string>
+</resources>

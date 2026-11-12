@@ -32,8 +32,14 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.lifecycle.compose.LocalLifecycleOwner
+import com.nendo.argosy.DualScreenManagerHolder
 import com.nendo.argosy.R
 import com.nendo.argosy.ui.components.FooterBar
+import com.nendo.argosy.ui.dualscreen.PresentOnCompanion
+import com.nendo.argosy.ui.dualscreen.PresentationSlot
+import com.nendo.argosy.ui.dualscreen.SlotOwner
+import com.nendo.argosy.ui.dualscreen.selectSwapModeState
+import com.nendo.argosy.ui.screens.setup.components.currentGlyphSwaps
 import com.nendo.argosy.ui.components.InputButton
 import com.nendo.argosy.ui.components.permissions.rememberPermissionGrantLauncher
 import com.nendo.argosy.ui.filebrowser.FileBrowserMode
@@ -122,12 +128,20 @@ fun SetupScreen(
                 }
             }
         }
-        if (state.page == SetupPage.PLATFORMS) {
+        if (state.page != SetupPage.PLATFORMS && selectSwapModeState() != null && setupSwapAllowed(state)) {
             FooterBar(
-                hints = listOf(InputButton.X to stringResource(R.string.setup_platforms_footer_select_all)),
-                onHintClick = { if (it == InputButton.X) viewModel.toggleAllPlatforms() }
+                hints = listOf(InputButton.SELECT to stringResource(R.string.setup_screens_footer_swap)),
+                onHintClick = { if (it == InputButton.SELECT) DualScreenManagerHolder.instance?.swapRoles() }
             )
         }
+    }
+
+    if (state.loaded) {
+        val swaps = currentGlyphSwaps()
+        PresentOnCompanion(
+            owner = SlotOwner.of(SETUP_SLOT_OWNER, viewModel),
+            slot = PresentationSlot.Setup(companionFor(state, swaps))
+        )
     }
 
     SetupKeyboards(state = state, viewModel = viewModel)
@@ -159,6 +173,13 @@ private fun SetupPageContent(state: SetupUiState, viewModel: SetupViewModel) {
         SetupPage.FOLDERS -> FoldersPage(state = state, viewModel = viewModel)
         SetupPage.SAVE_SYNC -> SaveSyncPage(state = state, viewModel = viewModel)
         SetupPage.PLATFORMS -> PlatformsPage(state = state, viewModel = viewModel)
+        SetupPage.DEFAULT_HOME -> DefaultHomePage(state = state, viewModel = viewModel)
+        SetupPage.SCREENS -> ScreensPage(state = state, viewModel = viewModel)
+        SetupPage.CONTROLLER -> ControllerPage(state = state, viewModel = viewModel)
+        SetupPage.BUTTON_CHECK -> ButtonCheckPage(state = state, viewModel = viewModel)
+        SetupPage.THEME -> ThemePage(state = state, viewModel = viewModel)
+        SetupPage.HOME_LAYOUT -> HomeLayoutPage(state = state, viewModel = viewModel)
+        SetupPage.LIBRARY_LOOK -> LibraryLookPage(state = state, viewModel = viewModel)
         SetupPage.DONE -> DonePage(state = state, viewModel = viewModel)
     }
 }
@@ -168,6 +189,7 @@ internal fun SetupPageBody(
     state: SetupUiState,
     viewModel: SetupViewModel,
     context: (@Composable () -> Unit)? = null,
+    contextOnCompanion: Boolean = false,
     content: @Composable ColumnScope.() -> Unit,
 ) {
     val focus = focusedTarget(state)
@@ -184,6 +206,7 @@ internal fun SetupPageBody(
             )
         },
         onAction = { index -> specs.getOrNull(index)?.let { viewModel.tap(SetupTarget.Action(it.id)) } },
+        contextOnCompanion = contextOnCompanion,
         context = context,
         content = content,
     )
@@ -208,3 +231,4 @@ private fun Context.openInBrowser(url: String) {
 }
 
 private const val TAG = "SetupScreen"
+private const val SETUP_SLOT_OWNER = "setup"

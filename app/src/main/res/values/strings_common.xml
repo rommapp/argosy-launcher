@@ -55,6 +55,11 @@
     <!-- Owned but the user has decided never to play it. -->
     <string name="completion_status_never_playing">Won\'t Play</string>
 
+    <!-- Where a play session happened, shown in place of a device name for sessions played
+         by streaming the game from the RomM server instead of on a device. "RomM" is a product
+         name and stays as is. -->
+    <string name="play_session_device_romm_streaming">RomM streaming</string>
+
     <!-- Save manager (ui/common/savechannel) -->
 
     <!-- Heading of the modal that manages a game's saves and save states. Noun phrase naming

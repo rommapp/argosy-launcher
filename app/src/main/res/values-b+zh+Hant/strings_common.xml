@@ -21,6 +21,8 @@
     <string name="completion_status_retired">已擱置</string>
     <string name="completion_status_never_playing">不會玩</string>
 
+    <string name="play_session_device_romm_streaming">RomM 串流</string>
+
     <!-- Save manager (ui/common/savechannel) -->
 
     <string name="ui_save_channel_title">存檔管理</string>

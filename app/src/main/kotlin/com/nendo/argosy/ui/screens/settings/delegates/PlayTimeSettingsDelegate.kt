@@ -8,6 +8,7 @@ import com.nendo.argosy.data.repository.PlayStatsRepository
 import com.nendo.argosy.data.social.uploader.PlaySessionBackfill
 import com.nendo.argosy.data.social.uploader.PlaySessionPull
 import com.nendo.argosy.ui.common.DisplayText
+import com.nendo.argosy.ui.common.playSessionDeviceLabelRes
 import com.nendo.argosy.ui.components.recap.MonthlyRecapController
 import com.nendo.argosy.ui.screens.settings.PlayTimeDeleteConfirm
 import com.nendo.argosy.ui.screens.settings.PlayTimeEntryUi
@@ -149,6 +150,7 @@ class PlayTimeSettingsDelegate @Inject constructor(
                     weekday = summary.weekday,
                     hour = summary.hour,
                     deviceName = deviceNames[summary.topDeviceId] ?: summary.topDeviceId,
+                    deviceNameRes = playSessionDeviceLabelRes(summary.topDeviceId),
                     isThisDevice = summary.topDeviceId == snapshot.localDeviceId
                 )
             },
@@ -180,6 +182,7 @@ class PlayTimeSettingsDelegate @Inject constructor(
                 PlayTimeEntryUi(
                     key = total.deviceId,
                     name = deviceNames.getValue(total.deviceId),
+                    nameRes = playSessionDeviceLabelRes(total.deviceId),
                     activeMs = total.activeMs,
                     sessionCount = total.sessionCount,
                     lastPlayed = total.lastPlayed,

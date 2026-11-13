@@ -13,6 +13,7 @@ import com.nendo.argosy.R
 import com.nendo.argosy.data.model.GameActivitySnapshot
 import com.nendo.argosy.domain.model.DeviceKind
 import com.nendo.argosy.ui.common.ChartPalette
+import com.nendo.argosy.ui.common.playSessionDeviceLabelRes
 import com.nendo.argosy.ui.components.playtime.playHourLabel
 import com.nendo.argosy.ui.components.playtime.waveformPeak
 import com.nendo.argosy.ui.dualscreen.PresentOnCompanion
@@ -77,9 +78,11 @@ private fun GameActivitySnapshot.buildSlot(context: Context, isDark: Boolean): P
     }
     val totalMs = devices.sumOf { it.activeMs }.coerceAtLeast(1L)
     val presented = devices.take(PRESENTED_DEVICES).mapIndexed { index, device ->
+        val labelRes = playSessionDeviceLabelRes(device.deviceId)
         SaveGameDevice(
-            label = DeviceKind.withoutRepeatedManufacturer(device.deviceName),
-            kind = DeviceKind.classify(device.deviceName, "android", null),
+            label = labelRes?.let(context::getString)
+                ?: DeviceKind.withoutRepeatedManufacturer(device.deviceName),
+            kind = if (labelRes != null) DeviceKind.UNKNOWN else DeviceKind.classify(device.deviceName, "android", null),
             activeMs = device.activeMs,
             valueLabel = context.minutesLabel(device.activeMs),
             shareLabel = context.getString(R.string.savesync_presentation_share_percent, (device.activeMs * PERCENT / totalMs).toInt()),

@@ -21,6 +21,8 @@
     <string name="completion_status_retired">Retirado</string>
     <string name="completion_status_never_playing">No se jugará</string>
 
+    <string name="play_session_device_romm_streaming">Streaming de RomM</string>
+
     <!-- Save manager (ui/common/savechannel) -->
 
     <string name="ui_save_channel_title">Gestión de partidas guardadas</string>

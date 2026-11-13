@@ -166,7 +166,8 @@ fun PlayTimeListSection(uiState: SettingsUiState, viewModel: SettingsViewModel, 
             is PlayTimeListItem.Row -> {
                 val entry = item.entry
                 PlayBarRow(
-                    name = entry.name.ifBlank { stringResource(R.string.settings_play_time_list_unknown_game) },
+                    name = entry.nameRes?.let { stringResource(it) }
+                        ?: entry.name.ifBlank { stringResource(R.string.settings_play_time_list_unknown_game) },
                     valueLabel = formatPlayTime(context, (entry.activeMs / MS_PER_MINUTE).toInt()),
                     value = entry.activeMs,
                     maxValue = maxMs,

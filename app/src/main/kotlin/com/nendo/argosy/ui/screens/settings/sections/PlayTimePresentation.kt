@@ -125,7 +125,7 @@ private fun PlayTimeState.shareSlot(
         subtitle = subtitle,
         rows = entries.take(shareRowsFor(kind)).mapIndexed { index, entry ->
             PlayShareRow(
-                label = entry.name,
+                label = entry.nameRes?.let(context::getString) ?: entry.name,
                 valueLabel = formatPlayTime(context, (entry.activeMs / MS_PER_MIN).toInt()),
                 shareLabel = context.getString(
                     R.string.settings_play_time_share_percent,

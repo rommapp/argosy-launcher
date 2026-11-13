@@ -21,6 +21,8 @@
     <string name="completion_status_retired">Encostado</string>
     <string name="completion_status_never_playing">Não vou jogar</string>
 
+    <string name="play_session_device_romm_streaming">Streaming do RomM</string>
+
     <string name="ui_save_channel_title">Gestão de saves</string>
     <string name="ui_save_channel_slots_heading">Slots de save</string>
     <string name="ui_save_channel_history_heading_named">Histórico (%1$s)</string>

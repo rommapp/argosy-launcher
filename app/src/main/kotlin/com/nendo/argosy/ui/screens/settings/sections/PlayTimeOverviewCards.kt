@@ -294,7 +294,7 @@ private fun WindowSummary(state: PlayTimeState) {
             value = if (summary.isThisDevice) {
                 stringResource(R.string.settings_play_time_this_device)
             } else {
-                summary.deviceName
+                summary.deviceNameRes?.let { stringResource(it) } ?: summary.deviceName
             },
             detail = null
         )
@@ -591,7 +591,7 @@ private fun shareSegments(
         buildShareSegments(
             entries = entries.map { entry ->
                 ShareEntry(
-                    label = entry.name,
+                    label = entry.nameRes?.let(context::getString) ?: entry.name,
                     activeMs = entry.activeMs,
                     platformSlug = entry.key.takeIf { withGlyph },
                     badge = thisDevice.takeIf { entry.isThisDevice }

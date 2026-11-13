@@ -21,6 +21,8 @@
     <string name="completion_status_retired">Заброшено</string>
     <string name="completion_status_never_playing">Не буду играть</string>
 
+    <string name="play_session_device_romm_streaming">Стриминг RomM</string>
+
     <string name="ui_save_channel_title">Управление сохранениями</string>
     <string name="ui_save_channel_slots_heading">Слоты сохранений</string>
     <string name="ui_save_channel_history_heading_named">История (%1$s)</string>

@@ -1192,11 +1192,13 @@ enum class PlayTimeListKind { PLATFORMS, DEVICES, GAMES }
 
 /**
  * One row of a Play Time list. [name] is blank when a pulled session's rom could not be
- * named, and the row shows its placeholder label instead.
+ * named, and the row shows its placeholder label instead. A device row that names no real
+ * device carries [nameRes], which the row shows in place of [name].
  */
 data class PlayTimeEntryUi(
     val key: String,
     val name: String,
+    @StringRes val nameRes: Int? = null,
     val platformName: String = "",
     val platformSlug: String = "",
     val coverPath: String? = null,
@@ -1228,6 +1230,7 @@ data class PlayTimeSummaryUi(
     val weekday: java.time.DayOfWeek,
     val hour: Int,
     val deviceName: String,
+    @StringRes val deviceNameRes: Int? = null,
     val isThisDevice: Boolean
 )
 

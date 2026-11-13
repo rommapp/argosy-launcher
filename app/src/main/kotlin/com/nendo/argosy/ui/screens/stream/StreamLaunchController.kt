@@ -139,9 +139,8 @@ class StreamLaunchController private constructor(
                 saves = saveOptions.map { it.toOption() },
                 saveIndex = saveOptions.indexOfFirst { it.id == defaultSave?.id }.coerceAtLeast(0),
                 showsStatePicker = StreamPicker.supportsStates(found) && stateOptions.isNotEmpty(),
-                showsSavePicker = StreamPicker.showsSavePicker(saves, found),
-                focusIndex = 0
-            )
+                showsSavePicker = StreamPicker.showsSavePicker(saves, found)
+            )?.let { picked -> picked.copy(focusIndex = picked.rows.indexOf(StreamLaunchRow.START).coerceAtLeast(0)) }
         }
     }
 

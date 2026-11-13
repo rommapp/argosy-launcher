@@ -21,14 +21,8 @@ private const val TAG = "PlaySessionPull"
 private const val PAGE_SIZE = 200
 
 /**
- * Copies down the play sessions RomM holds for the account's other devices, so hours played
- * elsewhere count here. This device is skipped: its sessions originate locally, and a row the
- * ingest acknowledged as a duplicate carries no server id to match on. Sessions RomM holds with
- * no device, its emulator streaming record, are filed under [ROMM_STREAMING_DEVICE_ID] and
- * count toward [Summary.added] but not [Summary.devices]. Runs after the
- * first-connect backfill, after each upload, on the [PlaySessionPullScheduler] cadence at RomM
- * connect and Home resume, before a monthly recap decides or loads, and on demand from the Play
- * Time hub.
+ * Copies down the play sessions RomM holds for the account's other devices, skipping this one, and
+ * files RomM's device-less streaming sessions under [ROMM_STREAMING_DEVICE_ID].
  */
 @Singleton
 class PlaySessionPull @Inject constructor(

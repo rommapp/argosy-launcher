@@ -416,7 +416,13 @@ class StreamPlayerActivity : ComponentActivity() {
     @SuppressLint("RestrictedApi")
     override fun dispatchKeyEvent(event: KeyEvent): Boolean {
         val dsm = DualScreenManagerHolder.instance
-        if (dsm != null && !dsm.claimInput(event)) return true
+        val claimed = dsm == null || dsm.claimInput(event)
+        com.nendo.argosy.util.Logger.debug(
+            TAG,
+            "key=${event.keyCode} action=${event.action} device=${event.deviceId} claimed=$claimed " +
+                "captures=${uiState.value.capturesInput} panel=${quickPanelOverlay.isOpen.value}"
+        )
+        if (!claimed) return true
         if (event.keyCode in SYSTEM_KEYS) return super.dispatchKeyEvent(event)
         if (quickPanelOverlay.isOpen.value) return true
         if (event.keyCode == KeyEvent.KEYCODE_BACK && !uiState.value.capturesInput) return onBackKey(event)
@@ -436,7 +442,8 @@ class StreamPlayerActivity : ComponentActivity() {
     }
 
     override fun dispatchGenericMotionEvent(event: MotionEvent): Boolean {
-        if (uiState.value.capturesInput || quickPanelOverlay.isOpen.value) return true
+        if (quickPanelOverlay.isOpen.value) return true
+        if (uiState.value.capturesInput) return false
         val fromPad = event.isFromSource(android.view.InputDevice.SOURCE_JOYSTICK) ||
             event.isFromSource(android.view.InputDevice.SOURCE_GAMEPAD)
         if (fromPad && event.action == MotionEvent.ACTION_MOVE) {
@@ -561,6 +568,7 @@ class StreamPlayerActivity : ComponentActivity() {
     companion object {
         private const val MATCH = ViewGroup.LayoutParams.MATCH_PARENT
         private const val BACK_HOLD_MS = 500L
+        private const val TAG = "StreamPlayer"
         private const val NOTICE_MS = 2_500L
         private val SYSTEM_KEYS = setOf(
             KeyEvent.KEYCODE_HOME,

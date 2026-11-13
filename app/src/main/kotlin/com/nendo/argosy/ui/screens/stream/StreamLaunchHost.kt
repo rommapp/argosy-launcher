@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -40,7 +41,7 @@ fun StreamLaunchHost(controller: StreamLaunchController) {
     ModalScaffold(
         visible = current != null,
         onDismiss = { if (current?.step != StreamLaunchStep.Starting) controller.dismiss() },
-        maxWidth = Dimens.modalWidth
+        maxWidth = Dimens.modalWidthLg
     ) {
         if (current != null) StreamLaunchContent(current, controller)
     }
@@ -49,7 +50,7 @@ fun StreamLaunchHost(controller: StreamLaunchController) {
 @Composable
 private fun StreamLaunchContent(state: StreamLaunchUiState, controller: StreamLaunchController) {
     val theme = LocalArgosyTheme.current
-    Column(modifier = Modifier.padding(Dimens.spacingLg)) {
+    Column(modifier = Modifier.width(Dimens.modalWidthLg).padding(Dimens.spacingLg)) {
         Text(
             text = stringResource(R.string.stream_launch_title, state.containerLabel),
             style = MaterialTheme.typography.titleMedium,
@@ -61,36 +62,39 @@ private fun StreamLaunchContent(state: StreamLaunchUiState, controller: StreamLa
             color = theme.textDim
         )
         Spacer(Modifier.height(Dimens.spacingMd))
-        when (val step = state.step) {
-            StreamLaunchStep.Loading -> Progress(stringResource(R.string.stream_launch_loading))
-            StreamLaunchStep.Starting -> Progress(stringResource(R.string.stream_launch_starting))
-            StreamLaunchStep.Pick -> PickBody(state, controller)
-            is StreamLaunchStep.Busy -> BodyText(busyMessage(step))
-            is StreamLaunchStep.CardDecision -> CardBody(step)
-            is StreamLaunchStep.Notice -> {
-                BodyText(stringResource(step.message))
-                step.detail?.let { BodyText(it) }
+        Column(
+            modifier = Modifier.fillMaxWidth().heightIn(min = Dimens.buttonHeight),
+            verticalArrangement = Arrangement.Center
+        ) {
+            when (val step = state.step) {
+                StreamLaunchStep.Loading -> Progress(stringResource(R.string.stream_launch_loading))
+                StreamLaunchStep.Starting -> Progress(stringResource(R.string.stream_launch_starting))
+                StreamLaunchStep.Pick -> PickBody(state, controller)
+                is StreamLaunchStep.Busy -> BodyText(busyMessage(step))
+                is StreamLaunchStep.CardDecision -> CardBody(step)
+                is StreamLaunchStep.Notice -> {
+                    BodyText(stringResource(step.message))
+                    step.detail?.let { BodyText(it) }
+                }
             }
         }
         val actions = state.rows.filter { it != StreamLaunchRow.STATE && it != StreamLaunchRow.SAVE }
-        if (actions.isNotEmpty()) {
-            Spacer(Modifier.height(Dimens.spacingLg))
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(Dimens.spacingSm, Alignment.End)
-            ) {
-                actions.forEach { row ->
-                    ModalActionButton(
-                        label = stringResource(row.labelRes()),
-                        tint = theme.focusAccent,
-                        restLabelColor = theme.textPrimary,
-                        focused = state.focusedRow == row,
-                        onClick = {
-                            controller.focusRow(row)
-                            controller.activate(row)
-                        }
-                    )
-                }
+        Spacer(Modifier.height(Dimens.spacingLg))
+        Row(
+            modifier = Modifier.fillMaxWidth().heightIn(min = Dimens.buttonHeight),
+            horizontalArrangement = Arrangement.spacedBy(Dimens.spacingSm, Alignment.End)
+        ) {
+            actions.forEach { row ->
+                ModalActionButton(
+                    label = stringResource(row.labelRes()),
+                    tint = theme.focusAccent,
+                    restLabelColor = theme.textPrimary,
+                    focused = state.focusedRow == row,
+                    onClick = {
+                        controller.focusRow(row)
+                        controller.activate(row)
+                    }
+                )
             }
         }
     }

@@ -47,6 +47,10 @@ internal class BuiltinControlsSectionInput(
                 viewModel.setBuiltinLimitHotkeysToPlayer1(!state.builtinControls.limitHotkeysToPlayer1)
                 InputResult.handled(SoundType.TOGGLE)
             }
+            BuiltinControlsItem.ConfirmReturnHome -> {
+                viewModel.setBuiltinConfirmReturnHome(!state.builtinControls.confirmReturnHome)
+                InputResult.handled(SoundType.TOGGLE)
+            }
             BuiltinControlsItem.ToggleFastForward -> {
                 val next = if (state.builtinControls.fastForwardMode == com.nendo.argosy.data.local.entity.FastForwardMode.TOGGLE) {
                     com.nendo.argosy.data.local.entity.FastForwardMode.HOLD

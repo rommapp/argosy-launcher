@@ -39,6 +39,7 @@ class BuiltinEmulatorPreferencesRepository @Inject constructor(
         val BUILTIN_GYRO_AIM_SENSITIVITY = intPreferencesKey("builtin_gyro_aim_sensitivity")
         val BUILTIN_BLACK_FRAME_INSERTION = booleanPreferencesKey("builtin_black_frame_insertion")
         val BUILTIN_LIMIT_HOTKEYS_TO_PLAYER1 = booleanPreferencesKey("builtin_limit_hotkeys_to_player1")
+        val BUILTIN_CONFIRM_RETURN_HOME = booleanPreferencesKey("builtin_confirm_return_home")
         val BUILTIN_ANALOG_AS_DPAD = booleanPreferencesKey("builtin_analog_as_dpad")
         val BUILTIN_DPAD_AS_ANALOG = booleanPreferencesKey("builtin_dpad_as_analog")
         val BUILTIN_CORE_SELECTIONS = stringPreferencesKey("builtin_core_selections")
@@ -116,6 +117,7 @@ class BuiltinEmulatorPreferencesRepository @Inject constructor(
             blackFrameInsertion = prefs[Keys.BUILTIN_BLACK_FRAME_INSERTION] ?: false,
             framesEnabled = prefs[Keys.BUILTIN_FRAMES_ENABLED] ?: false,
             limitHotkeysToPlayer1 = prefs[Keys.BUILTIN_LIMIT_HOTKEYS_TO_PLAYER1] ?: true,
+            confirmReturnHome = prefs[Keys.BUILTIN_CONFIRM_RETURN_HOME] ?: true,
             analogAsDpad = prefs[Keys.BUILTIN_ANALOG_AS_DPAD] ?: false,
             dpadAsAnalog = prefs[Keys.BUILTIN_DPAD_AS_ANALOG] ?: false,
             audioVolume = prefs[Keys.BUILTIN_AUDIO_VOLUME] ?: 100,
@@ -259,6 +261,10 @@ class BuiltinEmulatorPreferencesRepository @Inject constructor(
 
     suspend fun setBuiltinLimitHotkeysToPlayer1(enabled: Boolean) {
         dataStore.edit { it[Keys.BUILTIN_LIMIT_HOTKEYS_TO_PLAYER1] = enabled }
+    }
+
+    suspend fun setBuiltinConfirmReturnHome(enabled: Boolean) {
+        dataStore.edit { it[Keys.BUILTIN_CONFIRM_RETURN_HOME] = enabled }
     }
 
     suspend fun setBuiltinAnalogAsDpad(enabled: Boolean) {

@@ -155,6 +155,7 @@ object SettingsBackupKeys {
         SettingsBackupKey("builtin_core_selections", SettingsBackupType.STRING),
         SettingsBackupKey("builtin_ingame_menu_two_column", SettingsBackupType.BOOLEAN),
         SettingsBackupKey("builtin_limit_hotkeys_to_player1", SettingsBackupType.BOOLEAN),
+        SettingsBackupKey("builtin_confirm_return_home", SettingsBackupType.BOOLEAN),
         SettingsBackupKey("builtin_default_to_hardcore", SettingsBackupType.BOOLEAN),
         SettingsBackupKey("builtin_default_to_hardcore_mode", SettingsBackupType.STRING),
         SettingsBackupKey("builtin_auto_save_state", SettingsBackupType.BOOLEAN),

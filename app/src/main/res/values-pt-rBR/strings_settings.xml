@@ -2945,6 +2945,8 @@
     <string name="settings_builtin_controls_limit_hotkeys_title">Limitar atalhos ao Jogador 1</string>
     <!-- Second line of that row. -->
     <string name="settings_builtin_controls_limit_hotkeys_subtitle">Somente o controle do jogador 1 pode acionar os atalhos</string>
+    <string name="settings_builtin_controls_confirm_return_title">Confirmar volta ao Argosy</string>
+    <string name="settings_builtin_controls_confirm_return_subtitle">Perguntar antes de sair do jogo com Home</string>
     <!-- Row title. Noun phrase: the controller's Select button reaching the app as Back. "Select"
          and "Back" are button names. -->
     <string name="settings_builtin_controls_select_as_back_title">Select como Voltar</string>

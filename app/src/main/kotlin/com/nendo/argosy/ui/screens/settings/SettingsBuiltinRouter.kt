@@ -441,6 +441,13 @@ internal fun routeSetBuiltinLimitHotkeysToPlayer1(vm: SettingsViewModel, enabled
     }
 }
 
+internal fun routeSetBuiltinConfirmReturnHome(vm: SettingsViewModel, enabled: Boolean) {
+    vm._uiState.update { it.copy(builtinControls = it.builtinControls.copy(confirmReturnHome = enabled)) }
+    vm.viewModelScope.launch {
+        vm.libretroSettingsRepo.setBuiltinConfirmReturnHome(enabled)
+    }
+}
+
 internal fun routeSetSpeedrunStartOnReset(vm: SettingsViewModel, enabled: Boolean) {
     vm._uiState.update { it.copy(builtinControls = it.builtinControls.copy(speedrunStartOnReset = enabled)) }
     vm.viewModelScope.launch {

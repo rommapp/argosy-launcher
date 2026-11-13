@@ -1526,6 +1526,8 @@
     <string name="settings_builtin_controls_hotkeys_subtitle">配置菜单、快进、回退的快捷键</string>
     <string name="settings_builtin_controls_limit_hotkeys_title">快捷键仅限1号玩家</string>
     <string name="settings_builtin_controls_limit_hotkeys_subtitle">只有1号玩家的手柄可以触发快捷键</string>
+    <string name="settings_builtin_controls_confirm_return_title">返回 Argosy 前确认</string>
+    <string name="settings_builtin_controls_confirm_return_subtitle">按 Home 离开游戏前先询问</string>
     <string name="settings_builtin_controls_select_as_back_title">Select 识别为返回</string>
     <string name="settings_builtin_controls_select_as_back_subtitle">适用于按 Select 会发送返回键的手柄。自动模式会在没有 Select 键的手柄上把返回键当作 Select。</string>
     <string name="settings_builtin_controls_select_as_back_auto">自动</string>

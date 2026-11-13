@@ -53,6 +53,7 @@ class EffectiveLibretroSettingsResolver @Inject constructor(
             rumbleEnabled = perPlatform?.rumbleEnabled ?: global.rumbleEnabled,
             motionEnabled = perPlatform?.motionEnabled ?: global.motionEnabled,
             limitHotkeysToPlayer1 = global.limitHotkeysToPlayer1,
+            confirmReturnHome = global.confirmReturnHome,
             analogAsDpad = perPlatform?.analogAsDpad
                 ?: !PlatformWeightRegistry.hasAnalogStick(platformSlug),
             dpadAsAnalog = perPlatform?.dpadAsAnalog ?: false,

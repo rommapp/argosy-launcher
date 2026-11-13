@@ -1663,6 +1663,8 @@
     <string name="settings_builtin_controls_hotkeys_subtitle">Настроить сочетания для меню, перемотки вперёд и назад</string>
     <string name="settings_builtin_controls_limit_hotkeys_title">Горячие клавиши только для игрока 1</string>
     <string name="settings_builtin_controls_limit_hotkeys_subtitle">Горячие клавиши работают только с контроллером игрока 1</string>
+    <string name="settings_builtin_controls_confirm_return_title">Подтверждать возврат в Argosy</string>
+    <string name="settings_builtin_controls_confirm_return_subtitle">Спрашивать перед выходом из игры по кнопке Home</string>
     <string name="settings_builtin_controls_select_as_back_title">Select как «Назад»</string>
     <string name="settings_builtin_controls_select_as_back_subtitle">Для контроллеров, у которых Select отправляет «Назад». В режиме «Авто» «Назад» работает как Select на контроллерах без кнопки Select.</string>
     <string name="settings_builtin_controls_select_as_back_auto">Авто</string>

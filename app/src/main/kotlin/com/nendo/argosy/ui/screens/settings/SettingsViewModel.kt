@@ -764,6 +764,7 @@ class SettingsViewModel @Inject constructor(
     fun setBuiltinGyroAimInvertY(enabled: Boolean) = routeSetBuiltinGyroAimInvertY(this, enabled)
     fun stepBuiltinGyroAimSensitivity(direction: Int) = routeStepBuiltinGyroAimSensitivity(this, direction)
     fun setBuiltinLimitHotkeysToPlayer1(enabled: Boolean) = routeSetBuiltinLimitHotkeysToPlayer1(this, enabled)
+    fun setBuiltinConfirmReturnHome(enabled: Boolean) = routeSetBuiltinConfirmReturnHome(this, enabled)
     fun setSpeedrunStartOnReset(enabled: Boolean) = routeSetSpeedrunStartOnReset(this, enabled)
     fun setSpeedrunPanelSide(side: String) = routeSetSpeedrunPanelSide(this, side)
     fun adjustSpeedrunPanelWidth(delta: Int) = routeAdjustSpeedrunPanelWidth(this, delta)

@@ -3007,6 +3007,10 @@
     <string name="settings_builtin_controls_limit_hotkeys_title">Limit Hotkeys to Player 1</string>
     <!-- Second line of that row. -->
     <string name="settings_builtin_controls_limit_hotkeys_subtitle">Only player 1 controller can trigger hotkeys</string>
+    <!-- Row title. When on, pressing Home in a game asks before leaving it. -->
+    <string name="settings_builtin_controls_confirm_return_title">Confirm Return to Argosy</string>
+    <!-- Second line of that row. -->
+    <string name="settings_builtin_controls_confirm_return_subtitle">Ask before Home leaves the game</string>
     <!-- Row title. Noun phrase: the controller's Select button reaching the app as Back. "Select"
          and "Back" are button names. -->
     <string name="settings_builtin_controls_select_as_back_title">Select as Back</string>

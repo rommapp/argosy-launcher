@@ -772,6 +772,7 @@ data class BuiltinEmulatorSettings(
     val framesEnabled: Boolean = false,
     val frame: String? = null,
     val limitHotkeysToPlayer1: Boolean = true,
+    val confirmReturnHome: Boolean = true,
     val analogAsDpad: Boolean = false,
     val dpadAsAnalog: Boolean = false,
     val fastForwardEnabled: Boolean = true,

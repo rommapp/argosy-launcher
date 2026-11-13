@@ -843,6 +843,7 @@ data class BuiltinControlsState(
     val gyroAimInvertY: Boolean = false,
     val gyroAimSensitivity: Int = com.nendo.argosy.data.preferences.GyroAimSensitivity.DEFAULT,
     val limitHotkeysToPlayer1: Boolean = true,
+    val confirmReturnHome: Boolean = true,
     val speedrunStartOnReset: Boolean = true,
     val speedrunPanelSide: String = "Right",
     val speedrunPanelWidthPercent: Int = 30,

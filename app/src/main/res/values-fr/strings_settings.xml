@@ -1618,6 +1618,8 @@
     <string name="settings_builtin_controls_hotkeys_subtitle">Configurer les raccourcis pour le menu, l\'avance rapide, le rembobinage</string>
     <string name="settings_builtin_controls_limit_hotkeys_title">Limiter les raccourcis au joueur 1</string>
     <string name="settings_builtin_controls_limit_hotkeys_subtitle">Seule la manette du joueur 1 peut déclencher les raccourcis</string>
+    <string name="settings_builtin_controls_confirm_return_title">Confirmer le retour à Argosy</string>
+    <string name="settings_builtin_controls_confirm_return_subtitle">Demander avant de quitter le jeu avec Home</string>
     <string name="settings_builtin_controls_select_as_back_title">Select comme Retour</string>
     <string name="settings_builtin_controls_select_as_back_subtitle">Pour les manettes dont Select envoie Retour. Auto traite Retour comme Select sur les manettes sans bouton Select.</string>
     <string name="settings_builtin_controls_select_as_back_auto">Auto</string>

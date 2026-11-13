@@ -1458,6 +1458,8 @@
     <string name="settings_builtin_controls_hotkeys_subtitle">設定選單、快轉、倒轉的快捷鍵</string>
     <string name="settings_builtin_controls_limit_hotkeys_title">僅限玩家1使用快捷鍵</string>
     <string name="settings_builtin_controls_limit_hotkeys_subtitle">只有玩家1的控制器可以觸發快捷鍵</string>
+    <string name="settings_builtin_controls_confirm_return_title">返回 Argosy 前確認</string>
+    <string name="settings_builtin_controls_confirm_return_subtitle">按 Home 離開遊戲前先詢問</string>
     <string name="settings_builtin_controls_select_as_back_title">Select 視為返回</string>
     <string name="settings_builtin_controls_select_as_back_subtitle">適用於按 Select 會送出返回鍵的控制器。自動模式會在沒有 Select 鍵的控制器上把返回鍵當作 Select。</string>
     <string name="settings_builtin_controls_select_as_back_auto">自動</string>

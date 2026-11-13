@@ -75,6 +75,7 @@ internal sealed class BuiltinControlsItem(
     data object DpadAsAnalog : BuiltinControlsItem("dpadAsAnalog", "sticks", { it.showStickMappings && it.showDpadAsAnalog })
     data object Hotkeys : BuiltinControlsItem("hotkeys", "hotkeys")
     data object LimitHotkeysToPlayer1 : BuiltinControlsItem("limitHotkeys", "hotkeys")
+    data object ConfirmReturnHome : BuiltinControlsItem("confirmReturnHome", "hotkeys")
     data object ToggleFastForward : BuiltinControlsItem("toggleFastForward", "hotkeys")
     data object PreserveFastForwardPitch : BuiltinControlsItem("preserveFastForwardPitch", "hotkeys")
     data object ResetAllToGlobal : BuiltinControlsItem("resetAllToGlobal", "hotkeys", { it.showResetAll })
@@ -135,6 +136,7 @@ internal sealed class BuiltinControlsItem(
                 HotkeysHeader,
                 Hotkeys,
                 LimitHotkeysToPlayer1,
+                ConfirmReturnHome,
                 ToggleFastForward,
                 PreserveFastForwardPitch,
                 ResetAllToGlobal,
@@ -416,6 +418,14 @@ fun BuiltinControlsSection(
                     isEnabled = controlsState.limitHotkeysToPlayer1,
                     isFocused = isFocused(item),
                     onToggle = { viewModel.setBuiltinLimitHotkeysToPlayer1(it) }
+                )
+
+                BuiltinControlsItem.ConfirmReturnHome -> SwitchPreference(
+                    title = stringResource(R.string.settings_builtin_controls_confirm_return_title),
+                    subtitle = stringResource(R.string.settings_builtin_controls_confirm_return_subtitle),
+                    isEnabled = controlsState.confirmReturnHome,
+                    isFocused = isFocused(item),
+                    onToggle = { viewModel.setBuiltinConfirmReturnHome(it) }
                 )
 
                 BuiltinControlsItem.ToggleFastForward -> SwitchPreference(

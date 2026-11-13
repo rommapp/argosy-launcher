@@ -361,6 +361,7 @@ open class LibretroActivity : ComponentActivity() {
     private var canEnableBFI = false
 
     private var limitHotkeysToPlayer1 by mutableStateOf(true)
+    private var confirmReturnHome = true
     private var selectAsBack by mutableStateOf(com.nendo.argosy.data.local.entity.SelectAsBackMode.AUTO)
     private val backAsSelect = BackAsSelectTranslator { selectAsBack }
     private var dualScreenMatchSize = false
@@ -1096,6 +1097,7 @@ open class LibretroActivity : ComponentActivity() {
         videoSettings.applySettings(settings)
         videoSettings.resolveCustomShader(settings)
         limitHotkeysToPlayer1 = settings.limitHotkeysToPlayer1
+        confirmReturnHome = settings.confirmReturnHome
         selectAsBack = settings.selectAsBack
         dualScreenMatchSize = settings.dualScreenMatchSize
         videoSettings.onRewindToggled = { enabled ->
@@ -3658,13 +3660,17 @@ open class LibretroActivity : ComponentActivity() {
         val job = guideHoldJob ?: return false
         job.cancel()
         guideHoldJob = null
-        if (!guideHoldFired && !isAnyMenuOpen) showReturnPrompt()
+        if (!guideHoldFired && !isAnyMenuOpen) requestReturn()
         return true
     }
 
     private fun onGuideHeld() {
         if (isAnyMenuOpen) return
-        if (backgroundsOnReturn) openResumeOverlay() else showReturnPrompt()
+        if (backgroundsOnReturn) openResumeOverlay() else requestReturn()
+    }
+
+    private fun requestReturn() {
+        if (confirmReturnHome || netplay.inSession) showReturnPrompt() else returnToArgosy()
     }
 
     private fun openResumeOverlay() {

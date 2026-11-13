@@ -1580,6 +1580,8 @@
     <string name="settings_builtin_controls_hotkeys_subtitle">Kurzbefehle für Menü, Vorspulen, Rewind konfigurieren</string>
     <string name="settings_builtin_controls_limit_hotkeys_title">Hotkeys auf Spieler 1 beschränken</string>
     <string name="settings_builtin_controls_limit_hotkeys_subtitle">Nur der Controller von Spieler 1 kann Hotkeys auslösen</string>
+    <string name="settings_builtin_controls_confirm_return_title">Rückkehr zu Argosy bestätigen</string>
+    <string name="settings_builtin_controls_confirm_return_subtitle">Nachfragen, bevor Home das Spiel verlässt</string>
     <string name="settings_builtin_controls_select_as_back_title">Select als Zurück</string>
     <string name="settings_builtin_controls_select_as_back_subtitle">Für Controller, deren Select-Taste Zurück sendet. Automatisch nutzt Zurück als Select bei Controllern ohne Select-Taste.</string>
     <string name="settings_builtin_controls_select_as_back_auto">Automatisch</string>

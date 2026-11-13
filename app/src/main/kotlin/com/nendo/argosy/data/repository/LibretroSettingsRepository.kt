@@ -167,6 +167,9 @@ class LibretroSettingsRepository @Inject constructor(
     suspend fun setBuiltinLimitHotkeysToPlayer1(enabled: Boolean) =
         builtinPrefs.setBuiltinLimitHotkeysToPlayer1(enabled)
 
+    suspend fun setBuiltinConfirmReturnHome(enabled: Boolean) =
+        builtinPrefs.setBuiltinConfirmReturnHome(enabled)
+
     suspend fun setSpeedrunStartOnReset(enabled: Boolean) =
         builtinPrefs.setSpeedrunStartOnReset(enabled)
 

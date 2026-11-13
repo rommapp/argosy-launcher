@@ -980,6 +980,7 @@ internal fun routeLoadSettings(vm: SettingsViewModel) {
                     gyroAimInvertY = refreshSettings.gyroAimInvertY,
                     gyroAimSensitivity = refreshSettings.gyroAimSensitivity,
                     limitHotkeysToPlayer1 = refreshSettings.limitHotkeysToPlayer1,
+                    confirmReturnHome = refreshSettings.confirmReturnHome,
                     speedrunStartOnReset = refreshSettings.speedrunStartOnReset,
                     speedrunPanelSide = refreshSettings.speedrunPanelSide,
                     speedrunPanelWidthPercent = refreshSettings.speedrunPanelWidthPercent,

@@ -1570,6 +1570,8 @@
     <string name="settings_builtin_controls_hotkeys_subtitle">मेनू, फ़ास्ट फ़ॉरवर्ड, रिवाइंड के लिए शॉर्टकट कॉन्फ़िगर करें</string>
     <string name="settings_builtin_controls_limit_hotkeys_title">हॉटकी केवल प्लेयर 1 तक सीमित करें</string>
     <string name="settings_builtin_controls_limit_hotkeys_subtitle">केवल प्लेयर 1 का कंट्रोलर हॉटकी ट्रिगर कर सकता है</string>
+    <string name="settings_builtin_controls_confirm_return_title">Argosy पर लौटने की पुष्टि करें</string>
+    <string name="settings_builtin_controls_confirm_return_subtitle">Home से गेम छोड़ने से पहले पूछें</string>
     <string name="settings_builtin_controls_select_as_back_title">Select को बैक मानें</string>
     <string name="settings_builtin_controls_select_as_back_subtitle">उन कंट्रोलर के लिए जिनका Select बैक भेजता है। ऑटो, बिना Select बटन वाले कंट्रोलर पर बैक को Select मानता है।</string>
     <string name="settings_builtin_controls_select_as_back_auto">ऑटो</string>

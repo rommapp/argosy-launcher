@@ -1628,6 +1628,8 @@
     <string name="settings_builtin_controls_hotkeys_subtitle">Configura los atajos para el menú, avance rápido y rebobinado</string>
     <string name="settings_builtin_controls_limit_hotkeys_title">Limitar atajos al jugador 1</string>
     <string name="settings_builtin_controls_limit_hotkeys_subtitle">Solo el mando del jugador 1 puede activar los atajos</string>
+    <string name="settings_builtin_controls_confirm_return_title">Confirmar volver a Argosy</string>
+    <string name="settings_builtin_controls_confirm_return_subtitle">Preguntar antes de salir del juego con Home</string>
     <string name="settings_builtin_controls_select_as_back_title">Select como Atrás</string>
     <string name="settings_builtin_controls_select_as_back_subtitle">Para mandos cuyo Select envía Atrás. Automático usa Atrás como Select en mandos sin botón Select.</string>
     <string name="settings_builtin_controls_select_as_back_auto">Automático</string>

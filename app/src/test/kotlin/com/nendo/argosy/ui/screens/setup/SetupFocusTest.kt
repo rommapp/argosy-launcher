@@ -35,6 +35,44 @@ class SetupFocusTest {
     }
 
     @Test
+    fun `usage access refused on a restricted device puts allow restricted settings first`() {
+        val restrictedStep = SetupTarget.AccessibilityStep(AccessibilityStepKind.RESTRICTED_SETTINGS)
+        val refused = permissionsPage(
+            SetupAccessState(
+                snapshot = snapshot(ArgosyPermission.ALL_FILES_ACCESS to PermissionAvailability.GRANTED),
+                restrictedSettings = true,
+                usageBlocked = true
+            )
+        )
+
+        assertEquals(restrictedStep, targetsFor(refused).first())
+        assertEquals(restrictedStep, focusedTarget(refused))
+        assertEquals(R.string.setup_accessibility_step_restricted_title, actionsFor(refused).single().label)
+
+        val allowed = refused.copy(access = refused.access.copy(restrictedStepDone = true))
+        assertEquals(restrictedStep, targetsFor(allowed).first())
+        assertEquals(SetupTarget.Permission(ArgosyPermission.USAGE_ACCESS), focusedTarget(allowed))
+        assertEquals(R.string.setup_permissions_primary_allow_usage, actionsFor(allowed).single().label)
+
+        val granted = allowed.copy(
+            access = allowed.access.copy(
+                snapshot = snapshot(
+                    ArgosyPermission.ALL_FILES_ACCESS to PermissionAvailability.GRANTED,
+                    ArgosyPermission.USAGE_ACCESS to PermissionAvailability.GRANTED
+                )
+            )
+        )
+        assertFalse(restrictedStep in targetsFor(granted))
+    }
+
+    @Test
+    fun `usage access not yet tried shows no restricted step`() {
+        val state = permissionsPage(SetupAccessState(snapshot = snapshot(), restrictedSettings = true))
+
+        assertFalse(targetsFor(state).any { it is SetupTarget.AccessibilityStep })
+    }
+
+    @Test
     fun `the permissions primary reads next once required permissions are met, recommended ones never block`() {
         val state = permissionsPage(
             SetupAccessState(

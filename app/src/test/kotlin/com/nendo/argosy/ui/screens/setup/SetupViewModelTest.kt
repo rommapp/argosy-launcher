@@ -18,7 +18,9 @@ import com.nendo.argosy.data.repository.PlatformRepository
 import com.nendo.argosy.data.setup.SetupCoreDownloads
 import com.nendo.argosy.data.setup.SetupFolderProbe
 import com.nendo.argosy.data.setup.SetupStateRepository
+import com.nendo.argosy.domain.model.ArgosyPermission
 import com.nendo.argosy.domain.model.CoreDownloadProgress
+import com.nendo.argosy.domain.model.PermissionAvailability
 import com.nendo.argosy.domain.model.PermissionSnapshot
 import com.nendo.argosy.domain.model.ScreenLayout
 import com.nendo.argosy.domain.model.ScreenLayouts
@@ -133,6 +135,55 @@ class SetupViewModelTest {
 
         assertEquals(SetupPage.FOLDERS, rebuilt.currentState().page)
         assertEquals(SetupTarget.RomFolder(RomFolderKind.CUSTOM), rebuilt.currentState().focused)
+    }
+
+    private fun usageMissing(restricted: Boolean): SetupViewModel {
+        every { registry.restrictedSettingsApply() } returns restricted
+        every { registry.snapshot(any()) } returns PermissionSnapshot(
+            availability = ArgosyPermission.entries.associateWith { PermissionAvailability.MISSING } +
+                (ArgosyPermission.ALL_FILES_ACCESS to PermissionAvailability.GRANTED)
+        )
+        return viewModel(requiredMet.copy(usageAccess = false))
+    }
+
+    @Test
+    fun `usage access still refused on return from Android shows the restricted settings step`() = runTest(dispatcher) {
+        val vm = usageMissing(restricted = true)
+        advanceUntilIdle()
+        assertEquals(SetupPage.PERMISSIONS, vm.currentState().page)
+
+        vm.tap(SetupTarget.Permission(ArgosyPermission.USAGE_ACCESS))
+        vm.onResume()
+        advanceUntilIdle()
+
+        assertTrue(vm.currentState().access.usageBlocked)
+        assertEquals(
+            SetupTarget.AccessibilityStep(AccessibilityStepKind.RESTRICTED_SETTINGS),
+            focusedTarget(vm.currentState())
+        )
+    }
+
+    @Test
+    fun `usage access refused where Android does not restrict it shows no extra step`() = runTest(dispatcher) {
+        val vm = usageMissing(restricted = false)
+        advanceUntilIdle()
+
+        vm.tap(SetupTarget.Permission(ArgosyPermission.USAGE_ACCESS))
+        vm.onResume()
+        advanceUntilIdle()
+
+        assertFalse(vm.currentState().access.usageBlocked)
+    }
+
+    @Test
+    fun `a resume without a usage attempt shows no extra step`() = runTest(dispatcher) {
+        val vm = usageMissing(restricted = true)
+        advanceUntilIdle()
+
+        vm.onResume()
+        advanceUntilIdle()
+
+        assertFalse(vm.currentState().access.usageBlocked)
     }
 
     @Test

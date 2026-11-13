@@ -126,6 +126,11 @@ class SetupViewModel @Inject constructor(
             }
         }
         viewModelScope.launch {
+            access.state.map { it.usageRestrictedStepPending }.distinctUntilChanged().collect { pending ->
+                if (pending) resetFocus()
+            }
+        }
+        viewModelScope.launch {
             signIn.state.map { it.view to (it.error?.certificate == true) }
                 .distinctUntilChanged()
                 .drop(1)
@@ -491,8 +496,13 @@ class SetupViewModel @Inject constructor(
 
     private fun activatePermission(state: SetupUiState, permission: ArgosyPermission): InputResult {
         if (state.access.availabilityOf(permission) != PermissionAvailability.MISSING) return SILENT
-        _effects.tryEmit(SetupEffect.Grant(permission))
+        grant(permission)
         return InputResult.HANDLED
+    }
+
+    private fun grant(permission: ArgosyPermission) {
+        if (permission == ArgosyPermission.USAGE_ACCESS) access.noteUsageAttempt()
+        _effects.tryEmit(SetupEffect.Grant(permission))
     }
 
     private fun activateRomFolder(state: SetupUiState, kind: RomFolderKind): InputResult {
@@ -536,8 +546,11 @@ class SetupViewModel @Inject constructor(
             SetupPage.LIBRARY -> activateLibraryPrimary(state)
             SetupPage.PERMISSIONS -> {
                 val missing = firstUnmetRequired(state.access)
-                if (missing == null) advance() else if (state.access.availabilityOf(missing) == PermissionAvailability.MISSING) {
-                    _effects.tryEmit(SetupEffect.Grant(missing))
+                when {
+                    missing == null -> advance()
+                    missing == ArgosyPermission.USAGE_ACCESS && state.access.usageRestrictedStepPending ->
+                        access.openStep(AccessibilityStepKind.RESTRICTED_SETTINGS)
+                    state.access.availabilityOf(missing) == PermissionAvailability.MISSING -> grant(missing)
                 }
             }
             SetupPage.FOLDERS -> viewModelScope.launch {

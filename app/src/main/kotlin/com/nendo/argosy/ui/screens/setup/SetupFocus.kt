@@ -96,7 +96,15 @@ private fun allowLabelFor(permission: ArgosyPermission?): Int = when (permission
 fun actionsFor(state: SetupUiState): List<SetupActionSpec> = when (state.page) {
     SetupPage.WELCOME -> listOf(primary(R.string.setup_welcome_button_start))
     SetupPage.LIBRARY -> libraryActions(state)
-    SetupPage.PERMISSIONS -> listOf(primary(allowLabelFor(firstUnmetRequired(state.access))))
+    SetupPage.PERMISSIONS -> {
+        val missing = firstUnmetRequired(state.access)
+        val label = if (missing == ArgosyPermission.USAGE_ACCESS && state.access.usageRestrictedStepPending) {
+            R.string.setup_accessibility_step_restricted_title
+        } else {
+            allowLabelFor(missing)
+        }
+        listOf(primary(label))
+    }
     SetupPage.ACCESSIBILITY -> listOf(
         primary(if (state.access.accessibilityOn) R.string.setup_accessibility_button_next else R.string.setup_accessibility_button_skip)
     )
@@ -217,8 +225,12 @@ fun contentTargetsFor(state: SetupUiState): List<SetupTarget> = when (state.page
         LibraryView.PAIRING -> listOf(SetupTarget.PairingField)
         LibraryView.APPROVE, LibraryView.SIGNED_IN -> emptyList()
     }
-    SetupPage.PERMISSIONS ->
-        (SETUP_REQUIRED_PERMISSIONS + SETUP_RECOMMENDED_PERMISSIONS).map { SetupTarget.Permission(it) }
+    SetupPage.PERMISSIONS -> buildList {
+        if (state.access.showsUsageRestrictedStep) {
+            add(SetupTarget.AccessibilityStep(AccessibilityStepKind.RESTRICTED_SETTINGS))
+        }
+        (SETUP_REQUIRED_PERMISSIONS + SETUP_RECOMMENDED_PERMISSIONS).forEach { add(SetupTarget.Permission(it)) }
+    }
     SetupPage.ACCESSIBILITY -> when (state.access.variant) {
         AccessibilityVariant.ROOTED -> emptyList()
         AccessibilityVariant.TWO_STEP -> listOf(
@@ -278,7 +290,13 @@ private fun choiceFocus(state: SetupUiState): SetupTarget? {
         } else {
             content.firstOrNull()
         }
-        SetupPage.PERMISSIONS -> firstUnmetRequired(state.access)?.let { SetupTarget.Permission(it) }
+        SetupPage.PERMISSIONS -> firstUnmetRequired(state.access)?.let { missing ->
+            if (missing == ArgosyPermission.USAGE_ACCESS && state.access.usageRestrictedStepPending) {
+                SetupTarget.AccessibilityStep(AccessibilityStepKind.RESTRICTED_SETTINGS)
+            } else {
+                SetupTarget.Permission(missing)
+            }
+        }
         SetupPage.ACCESSIBILITY -> firstIncompleteStep(state.access)?.let { SetupTarget.AccessibilityStep(it) }
         SetupPage.FOLDERS -> SetupTarget.RomFolder(state.folders.selectedRom)
         SetupPage.SAVE_SYNC -> SetupTarget.SaveSyncChoice(state.saveSyncOn)

@@ -43,6 +43,7 @@ import com.nendo.argosy.R
 import com.nendo.argosy.data.preferences.BoxArtShape
 import com.nendo.argosy.data.preferences.LibraryLayout
 import com.nendo.argosy.data.preferences.ThemeMode
+import com.nendo.argosy.domain.model.ArgosyPermission
 import com.nendo.argosy.ui.components.HomeLayoutPreview
 import com.nendo.argosy.ui.components.HomeLayoutSelectorRow
 import com.nendo.argosy.ui.input.ButtonGlyphSwaps
@@ -94,7 +95,11 @@ fun companionFor(state: SetupUiState, swaps: ButtonGlyphSwaps): SetupCompanionSt
             SetupCompanionBody.Brand
         }
         SetupPage.PERMISSIONS -> {
-            val permission = (focus as? SetupTarget.Permission)?.permission ?: SETUP_REQUIRED_PERMISSIONS.first()
+            val permission = when (focus) {
+                is SetupTarget.Permission -> focus.permission
+                is SetupTarget.AccessibilityStep -> ArgosyPermission.USAGE_ACCESS
+                else -> SETUP_REQUIRED_PERMISSIONS.first()
+            }
             SetupCompanionBody.Permission(permission, state.access.availabilityOf(permission))
         }
         SetupPage.ACCESSIBILITY -> SetupCompanionBody.Accessibility(lead.purpose, state.access)

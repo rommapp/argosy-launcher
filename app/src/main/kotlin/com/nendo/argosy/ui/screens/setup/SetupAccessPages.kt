@@ -80,6 +80,9 @@ internal fun PermissionsPage(state: SetupUiState, viewModel: SetupViewModel) {
             it is PermissionListItem.Row && it.permission == focusedPermission
         }
         FocusedScroll(listState = listState, focusedIndex = focusedIndex)
+        if (state.access.showsUsageRestrictedStep) {
+            RestrictedStep(state.access, focus, viewModel::tap, number = null)
+        }
         LazyColumn(
             state = listState,
             modifier = Modifier.fillMaxWidth().weight(1f),
@@ -178,11 +181,16 @@ private fun RootedAccessibilityRow(access: SetupAccessState) {
 }
 
 @Composable
-private fun RestrictedStep(access: SetupAccessState, focus: SetupTarget?, onTap: ((SetupTarget) -> Unit)?) {
+private fun RestrictedStep(
+    access: SetupAccessState,
+    focus: SetupTarget?,
+    onTap: ((SetupTarget) -> Unit)?,
+    number: Int? = 1
+) {
     val target = SetupTarget.AccessibilityStep(AccessibilityStepKind.RESTRICTED_SETTINGS)
     val done = access.restrictedStepDone || access.accessibilityOn
     SetupStepCard(
-        number = 1,
+        number = number,
         title = stringResource(R.string.setup_accessibility_step_restricted_title),
         subtitle = stringResource(
             if (access.stillBlocked) R.string.setup_accessibility_still_blocked else R.string.setup_accessibility_step_restricted_subtitle

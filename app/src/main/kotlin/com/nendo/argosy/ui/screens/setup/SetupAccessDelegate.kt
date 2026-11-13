@@ -38,6 +38,7 @@ class SetupAccessDelegate @Inject constructor(
     private var enteredPage: SetupPage? = null
     private var permissionsRootRun = false
     private var accessibilityRootRun = false
+    private var awaitingUsage = false
 
     fun bind(scope: CoroutineScope) {
         this.scope = scope
@@ -107,6 +108,10 @@ class SetupAccessDelegate @Inject constructor(
         enteredPage = null
     }
 
+    fun noteUsageAttempt() {
+        awaitingUsage = true
+    }
+
     fun openStep(step: AccessibilityStepKind) {
         val intent = when (step) {
             AccessibilityStepKind.RESTRICTED_SETTINGS -> registry.appInfoScreen()
@@ -124,13 +129,19 @@ class SetupAccessDelegate @Inject constructor(
     /**
      * Records the return from an accessibility step's Android screen. Coming back from App info
      * marks the restricted settings step done; coming back from Accessibility with the service
-     * still off on a device that restricts it reopens that step.
+     * still off on a device that restricts it reopens that step. Coming back from Usage access
+     * still refused on such a device shows that step on the permissions page.
      */
     fun onResume() {
         val awaiting = _state.value.awaiting
+        val usageAttempted = awaitingUsage
+        awaitingUsage = false
         scope.launch {
             val snapshot = withContext(ioDispatcher) { registry.snapshot() }
-            _state.update { current ->
+            _state.update { base ->
+                val usageRefused = usageAttempted && base.restrictedSettings && !base.rootRoute &&
+                    !snapshot.isGranted(ArgosyPermission.USAGE_ACCESS)
+                val current = if (usageRefused) base.copy(usageBlocked = true) else base
                 val on = snapshot.isGranted(ArgosyPermission.ACCESSIBILITY)
                 when (awaiting) {
                     AccessibilityStepKind.RESTRICTED_SETTINGS ->

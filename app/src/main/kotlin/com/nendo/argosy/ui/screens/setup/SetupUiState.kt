@@ -66,10 +66,21 @@ data class SetupAccessState(
     val rootAccessibilityFailed: Boolean = false,
     val restrictedStepDone: Boolean = false,
     val stillBlocked: Boolean = false,
-    val awaiting: AccessibilityStepKind? = null
+    val awaiting: AccessibilityStepKind? = null,
+    val usageBlocked: Boolean = false
 ) {
     fun availabilityOf(permission: ArgosyPermission): PermissionAvailability =
         if (permission in rootGranting) PermissionAvailability.CHECKING else snapshot.of(permission)
+
+    /**
+     * Android refused Usage access on a device that restricts it for sideloaded apps, so the
+     * permissions page shows the restricted settings step above it.
+     */
+    val showsUsageRestrictedStep: Boolean
+        get() = usageBlocked && !snapshot.isGranted(ArgosyPermission.USAGE_ACCESS)
+
+    val usageRestrictedStepPending: Boolean
+        get() = showsUsageRestrictedStep && !restrictedStepDone
 
     val accessibilityOn: Boolean get() = snapshot.isGranted(ArgosyPermission.ACCESSIBILITY)
 

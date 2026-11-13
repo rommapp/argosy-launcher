@@ -63,6 +63,26 @@ class StreamGamepadBridgeTest {
     }
 
     @Test
+    fun `a trigger held as a key stays held through stick motion`() {
+        bridge.onKey(KeyEvent.KEYCODE_BUTTON_L2, pressed = true)
+        bridge.onMotion { if (it == MotionEvent.AXIS_X) 0.5f else 0f }
+
+        assertEquals(1f, bridge.buttonValue(6))
+
+        bridge.onKey(KeyEvent.KEYCODE_BUTTON_L2, pressed = false)
+        assertEquals(0f, bridge.buttonValue(6))
+    }
+
+    @Test
+    fun `an analog trigger stays pressed when its digital key releases`() {
+        bridge.onMotion { if (it == MotionEvent.AXIS_RTRIGGER) 0.6f else 0f }
+        bridge.onKey(KeyEvent.KEYCODE_BUTTON_R2, pressed = true)
+        bridge.onKey(KeyEvent.KEYCODE_BUTTON_R2, pressed = false)
+
+        assertEquals(0.6f, bridge.buttonValue(7))
+    }
+
+    @Test
     fun `releasing the hat clears the d-pad`() {
         bridge.onMotion { if (it == MotionEvent.AXIS_HAT_Y) 1f else 0f }
         assertEquals(1f, bridge.buttonValue(13))

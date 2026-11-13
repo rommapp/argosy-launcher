@@ -12,11 +12,24 @@ class StreamGamepadBridge {
     private val buttons = FloatArray(BUTTON_COUNT)
     private val axes = FloatArray(AXIS_COUNT)
     private val hat = FloatArray(2)
+    private val triggerKeys = FloatArray(2)
+    private val triggerAxes = FloatArray(2)
 
     fun onKey(keyCode: Int, pressed: Boolean): Boolean {
         val index = KEY_BUTTONS[keyCode] ?: return false
-        buttons[index] = if (pressed) 1f else 0f
+        val value = if (pressed) 1f else 0f
+        when (index) {
+            LEFT_TRIGGER -> triggerKeys[0] = value
+            RIGHT_TRIGGER -> triggerKeys[1] = value
+            else -> buttons[index] = value
+        }
+        publishTriggers()
         return true
+    }
+
+    private fun publishTriggers() {
+        buttons[LEFT_TRIGGER] = maxOf(triggerKeys[0], triggerAxes[0])
+        buttons[RIGHT_TRIGGER] = maxOf(triggerKeys[1], triggerAxes[1])
     }
 
     fun onMotion(axis: (Int) -> Float): Boolean {
@@ -24,8 +37,9 @@ class StreamGamepadBridge {
         axes[1] = axis(MotionEvent.AXIS_Y)
         axes[2] = axis(MotionEvent.AXIS_Z)
         axes[3] = axis(MotionEvent.AXIS_RZ)
-        buttons[LEFT_TRIGGER] = maxOf(axis(MotionEvent.AXIS_LTRIGGER), axis(MotionEvent.AXIS_BRAKE))
-        buttons[RIGHT_TRIGGER] = maxOf(axis(MotionEvent.AXIS_RTRIGGER), axis(MotionEvent.AXIS_GAS))
+        triggerAxes[0] = maxOf(axis(MotionEvent.AXIS_LTRIGGER), axis(MotionEvent.AXIS_BRAKE))
+        triggerAxes[1] = maxOf(axis(MotionEvent.AXIS_RTRIGGER), axis(MotionEvent.AXIS_GAS))
+        publishTriggers()
         val hatX = axis(MotionEvent.AXIS_HAT_X)
         val hatY = axis(MotionEvent.AXIS_HAT_Y)
         if (hatX != hat[0] || hatY != hat[1]) {

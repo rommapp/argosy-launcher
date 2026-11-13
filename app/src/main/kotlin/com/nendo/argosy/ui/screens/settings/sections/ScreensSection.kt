@@ -117,8 +117,16 @@ fun ScreensSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
             val internalSpan =
                 if (attached.isEmpty()) maxWidth else maxWidth * INTERNAL_WIDTH_SHARE
             val externalSpan = maxWidth * (1f - INTERNAL_WIDTH_SHARE) - Dimens.spacingLg
-            val internalPerPixel = internalSpan / widestInternalPx.toFloat()
-            val externalPerPixel = externalSpan / widestExternalPx.toFloat()
+            val internalGaps = Dimens.spacingSm * (builtIn.size - 1).coerceAtLeast(0)
+            val internalPerPixel = minOf(
+                internalSpan / widestInternalPx.toFloat(),
+                (maxHeight - internalGaps) / builtIn.sumOf { it.heightPx }.coerceAtLeast(1).toFloat()
+            )
+            val externalGaps = Dimens.spacingSm * (attached.size - 1).coerceAtLeast(0)
+            val externalPerPixel = minOf(
+                externalSpan / widestExternalPx.toFloat(),
+                (maxHeight - externalGaps) / attached.sumOf { it.heightPx }.coerceAtLeast(1).toFloat()
+            )
 
             Row(
                 modifier = Modifier.fillMaxSize(),

@@ -13,6 +13,7 @@ import com.nendo.argosy.data.remote.romm.RomMPlaySession
 import com.nendo.argosy.util.Logger
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+import java.time.Duration
 import java.time.Instant
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -46,6 +47,7 @@ class PlaySessionPull @Inject constructor(
         val ownerUserId = syncPreferencesRepository.getRommUserId() ?: return Summary(0, 0, "No account")
         val thisDeviceId = connectionManager.getDeviceId()
         val cutoffs = playRecordDeletionDao.cutoffsFor(ownerUserId)
+        val previousPull = syncPreferencesRepository.getRommPlaySessionLastPull()
 
         val devices = try {
             val response = api.getDevices()
@@ -88,9 +90,13 @@ class PlaySessionPull @Inject constructor(
             }
             devicesDone++
         }
-        val streamingSince = playSessionDao.getLatestRommStartForDevice(ROMM_STREAMING_DEVICE_ID, ownerUserId)
+        val streamingSince = streamingFloor(
+            newestStream = playSessionDao.getLatestRommStartForDevice(ROMM_STREAMING_DEVICE_ID, ownerUserId),
+            lastPull = previousPull
+        )
         var streamingOffset = 0
-        while (true) {
+        val pullsStreams = connectionManager.getCapabilities().supportsStreaming
+        while (pullsStreams) {
             val page = try {
                 val response = api.getPlaySessions(
                     deviceId = null,
@@ -190,6 +196,13 @@ class PlaySessionPull @Inject constructor(
     }
 
     companion object {
+        internal val STREAM_PULL_OVERLAP: Duration = Duration.ofDays(1)
+
+        internal fun streamingFloor(newestStream: Instant?, lastPull: Instant?): Instant? {
+            val pullFloor = lastPull?.minus(STREAM_PULL_OVERLAP)
+            return listOfNotNull(newestStream, pullFloor).maxOrNull()
+        }
+
         /**
          * The device id stored on sessions RomM records without a device, which is how it logs
          * emulator streaming. A literal token: the UI maps it to a label and never shows it.

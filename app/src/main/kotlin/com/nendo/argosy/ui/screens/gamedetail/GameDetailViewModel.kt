@@ -1209,6 +1209,10 @@ class GameDetailViewModel @Inject constructor(
 
         val state = _uiState.value
         if (state.running?.isClosing == true) return
+        if (state.stream?.leads == true) {
+            streamLauncher.open(currentGameId)
+            return
+        }
         when (state.downloadStatus) {
             GameDownloadStatus.NO_FILE -> notificationManager.showError(
                 NotificationText.Res(R.string.gamedetail_notice_no_file)
@@ -1385,7 +1389,8 @@ class GameDetailViewModel @Inject constructor(
             hasUpdates = state.updateFiles.isNotEmpty() || state.dlcFiles.isNotEmpty(),
             hasManageableFiles = state.hasManageableFiles,
             platformSlug = state.game?.platformSlug,
-            launchDisplayCount = state.launchDisplayNumbers.size
+            launchDisplayCount = state.launchDisplayNumbers.size,
+            offersDownload = state.stream?.leads == true
         )
     }
 
@@ -1456,6 +1461,10 @@ class GameDetailViewModel @Inject constructor(
     ) {
         val isAndroidApp = _uiState.value.game?.isAndroidApp == true
         when (action) {
+            MoreOptionAction.Download -> {
+                toggleMoreOptions()
+                promptOrDownload()
+            }
             MoreOptionAction.LaunchOnDisplay -> launchOnSelectedDisplay()
             MoreOptionAction.ManageSaves -> showSaveCacheDialog()
             MoreOptionAction.PlatformSettings -> {

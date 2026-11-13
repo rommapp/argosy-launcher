@@ -681,6 +681,16 @@ internal fun routeToggleUploadScreenshots(vm: SettingsViewModel) {
     }
 }
 
+internal fun routeSetNotOnDeviceAction(
+    vm: SettingsViewModel,
+    action: com.nendo.argosy.data.preferences.NotOnDeviceAction
+) {
+    if (!vm._uiState.value.server.streamingAvailable) return
+    vm.syncDelegate.setNotOnDeviceAction(vm.viewModelScope, action) { stored ->
+        vm.serverDelegate.updateState(vm._uiState.value.server.copy(notOnDeviceAction = stored))
+    }
+}
+
 internal fun routeOnStoragePermissionResult(vm: SettingsViewModel, granted: Boolean) {
     vm.syncDelegate.onStoragePermissionResult(vm.viewModelScope, granted, vm._uiState.value.currentSection)
     vm.steamDelegate.loadSteamSettings(vm.context, vm.viewModelScope)

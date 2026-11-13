@@ -178,6 +178,7 @@ class UserPreferencesRepository @Inject constructor(
             notifyCharging = app.notifyCharging,
             notifyControllers = app.notifyControllers,
             saveSyncEnabled = sync.saveSyncEnabled,
+            notOnDeviceAction = sync.notOnDeviceAction,
             secureSaves = sync.secureSaves,
             stateCacheEnabled = sync.stateCacheEnabled,
             saveCacheLimit = sync.saveCacheLimit,
@@ -489,6 +490,7 @@ class UserPreferencesRepository @Inject constructor(
     suspend fun setUploadScreenshotsEnabled(enabled: Boolean) = syncPrefs.setUploadScreenshotsEnabled(enabled)
     suspend fun setBoxArtCacheEnabled(enabled: Boolean) = syncPrefs.setBoxArtCacheEnabled(enabled)
     suspend fun setSaveSyncEnabled(enabled: Boolean) = syncPrefs.setSaveSyncEnabled(enabled)
+    suspend fun setNotOnDeviceAction(action: NotOnDeviceAction) = syncPrefs.setNotOnDeviceAction(action)
     suspend fun setSecureSaves(enabled: Boolean) = syncPrefs.setSecureSaves(enabled)
     suspend fun setStateCacheEnabled(enabled: Boolean) = syncPrefs.setStateCacheEnabled(enabled)
     suspend fun setSaveCacheLimit(limit: Int) = syncPrefs.setSaveCacheLimit(limit)
@@ -979,6 +981,7 @@ data class UserPreferences(
     val notifyCharging: Boolean = true,
     val notifyControllers: Boolean = true,
     val saveSyncEnabled: Boolean = false,
+    val notOnDeviceAction: NotOnDeviceAction = NotOnDeviceAction.DOWNLOAD,
     val secureSaves: Boolean = true,
     val stateCacheEnabled: Boolean = true,
     val saveCacheLimit: Int = 10,

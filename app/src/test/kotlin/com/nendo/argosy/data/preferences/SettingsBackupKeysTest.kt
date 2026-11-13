@@ -114,12 +114,14 @@ class SettingsBackupKeysTest {
         "permissions_acknowledged", "permissions_revocations_noticed"
     )
 
+    private val serverFeatureChoices = setOf("romm_not_on_device_action")
+
     private val excluded: Set<String> =
         credentialsAndIdentity + presenceSharingAndServiceAccounts + syncWatermarksAndResume +
             oneShotAndVersionMarkers + liveSessionState + saveAndStateSafetyGates +
             filesystemLocations + hardwareAndUnit + perDeviceScreenChoices + localRowIdsAndSets +
             derivedAndGenerated + diagnostics + installPermissions + setupConfirmations +
-            recordedPermissionState
+            recordedPermissionState + serverFeatureChoices
 
     private val credentialShapes = listOf(
         "token", "credential", "password", "api_key", "username", "user_name", "user_id", "device_id",

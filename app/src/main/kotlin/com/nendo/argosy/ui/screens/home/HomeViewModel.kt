@@ -2004,13 +2004,19 @@ class HomeViewModel @Inject constructor(
     fun activateFocusedGame(game: HomeGameUi) =
         activate(game, exactRow = _uiState.value.layoutKind == HomeLayoutKind.CUSTOM_GRID)
 
-    private fun activate(game: HomeGameUi, exactRow: Boolean) {
+    fun downloadFocusedGame(game: HomeGameUi) =
+        activate(game, exactRow = _uiState.value.layoutKind == HomeLayoutKind.CUSTOM_GRID, allowStream = false)
+
+    private fun activate(game: HomeGameUi, exactRow: Boolean, allowStream: Boolean = true) {
         val indicator = downloadIndicators.value[game.id] ?: GameDownloadIndicator.NONE
-        when (homeGameActivation(game, indicator, exactRow)) {
+        val leads = allowStream &&
+            streamLauncher.leadsWithStream(game.platformSlug, game.isRommGame, game.isOnDevice(indicator))
+        when (homeGameActivation(game, indicator, exactRow, leads)) {
             HomeGameActivation.INSTALL -> installApk(game.id)
             HomeGameActivation.LAUNCH -> launchGame(game.id)
             HomeGameActivation.RESUME_DOWNLOAD -> resumeDownload(game.id)
             HomeGameActivation.STEAM_LINK_LAUNCHER -> linkSteamLauncher(game.id)
+            HomeGameActivation.STREAM -> streamLauncher.open(game.id)
             HomeGameActivation.DOWNLOAD_EXACT -> downloadDelegate.queueDownload(viewModelScope, game.id)
             HomeGameActivation.DOWNLOAD_WITH_CHOICE -> queueDownload(game.id)
         }
@@ -2138,7 +2144,10 @@ class HomeViewModel @Inject constructor(
         val gameId = focused?.id
         val stream = focused
             ?.takeIf { it.isRommGame && !it.isDownloaded && !it.needsInstall }
-            ?.let { streamLauncher.offerFor(it.id, it.platformSlug) }
+            ?.let { game ->
+                val indicator = downloadIndicators.value[game.id] ?: GameDownloadIndicator.NONE
+                streamLauncher.offerFor(game.id, game.platformSlug, game.isOnDevice(indicator))
+            }
         gameMenuOpenJob = viewModelScope.launch {
             val hasChoice = gameId != null && siblingChoice.hasChoice(gameId)
             val running = gameId?.let { runningGameMenu.markFor(it) }
@@ -2218,12 +2227,17 @@ class HomeViewModel @Inject constructor(
             isPlatformRow,
             state.gameMenuRunningRows(),
             state.gameMenuHasSiblingGroup,
-            state.gameMenuStream != null
+            state.gameMenuStream != null,
+            state.gameMenuStream?.leads == true
         )
         when (action) {
             is GameMenuAction.Stream -> {
                 toggleGameMenu()
                 streamLauncher.open(action.gameId)
+            }
+            is GameMenuAction.Download -> {
+                toggleGameMenu()
+                downloadFocusedGame(game)
             }
             is GameMenuAction.MoveToDisplay -> {
                 moveRunningGame(action.target)

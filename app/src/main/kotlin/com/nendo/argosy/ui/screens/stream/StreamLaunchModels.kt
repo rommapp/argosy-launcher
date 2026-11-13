@@ -4,9 +4,10 @@ import androidx.annotation.StringRes
 
 /**
  * The stream choice a game offers beside Download. [isLive] is true while this game's stream is
- * already running, when the row resumes it.
+ * already running, when the row resumes it. [leads] is true when streaming is the game's primary
+ * action and Download moves behind it.
  */
-data class StreamOffer(val containerLabel: String, val isLive: Boolean)
+data class StreamOffer(val containerLabel: String, val isLive: Boolean, val leads: Boolean = false)
 
 data class StreamOptionUi(
     val id: Long?,

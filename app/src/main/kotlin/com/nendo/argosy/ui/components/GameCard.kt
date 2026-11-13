@@ -52,6 +52,8 @@ import androidx.compose.ui.graphics.BlendMode
 import androidx.compose.ui.graphics.BlurEffect
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.res.vectorResource
 import androidx.compose.ui.graphics.CompositingStrategy
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.lerp
@@ -350,6 +352,11 @@ fun GameCard(
              boxArtStyle.systemIconPosition == SystemIconPosition.BOTTOM_RIGHT)
         val isRunning = runningGame != null
         val showsDownloadedBadge = game.isDownloaded && showDownloadedIndicator && !isRunning
+        val showsStreamMark = !isRunning && com.nendo.argosy.ui.screens.stream.LocalStreamFirst.current.leads(
+            platformSlug = game.platformSlug,
+            isRommGame = game.isRommGame,
+            isOnDevice = game.isDownloaded || game.needsInstall || downloadIndicator.isShown
+        )
 
         if (spineActive) {
             val spineAtBottom = boxArtStyle.systemIconPosition.spineEdge(boxArtStyle.aspectRatio) == SpineEdge.BOTTOM
@@ -378,6 +385,7 @@ fun GameCard(
                         StatusIndicators(
                             isFavorite = game.isFavorite,
                             isDownloaded = showsDownloadedBadge,
+                            isStreamable = showsStreamMark,
                             clearsRunningLine = runningMark != null && !spineAtBottom
                         )
                     }
@@ -436,6 +444,7 @@ fun GameCard(
             StatusIndicators(
                 isFavorite = game.isFavorite,
                 isDownloaded = showsDownloadedBadge,
+                isStreamable = showsStreamMark,
                 tabAtBottom = tabAtBottom,
                 clearsRunningLine = runningMark != null
             )
@@ -533,10 +542,11 @@ private fun StubCover(gameTitle: String, useSolidStub: Boolean) {
 private fun BoxScope.StatusIndicators(
     isFavorite: Boolean,
     isDownloaded: Boolean,
+    isStreamable: Boolean = false,
     tabAtBottom: Boolean = false,
     clearsRunningLine: Boolean = false
 ) {
-    if (!isFavorite && !isDownloaded) return
+    if (!isFavorite && !isDownloaded && !isStreamable) return
 
     val edgePadding = if (clearsRunningLine) {
         Dimens.spacingXs + ComponentDefaults.RunningLine.heightDp.dp + ComponentDefaults.RunningLine.badgeGapDp.dp
@@ -559,10 +569,31 @@ private fun BoxScope.StatusIndicators(
             icon = Icons.Default.Favorite,
             contentDescription = stringResource(R.string.ui_game_card_favorite)
         )
-        IndicatorBadge(
-            visible = isDownloaded,
-            icon = Icons.Default.CheckCircle,
-            contentDescription = stringResource(R.string.ui_game_card_downloaded)
+        if (isStreamable && !isDownloaded) {
+            StreamMark()
+        } else {
+            IndicatorBadge(
+                visible = isDownloaded,
+                icon = Icons.Default.CheckCircle,
+                contentDescription = stringResource(R.string.ui_game_card_downloaded)
+            )
+        }
+    }
+}
+
+@Composable
+private fun StreamMark() {
+    Box(
+        modifier = Modifier
+            .size(Dimens.iconSm + Dimens.borderMedium)
+            .background(MaterialTheme.colorScheme.primary, CircleShape),
+        contentAlignment = Alignment.Center
+    ) {
+        Icon(
+            imageVector = ImageVector.vectorResource(R.drawable.ic_stream_play_network),
+            contentDescription = stringResource(R.string.stream_tile_mark_description),
+            tint = Color.White,
+            modifier = Modifier.size(Dimens.iconXs)
         )
     }
 }

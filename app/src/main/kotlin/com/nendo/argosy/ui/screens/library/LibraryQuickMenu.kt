@@ -27,10 +27,13 @@ fun libraryQuickMenuRows(
     hasSiblingGroup: Boolean,
     isRunning: Boolean = false,
     moveTargetCount: Int = 0,
-    streamable: Boolean = false
+    streamable: Boolean = false,
+    streamLeads: Boolean = false
 ): List<LibraryQuickMenuRow> = buildList {
+    val leads = streamable && streamLeads
+    if (leads) add(LibraryQuickMenuRow.STREAM)
     add(LibraryQuickMenuRow.PRIMARY)
-    if (streamable) add(LibraryQuickMenuRow.STREAM)
+    if (streamable && !leads) add(LibraryQuickMenuRow.STREAM)
     if (isRunning) repeat(moveTargetCount) { add(LibraryQuickMenuRow.MOVE_TO_DISPLAY) }
     add(LibraryQuickMenuRow.FAVORITE)
     add(LibraryQuickMenuRow.DETAILS)

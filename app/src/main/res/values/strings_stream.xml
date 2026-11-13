@@ -1,7 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <!--
-      Owner: ui/screens/stream and the "Stream on" rows it adds to Home, Library and game details
+      Owner: ui/screens/stream, the "Stream on" rows it adds to Home, Library and game details,
+      the stream mark on game tiles, and the "Games not on this device" row in RomM settings
       Key prefix: stream_
       Keys are named for the usage site, never for the English text, and identical English
       is never shared between two usage sites.
@@ -21,6 +22,24 @@
     <string name="stream_entry_gamedetail_menu">Stream on %1$s</string>
     <!-- Game details menu row while this game's stream is already running. -->
     <string name="stream_entry_gamedetail_menu_resume">Resume stream</string>
+    <!-- Game details primary button when streaming is the main way to play. %1$s is the server box's name. -->
+    <string name="stream_entry_gamedetail_primary">Stream on %1$s</string>
+    <!-- Game details primary button while this game's stream is already running. -->
+    <string name="stream_entry_gamedetail_primary_resume">Resume stream</string>
+    <!-- Game details Options menu row that downloads the game when streaming is the primary action. Verb. -->
+    <string name="stream_gamedetail_options_download">Download</string>
+    <!-- Home footer label for the confirm button on a game that streams. Verb. -->
+    <string name="stream_home_footer_stream">Stream</string>
+    <!-- Accessibility description of the mark on a game tile that streams from the server. -->
+    <string name="stream_tile_mark_description">Streams from the server</string>
+    <!-- RomM settings row: what selecting a game that is not downloaded does. -->
+    <string name="stream_setting_not_on_device_title">Games not on this device</string>
+    <!-- Choice in that row. Verb. -->
+    <string name="stream_setting_not_on_device_option_download">Download</string>
+    <!-- Choice in that row. Verb. -->
+    <string name="stream_setting_not_on_device_option_stream">Stream</string>
+    <string name="stream_setting_not_on_device_subtitle_download">Games download to this device before you play them</string>
+    <string name="stream_setting_not_on_device_subtitle_stream">Games stream from the server when it can run them, and download otherwise</string>
     <!-- Name of a running stream in the Resume list. %1$s is the server box's name. -->
     <string name="stream_running_label">Stream on %1$s</string>
 

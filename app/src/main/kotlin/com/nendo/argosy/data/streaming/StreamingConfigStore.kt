@@ -10,9 +10,12 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
@@ -56,6 +59,10 @@ class StreamingConfigStore @Inject constructor(
         }
     }
 
+    val enabled: Flow<Boolean> = availability.map { isEnabledFor(it) }.distinctUntilChanged()
+
+    fun isEnabled(): Boolean = isEnabledFor(_availability.value)
+
     fun containerFor(platformSlug: String?): RomMStreamingContainer? {
         val current = _availability.value
         if (current.serverKey != currentServerKey()) return null
@@ -66,6 +73,23 @@ class StreamingConfigStore @Inject constructor(
             platformSlug = platformSlug
         )
     }
+
+    fun streamablePlatforms(): Set<String> {
+        val current = _availability.value
+        if (current.serverKey != currentServerKey()) return emptySet()
+        return StreamTriggerGate.streamablePlatforms(
+            capabilities = connectionManager.getCapabilities(),
+            config = current.config,
+            startRefused = current.startRefused
+        )
+    }
+
+    private fun isEnabledFor(current: StreamingAvailability): Boolean =
+        current.serverKey == currentServerKey() && StreamTriggerGate.isEnabled(
+            capabilities = connectionManager.getCapabilities(),
+            config = current.config,
+            startRefused = current.startRefused
+        )
 
     fun markStartRefused() {
         val key = currentServerKey() ?: return

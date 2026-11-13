@@ -174,7 +174,9 @@ class LibrarySiblingPickFocusTest {
         repairImageCacheUseCase = mockk(relaxed = true),
         modalResetSignal = com.nendo.argosy.ui.ModalResetSignal(),
         gradientExtractionDelegate = gradientExtractionDelegate,
-        downloadIndicatorSource = mockk(relaxed = true),
+        downloadIndicatorSource = mockk(relaxed = true) {
+            every { indicators } returns kotlinx.coroutines.flow.MutableStateFlow(emptyMap())
+        },
         emulatorDetector = mockk(relaxed = true),
         steamLauncherLinkController = mockk(relaxed = true),
         downloadFileStatusRepository = mockk(relaxed = true),

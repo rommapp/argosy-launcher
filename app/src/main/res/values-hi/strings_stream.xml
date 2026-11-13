@@ -6,6 +6,16 @@
     <string name="stream_entry_library_menu_resume">स्ट्रीम फिर से शुरू करें</string>
     <string name="stream_entry_gamedetail_menu">%1$s पर स्ट्रीम करें</string>
     <string name="stream_entry_gamedetail_menu_resume">स्ट्रीम फिर से शुरू करें</string>
+    <string name="stream_entry_gamedetail_primary">%1$s पर स्ट्रीम करें</string>
+    <string name="stream_entry_gamedetail_primary_resume">स्ट्रीम फिर से शुरू करें</string>
+    <string name="stream_gamedetail_options_download">डाउनलोड</string>
+    <string name="stream_home_footer_stream">स्ट्रीम करें</string>
+    <string name="stream_tile_mark_description">सर्वर से स्ट्रीम होता है</string>
+    <string name="stream_setting_not_on_device_title">जो गेम इस डिवाइस पर नहीं हैं</string>
+    <string name="stream_setting_not_on_device_option_download">डाउनलोड</string>
+    <string name="stream_setting_not_on_device_option_stream">स्ट्रीम</string>
+    <string name="stream_setting_not_on_device_subtitle_download">खेलने से पहले गेम इस डिवाइस पर डाउनलोड होते हैं</string>
+    <string name="stream_setting_not_on_device_subtitle_stream">जब सर्वर गेम चला सकता है तो गेम उससे स्ट्रीम होते हैं, नहीं तो डाउनलोड होते हैं</string>
     <string name="stream_running_label">%1$s पर स्ट्रीम</string>
 
     <string name="stream_launch_title">%1$s पर स्ट्रीम करें</string>

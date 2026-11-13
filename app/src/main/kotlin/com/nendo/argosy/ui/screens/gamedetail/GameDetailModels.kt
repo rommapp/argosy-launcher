@@ -211,7 +211,8 @@ data class MoreOptionsContext(
     val hasUpdates: Boolean = false,
     val hasManageableFiles: Boolean = false,
     val platformSlug: String? = null,
-    val launchDisplayCount: Int = 0
+    val launchDisplayCount: Int = 0,
+    val offersDownload: Boolean = false
 )
 
 /**
@@ -223,6 +224,7 @@ fun buildMoreOptions(ctx: MoreOptionsContext): List<MoreOptionAction> = buildLis
     val isEmulatedGame = !ctx.isSteamGame && !ctx.isAndroidApp
     val usesTitleId = ctx.platformSlug?.let(com.nendo.argosy.data.platform.PlatformDefinitions::hasTitleId) == true
 
+    if (ctx.offersDownload) add(MoreOptionAction.Download)
     if (ctx.isDownloaded && ctx.launchDisplayCount > 1) add(MoreOptionAction.LaunchOnDisplay)
     if (ctx.canManageSaves || ctx.canManageStates) add(MoreOptionAction.ManageSaves)
     if (canTrackProgress) add(MoreOptionAction.RatingsStatus)
@@ -242,6 +244,7 @@ fun buildMoreOptions(ctx: MoreOptionsContext): List<MoreOptionAction> = buildLis
 }
 
 sealed class MoreOptionAction {
+    data object Download : MoreOptionAction()
     data object LaunchOnDisplay : MoreOptionAction()
     data object ManageSaves : MoreOptionAction()
     data object RatingsStatus : MoreOptionAction()

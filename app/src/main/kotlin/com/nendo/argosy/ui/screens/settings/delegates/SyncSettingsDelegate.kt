@@ -426,6 +426,17 @@ class SyncSettingsDelegate @Inject constructor(
         }
     }
 
+    fun setNotOnDeviceAction(
+        scope: CoroutineScope,
+        action: com.nendo.argosy.data.preferences.NotOnDeviceAction,
+        onChanged: (com.nendo.argosy.data.preferences.NotOnDeviceAction) -> Unit
+    ) {
+        scope.launch {
+            preferencesRepository.setNotOnDeviceAction(action)
+            onChanged(action)
+        }
+    }
+
     fun enableSaveSync(scope: CoroutineScope) {
         scope.launch { turnSaveSyncOn(scope) }
     }

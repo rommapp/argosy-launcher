@@ -6,6 +6,16 @@
     <string name="stream_entry_library_menu_resume">Продолжить стриминг</string>
     <string name="stream_entry_gamedetail_menu">Стриминг на %1$s</string>
     <string name="stream_entry_gamedetail_menu_resume">Продолжить стриминг</string>
+    <string name="stream_entry_gamedetail_primary">Стриминг на %1$s</string>
+    <string name="stream_entry_gamedetail_primary_resume">Продолжить стриминг</string>
+    <string name="stream_gamedetail_options_download">Скачать</string>
+    <string name="stream_home_footer_stream">Стриминг</string>
+    <string name="stream_tile_mark_description">Транслируется с сервера</string>
+    <string name="stream_setting_not_on_device_title">Игры, которых нет на этом устройстве</string>
+    <string name="stream_setting_not_on_device_option_download">Скачать</string>
+    <string name="stream_setting_not_on_device_option_stream">Стриминг</string>
+    <string name="stream_setting_not_on_device_subtitle_download">Игры скачиваются на это устройство перед запуском</string>
+    <string name="stream_setting_not_on_device_subtitle_stream">Игры транслируются с сервера, если он может их запустить, иначе скачиваются</string>
     <string name="stream_running_label">Стриминг на %1$s</string>
 
     <string name="stream_launch_title">Стриминг на %1$s</string>

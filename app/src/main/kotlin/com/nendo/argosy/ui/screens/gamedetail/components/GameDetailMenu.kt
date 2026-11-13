@@ -25,7 +25,6 @@ import androidx.compose.material.icons.automirrored.filled.MenuBook
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Description
 import androidx.compose.material.icons.filled.Download
-import androidx.compose.material.icons.filled.Cast
 import androidx.compose.material.icons.filled.EmojiEvents
 import androidx.compose.material.icons.filled.ThumbUp
 import androidx.compose.material.icons.filled.Favorite
@@ -67,6 +66,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.res.vectorResource
 import androidx.compose.ui.unit.dp
 import com.nendo.argosy.R
 import com.nendo.argosy.ui.screens.gamedetail.DownloadWaitStatus
@@ -95,7 +95,7 @@ sealed class MenuItem(
     val visibleWhen: (MenuLayoutState) -> Boolean = { true }
 ) {
     data object Play : MenuItem("play")
-    data object Stream : MenuItem("stream", visibleWhen = { it.stream != null })
+    data object Stream : MenuItem("stream", visibleWhen = { it.stream != null && !it.stream.leads })
 
     /**
      * The Move to Display row for the [slot]th move target of the running game.
@@ -197,16 +197,34 @@ fun GameDetailMenu(
 
             when (item) {
                 MenuItem.Play -> {
-                    PlayMenuItem(
-                        downloadStatus = displayState.downloadStatus,
-                        downloadProgress = downloadProgress,
-                        downloadWaitStatus = displayState.downloadWaitStatus,
-                        isFocused = isFocused,
-                        downloadSizeBytes = displayState.downloadSizeBytes,
-                        isCompact = isCompact,
-                        running = displayState.running,
-                        onClick = { onFocusChange(focusIndex); onItemClick(item) }
-                    )
+                    val leadingStream = layoutState.stream?.takeIf { it.leads }
+                    if (leadingStream != null) {
+                        PlayButtonBody(
+                            label = if (leadingStream.isLive) {
+                                stringResource(R.string.stream_entry_gamedetail_primary_resume)
+                            } else {
+                                stringResource(R.string.stream_entry_gamedetail_primary, leadingStream.containerLabel)
+                            },
+                            downloadStatus = displayState.downloadStatus,
+                            downloadProgress = downloadProgress,
+                            isFocused = isFocused,
+                            downloadSizeBytes = null,
+                            isCompact = isCompact,
+                            iconOverride = ImageVector.vectorResource(R.drawable.ic_stream_play_network),
+                            onClick = { onFocusChange(focusIndex); onItemClick(item) }
+                        )
+                    } else {
+                        PlayMenuItem(
+                            downloadStatus = displayState.downloadStatus,
+                            downloadProgress = downloadProgress,
+                            downloadWaitStatus = displayState.downloadWaitStatus,
+                            isFocused = isFocused,
+                            downloadSizeBytes = displayState.downloadSizeBytes,
+                            isCompact = isCompact,
+                            running = displayState.running,
+                            onClick = { onFocusChange(focusIndex); onItemClick(item) }
+                        )
+                    }
                 }
 
                 MenuItem.Stream -> {
@@ -217,7 +235,7 @@ fun GameDetailMenu(
                         } else {
                             stringResource(R.string.stream_entry_gamedetail_menu, offer?.containerLabel.orEmpty())
                         },
-                        icon = Icons.Default.Cast,
+                        icon = ImageVector.vectorResource(R.drawable.ic_stream_play_network),
                         isFocused = isFocused,
                         isCompact = isCompact,
                         onClick = { onFocusChange(focusIndex); onItemClick(item) }
@@ -460,6 +478,7 @@ private fun PlayButtonBody(
     isFocused: Boolean,
     downloadSizeBytes: Long?,
     isCompact: Boolean,
+    iconOverride: ImageVector? = null,
     onClick: () -> Unit
 ) {
     val isFailed = downloadStatus == GameDownloadStatus.FAILED
@@ -478,7 +497,7 @@ private fun PlayButtonBody(
         baseContentColor.copy(alpha = 0.7f)
     }
 
-    val icon = when (downloadStatus) {
+    val icon = iconOverride ?: when (downloadStatus) {
         GameDownloadStatus.DOWNLOADED -> Icons.Default.PlayArrow
         GameDownloadStatus.NEEDS_INSTALL -> Icons.Default.InstallMobile
         GameDownloadStatus.QUEUED -> Icons.Default.Schedule

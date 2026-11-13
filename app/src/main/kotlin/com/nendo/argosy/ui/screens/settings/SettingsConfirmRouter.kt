@@ -425,6 +425,7 @@ private fun routeRomMConfirm(vm: SettingsViewModel, state: SettingsUiState): Inp
         RomMItem.Accounts -> vm.navigateToSection(SettingsSection.ACCOUNTS)
         RomMItem.SyncSettings -> vm.navigateToSection(SettingsSection.SYNC_SETTINGS)
         RomMItem.SyncLibrary -> if (isOnline) vm.syncRomm()
+        RomMItem.NotOnDevice -> return InputResult.handled(SoundType.SILENT)
         else -> {}
     }
     return InputResult.HANDLED

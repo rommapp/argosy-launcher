@@ -843,7 +843,7 @@ private fun GameDetailContent(
                             add(InputButton.DPAD_HORIZONTAL to sectionScrollHint)
                         }
                         when (focusedItem) {
-                            MenuItem.Play -> add(InputButton.A to when {
+                            MenuItem.Play -> if (uiState.stream?.leads != true) add(InputButton.A to when {
                                 uiState.running?.isClosing == true -> playClosingHint
                                 uiState.running != null &&
                                     uiState.downloadStatus == GameDownloadStatus.DOWNLOADED -> playResumeGameHint
@@ -955,6 +955,7 @@ private fun GameDetailModals(
             hasManageableFiles = uiState.hasManageableFiles,
             launchDisplayNumbers = uiState.launchDisplayNumbers,
             launchDisplayIndex = uiState.launchDisplayIndex,
+            offersDownload = uiState.stream?.leads == true,
             onAction = { action -> viewModel.handleMoreOptionAction(action, onBack, onNavigateToPlatformSettings) },
             onDismiss = viewModel::toggleMoreOptions
         )

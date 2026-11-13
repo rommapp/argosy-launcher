@@ -40,6 +40,45 @@ class HomeGameMenuStreamTest {
     }
 
     @Test
+    fun `stream mode puts stream on top and download second`() {
+        assertEquals(
+            GameMenuAction.Stream(1),
+            delegate.resolveMenuAction(0, game, false, streamable = true, streamLeads = true)
+        )
+        assertEquals(
+            GameMenuAction.Download(1),
+            delegate.resolveMenuAction(1, game, false, streamable = true, streamLeads = true)
+        )
+        assertEquals(
+            GameMenuAction.ToggleFavorite(1),
+            delegate.resolveMenuAction(2, game, false, streamable = true, streamLeads = true)
+        )
+    }
+
+    @Test
+    fun `stream mode without an offer keeps the download row on top`() {
+        assertEquals(
+            GameMenuAction.Play(1, false, false),
+            delegate.resolveMenuAction(0, game, false, streamable = false, streamLeads = true)
+        )
+        assertEquals(
+            GameMenuAction.ToggleFavorite(1),
+            delegate.resolveMenuAction(1, game, false, streamable = false, streamLeads = true)
+        )
+    }
+
+    @Test
+    fun `focus reaches the last row in stream mode`() {
+        delegate.moveGameMenuFocus(20, game, isPlatformRow = false, streamable = true)
+        val lastIndex = delegate.state.value.gameMenuFocusIndex
+
+        assertEquals(
+            GameMenuAction.Hide(1),
+            delegate.resolveMenuAction(lastIndex, game, false, streamable = true, streamLeads = true)
+        )
+    }
+
+    @Test
     fun `no stream row without an offer`() {
         val actions = (0 until 12).map { delegate.resolveMenuAction(it, game, isPlatformRow = false) }
         assertFalse(actions.any { it is GameMenuAction.Stream })

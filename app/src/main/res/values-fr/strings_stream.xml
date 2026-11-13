@@ -6,6 +6,16 @@
     <string name="stream_entry_library_menu_resume">Reprendre la diffusion</string>
     <string name="stream_entry_gamedetail_menu">Diffuser sur %1$s</string>
     <string name="stream_entry_gamedetail_menu_resume">Reprendre la diffusion</string>
+    <string name="stream_entry_gamedetail_primary">Diffuser sur %1$s</string>
+    <string name="stream_entry_gamedetail_primary_resume">Reprendre la diffusion</string>
+    <string name="stream_gamedetail_options_download">Télécharger</string>
+    <string name="stream_home_footer_stream">Diffuser</string>
+    <string name="stream_tile_mark_description">Diffusé depuis le serveur</string>
+    <string name="stream_setting_not_on_device_title">Jeux absents de cet appareil</string>
+    <string name="stream_setting_not_on_device_option_download">Télécharger</string>
+    <string name="stream_setting_not_on_device_option_stream">Diffuser</string>
+    <string name="stream_setting_not_on_device_subtitle_download">Les jeux sont téléchargés sur cet appareil avant d\'y jouer</string>
+    <string name="stream_setting_not_on_device_subtitle_stream">Les jeux sont diffusés depuis le serveur quand il peut les lancer, sinon ils sont téléchargés</string>
     <string name="stream_running_label">Diffusion sur %1$s</string>
 
     <string name="stream_launch_title">Diffuser sur %1$s</string>

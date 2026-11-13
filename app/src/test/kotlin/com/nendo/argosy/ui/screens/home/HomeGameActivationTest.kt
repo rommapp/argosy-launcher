@@ -73,6 +73,39 @@ class HomeGameActivationTest {
     }
 
     @Test
+    fun `a stream-first game streams from either surface`() {
+        listOf(true, false).forEach { exact ->
+            assertEquals(
+                HomeGameActivation.STREAM,
+                homeGameActivation(game(), GameDownloadIndicator.NONE, exact, leadsWithStream = true)
+            )
+        }
+    }
+
+    @Test
+    fun `play, install and a paused download win over stream first`() {
+        assertEquals(
+            HomeGameActivation.LAUNCH,
+            homeGameActivation(game(isDownloaded = true), GameDownloadIndicator.NONE, false, leadsWithStream = true)
+        )
+        assertEquals(
+            HomeGameActivation.INSTALL,
+            homeGameActivation(game(needsInstall = true), GameDownloadIndicator.NONE, false, leadsWithStream = true)
+        )
+        assertEquals(
+            HomeGameActivation.RESUME_DOWNLOAD,
+            homeGameActivation(game(), GameDownloadIndicator(isPaused = true), false, leadsWithStream = true)
+        )
+    }
+
+    @Test
+    fun `a partial download counts as on the device`() {
+        assertEquals(true, game().isOnDevice(GameDownloadIndicator(isPaused = true)))
+        assertEquals(true, game().isOnDevice(GameDownloadIndicator(isDownloading = true)))
+        assertEquals(false, game().isOnDevice(GameDownloadIndicator.NONE))
+    }
+
+    @Test
     fun `confirming a curated grid tile activates its exact game, never the group choice`() {
         val tileGame = game()
         val state = HomeUiState(

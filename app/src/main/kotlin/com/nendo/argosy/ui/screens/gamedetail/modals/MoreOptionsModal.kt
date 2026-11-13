@@ -10,6 +10,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Album
 import androidx.compose.material.icons.filled.DeleteOutline
+import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.FolderSpecial
 import androidx.compose.material.icons.filled.RemoveCircleOutline
 import androidx.compose.material.icons.filled.Image
@@ -57,6 +58,11 @@ private fun MoreOptionAction.toMenuEntry(
     context: Context,
     launchDisplayNumber: Int?
 ): MoreMenuEntry.Option = when (this) {
+    MoreOptionAction.Download -> MoreMenuEntry.Option(
+        Icons.Default.Download,
+        context.getString(R.string.stream_gamedetail_options_download),
+        action = this
+    )
     MoreOptionAction.LaunchOnDisplay -> MoreMenuEntry.Option(
         Icons.Default.Tv,
         context.getString(R.string.gamedetail_more_options_launch_on_display),
@@ -174,6 +180,7 @@ fun MoreOptionsModal(
     hasManageableFiles: Boolean = false,
     launchDisplayNumbers: List<Int> = emptyList(),
     launchDisplayIndex: Int = 0,
+    offersDownload: Boolean = false,
     onAction: (MoreOptionAction) -> Unit,
     onDismiss: () -> Unit
 ) {
@@ -192,7 +199,8 @@ fun MoreOptionsModal(
             hasUpdates = updateCount > 0,
             hasManageableFiles = hasManageableFiles,
             platformSlug = game.platformSlug,
-            launchDisplayCount = launchDisplayNumbers.size
+            launchDisplayCount = launchDisplayNumbers.size,
+            offersDownload = offersDownload
         )
     )
 

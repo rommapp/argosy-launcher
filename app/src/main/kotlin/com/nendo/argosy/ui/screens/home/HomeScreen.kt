@@ -49,7 +49,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.DeleteOutline
 import androidx.compose.material.icons.filled.RemoveCircleOutline
 import androidx.compose.material.icons.filled.Download
-import androidx.compose.material.icons.filled.Cast
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material.icons.filled.Home
@@ -106,8 +105,10 @@ import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.res.vectorResource
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.DpSize
@@ -204,6 +205,7 @@ fun HomeScreen(
         ).collectAsState()
     var navigationPillWidth by remember { mutableStateOf(0.dp) }
     val downloadIndicators = viewModel.downloadIndicators.collectAsState()
+    val streamFirst by viewModel.streamLauncher.streamFirst.collectAsState()
     val mediaDownloadProgress = viewModel.mediaDownloadProgress.collectAsState()
     val listState = rememberLazyListState()
     val gridState = rememberLazyGridState()
@@ -595,6 +597,9 @@ fun HomeScreen(
         if (isLoading) {
             SplashOverlay()
         } else {
+    androidx.compose.runtime.CompositionLocalProvider(
+        com.nendo.argosy.ui.screens.stream.LocalStreamFirst provides streamFirst
+    ) {
     BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
         val isPortrait = maxWidth <= maxHeight
         val compactHeader = (isAutoGrid && !uiState.autoGridConfig.showTitles) ||
@@ -1238,6 +1243,13 @@ fun HomeScreen(
                                         stringResource(R.string.home_footer_game_play)
                                     downloadIndicators.value[focusedGame.id]?.isPaused == true ->
                                         stringResource(R.string.home_footer_game_resume_download)
+                                    streamFirst.leads(
+                                        focusedGame.platformSlug,
+                                        focusedGame.isRommGame,
+                                        focusedGame.isOnDevice(
+                                            downloadIndicators.value[focusedGame.id] ?: GameDownloadIndicator.NONE
+                                        )
+                                    ) -> stringResource(R.string.stream_home_footer_stream)
                                     else -> stringResource(R.string.home_footer_game_download)
                                 },
                                 InputButton.Y to if (focusedGame.isFavorite) {
@@ -1470,7 +1482,11 @@ fun HomeScreen(
                     onDismiss = { viewModel.toggleGameMenu() },
                     onPrimaryAction = {
                         viewModel.toggleGameMenu()
-                        viewModel.activateFocusedGame(focusedGame)
+                        if (uiState.gameMenuStream?.leads == true) {
+                            viewModel.downloadFocusedGame(focusedGame)
+                        } else {
+                            viewModel.activateFocusedGame(focusedGame)
+                        }
                     },
                     stream = uiState.gameMenuStream,
                     onStream = {
@@ -1751,6 +1767,7 @@ fun HomeScreen(
                 }
             )
         }
+    }
     }
         }
     }
@@ -2086,9 +2103,12 @@ private fun GameSelectOverlay(
             stringResource(R.string.stream_entry_home_menu, it.containerLabel)
         }
     }
+    val streamIcon = ImageVector.vectorResource(R.drawable.ic_stream_play_network)
     val options = buildList {
+        val streamEntry = streamLabel?.let { MenuEntry(streamIcon, it, onClick = onStream) }
+        if (stream?.leads == true && streamEntry != null) add(streamEntry)
         add(MenuEntry(primaryIcon, primaryLabel, onClick = onPrimaryAction))
-        if (streamLabel != null) add(MenuEntry(Icons.Default.Cast, streamLabel, onClick = onStream))
+        if (stream?.leads != true && streamEntry != null) add(streamEntry)
         if (playDisplays.size > 1 && game.isDownloaded) {
             playDisplays.forEachIndexed { index, target ->
                 add(

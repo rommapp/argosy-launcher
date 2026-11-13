@@ -1402,7 +1402,10 @@ data class ServerState(
     val boxArtCacheEnabled: Boolean = true,
     val screenshotUploadSupported: Boolean = false,
     val musicApiSupported: Boolean = false,
-    val deviceInstallSupported: Boolean = false
+    val deviceInstallSupported: Boolean = false,
+    val streamingAvailable: Boolean = false,
+    val notOnDeviceAction: com.nendo.argosy.data.preferences.NotOnDeviceAction =
+        com.nendo.argosy.data.preferences.NotOnDeviceAction.DOWNLOAD
 )
 
 /**

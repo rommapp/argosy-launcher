@@ -52,6 +52,7 @@ private val licenses = listOf(
         "CC BY-NC-ND 4.0",
         "github.com/Duimon/Duimon-Mega-Bezel"
     ),
+    LicenseEntry("Material Design Icons", "Apache 2.0", "pictogrammers.com/library/mdi"),
     LicenseEntry("AndroidX", "Apache 2.0", "developer.android.com/jetpack/androidx"),
     LicenseEntry("Jetpack Compose", "Apache 2.0", "developer.android.com/jetpack/compose"),
     LicenseEntry("Kotlin", "Apache 2.0", "kotlinlang.org"),

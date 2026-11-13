@@ -171,6 +171,7 @@ class SettingsViewModel @Inject constructor(
     private val biosRepository: com.nendo.argosy.data.repository.BiosRepository,
     private val savePathValidator: com.nendo.argosy.data.emulator.SavePathValidator,
     internal val jellyfinConnectionManager: JellyfinConnectionManager,
+    internal val streamingConfigStore: com.nendo.argosy.data.streaming.StreamingConfigStore,
     private val downloadFileStatusRepository: com.nendo.argosy.data.repository.DownloadFileStatusRepository,
     radioController: com.nendo.argosy.hardware.RadioController
 ) : ViewModel() {
@@ -1772,6 +1773,8 @@ class SettingsViewModel @Inject constructor(
 
     fun toggleSyncScreenshots() = routeToggleSyncScreenshots(this)
     fun toggleUploadScreenshots() = routeToggleUploadScreenshots(this)
+    fun setNotOnDeviceAction(action: com.nendo.argosy.data.preferences.NotOnDeviceAction) =
+        routeSetNotOnDeviceAction(this, action)
     fun toggleBoxArtCache() = routeToggleBoxArtCache(this)
     fun setDownloadCategoryDefault(categoryKey: String, include: Boolean) =
         syncDelegate.setDownloadCategoryDefault(viewModelScope, categoryKey, include)

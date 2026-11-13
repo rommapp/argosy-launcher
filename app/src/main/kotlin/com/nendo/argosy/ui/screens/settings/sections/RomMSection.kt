@@ -17,8 +17,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import com.nendo.argosy.R
+import com.nendo.argosy.data.preferences.NotOnDeviceAction
+import com.nendo.argosy.ui.common.labelRes
+import com.nendo.argosy.ui.common.subtitleRes
 import com.nendo.argosy.ui.components.ActionPreference
 import com.nendo.argosy.ui.components.NavigationPreference
+import com.nendo.argosy.ui.components.SegmentedPreference
 import com.nendo.argosy.ui.screens.settings.ConnectionStatus
 import com.nendo.argosy.ui.screens.settings.SettingsSection
 import com.nendo.argosy.ui.screens.settings.SettingsUiState
@@ -38,17 +42,22 @@ internal sealed class RomMItem(val key: String, val section: String) {
     data object RomManager : RomMItem("romManager", "server")
     data object RomMSignOut : RomMItem("rommSignOut", "server")
     data object Accounts : RomMItem("rommAccounts", "server")
+    data object NotOnDevice : RomMItem("rommNotOnDevice", "server")
     data object SyncSettings : RomMItem("syncSettings", "library")
     data object SyncLibrary : RomMItem("syncLibrary", "library")
 }
 
 internal fun buildRomMItems(
     isConnected: Boolean,
-    isSignedIntoRomM: Boolean
+    isSignedIntoRomM: Boolean,
+    streamingAvailable: Boolean = false
 ): List<RomMItem> = buildList {
     add(RomMItem.Header("serverHeader", "server", R.string.settings_romm_section_server))
     add(RomMItem.RomManager)
     add(RomMItem.Accounts)
+    if (streamingAvailable) {
+        add(RomMItem.NotOnDevice)
+    }
     if (isSignedIntoRomM) {
         add(RomMItem.RomMSignOut)
     }
@@ -65,7 +74,8 @@ internal fun buildRomMItemsFromState(state: SettingsUiState): List<RomMItem> {
         state.server.connectionStatus == ConnectionStatus.OFFLINE
     return buildRomMItems(
         isConnected = isConnected,
-        isSignedIntoRomM = state.server.rommUrl.isNotBlank()
+        isSignedIntoRomM = state.server.rommUrl.isNotBlank(),
+        streamingAvailable = state.server.streamingAvailable
     )
 }
 
@@ -126,9 +136,14 @@ private fun RomMContent(uiState: SettingsUiState, viewModel: SettingsViewModel) 
         uiState.server.connectionStatus == ConnectionStatus.OFFLINE
     val isOnline = uiState.server.connectionStatus == ConnectionStatus.ONLINE
     val isSignedIntoRomM = uiState.server.rommUrl.isNotBlank()
+    val streamingAvailable = uiState.server.streamingAvailable
 
-    val allItems = remember(isConnected, isSignedIntoRomM) {
-        buildRomMItems(isConnected = isConnected, isSignedIntoRomM = isSignedIntoRomM)
+    val allItems = remember(isConnected, isSignedIntoRomM, streamingAvailable) {
+        buildRomMItems(
+            isConnected = isConnected,
+            isSignedIntoRomM = isSignedIntoRomM,
+            streamingAvailable = streamingAvailable
+        )
     }
     val context = LocalContext.current
     val layout = remember(allItems) { createRomMLayout(allItems) }
@@ -203,6 +218,18 @@ private fun RomMContent(uiState: SettingsUiState, viewModel: SettingsViewModel) 
                 isFocused = isFocused(item),
                 onClick = { openFrom(item) { viewModel.navigateToSection(SettingsSection.ACCOUNTS) } }
             )
+
+            RomMItem.NotOnDevice -> {
+                val action = uiState.server.notOnDeviceAction
+                SegmentedPreference(
+                    title = stringResource(R.string.stream_setting_not_on_device_title),
+                    subtitle = stringResource(action.subtitleRes),
+                    options = NotOnDeviceAction.entries.map { stringResource(it.labelRes) },
+                    selectedIndex = NotOnDeviceAction.entries.indexOf(action),
+                    isFocused = isFocused(item),
+                    onSelect = { viewModel.setNotOnDeviceAction(NotOnDeviceAction.entries[it]) }
+                )
+            }
 
             RomMItem.SyncSettings -> NavigationPreference(
                 icon = Icons.Default.Tune,

@@ -34,6 +34,10 @@ object AccountScopedPreferenceKeys {
         "region_priority"
     )
 
+    private val PLAY_CHOICES = setOf(
+        "romm_not_on_device_action"
+    )
+
     private val DOWNLOAD_CATEGORIES = setOf(
         "download_category_defaults",
         "download_category_platform_overrides"
@@ -166,7 +170,7 @@ object AccountScopedPreferenceKeys {
     )
 
     val PER_ACCOUNT: Set<String> =
-        RETROACHIEVEMENTS + SYNC_WATERMARKS_AND_FILTERS + REGION_PRIORITY + DOWNLOAD_CATEGORIES +
+        RETROACHIEVEMENTS + SYNC_WATERMARKS_AND_FILTERS + REGION_PRIORITY + PLAY_CHOICES + DOWNLOAD_CATEGORIES +
             SOCIAL + QUAYPASS + INTERFACE + RECAPS + NOTIFICATIONS
 
     fun isPerAccount(key: Preferences.Key<*>): Boolean = key.name in PER_ACCOUNT

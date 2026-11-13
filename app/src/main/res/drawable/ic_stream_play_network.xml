@@ -1,0 +1,13 @@
+<!--
+    Material Design Icons "play-network", from @mdi/svg 7.4.47, Apache License 2.0.
+    Notice and license: assets/licenses/materialdesignicons/LICENSE
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M15,20A1,1 0 0,0 14,19H13V17H17A2,2 0 0,0 19,15V5A2,2 0 0,0 17,3H7A2,2 0 0,0 5,5V15A2,2 0 0,0 7,17H11V19H10A1,1 0 0,0 9,20H2V22H9A1,1 0 0,0 10,23H14A1,1 0 0,0 15,22H22V20H15M10,14V6L15,10L10,14Z"/>
+</vector>

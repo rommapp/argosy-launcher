@@ -6,6 +6,16 @@
     <string name="stream_entry_library_menu_resume">Reanudar transmisión</string>
     <string name="stream_entry_gamedetail_menu">Transmitir en %1$s</string>
     <string name="stream_entry_gamedetail_menu_resume">Reanudar transmisión</string>
+    <string name="stream_entry_gamedetail_primary">Transmitir en %1$s</string>
+    <string name="stream_entry_gamedetail_primary_resume">Reanudar transmisión</string>
+    <string name="stream_gamedetail_options_download">Descargar</string>
+    <string name="stream_home_footer_stream">Transmitir</string>
+    <string name="stream_tile_mark_description">Se transmite desde el servidor</string>
+    <string name="stream_setting_not_on_device_title">Juegos que no están en este dispositivo</string>
+    <string name="stream_setting_not_on_device_option_download">Descargar</string>
+    <string name="stream_setting_not_on_device_option_stream">Transmitir</string>
+    <string name="stream_setting_not_on_device_subtitle_download">Los juegos se descargan en este dispositivo antes de jugarlos</string>
+    <string name="stream_setting_not_on_device_subtitle_stream">Los juegos se transmiten desde el servidor cuando puede ejecutarlos y, si no, se descargan</string>
     <string name="stream_running_label">Transmisión en %1$s</string>
 
     <string name="stream_launch_title">Transmitir en %1$s</string>

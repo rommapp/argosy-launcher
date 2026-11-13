@@ -10,16 +10,30 @@ import com.nendo.argosy.data.remote.romm.RomMStreamingContainer
  * the last config refresh.
  */
 object StreamTriggerGate {
+    fun isEnabled(
+        capabilities: RomMCapabilities,
+        config: RomMStreamingConfig?,
+        startRefused: Boolean
+    ): Boolean = capabilities.supportsStreaming && !startRefused && config?.enabled == true
+
     fun containerFor(
         capabilities: RomMCapabilities,
         config: RomMStreamingConfig?,
         startRefused: Boolean,
         platformSlug: String?
     ): RomMStreamingContainer? {
-        if (!capabilities.supportsStreaming || startRefused) return null
-        if (config == null || !config.enabled) return null
+        if (config == null || !isEnabled(capabilities, config, startRefused)) return null
         val slug = platformSlug?.lowercase()?.takeIf { it.isNotBlank() } ?: return null
         return config.containers.firstOrNull { it.platform.lowercase() == slug }
+    }
+
+    fun streamablePlatforms(
+        capabilities: RomMCapabilities,
+        config: RomMStreamingConfig?,
+        startRefused: Boolean
+    ): Set<String> {
+        if (config == null || !isEnabled(capabilities, config, startRefused)) return emptySet()
+        return config.containers.map { it.platform.lowercase() }.toSet()
     }
 
     fun labelOf(container: RomMStreamingContainer): String? =

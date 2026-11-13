@@ -45,7 +45,6 @@ import androidx.compose.material.icons.automirrored.filled.PlaylistAdd
 import androidx.compose.material.icons.filled.DeleteOutline
 import androidx.compose.material.icons.filled.RemoveCircleOutline
 import androidx.compose.material.icons.filled.Download
-import androidx.compose.material.icons.filled.Cast
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material.icons.filled.GridView
@@ -92,6 +91,7 @@ import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.res.vectorResource
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -366,6 +366,10 @@ fun LibraryScreen(
         )
     }
 
+    val streamFirst by viewModel.streamLauncher.streamFirst.collectAsState()
+    androidx.compose.runtime.CompositionLocalProvider(
+        com.nendo.argosy.ui.screens.stream.LocalStreamFirst provides streamFirst
+    ) {
     Box(modifier = Modifier.fillMaxSize()) {
         Box(modifier = Modifier.fillMaxSize().blur(combinedBlur)) {
             Box(
@@ -659,7 +663,8 @@ fun LibraryScreen(
                         hasSiblingGroup = uiState.quickMenuHasSiblingGroup,
                         isRunning = uiState.quickMenuRunning != null,
                         moveTargetCount = uiState.quickMenuMoveTargets.size,
-                        streamable = uiState.quickMenuStream != null
+                        streamable = uiState.quickMenuStream != null,
+                        streamLeads = uiState.quickMenuStream?.leads == true
                     ),
                     stream = uiState.quickMenuStream,
                     onStream = {
@@ -859,6 +864,7 @@ fun LibraryScreen(
             letter = uiState.overlaySectionLabel,
             visible = uiState.showSectionOverlay
         )
+    }
     }
 }
 
@@ -1279,7 +1285,9 @@ private fun LibraryGameCard(
             releaseYear = null,
             genre = null,
             isFavorite = game.isFavorite,
-            isDownloaded = game.isDownloaded
+            isDownloaded = game.isDownloaded,
+            isRommGame = game.isRommGame,
+            needsInstall = game.needsInstall
         ),
         isFocused = effectiveFocused,
         showPlatformBadge = showPlatformBadge,
@@ -1839,6 +1847,7 @@ private fun QuickMenuOverlay(
         else -> stringResource(R.string.stream_entry_library_menu, stream.containerLabel)
     }
     val moveLabels = moveTargets.map { stringResource(R.string.library_quickmenu_move_to_display, it.screenNumber) }
+    val streamIcon = androidx.compose.ui.graphics.vector.ImageVector.vectorResource(R.drawable.ic_stream_play_network)
     val hideLabel = if (game.isHidden) {
         stringResource(R.string.library_quickmenu_show)
     } else {
@@ -1847,7 +1856,7 @@ private fun QuickMenuOverlay(
 
     fun LibraryQuickMenuRow.toEntry(position: Int): MenuEntry = when (this) {
         LibraryQuickMenuRow.PRIMARY -> MenuEntry(primaryIcon, primaryLabel, onClick = onPrimaryAction)
-        LibraryQuickMenuRow.STREAM -> MenuEntry(Icons.Default.Cast, streamLabel, onClick = onStream)
+        LibraryQuickMenuRow.STREAM -> MenuEntry(streamIcon, streamLabel, onClick = onStream)
         LibraryQuickMenuRow.MOVE_TO_DISPLAY -> {
             val targetIndex = rows.moveTargetIndexAt(position)
             MenuEntry(

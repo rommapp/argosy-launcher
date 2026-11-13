@@ -6,6 +6,16 @@
     <string name="stream_entry_library_menu_resume">继续串流</string>
     <string name="stream_entry_gamedetail_menu">在 %1$s 上串流</string>
     <string name="stream_entry_gamedetail_menu_resume">继续串流</string>
+    <string name="stream_entry_gamedetail_primary">在 %1$s 上串流</string>
+    <string name="stream_entry_gamedetail_primary_resume">继续串流</string>
+    <string name="stream_gamedetail_options_download">下载</string>
+    <string name="stream_home_footer_stream">串流</string>
+    <string name="stream_tile_mark_description">从服务器串流</string>
+    <string name="stream_setting_not_on_device_title">不在此设备上的游戏</string>
+    <string name="stream_setting_not_on_device_option_download">下载</string>
+    <string name="stream_setting_not_on_device_option_stream">串流</string>
+    <string name="stream_setting_not_on_device_subtitle_download">游戏会先下载到此设备再游玩</string>
+    <string name="stream_setting_not_on_device_subtitle_stream">服务器能运行的游戏从服务器串流，其余的下载</string>
     <string name="stream_running_label">在 %1$s 上串流</string>
 
     <string name="stream_launch_title">在 %1$s 上串流</string>

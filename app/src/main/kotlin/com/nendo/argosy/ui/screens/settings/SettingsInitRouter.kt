@@ -295,6 +295,10 @@ internal fun routeObserveConnectionState(vm: SettingsViewModel) {
         vm.soundsDelegate.setMusicApiSupported(musicApi)
     }.launchIn(vm.viewModelScope)
 
+    vm.streamingConfigStore.enabled.onEach { available ->
+        vm.serverDelegate.updateState(vm._uiState.value.server.copy(streamingAvailable = available))
+    }.launchIn(vm.viewModelScope)
+
     vm.jellyfinConnectionManager.connectionState.onEach { jellyfinState ->
         val capabilities = (jellyfinState as? JellyfinConnectionState.Connected)?.capabilities
         vm.jellyfinDelegate.onServerCapabilities(
@@ -774,7 +778,9 @@ internal fun routeLoadSettings(vm: SettingsViewModel) {
             boxArtCacheEnabled = prefs.boxArtCacheEnabled,
             screenshotUploadSupported = rommCapabilities?.supportsScreenshotUpload == true,
             musicApiSupported = rommCapabilities?.supportsMusicApi == true,
-            deviceInstallSupported = rommCapabilities?.supportsDeviceInstall == true
+            deviceInstallSupported = rommCapabilities?.supportsDeviceInstall == true,
+            streamingAvailable = vm.streamingConfigStore.isEnabled(),
+            notOnDeviceAction = prefs.notOnDeviceAction
         ))
 
         val jellyfinInFlight = vm.jellyfinDelegate.state.value

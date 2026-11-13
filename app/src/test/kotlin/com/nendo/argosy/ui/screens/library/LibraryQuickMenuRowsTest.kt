@@ -88,6 +88,34 @@ class LibraryQuickMenuRowsTest {
     }
 
     @Test
+    fun `stream mode puts the stream row on top and download second`() {
+        val rows = libraryQuickMenuRows(
+            game(),
+            isCustomGridHome = false,
+            hasSiblingGroup = false,
+            streamable = true,
+            streamLeads = true
+        )
+
+        assertEquals(listOf(LibraryQuickMenuRow.STREAM, LibraryQuickMenuRow.PRIMARY), rows.take(2))
+        assertEquals(1, rows.count { it == LibraryQuickMenuRow.STREAM })
+    }
+
+    @Test
+    fun `stream mode without a container keeps download alone on top`() {
+        val rows = libraryQuickMenuRows(
+            game(),
+            isCustomGridHome = false,
+            hasSiblingGroup = false,
+            streamable = false,
+            streamLeads = true
+        )
+
+        assertEquals(LibraryQuickMenuRow.PRIMARY, rows.first())
+        assertFalse(rows.contains(LibraryQuickMenuRow.STREAM))
+    }
+
+    @Test
     fun `a game that is not removable never offers remove from library`() {
         val rows = libraryQuickMenuRows(game(), isCustomGridHome = false, hasSiblingGroup = false)
 

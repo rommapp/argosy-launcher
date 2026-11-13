@@ -13,7 +13,9 @@ import com.nendo.argosy.data.remote.romm.RomMStreamStatePicks
 import com.nendo.argosy.data.remote.romm.RomMStreamingContainer
 import com.nendo.argosy.data.repository.GameRepository
 import com.nendo.argosy.data.repository.SaveSyncApiClient
+import com.nendo.argosy.data.preferences.UserPreferencesRepository
 import com.nendo.argosy.data.streaming.StreamClaimOutcome
+import com.nendo.argosy.data.streaming.StreamFirstRule
 import com.nendo.argosy.data.streaming.StreamPicker
 import com.nendo.argosy.data.streaming.StreamSessionManager
 import com.nendo.argosy.data.streaming.StreamTarget
@@ -32,9 +34,13 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -51,8 +57,14 @@ class StreamLaunchController private constructor(
     private val _state = MutableStateFlow<StreamLaunchUiState?>(null)
     val state: StateFlow<StreamLaunchUiState?> = _state.asStateFlow()
 
+    val streamFirst: StateFlow<StreamFirstUi> = combine(
+        deps.preferences.userPreferences.map { it.notOnDeviceAction }.distinctUntilChanged(),
+        deps.configStore.availability
+    ) { action, _ -> StreamFirstUi(action, deps.configStore.streamablePlatforms()) }
+        .stateIn(scope, SharingStarted.Eagerly, StreamFirstUi())
+
     val offers: Flow<Unit> =
-        combine(deps.configStore.availability, deps.sessions.session) { _, _ -> }
+        combine(deps.configStore.availability, deps.sessions.session, streamFirst) { _, _, _ -> }
 
     private var loadJob: Job? = null
     private var target: StreamTarget? = null
@@ -61,13 +73,22 @@ class StreamLaunchController private constructor(
     private var states: List<RomMStreamState> = emptyList()
     private var joinable: RomMStreamJoinableSession? = null
 
-    fun offerFor(gameId: Long, platformSlug: String?): StreamOffer? {
+    /**
+     * The stream row for a game whose rom is not downloaded, or null when its platform has no
+     * container and no stream of it is running. [isOnDevice] marks a partial copy, such as a paused
+     * download, which keeps Download as the primary action.
+     */
+    fun offerFor(gameId: Long, platformSlug: String?, isOnDevice: Boolean = false): StreamOffer? {
+        val leads = StreamFirstRule.leadsWithStream(streamFirst.value.action, isOnDevice, hasContainer = true)
         val live = deps.sessions.session.value?.takeIf { deps.sessions.isLive(gameId) }
-        if (live != null) return StreamOffer(live.target.containerLabel, isLive = true)
+        if (live != null) return StreamOffer(live.target.containerLabel, isLive = true, leads = leads)
         val found = deps.configStore.containerFor(platformSlug) ?: return null
         val label = StreamTriggerGate.labelOf(found) ?: return null
-        return StreamOffer(label, isLive = false)
+        return StreamOffer(label, isLive = false, leads = leads)
     }
+
+    fun leadsWithStream(platformSlug: String?, isRommGame: Boolean, isOnDevice: Boolean): Boolean =
+        streamFirst.value.leads(platformSlug, isRommGame, isOnDevice)
 
     fun open(gameId: Long) {
         if (deps.sessions.isLive(gameId)) {
@@ -340,7 +361,8 @@ class StreamLaunchController private constructor(
         internal val connectionManager: RomMConnectionManager,
         internal val snapshotChannels: SnapshotChannelService,
         internal val launchTargets: EmulatorLaunchTargetResolver,
-        internal val soundManager: SoundFeedbackManager
+        internal val soundManager: SoundFeedbackManager,
+        internal val preferences: UserPreferencesRepository
     ) {
         fun create(scope: CoroutineScope): StreamLaunchController = StreamLaunchController(this, scope)
     }

@@ -6,6 +6,16 @@
     <string name="stream_entry_library_menu_resume">Stream fortsetzen</string>
     <string name="stream_entry_gamedetail_menu">Auf %1$s streamen</string>
     <string name="stream_entry_gamedetail_menu_resume">Stream fortsetzen</string>
+    <string name="stream_entry_gamedetail_primary">Auf %1$s streamen</string>
+    <string name="stream_entry_gamedetail_primary_resume">Stream fortsetzen</string>
+    <string name="stream_gamedetail_options_download">Herunterladen</string>
+    <string name="stream_home_footer_stream">Streamen</string>
+    <string name="stream_tile_mark_description">Wird vom Server gestreamt</string>
+    <string name="stream_setting_not_on_device_title">Spiele, die nicht auf diesem Gerät sind</string>
+    <string name="stream_setting_not_on_device_option_download">Herunterladen</string>
+    <string name="stream_setting_not_on_device_option_stream">Streamen</string>
+    <string name="stream_setting_not_on_device_subtitle_download">Spiele werden vor dem Spielen auf dieses Gerät heruntergeladen</string>
+    <string name="stream_setting_not_on_device_subtitle_stream">Spiele werden vom Server gestreamt, wenn er sie ausführen kann, sonst heruntergeladen</string>
     <string name="stream_running_label">Stream auf %1$s</string>
 
     <string name="stream_launch_title">Auf %1$s streamen</string>

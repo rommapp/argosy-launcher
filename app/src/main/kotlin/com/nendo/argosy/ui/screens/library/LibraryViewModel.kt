@@ -2000,7 +2000,10 @@ class LibraryViewModel @Inject constructor(
         val gameId = focused.id
         val stream = focused
             .takeIf { it.isRommGame && !it.isDownloaded && !it.needsInstall }
-            ?.let { streamLauncher.offerFor(it.id, it.platformSlug) }
+            ?.let { game ->
+                val partial = downloadIndicators.value[game.id]?.isShown == true
+                streamLauncher.offerFor(game.id, game.platformSlug, isOnDevice = partial)
+            }
         quickMenuOpenJob = viewModelScope.launch {
             val hasChoice = siblingChoice.hasChoice(gameId)
             val running = runningGameMenu.markFor(gameId)
@@ -2028,7 +2031,8 @@ class LibraryViewModel @Inject constructor(
             state.quickMenuHasSiblingGroup,
             isRunning = state.quickMenuRunning != null,
             moveTargetCount = state.quickMenuMoveTargets.size,
-            streamable = state.quickMenuStream != null
+            streamable = state.quickMenuStream != null,
+            streamLeads = state.quickMenuStream?.leads == true
         )
     }
 

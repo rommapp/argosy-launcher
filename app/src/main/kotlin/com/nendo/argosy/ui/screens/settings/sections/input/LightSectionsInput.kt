@@ -8,6 +8,7 @@ import com.nendo.argosy.data.preferences.HomeBackgroundMode
 import com.nendo.argosy.data.preferences.NewBadgePlacement
 import com.nendo.argosy.data.preferences.MediaStreamingQuality
 import com.nendo.argosy.data.preferences.MenuWrapMode
+import com.nendo.argosy.data.preferences.NotOnDeviceAction
 import com.nendo.argosy.data.preferences.SelectSwapMode
 import com.nendo.argosy.ui.screens.settings.delegates.ControlsSettingsDelegate
 import com.nendo.argosy.util.LogLevel
@@ -56,6 +57,8 @@ import com.nendo.argosy.ui.screens.settings.sections.mainSettingsSections
 import com.nendo.argosy.ui.screens.settings.sections.audioSections
 import com.nendo.argosy.ui.screens.settings.sections.navigationItemAtFocusIndex
 import com.nendo.argosy.ui.screens.settings.sections.navigationSections
+import com.nendo.argosy.ui.screens.settings.sections.RomMItem
+import com.nendo.argosy.ui.screens.settings.sections.rommItemAtFocusIndex
 import com.nendo.argosy.ui.screens.settings.sections.rommSections
 import com.nendo.argosy.ui.screens.settings.sections.savesItemAtFocusIndex
 import com.nendo.argosy.ui.screens.settings.sections.savesSections
@@ -196,6 +199,16 @@ internal class LightSectionsInput(
                 viewModel.setRommAuthMethod(next)
                 return InputResult.HANDLED
             }
+            return InputResult.UNHANDLED
+        }
+        if (state.server.rommConfiguring) return InputResult.UNHANDLED
+        if (rommItemAtFocusIndex(state.focusedIndex, buildRomMItemsFromState(state)) == RomMItem.NotOnDevice) {
+            return stepOption(
+                NotOnDeviceAction.entries,
+                state.server.notOnDeviceAction,
+                direction,
+                viewModel::setNotOnDeviceAction
+            )
         }
         return InputResult.UNHANDLED
     }

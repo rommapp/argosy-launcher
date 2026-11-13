@@ -86,6 +86,8 @@ class StreamPlayerActivity : ComponentActivity() {
     private lateinit var overlay: ComposeView
     private val uiState = MutableStateFlow(StreamPlayerUiState())
     private var loadedRoom: String? = null
+    private val pad = StreamGamepadBridge()
+    private var padInstalled = false
     private var framePacing = false
     private val frameTick = object : android.view.Choreographer.FrameCallback {
         override fun doFrame(frameTimeNanos: Long) {
@@ -202,6 +204,14 @@ class StreamPlayerActivity : ComponentActivity() {
         settings.mixedContentMode = WebSettings.MIXED_CONTENT_COMPATIBILITY_MODE
         webViewClient = object : WebViewClient() {
             override fun shouldOverrideUrlLoading(view: WebView, request: WebResourceRequest): Boolean = false
+
+            override fun onPageFinished(view: WebView, url: String?) {
+                super.onPageFinished(view, url)
+                if (url == null || originOf(Uri.parse(url)) != roomOrigin) return
+                view.evaluateJavascript(StreamGamepadBridge.INSTALL_SCRIPT, null)
+                padInstalled = true
+                pushPad()
+            }
         }
         webChromeClient = object : WebChromeClient() {
             override fun onPermissionRequest(request: PermissionRequest) {
@@ -268,6 +278,7 @@ class StreamPlayerActivity : ComponentActivity() {
         if (session.phase == StreamPhase.PLAYING && room != null && room != loadedRoom) {
             loadedRoom = room
             roomOrigin = originOf(Uri.parse(room))
+            padInstalled = false
             webView.loadUrl(room)
         }
         if (session.phase == StreamPhase.ENDED && session.endReason in CLOSING_REASONS) {
@@ -408,14 +419,30 @@ class StreamPlayerActivity : ComponentActivity() {
             }
             return true
         }
+        val pressed = event.action == KeyEvent.ACTION_DOWN
+        if ((pressed || event.action == KeyEvent.ACTION_UP) && pad.onKey(event.keyCode, pressed)) {
+            pushPad()
+            return true
+        }
         webView.dispatchKeyEvent(event)
         return true
     }
 
     override fun dispatchGenericMotionEvent(event: MotionEvent): Boolean {
         if (uiState.value.capturesInput) return true
+        val fromPad = event.isFromSource(android.view.InputDevice.SOURCE_JOYSTICK) ||
+            event.isFromSource(android.view.InputDevice.SOURCE_GAMEPAD)
+        if (fromPad && event.action == MotionEvent.ACTION_MOVE) {
+            pad.onMotion { axis -> event.getAxisValue(axis) }
+            pushPad()
+            return true
+        }
         webView.dispatchGenericMotionEvent(event)
         return true
+    }
+
+    private fun pushPad() {
+        if (padInstalled && ::webView.isInitialized) webView.evaluateJavascript(pad.script(), null)
     }
 
     private fun onBackKey(event: KeyEvent): Boolean {

@@ -511,7 +511,8 @@ class LibraryViewModel @Inject constructor(
     private val quickNavigation: com.nendo.argosy.data.preferences.QuickNavigationSource,
     private val launchProgressTracker: com.nendo.argosy.data.emulator.LaunchProgressTracker,
     val runningGameMenu: com.nendo.argosy.ui.screens.running.RunningGameMenu,
-    streamLaunch: com.nendo.argosy.ui.screens.stream.StreamLaunchController.Factory
+    streamLaunch: com.nendo.argosy.ui.screens.stream.StreamLaunchController.Factory,
+    private val filterMemory: LibraryFilterMemory
 ) : ViewModel() {
 
     val siblingChoiceState = siblingChoice.state
@@ -606,7 +607,9 @@ class LibraryViewModel @Inject constructor(
             val prefs = preferencesRepository.userPreferences.first()
             val option = SortOption.entries.firstOrNull { it.name == prefs.libraryDefaultSort }
                 ?: SortOption.TITLE
-            val source = SourceFilter.entries.firstOrNull { it.name == prefs.libraryDefaultSource }
+            val remembered = filterMemory.filters
+            val source = remembered?.source
+                ?: SourceFilter.entries.firstOrNull { it.name == prefs.libraryDefaultSource }
                 ?: SourceFilter.ALL
             val defaultPlatformId = prefs.libraryDefaultPlatformId
                 ?.takeIf { !explicitDestinationRequested }
@@ -618,10 +621,12 @@ class LibraryViewModel @Inject constructor(
             _uiState.update {
                 it.copy(
                     view = if (landsOnGames) LibraryView.GAMES else it.view,
-                    activeFilters = if (explicitTileFiltersRequested) {
-                        it.activeFilters
-                    } else {
-                        it.activeFilters.copy(
+                    activeFilters = when {
+                        explicitTileFiltersRequested -> it.activeFilters
+                        remembered != null -> remembered.copy(
+                            source = if (explicitSourceRequested) it.activeFilters.source else remembered.source
+                        )
+                        else -> it.activeFilters.copy(
                             sort = ActiveSort(
                                 option = option,
                                 descending = prefs.libraryDefaultSortDescending
@@ -640,6 +645,15 @@ class LibraryViewModel @Inject constructor(
             }
             if (defaultPlatformId != null) openOnPlatform(defaultPlatformId)
             loadGames()
+            rememberFilterChoices()
+        }
+    }
+
+    private fun rememberFilterChoices() {
+        viewModelScope.launch {
+            _uiState.map { it.activeFilters }.distinctUntilChanged().collect { filters ->
+                if (!explicitSourceRequested && !explicitTileFiltersRequested) filterMemory.filters = filters
+            }
         }
     }
 

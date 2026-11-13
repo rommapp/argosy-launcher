@@ -55,6 +55,7 @@ class LibraryTileFilterArrivalTest {
     private val gradientExtractionDelegate =
         mockk<com.nendo.argosy.ui.screens.common.GradientExtractionDelegate>(relaxed = true)
     private val modalResetSignal = com.nendo.argosy.ui.ModalResetSignal()
+    private val filterMemory = LibraryFilterMemory()
 
     @Before
     fun setUp() {
@@ -204,6 +205,55 @@ class LibraryTileFilterArrivalTest {
         assertEquals(setOf(GAME_BOY_ID), viewModel.platformIds())
     }
 
+    private fun playableByDefault() {
+        every { gameRepository.observePlayableList() } returns flowOf(emptyList())
+        every { preferences.userPreferences } returns flowOf(
+            UserPreferences(libraryDefaultSource = SourceFilter.PLAYABLE.name)
+        )
+    }
+
+    @Test
+    fun `the default source seeds the first visit`() = runTest(dispatcher) {
+        playableByDefault()
+
+        val viewModel = viewModel()
+        advanceUntilIdle()
+
+        assertEquals(SourceFilter.PLAYABLE, viewModel.uiState.value.activeFilters.source)
+    }
+
+    @Test
+    fun `a cleared default filter stays cleared on the next visit`() = runTest(dispatcher) {
+        playableByDefault()
+        val first = viewModel()
+        advanceUntilIdle()
+
+        first.clearAllFilters()
+        advanceUntilIdle()
+        val second = viewModel()
+        advanceUntilIdle()
+
+        assertEquals(SourceFilter.ALL, second.uiState.value.activeFilters.source)
+    }
+
+    @Test
+    fun `a tile's filters are not carried into the next plain visit`() = runTest(dispatcher) {
+        playableByDefault()
+        val plain = viewModel()
+        advanceUntilIdle()
+        plain.clearAllFilters()
+        advanceUntilIdle()
+
+        val fromTile = viewModel()
+        fromTile.setInitialTileFilters(LibraryLinkFilters(source = SourceFilter.FAVORITES))
+        advanceUntilIdle()
+        val next = viewModel()
+        advanceUntilIdle()
+
+        assertEquals(SourceFilter.FAVORITES, fromTile.uiState.value.activeFilters.source)
+        assertEquals(SourceFilter.ALL, next.uiState.value.activeFilters.source)
+    }
+
     private fun viewModel() = LibraryViewModel(
         context = mockk(relaxed = true),
         platformRepository = platformRepository,
@@ -241,7 +291,8 @@ class LibraryTileFilterArrivalTest {
         quickNavigation = mockk { io.mockk.every { enabled } returns MutableStateFlow(true) },
         launchProgressTracker = mockk { io.mockk.every { launchLive } returns MutableStateFlow(false) },
         runningGameMenu = mockk(relaxed = true),
-        streamLaunch = com.nendo.argosy.ui.screens.stream.noStreamLaunch()
+        streamLaunch = com.nendo.argosy.ui.screens.stream.noStreamLaunch(),
+        filterMemory = filterMemory
     ).also { it.listDispatcher = dispatcher }
 
     private fun LibraryViewModel.platformIds(): Set<Long> =

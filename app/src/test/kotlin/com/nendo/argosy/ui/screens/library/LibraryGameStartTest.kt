@@ -142,6 +142,7 @@ class LibraryGameStartTest {
         quickNavigation = mockk { io.mockk.every { enabled } returns MutableStateFlow(true) },
         launchProgressTracker = mockk { io.mockk.every { launchLive } returns MutableStateFlow(false) },
         runningGameMenu = mockk(relaxed = true),
-        streamLaunch = com.nendo.argosy.ui.screens.stream.noStreamLaunch()
+        streamLaunch = com.nendo.argosy.ui.screens.stream.noStreamLaunch(),
+        filterMemory = LibraryFilterMemory()
     ).also { it.listDispatcher = dispatcher }
 }

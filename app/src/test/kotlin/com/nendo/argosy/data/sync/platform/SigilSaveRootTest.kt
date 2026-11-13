@@ -30,6 +30,30 @@ class SigilSaveRootTest {
     }
 
     @Test
+    fun `an override on the Dolphin User folder roots at that folder`() {
+        val user = "/storage/emulated/0/RetroArch/saves/dolphin-emu/User"
+        val dirs = setOf("$user/Wii")
+
+        assertNull(SigilSaveHandler.rootFor(user, "dolphin_standalone"))
+        assertEquals(user, SigilSaveHandler.rootAbove("$user/", "dolphin_standalone", dirs::contains))
+    }
+
+    @Test
+    fun `an override on the Wii folder roots at the folder above it`() {
+        val user = "/storage/emulated/0/RetroArch/saves/dolphin-emu/User"
+
+        assertEquals(user, SigilSaveHandler.rootFor("$user/Wii", "dolphin_standalone"))
+    }
+
+    @Test
+    fun `an override with no anchor folder inside it has no root`() {
+        val path = "/storage/emulated/0/Saves/Dolphin"
+
+        assertNull(SigilSaveHandler.rootAbove(path, "dolphin_standalone") { false })
+        assertNull(SigilSaveHandler.rootAbove(path, "unknown_layout") { true })
+    }
+
+    @Test
     fun `a folder name that only starts like the anchor does not match`() {
         assertNull(SigilSaveHandler.rootFor("/storage/emulated/0/memcards_old/x", listOf("memcards")))
     }

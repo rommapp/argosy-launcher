@@ -356,6 +356,16 @@ class SigilSaveHandler @Inject constructor(
             ROOT_ANCHORS[layout]?.let { rootFor(basePath, it) }
 
         /**
+         * The save root for a path set above the layout's folders: [path] itself, when one of the
+         * layout's anchor folders exists directly inside it.
+         */
+        fun rootAbove(path: String, layout: String, isDirectory: (String) -> Boolean): String? {
+            val root = path.trimEnd('/')
+            val anchors = ROOT_ANCHORS[layout] ?: return null
+            return root.takeIf { anchors.any { anchor -> isDirectory("$root/${anchor.substringBefore('/')}") } }
+        }
+
+        /**
          * The save root a layout expects, found in [basePath] by the first folder of one of the
          * layout's subfolders: `memcards` gives the folder that holds `memcards/`.
          */
@@ -564,18 +574,16 @@ class SigilSaveHandler @Inject constructor(
             ?: emulatorSaveConfigRepository.resolveEvaluatedSavePath(config.emulatorId)
         val candidates = listOfNotNull(chosen) + registered
         val roots = candidates.mapNotNull {
-            if (layout == FLYCAST_STANDALONE_LAYOUT) it.trimEnd('/') else rootFor(it, layout) ?: rootAbove(it, layout)
+            if (layout == FLYCAST_STANDALONE_LAYOUT) {
+                it.trimEnd('/')
+            } else {
+                rootFor(it, layout) ?: rootAbove(it, layout, fal::isDirectory)
+            }
         }.distinct()
         if (roots.isEmpty()) {
             Logger.warn(TAG, "[SaveSync] SIGIL | no root for layout=$layout in ${candidates.firstOrNull()}")
         }
         return roots.firstOrNull { fal.isDirectory(it) } ?: roots.firstOrNull()
-    }
-
-    private fun rootAbove(path: String, layout: String): String? {
-        val root = path.trimEnd('/')
-        val anchors = ROOT_ANCHORS[layout] ?: return null
-        return root.takeIf { anchors.any { anchor -> fal.isDirectory("$root/${anchor.substringBefore('/')}") } }
     }
 
     private fun accessPaths(route: SigilRoute): Array<String> = saveLocator.accessPaths(route).toTypedArray()

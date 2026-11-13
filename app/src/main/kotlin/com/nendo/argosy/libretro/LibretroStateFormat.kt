@@ -7,8 +7,9 @@ import java.io.File
  * header is fixed upstream: FCEUmm's `FCS` (libretro-fceumm `src/state.c`, FCEUSS_SaveMS) and
  * Nestopia's `NST` 0x1A (libretro/nestopia `source/core/NstMachine.cpp`, Machine::SaveState).
  *
- * A state is readable by a core with no known header, and an empty or unreadable state is never
- * judged, so only a state carrying another layout's header is refused.
+ * Only a state carrying a known core's header is judged, and it is refused only by a different
+ * known core. An empty state, an unrecognised layout and a container such as RetroArch's RZIP
+ * compression are always readable.
  */
 object LibretroStateFormat {
 
@@ -20,9 +21,9 @@ object LibretroStateFormat {
     )
 
     fun readableBy(coreId: String?, header: ByteArray): Boolean {
-        val expected = coreId?.let(HEADERS::get) ?: return true
-        if (header.isEmpty()) return true
-        return header.size >= expected.size && expected.indices.all { header[it] == expected[it] }
+        if (coreId == null || coreId !in HEADERS) return true
+        val writer = writerOf(header) ?: return true
+        return writer == coreId
     }
 
     fun readableBy(coreId: String?, file: File): Boolean = readableBy(coreId, headerOf(file))
@@ -31,7 +32,10 @@ object LibretroStateFormat {
      * The known core whose header [header] carries, or null when it matches none.
      */
     fun writerOf(header: ByteArray): String? =
-        if (header.isEmpty()) null else HEADERS.entries.firstOrNull { (core, _) -> readableBy(core, header) }?.key
+        HEADERS.entries.firstOrNull { (_, expected) -> header.startsWith(expected) }?.key
+
+    private fun ByteArray.startsWith(prefix: ByteArray): Boolean =
+        size >= prefix.size && prefix.indices.all { this[it] == prefix[it] }
 
     fun headerOf(file: File): ByteArray =
         runCatching {

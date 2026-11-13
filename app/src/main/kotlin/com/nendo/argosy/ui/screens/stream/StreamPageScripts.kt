@@ -4,9 +4,7 @@ object StreamPageScripts {
     private const val STYLE_ID = "argosy-stream-chrome"
 
     private const val CHROME_CSS =
-        ":has(.video-container) > :not(:has(.video-container)):not(.video-container)" +
-            "{display:none !important;}" +
-            "#dev-sidebar{display:none !important;}"
+        "#root,#touch-gamepad-host,#dashboard-root,#dev-sidebar{display:none !important;}"
 
     private val FRAME_FUNCTIONS = """
         function each(w, fn) {
@@ -16,6 +14,7 @@ object StreamPageScripts {
         function hideChrome(w) {
           var d = w.document;
           if (!d || d.getElementById('$STYLE_ID')) return;
+          if (!d.querySelector('#app > .video-container')) return;
           var root = d.head || d.documentElement;
           if (!root) return;
           var s = d.createElement('style');

@@ -20,10 +20,6 @@ import javax.inject.Singleton
 private const val TAG = "PlaySessionPull"
 private const val PAGE_SIZE = 200
 
-/**
- * Copies down the play sessions RomM holds for the account's other devices, skipping this one, and
- * files RomM's device-less streaming sessions under [ROMM_STREAMING_DEVICE_ID].
- */
 @Singleton
 class PlaySessionPull @Inject constructor(
     private val playSessionDao: PlaySessionDao,

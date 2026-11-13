@@ -17,6 +17,8 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.channels.awaitClose
+import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -63,6 +65,7 @@ class AppUpdateManager @Inject constructor(
     private val deferredTags = MutableStateFlow<Set<String>>(emptySet())
     private val forcedPrompt = MutableStateFlow<AppUpdateRelease?>(null)
     private var installJob: Job? = null
+    @Volatile private var installing: AppUpdateRelease? = null
 
     val stored: StateFlow<StoredUpdateState> = store.state
 
@@ -146,13 +149,24 @@ class AppUpdateManager @Inject constructor(
     }
 
     fun skip(tag: String) {
+        cancelInstall(tag)
         releaseForced(tag)
         scope.launch { store.update { it.copy(skippedTag = tag) } }
     }
 
     fun later(tag: String) {
+        cancelInstall(tag)
         releaseForced(tag)
         deferredTags.update { it + tag }
+    }
+
+    private fun cancelInstall(tag: String) {
+        val release = installing?.takeIf { it.tag == tag } ?: return
+        installJob?.cancel()
+        installJob = null
+        installing = null
+        _download.value = AppUpdateDownload.Idle
+        Logger.info(TAG, "Cancelled the update ${release.tag} download")
     }
 
     private fun releaseForced(tag: String) {
@@ -165,24 +179,30 @@ class AppUpdateManager @Inject constructor(
      */
     fun install(release: AppUpdateRelease, fresh: Boolean = false) {
         if (installJob?.isActive == true) return
+        installing = release
         installJob = scope.launch {
             try {
                 val apk = obtain(release, fresh)
+                ensureActive()
                 store.update { if (it.skippedTag == release.tag) it.copy(skippedTag = null) else it }
                 withContext(Dispatchers.Main) { appInstaller.installApk(context, apk) }
                 deferredTags.update { it + release.tag }
                 releaseForced(release.tag)
                 _download.value = AppUpdateDownload.HandedOff(release.tag)
             } catch (e: CancellationException) {
+                files.partFor(release).delete()
+                _download.update { if (it is AppUpdateDownload.Downloading && it.tag == release.tag) AppUpdateDownload.Idle else it }
                 throw e
             } catch (e: Exception) {
                 Logger.error(TAG, "Update ${release.tag} could not be installed", e)
                 _download.value = AppUpdateDownload.Failed(release.tag, e.message ?: e.javaClass.simpleName)
+            } finally {
+                if (installing == release) installing = null
             }
         }
     }
 
-    private fun obtain(release: AppUpdateRelease, fresh: Boolean): File {
+    private suspend fun obtain(release: AppUpdateRelease, fresh: Boolean): File {
         if (fresh) {
             files.delete(release)
             Logger.info(TAG, "Deleted stored update ${release.tag} to download it again")
@@ -194,7 +214,8 @@ class AppUpdateManager @Inject constructor(
         return downloadToStore(release)
     }
 
-    private fun downloadToStore(release: AppUpdateRelease): File {
+    private suspend fun downloadToStore(release: AppUpdateRelease): File {
+        val running = currentCoroutineContext()
         Logger.info(TAG, "Downloading update ${release.assetName}")
         _download.value = AppUpdateDownload.Downloading(release.tag, 0)
         val part = files.newPart(release)
@@ -209,6 +230,7 @@ class AppUpdateManager @Inject constructor(
                     var written = 0L
                     var lastProgress = 0
                     while (true) {
+                        running.ensureActive()
                         val read = input.read(buffer)
                         if (read < 0) break
                         output.write(buffer, 0, read)

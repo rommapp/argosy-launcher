@@ -126,6 +126,14 @@ class SavePathRegistryTest {
     }
 
     @Test
+    fun `retroarch Wii resolves the dolphin core's NAND title folder`() {
+        val config = SavePathRegistry.getConfigForPlatform("retroarch_64", "wii")
+        assertNotNull(config)
+        assertEquals("retroarch_64_wii", config!!.emulatorId)
+        assertTrue(config.defaultPaths.all { it.endsWith("/User/Wii/title/00010000") })
+    }
+
+    @Test
     fun `getConfig returns null for an unsupported emulator`() {
         val cfg = SavePathRegistry.getConfig("redream")
         assertNull("redream is marked supported=false", cfg)

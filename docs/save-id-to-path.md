@@ -214,8 +214,12 @@ the PARAM.SFO test that keeps installed game data out of the bundle.
 
 `save_id` is `FOLDER_SPLIT`, the ticket's category and code, `00010000/524d4745`. The base is
 the NAND's category directory `Wii/title/00010000`: under the standalone app's files for
-`dolphin_wii`, and `<builtin saves>/User/Wii/title/00010000` for the built-in Dolphin core
-(`argosy_wii`). The folder is the low id under it, `<base>/524d4745`, with the same id rules
+`dolphin_wii`, `<builtin saves>/User/Wii/title/00010000` for the built-in Dolphin core
+(`argosy_wii`), and `<RetroArch saves>/dolphin-emu/User/Wii/title/00010000` for RetroArch's
+Dolphin core (`retroarch_wii`, `retroarch_64_wii`; `saves/User/...` when RetroArch does not sort
+saves by core). The libretro core puts its User folder at `<save directory>/User` (libretro/dolphin
+`Source/Core/DolphinLibretro/Boot.cpp`); the RetroArch entries have not been checked against a
+device yet. The folder is the low id under it, `<base>/524d4745`, with the same id rules
 as Wii U below: split, flat and bare low ids address one folder, and another `0001xxxx`
 category resolves beside the base. Uploads and restores go through Sigil
 (`dolphin_standalone` and the libretro `dolphin` layout); pre-launch discovery and active-cache

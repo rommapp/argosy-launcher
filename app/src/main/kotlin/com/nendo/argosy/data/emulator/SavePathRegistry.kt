@@ -136,6 +136,28 @@ object SavePathRegistry {
             saveExtensions = listOf("gci"),
             usesGciFormat = true,
         ),
+        "retroarch_wii" to SavePathConfig(
+            emulatorId = "retroarch_wii",
+            defaultPaths = listOf(
+                "{extStorage}/RetroArch/saves/dolphin-emu/User/Wii/title/00010000",
+                "{extStorage}/Android/data/com.retroarch/files/saves/dolphin-emu/User/Wii/title/00010000",
+                "{extStorage}/RetroArch/saves/User/Wii/title/00010000",
+                "{extStorage}/Android/data/com.retroarch/files/saves/User/Wii/title/00010000"
+            ),
+            saveExtensions = listOf("*"),
+            usesFolderBasedSaves = true
+        ),
+        "retroarch_64_wii" to SavePathConfig(
+            emulatorId = "retroarch_64_wii",
+            defaultPaths = listOf(
+                "{extStorage}/RetroArch/saves/dolphin-emu/User/Wii/title/00010000",
+                "{extStorage}/Android/data/com.retroarch.aarch64/files/saves/dolphin-emu/User/Wii/title/00010000",
+                "{extStorage}/RetroArch/saves/User/Wii/title/00010000",
+                "{extStorage}/Android/data/com.retroarch.aarch64/files/saves/User/Wii/title/00010000"
+            ),
+            saveExtensions = listOf("*"),
+            usesFolderBasedSaves = true
+        ),
         "retroarch_32_ngc" to SavePathConfig(
             emulatorId = "retroarch_32_ngc",
             defaultPaths = listOf(

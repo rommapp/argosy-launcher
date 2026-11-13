@@ -117,7 +117,7 @@ class StreamPlayerActivity : ComponentActivity() {
     private var ownsCompanion = false
     private var pendingPermission: PermissionRequest? = null
 
-    private val forwardedKeyDispatcher: (KeyEvent) -> Boolean = { event -> dispatchKeyEvent(event) }
+    private val forwardedKeyDispatcher: (KeyEvent) -> Boolean = { event -> handleKey(event) }
     private val forwardedMotionDispatcher: (MotionEvent) -> Boolean = { event -> dispatchGenericMotionEvent(event) }
 
     private val microphoneRequest =
@@ -443,6 +443,10 @@ class StreamPlayerActivity : ComponentActivity() {
         val dsm = DualScreenManagerHolder.instance
         val claimed = dsm == null || dsm.claimInput(event)
         if (!claimed) return true
+        return handleKey(event)
+    }
+
+    private fun handleKey(event: KeyEvent): Boolean {
         if (event.keyCode in SYSTEM_KEYS) return super.dispatchKeyEvent(event)
         if (quickPanelOverlay.isOpen.value) return true
         if (event.keyCode == KeyEvent.KEYCODE_BACK && !uiState.value.capturesInput) return onBackKey(event)

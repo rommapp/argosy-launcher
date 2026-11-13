@@ -10,8 +10,12 @@ import io.mockk.every
 import io.mockk.mockk
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
+import com.nendo.argosy.util.AppPaths
 import org.junit.Before
+import org.junit.Rule
 import org.junit.Test
+import org.junit.rules.TemporaryFolder
+import java.io.File
 import java.time.Instant
 
 /**
@@ -26,12 +30,18 @@ class StateCacheManagerServerTagTest {
     private val game = mockk<GameEntity>()
     private lateinit var manager: StateCacheManager
 
+    @get:Rule
+    val folder = TemporaryFolder()
+
     @Before
     fun setUp() {
         every { game.id } returns GAME_ID
         coEvery { gameDao.getById(GAME_ID) } returns game
+        val context = mockk<Context>(relaxed = true) {
+            every { filesDir } returns folder.root
+        }
         manager = StateCacheManager(
-            context = mockk<Context>(relaxed = true),
+            context = context,
             gameDao = gameDao,
             stateCacheDao = mockk(relaxed = true),
             stateTombstoneDao = mockk(relaxed = true),
@@ -104,6 +114,36 @@ class StateCacheManagerServerTagTest {
         val tag = manager.serverEmulatorTag(state("ppsspp", coreId = "ppsspp"))
 
         assertEquals("ppsspp", tag)
+    }
+
+    @Test
+    fun `a state whose bytes are Nestopia's is filed under nestopia whatever the game resolves to`() = runTest {
+        resolvesCore(EmulatorRegistry.BUILTIN_ID, "fceumm")
+        val cachePath = cachedState(byteArrayOf('N'.code.toByte(), 'S'.code.toByte(), 'T'.code.toByte(), 0x1A, 0, 0))
+
+        val tag = manager.serverEmulatorTag(
+            state(EmulatorRegistry.BUILTIN_ID, coreId = EmulatorRegistry.BUILTIN_ID).copy(cachePath = cachePath)
+        )
+
+        assertEquals("nestopia", tag)
+    }
+
+    @Test
+    fun `a state with no known header is filed under the resolved core`() = runTest {
+        resolvesCore(EmulatorRegistry.BUILTIN_ID, "snes9x")
+        val cachePath = cachedState(byteArrayOf(1, 2, 3, 4, 5))
+
+        val tag = manager.serverEmulatorTag(
+            state(EmulatorRegistry.BUILTIN_ID, coreId = EmulatorRegistry.BUILTIN_ID).copy(cachePath = cachePath)
+        )
+
+        assertEquals("snes9x", tag)
+    }
+
+    private fun cachedState(bytes: ByteArray): String {
+        val relative = "u1/nes/$GAME_ID/argosy/game.state1"
+        File(AppPaths.stateCacheDir(folder.root), relative).apply { parentFile?.mkdirs() }.writeBytes(bytes)
+        return relative
     }
 
     private fun resolvesCore(emulatorId: String, coreId: String?) {

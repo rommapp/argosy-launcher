@@ -1520,8 +1520,10 @@ class StateCacheManager @Inject constructor(
         } else {
             state.emulatorId
         }
+        val writer = getCacheFile(state)?.let { LibretroStateFormat.writerOf(LibretroStateFormat.headerOf(it)) }
         val game = gameDao.getById(state.gameId)
-        val coreId = game?.let { saveSyncApiClient.resolveCoreForGame(it, emulatorId) }
+        val coreId = writer
+            ?: game?.let { saveSyncApiClient.resolveCoreForGame(it, emulatorId) }
             ?: state.coreId?.takeIf { it != state.emulatorId }
         return EmulatorRegistry.toServerEmulator(emulatorId, coreId)
     }

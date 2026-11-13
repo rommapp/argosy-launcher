@@ -881,7 +881,6 @@ class DualScreenManager(
 
     interface StreamDashboardActions {
         fun nextDisc()
-        fun toggleMute()
     }
 
     var streamDashboardActions: StreamDashboardActions? = null

@@ -22,8 +22,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ExitToApp
 import androidx.compose.material.icons.automirrored.filled.MenuBook
-import androidx.compose.material.icons.automirrored.filled.VolumeOff
-import androidx.compose.material.icons.automirrored.filled.VolumeUp
 import androidx.compose.material.icons.filled.Album
 import androidx.compose.material.icons.filled.EmojiEvents
 import androidx.compose.material.icons.filled.Map
@@ -96,8 +94,7 @@ class DashboardActions(
     val onOpenSettings: () -> Unit,
     val onQuit: () -> Unit,
     val onOpenDocument: (GameDocument) -> Unit,
-    val onNextDisc: () -> Unit,
-    val onToggleMute: () -> Unit
+    val onNextDisc: () -> Unit
 )
 
 private val RAIL_WIDTH = DimensionTokens.Layout.companionRailWidth.dp
@@ -146,7 +143,7 @@ fun InGameDashboard(
         }
     }
 
-    val statesAllowed = state.quickActionsAvailable && !state.isHardcore
+    val statesAllowed = controls.offersStates(state)
     val selectSection: (DashboardSection) -> Unit = { target ->
         when (target) {
             DashboardSection.MANUAL -> state.manual?.let(actions.onOpenDocument)
@@ -201,7 +198,6 @@ fun InGameDashboard(
                 onCheats = actions.onOpenCheats,
                 onSettings = actions.onOpenSettings,
                 onNextDisc = actions.onNextDisc,
-                onToggleMute = actions.onToggleMute,
                 onQuit = {
                     if (android.os.SystemClock.elapsedRealtime() < quitArmedUntil) {
                         quitArmedUntil = 0L
@@ -245,8 +241,7 @@ class DashboardContent(
     val actions: DashboardActions,
     val onOpenSection: (DashboardSection) -> Unit
 ) {
-    val achievementTotal: Int =
-        if (achievements.isNotEmpty()) achievements.size else state.achievementCount
+    val achievementTotal: Int = controls.achievementTotal(state, achievements)
     val achievementEarned: Int =
         if (achievements.isNotEmpty()) achievements.count { it.isUnlocked } else state.earnedAchievementCount
 }
@@ -274,7 +269,6 @@ private fun DashboardRail(
     onCheats: () -> Unit,
     onSettings: () -> Unit,
     onNextDisc: () -> Unit,
-    onToggleMute: () -> Unit,
     onQuit: () -> Unit
 ) {
     val theme = LocalArgosyTheme.current
@@ -320,20 +314,6 @@ private fun DashboardRail(
                         label = stringResource(R.string.stream_dashboard_rail_next_disc),
                         wide = wide,
                         onTap = onNextDisc
-                    )
-                }
-            }
-            if (controls.muteAvailable) {
-                item(key = "mute") {
-                    RailItem(
-                        icon = if (controls.isMuted) Icons.AutoMirrored.Filled.VolumeOff else Icons.AutoMirrored.Filled.VolumeUp,
-                        label = if (controls.isMuted) {
-                            stringResource(R.string.stream_dashboard_rail_unmute)
-                        } else {
-                            stringResource(R.string.stream_dashboard_rail_mute)
-                        },
-                        wide = wide,
-                        onTap = onToggleMute
                     )
                 }
             }

@@ -64,8 +64,6 @@
     <string name="stream_controls_save_state">Sauvegarder l\'état</string>
     <string name="stream_controls_load_state">Charger l\'état</string>
     <string name="stream_controls_next_disc">Disque suivant</string>
-    <string name="stream_controls_mute">Couper le son</string>
-    <string name="stream_controls_unmute">Rétablir le son</string>
     <string name="stream_controls_save_and_exit">Sauvegarder et quitter</string>
     <string name="stream_controls_leave">Quitter la session</string>
     <string name="stream_controls_notice_state_saved">État sauvegardé</string>
@@ -74,6 +72,4 @@
     <string name="stream_controls_notice_failed">RomM n\'a pas accepté cette action.</string>
 
     <string name="stream_dashboard_rail_next_disc">Disque suivant</string>
-    <string name="stream_dashboard_rail_mute">Couper le son</string>
-    <string name="stream_dashboard_rail_unmute">Rétablir le son</string>
 </resources>

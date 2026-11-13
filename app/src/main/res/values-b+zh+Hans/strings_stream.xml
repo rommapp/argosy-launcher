@@ -62,8 +62,6 @@
     <string name="stream_controls_save_state">即时存档</string>
     <string name="stream_controls_load_state">读取即时存档</string>
     <string name="stream_controls_next_disc">下一张光盘</string>
-    <string name="stream_controls_mute">静音</string>
-    <string name="stream_controls_unmute">取消静音</string>
     <string name="stream_controls_save_and_exit">保存并退出</string>
     <string name="stream_controls_leave">离开会话</string>
     <string name="stream_controls_notice_state_saved">即时存档已保存</string>
@@ -72,6 +70,4 @@
     <string name="stream_controls_notice_failed">RomM 未接受此操作。</string>
 
     <string name="stream_dashboard_rail_next_disc">下一张光盘</string>
-    <string name="stream_dashboard_rail_mute">静音</string>
-    <string name="stream_dashboard_rail_unmute">取消静音</string>
 </resources>

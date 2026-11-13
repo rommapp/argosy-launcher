@@ -62,8 +62,6 @@
     <string name="stream_controls_save_state">即時存檔</string>
     <string name="stream_controls_load_state">讀取即時存檔</string>
     <string name="stream_controls_next_disc">下一張光碟</string>
-    <string name="stream_controls_mute">靜音</string>
-    <string name="stream_controls_unmute">取消靜音</string>
     <string name="stream_controls_save_and_exit">儲存並離開</string>
     <string name="stream_controls_leave">離開工作階段</string>
     <string name="stream_controls_notice_state_saved">即時存檔已儲存</string>
@@ -72,6 +70,4 @@
     <string name="stream_controls_notice_failed">RomM 未接受此操作。</string>
 
     <string name="stream_dashboard_rail_next_disc">下一張光碟</string>
-    <string name="stream_dashboard_rail_mute">靜音</string>
-    <string name="stream_dashboard_rail_unmute">取消靜音</string>
 </resources>

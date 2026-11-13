@@ -64,8 +64,6 @@
     <string name="stream_controls_save_state">Salvar estado</string>
     <string name="stream_controls_load_state">Carregar estado</string>
     <string name="stream_controls_next_disc">Próximo disco</string>
-    <string name="stream_controls_mute">Silenciar</string>
-    <string name="stream_controls_unmute">Ativar som</string>
     <string name="stream_controls_save_and_exit">Salvar e sair</string>
     <string name="stream_controls_leave">Sair da sessão</string>
     <string name="stream_controls_notice_state_saved">Estado salvo</string>
@@ -74,6 +72,4 @@
     <string name="stream_controls_notice_failed">O RomM não aceitou isso.</string>
 
     <string name="stream_dashboard_rail_next_disc">Próximo disco</string>
-    <string name="stream_dashboard_rail_mute">Silenciar</string>
-    <string name="stream_dashboard_rail_unmute">Ativar som</string>
 </resources>

@@ -8,7 +8,6 @@ import com.nendo.argosy.data.remote.romm.RomMStreamBusyEnvelope
 import com.nendo.argosy.data.remote.romm.RomMStreamCardImportEnvelope
 import com.nendo.argosy.data.remote.romm.RomMStreamClaimRequest
 import com.nendo.argosy.data.remote.romm.RomMStreamJoinableSession
-import com.nendo.argosy.data.remote.romm.RomMStreamMuteRequest
 import com.nendo.argosy.data.remote.romm.RomMStreamSaveAndExitRequest
 import com.nendo.argosy.data.remote.romm.RomMStreamSlotCapabilities
 import com.nendo.argosy.data.remote.romm.RomMStreamSlotRequest
@@ -66,7 +65,6 @@ data class StreamSession(
     val extractionPhase: String?,
     val startedAtMillis: Long,
     val taskId: Int?,
-    val muted: Boolean,
     val currentDiscId: Long?,
     val lastStateSavedAtMillis: Long?,
     val endReason: StreamEndReason?
@@ -205,7 +203,6 @@ class StreamSessionManager internal constructor(
             extractionPhase = null,
             startedAtMillis = clock(),
             taskId = null,
-            muted = false,
             currentDiscId = null,
             lastStateSavedAtMillis = null,
             endReason = null
@@ -267,13 +264,6 @@ class StreamSessionManager internal constructor(
         return swapDisc(discs[(index + 1).mod(discs.size)].fileId)
     }
 
-    suspend fun toggleMute(): Boolean = control { api, s ->
-        val response = api.setStreamMute(s.target.platform, RomMStreamMuteRequest(!s.muted), s.containerKey, s.claimedAt)
-        val muted = response.body()?.mute ?: !s.muted
-        if (response.isSuccessful) _session.update { it?.copy(muted = muted) }
-        response.isSuccessful
-    }
-
     private suspend fun control(block: suspend (RomMApi, StreamSession) -> Boolean): Boolean = withContext(io) {
         val current = _session.value?.takeIf { it.isHost && it.phase == StreamPhase.PLAYING } ?: return@withContext false
         val api = connectionManager.getApi() ?: return@withContext false
@@ -299,7 +289,6 @@ class StreamSessionManager internal constructor(
             extractionPhase = null,
             startedAtMillis = clock(),
             taskId = null,
-            muted = false,
             currentDiscId = null,
             lastStateSavedAtMillis = null,
             endReason = null

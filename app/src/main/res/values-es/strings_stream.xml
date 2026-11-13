@@ -64,8 +64,6 @@
     <string name="stream_controls_save_state">Guardar estado</string>
     <string name="stream_controls_load_state">Cargar estado</string>
     <string name="stream_controls_next_disc">Siguiente disco</string>
-    <string name="stream_controls_mute">Silenciar</string>
-    <string name="stream_controls_unmute">Activar sonido</string>
     <string name="stream_controls_save_and_exit">Guardar y salir</string>
     <string name="stream_controls_leave">Salir de la sesión</string>
     <string name="stream_controls_notice_state_saved">Estado guardado</string>
@@ -74,6 +72,4 @@
     <string name="stream_controls_notice_failed">RomM no lo aceptó.</string>
 
     <string name="stream_dashboard_rail_next_disc">Siguiente disco</string>
-    <string name="stream_dashboard_rail_mute">Silenciar</string>
-    <string name="stream_dashboard_rail_unmute">Activar sonido</string>
 </resources>

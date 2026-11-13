@@ -63,8 +63,6 @@
     <string name="stream_controls_save_state">Zustand speichern</string>
     <string name="stream_controls_load_state">Zustand laden</string>
     <string name="stream_controls_next_disc">Nächste Disc</string>
-    <string name="stream_controls_mute">Stummschalten</string>
-    <string name="stream_controls_unmute">Ton an</string>
     <string name="stream_controls_save_and_exit">Speichern und beenden</string>
     <string name="stream_controls_leave">Sitzung verlassen</string>
     <string name="stream_controls_notice_state_saved">Zustand gespeichert</string>
@@ -73,6 +71,4 @@
     <string name="stream_controls_notice_failed">RomM hat das nicht angenommen.</string>
 
     <string name="stream_dashboard_rail_next_disc">Nächste Disc</string>
-    <string name="stream_dashboard_rail_mute">Stummschalten</string>
-    <string name="stream_dashboard_rail_unmute">Ton an</string>
 </resources>

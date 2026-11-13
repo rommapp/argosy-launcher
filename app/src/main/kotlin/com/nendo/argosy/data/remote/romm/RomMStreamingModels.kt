@@ -195,18 +195,6 @@ data class RomMStreamVolumeRequest(
 )
 
 @JsonClass(generateAdapter = true)
-data class RomMStreamMuteRequest(
-    @Json(name = "mute") val mute: Boolean
-)
-
-@JsonClass(generateAdapter = true)
-data class RomMStreamMuteResponse(
-    @Json(name = "status") val status: String = "",
-    @Json(name = "mute") val mute: Boolean? = null,
-    @Json(name = "platform") val platform: String = ""
-)
-
-@JsonClass(generateAdapter = true)
 data class RomMStreamSwapDiscRequest(
     @Json(name = "file_id") val fileId: Long
 )

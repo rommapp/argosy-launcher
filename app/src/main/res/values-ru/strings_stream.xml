@@ -65,8 +65,6 @@
     <string name="stream_controls_save_state">Сохранить состояние</string>
     <string name="stream_controls_load_state">Загрузить состояние</string>
     <string name="stream_controls_next_disc">Следующий диск</string>
-    <string name="stream_controls_mute">Выключить звук</string>
-    <string name="stream_controls_unmute">Включить звук</string>
     <string name="stream_controls_save_and_exit">Сохранить и выйти</string>
     <string name="stream_controls_leave">Покинуть сессию</string>
     <string name="stream_controls_notice_state_saved">Состояние сохранено</string>
@@ -75,6 +73,4 @@
     <string name="stream_controls_notice_failed">RomM не принял это действие.</string>
 
     <string name="stream_dashboard_rail_next_disc">Следующий диск</string>
-    <string name="stream_dashboard_rail_mute">Выключить звук</string>
-    <string name="stream_dashboard_rail_unmute">Включить звук</string>
 </resources>

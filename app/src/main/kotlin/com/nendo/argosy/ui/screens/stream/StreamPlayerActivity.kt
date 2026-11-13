@@ -7,6 +7,7 @@ import android.content.Intent
 import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Bundle
+import android.os.SystemClock
 import android.view.KeyEvent
 import android.view.MotionEvent
 import android.view.View
@@ -39,8 +40,6 @@ import com.nendo.argosy.data.streaming.StreamEndReason
 import com.nendo.argosy.data.streaming.StreamPhase
 import com.nendo.argosy.data.streaming.StreamSession
 import com.nendo.argosy.data.streaming.StreamSessionManager
-import com.nendo.argosy.ui.dualscreen.dashboard.DashboardQuickState
-import com.nendo.argosy.ui.dualscreen.dashboard.SessionControls
 import com.nendo.argosy.ui.input.GamepadEvent
 import com.nendo.argosy.ui.input.LocalABIconsSwapped
 import com.nendo.argosy.ui.input.LocalSwapStartSelect
@@ -58,7 +57,10 @@ import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.suspendCancellableCoroutine
+import kotlinx.coroutines.withTimeoutOrNull
 import javax.inject.Inject
+import kotlin.coroutines.resume
 
 @AndroidEntryPoint
 class StreamPlayerActivity : ComponentActivity() {
@@ -106,6 +108,7 @@ class StreamPlayerActivity : ComponentActivity() {
     private var backHoldJob: Job? = null
     private var backHoldFired = false
     private var noticeJob: Job? = null
+    private var revealJob: Job? = null
     private var ownsCompanion = false
     private var pendingPermission: PermissionRequest? = null
 
@@ -144,10 +147,6 @@ class StreamPlayerActivity : ComponentActivity() {
     private val dashboardActions = object : DualScreenManager.StreamDashboardActions {
         override fun nextDisc() {
             runControl(StreamControlRow.NEXT_DISC)
-        }
-
-        override fun toggleMute() {
-            runControl(StreamControlRow.MUTE)
         }
     }
 
@@ -214,6 +213,7 @@ class StreamPlayerActivity : ComponentActivity() {
                 super.onPageFinished(view, url)
                 if (url == null || originOf(Uri.parse(url)) != roomOrigin) return
                 view.evaluateJavascript(StreamGamepadBridge.INSTALL_SCRIPT, null)
+                view.evaluateJavascript(StreamPageScripts.HIDE_CHROME, null)
                 padInstalled = true
                 pushPad()
             }
@@ -266,31 +266,62 @@ class StreamPlayerActivity : ComponentActivity() {
     }
 
     private fun applySession(session: StreamSession) {
-        val stage = StreamPlayerUiState.stageOf(session.phase)
+        val room = session.roomUrl
+        val newRoom = session.phase == StreamPhase.PLAYING && room != null && room != loadedRoom
         uiState.update {
+            val revealed = it.pageRevealed && !newRoom
+            val stage = StreamPlayerUiState.stageOf(session.phase, revealed)
             it.copy(
                 title = session.target.title,
                 containerLabel = session.target.containerLabel,
                 stage = stage,
                 preparing = session.extractionPhase != null,
                 launchFailed = session.endReason == StreamEndReason.LAUNCH_FAILED,
+                pageRevealed = revealed,
                 rows = StreamPlayerUiState.rowsFor(session),
-                muted = session.muted,
                 controlsOpen = it.controlsOpen && stage == StreamPlayerStage.PLAYING
             )
         }
-        val room = session.roomUrl
-        if (session.phase == StreamPhase.PLAYING && room != null && room != loadedRoom) {
+        if (newRoom && room != null) {
             loadedRoom = room
             roomOrigin = originOf(Uri.parse(room))
             padInstalled = false
             webView.loadUrl(room)
+            awaitFirstFrame()
         }
         if (session.phase == StreamPhase.ENDED && session.endReason in CLOSING_REASONS) {
             sessions.clearEnded()
             return
         }
         if (ownsCompanion) publishControls(session)
+    }
+
+    private fun awaitFirstFrame() {
+        revealJob?.cancel()
+        val loadStartedAt = SystemClock.elapsedRealtime()
+        revealJob = lifecycleScope.launch {
+            var videoSince: Long? = null
+            while (true) {
+                delay(StreamPageReveal.POLL_MS)
+                val drawing = withTimeoutOrNull(StreamPageReveal.POLL_MS) { webView.evaluate(StreamPageScripts.PROBE) }
+                val now = SystemClock.elapsedRealtime()
+                if (videoSince == null && drawing == PROBE_DRAWING) videoSince = now
+                if (StreamPageReveal.shouldReveal(loadStartedAt, videoSince, now)) break
+            }
+            webView.evaluateJavascript(StreamPageScripts.HIDE_CHROME, null)
+            revealPage()
+        }
+    }
+
+    private fun revealPage() {
+        val phase = sessions.session.value?.phase ?: return
+        uiState.update {
+            it.copy(pageRevealed = true, stage = StreamPlayerUiState.stageOf(phase, pageRevealed = true))
+        }
+    }
+
+    private suspend fun WebView.evaluate(script: String): String? = suspendCancellableCoroutine { continuation ->
+        evaluateJavascript(script) { result -> continuation.resume(result) }
     }
 
     private fun observeOverlay() {
@@ -362,6 +393,8 @@ class StreamPlayerActivity : ComponentActivity() {
         }
         pendingPermission?.deny()
         pendingPermission = null
+        revealJob?.cancel()
+        revealJob = null
         if (::webView.isInitialized) {
             webView.stopLoading()
             webView.destroy()
@@ -397,31 +430,13 @@ class StreamPlayerActivity : ComponentActivity() {
     private fun publishControls(session: StreamSession) {
         val dsm = DualScreenManagerHolder.instance ?: return
         if (dsm.sessionQuickActions !== quickActions) return
-        dsm.updateSessionControls(
-            SessionControls(
-                quickStates = session.lastStateSavedAtMillis
-                    ?.takeIf { session.supportsStates }
-                    ?.let { listOf(DashboardQuickState(session.stateSlot, it, null)) }
-                    .orEmpty(),
-                cheatsAvailable = false,
-                settingsAvailable = true,
-                screenshotAvailable = false,
-                discSwapAvailable = session.canSwapDisc,
-                muteAvailable = session.isHost,
-                isMuted = session.muted
-            )
-        )
+        dsm.updateSessionControls(StreamPlayerUiState.sessionControlsFor(session))
     }
 
     @SuppressLint("RestrictedApi")
     override fun dispatchKeyEvent(event: KeyEvent): Boolean {
         val dsm = DualScreenManagerHolder.instance
         val claimed = dsm == null || dsm.claimInput(event)
-        com.nendo.argosy.util.Logger.debug(
-            TAG,
-            "key=${event.keyCode} action=${event.action} device=${event.deviceId} claimed=$claimed " +
-                "captures=${uiState.value.capturesInput} panel=${quickPanelOverlay.isOpen.value}"
-        )
         if (!claimed) return true
         if (event.keyCode in SYSTEM_KEYS) return super.dispatchKeyEvent(event)
         if (quickPanelOverlay.isOpen.value) return true
@@ -532,20 +547,17 @@ class StreamPlayerActivity : ComponentActivity() {
             StreamControlRow.SAVE_STATE -> control(R.string.stream_controls_notice_state_saved) { sessions.saveState() }
             StreamControlRow.LOAD_STATE -> control(R.string.stream_controls_notice_state_loaded) { sessions.loadState() }
             StreamControlRow.NEXT_DISC -> control(R.string.stream_controls_notice_disc_swapped) { sessions.nextDisc() }
-            StreamControlRow.MUTE -> control(null) { sessions.toggleMute() }
         }
     }
 
-    private fun control(@StringRes doneNotice: Int?, block: suspend () -> Boolean) {
+    private fun control(@StringRes doneNotice: Int, block: suspend () -> Boolean) {
         noticeJob?.cancel()
         noticeJob = lifecycleScope.launch {
             val done = block()
             val notice = if (done) doneNotice else R.string.stream_controls_notice_failed
             uiState.update { it.copy(notice = notice) }
-            if (notice != null) {
-                delay(NOTICE_MS)
-                uiState.update { it.copy(notice = null) }
-            }
+            delay(NOTICE_MS)
+            uiState.update { it.copy(notice = null) }
         }
     }
 
@@ -568,8 +580,8 @@ class StreamPlayerActivity : ComponentActivity() {
     companion object {
         private const val MATCH = ViewGroup.LayoutParams.MATCH_PARENT
         private const val BACK_HOLD_MS = 500L
-        private const val TAG = "StreamPlayer"
         private const val NOTICE_MS = 2_500L
+        private const val PROBE_DRAWING = "true"
         private val SYSTEM_KEYS = setOf(
             KeyEvent.KEYCODE_HOME,
             KeyEvent.KEYCODE_BUTTON_MODE,

@@ -568,14 +568,6 @@ interface RomMApi {
         @Query("claimed_at") claimedAt: String?
     ): Response<ResponseBody>
 
-    @POST("api/streaming/sessions/{platform}/mute")
-    suspend fun setStreamMute(
-        @Path("platform") platform: String,
-        @Body body: RomMStreamMuteRequest,
-        @Query("container") container: String?,
-        @Query("claimed_at") claimedAt: String?
-    ): Response<RomMStreamMuteResponse>
-
     @POST("api/streaming/sessions/{platform}/save-and-exit")
     suspend fun saveAndExitStreamSession(
         @Path("platform") platform: String,

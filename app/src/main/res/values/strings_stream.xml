@@ -103,8 +103,6 @@
     <string name="stream_controls_load_state">Load state</string>
     <!-- Puts the next disc of a multi-disc game in the drive. -->
     <string name="stream_controls_next_disc">Next disc</string>
-    <string name="stream_controls_mute">Mute</string>
-    <string name="stream_controls_unmute">Unmute</string>
     <!-- Saves the game on the server and ends the stream. -->
     <string name="stream_controls_save_and_exit">Save and exit</string>
     <!-- Leaves another player's stream this device joined. -->
@@ -116,6 +114,4 @@
 
     <!-- In-game dashboard rail entry on the second screen. -->
     <string name="stream_dashboard_rail_next_disc">Next disc</string>
-    <string name="stream_dashboard_rail_mute">Mute</string>
-    <string name="stream_dashboard_rail_unmute">Unmute</string>
 </resources>

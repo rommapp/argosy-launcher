@@ -261,8 +261,7 @@ private fun dashboardActions(manager: com.nendo.argosy.DualScreenManager) =
         onOpenSettings = { manager.sessionQuickActions?.openGameSettings() },
         onQuit = { manager.quitSession() },
         onOpenDocument = { manager.openDashboardDocument(it) },
-        onNextDisc = { manager.streamDashboardActions?.nextDisc() },
-        onToggleMute = { manager.streamDashboardActions?.toggleMute() }
+        onNextDisc = { manager.streamDashboardActions?.nextDisc() }
     )
 
 private data class InGameAppBarState(

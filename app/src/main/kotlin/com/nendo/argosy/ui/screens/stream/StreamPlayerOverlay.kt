@@ -142,7 +142,7 @@ private fun ControlsPanel(
             LazyColumn(verticalArrangement = Arrangement.spacedBy(Dimens.spacingXs)) {
                 items(state.rows, key = { it.name }) { row ->
                     ModalActionButton(
-                        label = stringResource(row.labelRes(state.muted)),
+                        label = stringResource(row.labelRes()),
                         tint = if (row == StreamControlRow.SAVE_AND_EXIT) theme.destructive else theme.focusAccent,
                         restLabelColor = theme.textPrimary,
                         focused = state.focusedRow == row,
@@ -159,12 +159,11 @@ private fun ControlsPanel(
     }
 }
 
-private fun StreamControlRow.labelRes(muted: Boolean): Int = when (this) {
+private fun StreamControlRow.labelRes(): Int = when (this) {
     StreamControlRow.RESUME -> R.string.stream_controls_resume
     StreamControlRow.SAVE_STATE -> R.string.stream_controls_save_state
     StreamControlRow.LOAD_STATE -> R.string.stream_controls_load_state
     StreamControlRow.NEXT_DISC -> R.string.stream_controls_next_disc
-    StreamControlRow.MUTE -> if (muted) R.string.stream_controls_unmute else R.string.stream_controls_mute
     StreamControlRow.SAVE_AND_EXIT -> R.string.stream_controls_save_and_exit
     StreamControlRow.LEAVE -> R.string.stream_controls_leave
 }

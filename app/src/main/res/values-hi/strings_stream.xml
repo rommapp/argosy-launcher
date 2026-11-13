@@ -63,8 +63,6 @@
     <string name="stream_controls_save_state">स्टेट सेव करें</string>
     <string name="stream_controls_load_state">स्टेट लोड करें</string>
     <string name="stream_controls_next_disc">अगली डिस्क</string>
-    <string name="stream_controls_mute">आवाज़ बंद करें</string>
-    <string name="stream_controls_unmute">आवाज़ चालू करें</string>
     <string name="stream_controls_save_and_exit">सेव करें और बाहर निकलें</string>
     <string name="stream_controls_leave">सत्र छोड़ें</string>
     <string name="stream_controls_notice_state_saved">स्टेट सेव हुई</string>
@@ -73,6 +71,4 @@
     <string name="stream_controls_notice_failed">RomM ने इसे स्वीकार नहीं किया।</string>
 
     <string name="stream_dashboard_rail_next_disc">अगली डिस्क</string>
-    <string name="stream_dashboard_rail_mute">आवाज़ बंद करें</string>
-    <string name="stream_dashboard_rail_unmute">आवाज़ चालू करें</string>
 </resources>

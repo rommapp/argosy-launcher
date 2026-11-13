@@ -3,7 +3,6 @@ package com.nendo.argosy.ui.screens.common
 import android.content.Context
 import android.os.Bundle
 import com.nendo.argosy.DualScreenManagerHolder
-import com.nendo.argosy.data.emulator.BothScreensHost
 import com.nendo.argosy.data.emulator.EmulatorRegistry
 import com.nendo.argosy.data.preferences.EmulatorDisplayTarget
 import com.nendo.argosy.data.preferences.SessionStateStore
@@ -35,11 +34,14 @@ class EmulatorLaunchTargetResolver @Inject constructor(
     suspend fun launchOptionsFor(
         gameId: Long,
         overrideDisplayId: Int? = null,
-        emulatorPackage: String? = null
+        emulatorPackage: String? = null,
+        builtInDrawsBothScreens: Boolean = false
     ): Bundle? {
         val rolesSwapped = sessionStateStore.isRolesSwapped()
+        val drawsBothScreens = builtInDrawsBothScreens ||
+            emulatorPackage?.let(::drawsBothScreens) == true
         val displayId = displayAffinityHelper.usableDisplayId(overrideDisplayId)
-            ?: bothScreensDisplayId(emulatorPackage)
+            ?: displayAffinityHelper.bothScreensDisplayId().takeIf { drawsBothScreens }
             ?: targetDisplayId(
                 stored = EmulatorDisplayTarget.fromString(
                     emulatorConfigRepository.getEffectiveDisplayTarget(gameId)
@@ -73,20 +75,15 @@ class EmulatorLaunchTargetResolver @Inject constructor(
         rolesSwapped: Boolean
     ): Int? = displayAffinityHelper.getDisplayTargetId(placementTarget(stored, gamesDefault), rolesSwapped)
 
-    private fun bothScreensDisplayId(emulatorPackage: String?): Int? {
-        val host = emulatorPackage?.let(::bothScreensHostOf) ?: return null
-        return displayAffinityHelper.bothScreensDisplayId(host)
-    }
-
     private fun placedOn(displayId: Int?, rolesSwapped: Boolean): Int =
         displayId ?: displayAffinityHelper.getEmulatorDisplayId(rolesSwapped)
 
     companion object {
-        fun bothScreensHostOf(packageName: String): BothScreensHost? =
+        fun drawsBothScreens(packageName: String): Boolean =
             (EmulatorRegistry.getByPackage(packageName)
                 ?: EmulatorRegistry.findFamilyForPackage(packageName)
                     ?.let { EmulatorRegistry.createDefFromFamily(it, packageName) })
-                ?.bothScreensHost
+                ?.drawsBothScreens == true
 
         fun placementTarget(
             stored: EmulatorDisplayTarget,

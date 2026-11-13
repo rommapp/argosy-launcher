@@ -76,7 +76,7 @@ class SessionEndCoordinator @Inject constructor(
      */
     suspend fun stopsAfterLeavingScreen(emulatorPackage: String): Boolean =
         !keepAlivePolicy.keepsAlive(emulatorPackage) ||
-            EmulatorLaunchTargetResolver.bothScreensHostOf(emulatorPackage) != null
+            EmulatorLaunchTargetResolver.drawsBothScreens(emulatorPackage)
 
     /**
      * Whether an external emulator is stopped when its session ends: the emulator requires it, or

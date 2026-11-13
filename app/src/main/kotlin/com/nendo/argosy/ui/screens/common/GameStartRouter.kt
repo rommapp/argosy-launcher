@@ -66,7 +66,10 @@ class GameStartRouter internal constructor(
             val options = launchTargetResolver.launchOptionsFor(
                 gameId,
                 overrideDisplayId,
-                intent.component?.packageName ?: intent.`package`
+                intent.component?.packageName ?: intent.`package`,
+                builtInDrawsBothScreens = com.nendo.argosy.libretro.DualScreenOutput.forCore(
+                    intent.getStringExtra(com.nendo.argosy.libretro.LibretroActivity.EXTRA_CORE_NAME)
+                ) != null
             )
             Result.success(GameLaunchRequest(intent, options))
         } catch (e: CancellationException) {

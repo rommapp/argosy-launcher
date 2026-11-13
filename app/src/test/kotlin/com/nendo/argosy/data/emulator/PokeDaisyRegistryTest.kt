@@ -28,10 +28,10 @@ class PokeDaisyRegistryTest {
 
     @Test
     fun `only emulators that draw their own second screen claim both screens`() {
-        assertEquals(BothScreensHost.LARGEST_DISPLAY, pokeDaisy.bothScreensHost)
-        assertEquals(BothScreensHost.LARGEST_DISPLAY, EmulatorRegistry.getById("melondualds")!!.bothScreensHost)
-        assertNull(EmulatorRegistry.getById("melonds")!!.bothScreensHost)
-        assertNull(EmulatorRegistry.getById("pizza_boy_gba")!!.bothScreensHost)
+        assertTrue(pokeDaisy.drawsBothScreens)
+        assertTrue(EmulatorRegistry.getById("melondualds")!!.drawsBothScreens)
+        assertFalse(EmulatorRegistry.getById("melonds")!!.drawsBothScreens)
+        assertFalse(EmulatorRegistry.getById("pizza_boy_gba")!!.drawsBothScreens)
     }
 
     @Test

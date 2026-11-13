@@ -28,14 +28,12 @@ data class EmulatorDef(
     val releaseSource: ReleaseSource? = null,
     val packagePatterns: List<String> = emptyList(),
     /**
-     * Set when the emulator draws its own second screen: the display its game opens on, leaving the
-     * other to the emulator. [BothScreensHost.DEFAULT_DISPLAY] is for an emulator that only puts its
-     * second screen on a display other than the default one.
+     * Set when the emulator draws its own second screen. Its game always opens on the default
+     * display, the panel that hosts DS mode, whatever the screen roles or display target say, and
+     * the emulator takes the other display for its second screen.
      */
-    val bothScreensHost: BothScreensHost? = null
+    val drawsBothScreens: Boolean = false
 )
-
-enum class BothScreensHost { LARGEST_DISPLAY, DEFAULT_DISPLAY }
 
 data class EmulatorFamily(
     val baseId: String,
@@ -46,7 +44,7 @@ data class EmulatorFamily(
     val launchConfig: LaunchConfig = LaunchConfig.FileUri,
     val defaultLaunchMethod: LaunchMethod = LaunchMethod.INTENT,
     val downloadUrl: String? = null,
-    val bothScreensHost: BothScreensHost? = null
+    val drawsBothScreens: Boolean = false
 )
 
 /**
@@ -598,7 +596,7 @@ object EmulatorRegistry {
             defaultLaunchMethod = LaunchMethod.SHELL,
             downloadUrl = "https://github.com/azahar-emu/azahar/releases",
             releaseSource = ReleaseSource.GitHub("azahar-emu/azahar"),
-            bothScreensHost = BothScreensHost.DEFAULT_DISPLAY
+            drawsBothScreens = true
         ),
         EmulatorDef(
             id = "borked3ds",
@@ -750,7 +748,7 @@ object EmulatorRegistry {
             ),
             downloadUrl = "https://github.com/SapphireRhodonite/melonDS-android/releases",
             releaseSource = ReleaseSource.GitHub("SapphireRhodonite/melonDS-android"),
-            bothScreensHost = BothScreensHost.LARGEST_DISPLAY
+            drawsBothScreens = true
         ),
         EmulatorDef(
             id = "seedlessds",
@@ -776,7 +774,7 @@ object EmulatorRegistry {
             ),
             downloadUrl = "https://github.com/lidor30/pokedaisy/releases",
             releaseSource = ReleaseSource.GitHub("lidor30/pokedaisy"),
-            bothScreensHost = BothScreensHost.LARGEST_DISPLAY
+            drawsBothScreens = true
         ),
         EmulatorDef(
             id = "pizza_boy_gba",
@@ -1907,7 +1905,7 @@ object EmulatorRegistry {
                 intentExtras = mapOf("SelectedGame" to ExtraValue.FilePath)
             ),
             downloadUrl = "https://github.com/azahar-emu/azahar/releases",
-            bothScreensHost = BothScreensHost.DEFAULT_DISPLAY
+            drawsBothScreens = true
         ),
         EmulatorFamily(
             baseId = "borked3ds",
@@ -2172,7 +2170,7 @@ object EmulatorRegistry {
             launchConfig = family.launchConfig,
             defaultLaunchMethod = family.defaultLaunchMethod,
             downloadUrl = family.downloadUrl,
-            bothScreensHost = family.bothScreensHost
+            drawsBothScreens = family.drawsBothScreens
         )
     }
 }

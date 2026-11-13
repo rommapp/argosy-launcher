@@ -6,7 +6,6 @@ import android.hardware.display.DisplayManager
 import android.os.Build
 import android.os.Bundle
 import android.view.Display
-import com.nendo.argosy.data.emulator.BothScreensHost
 import com.nendo.argosy.data.preferences.EmulatorDisplayTarget
 import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
@@ -138,14 +137,13 @@ class DisplayAffinityHelper @Inject constructor(
         )?.displayId
 
     /**
-     * Where a game opens when its emulator draws both screens from [host], or null when the device
-     * shows one screen and the game is placed as any other.
+     * Where a game that draws both screens opens: the default display, which hosts DS mode. Null
+     * when the device shows one screen or the default display is dark, and the game is placed as
+     * any other.
      */
-    fun bothScreensDisplayId(host: BothScreensHost): Int? =
+    fun bothScreensDisplayId(): Int? =
         if (!hasSecondaryDisplay) null
         else resolveBothScreensDisplayId(
-            host = host,
-            largestDisplayId = largestDisplayId(),
             defaultDisplayLit = !isDockedDark && Display.DEFAULT_DISPLAY !in offDisplayIds
         )
 
@@ -471,14 +469,8 @@ class DisplayAffinityHelper @Inject constructor(
             }
         }
 
-        internal fun resolveBothScreensDisplayId(
-            host: BothScreensHost,
-            largestDisplayId: Int?,
-            defaultDisplayLit: Boolean
-        ): Int? = when (host) {
-            BothScreensHost.LARGEST_DISPLAY -> largestDisplayId
-            BothScreensHost.DEFAULT_DISPLAY -> Display.DEFAULT_DISPLAY.takeIf { defaultDisplayLit }
-        }
+        internal fun resolveBothScreensDisplayId(defaultDisplayLit: Boolean): Int? =
+            Display.DEFAULT_DISPLAY.takeIf { defaultDisplayLit }
 
         internal fun resolveAppDefaultDisplayId(
             target: EmulatorDisplayTarget,

@@ -446,6 +446,7 @@ class StreamPlayerActivity : ComponentActivity() {
         return handleKey(event)
     }
 
+    @SuppressLint("RestrictedApi")
     private fun handleKey(event: KeyEvent): Boolean {
         if (event.keyCode in SYSTEM_KEYS) return super.dispatchKeyEvent(event)
         if (quickPanelOverlay.isOpen.value) return true

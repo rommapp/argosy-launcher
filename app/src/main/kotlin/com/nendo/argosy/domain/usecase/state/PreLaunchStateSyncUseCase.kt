@@ -7,11 +7,13 @@ import com.nendo.argosy.data.emulator.StatePathRegistry
 import com.nendo.argosy.data.emulator.StateSerialResolver
 import com.nendo.argosy.data.local.dao.EmulatorConfigDao
 import com.nendo.argosy.data.local.dao.GameDao
+import com.nendo.argosy.data.local.entity.GameEntity
 import com.nendo.argosy.data.local.entity.StateCacheEntity
 import com.nendo.argosy.data.preferences.UserPreferencesRepository
 import com.nendo.argosy.data.repository.SaveSyncApiClient
 import com.nendo.argosy.data.repository.SaveSyncRepository
 import com.nendo.argosy.data.repository.StateCacheManager
+import com.nendo.argosy.data.remote.romm.RomMApi
 import com.nendo.argosy.data.remote.romm.RomMState
 import kotlinx.coroutines.flow.first
 import java.io.File
@@ -19,6 +21,7 @@ import java.time.Instant
 import javax.inject.Inject
 
 private const val TAG = "PreLaunchStateSync"
+private const val MAX_SLOT_ATTEMPTS = 5
 
 internal data class ReconciledState(
     val state: StateCacheEntity,
@@ -149,84 +152,32 @@ class PreLaunchStateSyncUseCase @Inject constructor(
             stateCacheManager.clearServerLink(it.state.id)
         }
 
-        val repaired = reconciled.map { it.state }
+        val runningCore = stateCacheManager.runningCore(gameId, emulatorId)
+        val repaired = reconciled.map { it.state }.filter { state ->
+            val unloadable = state.rommSaveId != null && !stateCacheManager.loadableByRunningCore(state, emulatorId)
+            if (unloadable) {
+                Log.w(TAG, "Slot ${state.slotNumber} holds a state $runningCore cannot load; refilling it from the server")
+            }
+            !unloadable
+        }
         val localByRommId = repaired.filter { it.rommSaveId != null }.associateBy { it.rommSaveId }
         val localBySlot = repaired.associateBy { it.slotNumber to stateChannelKey(it.channelName) }
 
         var downloadedCount = 0
 
-        for (serverState in newestPerSlot(serverStates.filter { it.id !in tombstoned })) {
-            val parsed = stateCacheManager.parseStateFileName(serverState.fileName)
-            if (!belongsToChannel(parsed.channelName, channelName)) continue
-            val slotNumber = parsed.slotNumber
-            val linked = localByRommId[serverState.id]
-            val localState = linked ?: localBySlot[slotNumber to stateChannelKey(parsed.channelName)]
-            val serverUpdatedAt = com.nendo.argosy.data.repository.SaveSyncApiClient.parseTimestampOrNull(serverState.updatedAt)
-
-            val shouldDownload = when {
-                localState == null -> {
-                    Log.d(TAG, "Server state ${serverState.fileName} (slot $slotNumber) not cached locally")
-                    true
+        for (slotCandidates in candidatesPerSlot(serverStates.filter { it.id !in tombstoned })) {
+            for ((attempt, serverState) in slotCandidates.withIndex()) {
+                when (
+                    syncSlot(
+                        serverState, localByRommId, localBySlot, channelName, api, game, gameId,
+                        emulatorId, coreId, coreVersion, runningCore
+                    )
+                ) {
+                    SlotOutcome.DOWNLOADED -> downloadedCount++
+                    SlotOutcome.OTHER_CORE -> if (attempt + 1 < MAX_SLOT_ATTEMPTS) continue
+                    SlotOutcome.KEPT -> Unit
                 }
-                localState.rommSaveId == null ||
-                    localState.syncStatus == StateCacheEntity.STATUS_PENDING_UPLOAD ||
-                    localState.syncStatus == StateCacheEntity.STATUS_LOCAL_NEWER -> {
-                    Log.d(TAG, "Slot $slotNumber has unsent local changes, keeping local over ${serverState.fileName}")
-                    false
-                }
-                linked == null -> {
-                    Log.d(TAG, "Slot $slotNumber is linked to a different server state, skipping ${serverState.fileName}")
-                    false
-                }
-                localState.syncStatus == StateCacheEntity.STATUS_SERVER_NEWER -> {
-                    Log.d(TAG, "Server state ${serverState.fileName} marked as newer")
-                    true
-                }
-                serverUpdatedAt == null -> {
-                    Log.w(TAG, "Server state ${serverState.fileName} has unparseable updated_at, skipping")
-                    false
-                }
-                localState.serverUpdatedAt == null || serverUpdatedAt.isAfter(localState.serverUpdatedAt) -> {
-                    Log.d(TAG, "Server state ${serverState.fileName} updated since last sync (slot $slotNumber)")
-                    true
-                }
-                else -> {
-                    false
-                }
-            }
-
-            if (shouldDownload) {
-                val result = stateCacheManager.downloadStateFromRomM(
-                    rommStateId = serverState.id,
-                    fileName = serverState.fileName,
-                    api = api,
-                    gameId = gameId,
-                    platformSlug = game.platformSlug,
-                    emulatorId = emulatorId,
-                    coreId = coreId,
-                    serverState = serverState
-                )
-
-                when (result) {
-                    is StateCacheManager.StateCloudResult.Success -> {
-                        downloadedCount++
-                        Log.d(TAG, "Downloaded state ${serverState.fileName} for ${game.title}")
-                        materializeToLiveDir(
-                            serverState.id,
-                            game.localPath,
-                            game.platformSlug,
-                            emulatorId,
-                            coreId,
-                            coreVersion
-                        )
-                    }
-                    is StateCacheManager.StateCloudResult.Error -> {
-                        Log.e(TAG, "Failed to download state ${serverState.fileName}: ${result.message}")
-                    }
-                    else -> {
-                        Log.w(TAG, "Download result for ${serverState.fileName}: $result")
-                    }
-                }
+                break
             }
         }
 
@@ -238,25 +189,105 @@ class PreLaunchStateSyncUseCase @Inject constructor(
         }
     }
 
-    /**
-     * The one state per slot worth bringing down: the newest.
-     *
-     * A slot holds the latest quick-save, but a server accumulates one file per session, so
-     * several of them address the same slot. Reconciled as they come, the first claims the slot and
-     * the rest look like they belong to someone else and are dropped - including the recent one.
-     *
-     * Recency is read from the name rather than the server's `updated_at`, which is the time the
-     * file was last rescanned rather than last written.
-     */
-    private fun newestPerSlot(serverStates: List<RomMState>): List<RomMState> =
+    private enum class SlotOutcome { DOWNLOADED, OTHER_CORE, KEPT }
+
+    private suspend fun syncSlot(
+        serverState: RomMState,
+        localByRommId: Map<Long?, StateCacheEntity>,
+        localBySlot: Map<Pair<Int, String>, StateCacheEntity>,
+        channelName: String?,
+        api: RomMApi,
+        game: GameEntity,
+        gameId: Long,
+        emulatorId: String,
+        coreId: String?,
+        coreVersion: String?,
+        runningCore: String?
+    ): SlotOutcome {
+        val parsed = stateCacheManager.parseStateFileName(serverState.fileName)
+        if (!belongsToChannel(parsed.channelName, channelName)) return SlotOutcome.KEPT
+        val slotNumber = parsed.slotNumber
+        val linked = localByRommId[serverState.id]
+        val localState = linked ?: localBySlot[slotNumber to stateChannelKey(parsed.channelName)]
+        val serverUpdatedAt = com.nendo.argosy.data.repository.SaveSyncApiClient.parseTimestampOrNull(serverState.updatedAt)
+
+        val shouldDownload = when {
+            localState == null -> {
+                Log.d(TAG, "Server state ${serverState.fileName} (slot $slotNumber) not cached locally")
+                true
+            }
+            localState.rommSaveId == null ||
+                localState.syncStatus == StateCacheEntity.STATUS_PENDING_UPLOAD ||
+                localState.syncStatus == StateCacheEntity.STATUS_LOCAL_NEWER -> {
+                Log.d(TAG, "Slot $slotNumber has unsent local changes, keeping local over ${serverState.fileName}")
+                false
+            }
+            linked == null -> {
+                Log.d(TAG, "Slot $slotNumber is linked to a different server state, skipping ${serverState.fileName}")
+                false
+            }
+            localState.syncStatus == StateCacheEntity.STATUS_SERVER_NEWER -> {
+                Log.d(TAG, "Server state ${serverState.fileName} marked as newer")
+                true
+            }
+            serverUpdatedAt == null -> {
+                Log.w(TAG, "Server state ${serverState.fileName} has unparseable updated_at, skipping")
+                false
+            }
+            localState.serverUpdatedAt == null || serverUpdatedAt.isAfter(localState.serverUpdatedAt) -> {
+                Log.d(TAG, "Server state ${serverState.fileName} updated since last sync (slot $slotNumber)")
+                true
+            }
+            else -> false
+        }
+
+        if (!shouldDownload) return SlotOutcome.KEPT
+
+        val result = stateCacheManager.downloadStateFromRomM(
+            rommStateId = serverState.id,
+            fileName = serverState.fileName,
+            api = api,
+            gameId = gameId,
+            platformSlug = game.platformSlug,
+            emulatorId = emulatorId,
+            coreId = coreId,
+            serverState = serverState,
+            readableByCore = runningCore
+        )
+
+        return when (result) {
+            is StateCacheManager.StateCloudResult.Success -> {
+                Log.d(TAG, "Downloaded state ${serverState.fileName} for ${game.title}")
+                materializeToLiveDir(serverState.id, game.localPath, game.platformSlug, emulatorId, coreId, coreVersion)
+                SlotOutcome.DOWNLOADED
+            }
+            is StateCacheManager.StateCloudResult.OtherCoreFormat -> {
+                Log.w(
+                    TAG,
+                    "Skipping ${serverState.fileName}: written by ${result.writerCore ?: "another core"}, " +
+                        "$runningCore cannot load it; trying the slot's previous state"
+                )
+                SlotOutcome.OTHER_CORE
+            }
+            is StateCacheManager.StateCloudResult.Error -> {
+                Log.e(TAG, "Failed to download state ${serverState.fileName}: ${result.message}")
+                SlotOutcome.KEPT
+            }
+            else -> {
+                Log.w(TAG, "Download result for ${serverState.fileName}: $result")
+                SlotOutcome.KEPT
+            }
+        }
+    }
+
+    private fun candidatesPerSlot(serverStates: List<RomMState>): List<List<RomMState>> =
         serverStates
             .groupBy {
                 val parsed = stateCacheManager.parseStateFileName(it.fileName)
                 parsed.slotNumber to stateChannelKey(parsed.channelName)
             }
             .map { (_, candidates) ->
-                candidates.maxByOrNull { stateCacheManager.serverStateWrittenAt(it) ?: Instant.MIN }
-                    ?: candidates.first()
+                candidates.sortedByDescending { stateCacheManager.serverStateWrittenAt(it) ?: Instant.MIN }
             }
 
     private suspend fun materializeToLiveDir(

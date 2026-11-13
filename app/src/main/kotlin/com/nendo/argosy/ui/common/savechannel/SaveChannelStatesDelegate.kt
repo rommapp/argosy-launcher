@@ -209,6 +209,11 @@ class SaveChannelStatesDelegate @Inject constructor(
                         NotificationText.Res(R.string.ui_save_channel_notice_state_no_config)
                     )
                 }
+                is RestoreStateResult.OtherCoreFormat -> {
+                    notificationManager.showError(
+                        NotificationText.Res(R.string.ui_save_channel_notice_state_other_core)
+                    )
+                }
             }
         }
     }

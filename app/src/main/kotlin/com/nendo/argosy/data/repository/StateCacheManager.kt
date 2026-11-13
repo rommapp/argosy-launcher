@@ -10,6 +10,7 @@ import com.nendo.argosy.data.emulator.StateNameKey
 import com.nendo.argosy.data.emulator.StatePathConfig
 import com.nendo.argosy.data.emulator.StatePathRegistry
 import com.nendo.argosy.data.emulator.VersionValidationResult
+import com.nendo.argosy.libretro.LibretroStateFormat
 import com.nendo.argosy.data.local.dao.EmulatorSaveConfigDao
 import com.nendo.argosy.data.local.dao.GameDao
 import com.nendo.argosy.data.local.dao.PendingSyncQueueDao
@@ -1033,6 +1034,7 @@ class StateCacheManager @Inject constructor(
         data object AlreadySynced : StateCloudResult()
         data class Conflict(val localTime: Instant, val serverTime: Instant) : StateCloudResult()
         data class Error(val message: String) : StateCloudResult()
+        data class OtherCoreFormat(val writerCore: String?) : StateCloudResult()
     }
 
     suspend fun uploadStateToRomM(
@@ -1152,7 +1154,8 @@ class StateCacheManager @Inject constructor(
         platformSlug: String,
         emulatorId: String,
         coreId: String? = null,
-        serverState: RomMState
+        serverState: RomMState,
+        readableByCore: String? = null
     ): StateCloudResult = withContext(Dispatchers.IO) {
         Log.d(TAG, "[StateSync] DOWNLOAD rommStateId=$rommStateId gameId=$gameId")
         val ownerUserId = syncPreferencesRepository.getRommUserId()
@@ -1188,6 +1191,17 @@ class StateCacheManager @Inject constructor(
                 cachedFile.outputStream().use { output ->
                     input.copyTo(output)
                 }
+            }
+            val header = LibretroStateFormat.headerOf(cachedFile)
+            if (!LibretroStateFormat.readableBy(readableByCore, header)) {
+                cachedFile.delete()
+                val writer = LibretroStateFormat.writerOf(header)
+                Log.w(
+                    TAG,
+                    "[StateSync] DOWNLOAD rommStateId=$rommStateId | written by ${writer ?: "another core"}, " +
+                        "$readableByCore cannot load it; not cached"
+                )
+                return@withContext StateCloudResult.OtherCoreFormat(writer)
             }
 
             var screenshotCachePath: String? = null
@@ -1480,6 +1494,24 @@ class StateCacheManager @Inject constructor(
     suspend fun hasSameContent(state: StateCacheEntity, file: File): Boolean = withContext(Dispatchers.IO) {
         val cached = getCacheFile(state) ?: return@withContext false
         cached.length() == file.length() && calculateFileHash(cached) == calculateFileHash(file)
+    }
+
+    /**
+     * The libretro core [emulatorId] runs [gameId] with: the built-in core the launcher would pick,
+     * or the RetroArch core configured for it. Null for standalone emulators and unknown games.
+     */
+    suspend fun runningCore(gameId: Long, emulatorId: String): String? {
+        val game = gameDao.getById(gameId) ?: return null
+        return saveSyncApiClient.resolveCoreForGame(game, emulatorId)
+    }
+
+    /**
+     * Whether the core running [state]'s game can load its cached file. False only when the file
+     * carries another core's fixed header.
+     */
+    suspend fun loadableByRunningCore(state: StateCacheEntity, emulatorId: String): Boolean {
+        val file = getCacheFile(state) ?: return true
+        return LibretroStateFormat.readableBy(runningCore(state.gameId, emulatorId), file)
     }
 
     internal suspend fun serverEmulatorTag(state: StateCacheEntity): String {

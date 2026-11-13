@@ -143,6 +143,7 @@
     <string name="ui_save_channel_notice_restored_state">已恢复%1$s</string>
     <string name="ui_save_channel_notice_state_not_cached">缓存中未找到该即时存档</string>
     <string name="ui_save_channel_notice_state_no_config">此模拟器没有即时存档配置</string>
+    <string name="ui_save_channel_notice_state_other_core">此即时存档由其他核心保存，无法在此读取</string>
     <string name="ui_save_channel_notice_delete_target_auto">自动即时存档</string>
     <string name="ui_save_channel_notice_delete_target_slot">即时存档槽位%1$d</string>
     <string name="ui_save_channel_notice_deleted_state">已删除%1$s</string>

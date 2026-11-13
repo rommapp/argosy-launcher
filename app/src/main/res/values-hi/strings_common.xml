@@ -148,6 +148,7 @@
     <string name="ui_save_channel_notice_restored_state">%1$s रीस्टोर हुआ</string>
     <string name="ui_save_channel_notice_state_not_cached">स्टेट कैश में नहीं मिला</string>
     <string name="ui_save_channel_notice_state_no_config">इस एमुलेटर के लिए कोई स्टेट कॉन्फ़िगरेशन नहीं है</string>
+    <string name="ui_save_channel_notice_state_other_core">यह स्टेट किसी दूसरे कोर ने सेव की थी और यहाँ लोड नहीं हो सकती</string>
     <string name="ui_save_channel_notice_delete_target_auto">ऑटो स्टेट</string>
     <string name="ui_save_channel_notice_delete_target_slot">स्टेट स्लॉट %1$d</string>
     <string name="ui_save_channel_notice_deleted_state">%1$s हटाया गया</string>

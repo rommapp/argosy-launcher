@@ -148,6 +148,7 @@
     <string name="ui_save_channel_notice_restored_state">%1$s wiederhergestellt</string>
     <string name="ui_save_channel_notice_state_not_cached">Savestate nicht im Cache gefunden</string>
     <string name="ui_save_channel_notice_state_no_config">Keine Savestate-Konfiguration für diesen Emulator</string>
+    <string name="ui_save_channel_notice_state_other_core">Dieser Savestate stammt von einem anderen Core und lässt sich hier nicht laden</string>
     <string name="ui_save_channel_notice_delete_target_auto">Auto-Savestate</string>
     <string name="ui_save_channel_notice_delete_target_slot">Savestate-Slot %1$d</string>
     <string name="ui_save_channel_notice_deleted_state">%1$s gelöscht</string>

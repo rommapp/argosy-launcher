@@ -7,6 +7,7 @@ import com.nendo.argosy.data.emulator.StatePathRegistry
 import com.nendo.argosy.data.emulator.StateSerialResolver
 import com.nendo.argosy.data.emulator.VersionValidationResult
 import com.nendo.argosy.data.repository.StateCacheManager
+import com.nendo.argosy.libretro.LibretroStateFormat
 import java.io.File
 import javax.inject.Inject
 
@@ -19,6 +20,7 @@ sealed class RestoreStateResult {
         val currentVersion: String?
     ) : RestoreStateResult()
     data class Error(val reason: RestoreStateFailureReason) : RestoreStateResult()
+    data class OtherCoreFormat(val writerCore: String?) : RestoreStateResult()
     data object NotFound : RestoreStateResult()
     data object NoConfig : RestoreStateResult()
 }
@@ -58,6 +60,12 @@ class RestoreStateUseCase @Inject constructor(
 
         val config = StatePathRegistry.getConfig(emulatorId)
             ?: return RestoreStateResult.NoConfig
+
+        if (!stateCacheManager.loadableByRunningCore(cache, emulatorId)) {
+            val writer = stateCacheManager.getCacheFile(cache)
+                ?.let { LibretroStateFormat.writerOf(LibretroStateFormat.headerOf(it)) }
+            return RestoreStateResult.OtherCoreFormat(writer)
+        }
 
         if (!forceRestore) {
             val validation = stateCacheManager.validateCoreVersion(

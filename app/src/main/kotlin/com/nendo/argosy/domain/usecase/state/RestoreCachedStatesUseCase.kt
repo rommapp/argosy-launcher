@@ -13,6 +13,7 @@ import com.nendo.argosy.data.emulator.provenStateKey
 import com.nendo.argosy.data.local.dao.EmulatorSaveConfigDao
 import com.nendo.argosy.data.local.dao.GameDao
 import com.nendo.argosy.data.repository.StateCacheManager
+import com.nendo.argosy.libretro.LibretroStateFormat
 import com.nendo.argosy.data.sync.StateClaim
 import com.nendo.argosy.data.sync.StateOwnershipTracker
 import java.io.File
@@ -176,10 +177,15 @@ class RestoreCachedStatesUseCase @Inject constructor(
             }
 
             var restoredCount = 0
+            val runningCore = stateCacheManager.runningCore(gameId, emulatorId)
             for (state in cachedStates) {
                 val cacheFile = stateCacheManager.getCacheFile(state)
                 if (cacheFile == null) {
                     Log.w(TAG, "Cache file not found for state ${state.id}")
+                    continue
+                }
+                if (!LibretroStateFormat.readableBy(runningCore, cacheFile)) {
+                    Log.w(TAG, "Skipping restore of ${cacheFile.name}: $runningCore cannot load a state saved by another core")
                     continue
                 }
 

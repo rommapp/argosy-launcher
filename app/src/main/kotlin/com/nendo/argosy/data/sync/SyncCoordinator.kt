@@ -609,6 +609,8 @@ class SyncCoordinator @Inject constructor(
                 ItemOutcome.Failed("Conflict with server state | local=${result.localTime}, server=${result.serverTime}")
             StateCacheManager.StateCloudResult.NoStateFound -> ItemOutcome.Failed("State file not found")
             StateCacheManager.StateCloudResult.NotConfigured -> ItemOutcome.Failed("State sync not configured")
+            is StateCacheManager.StateCloudResult.OtherCoreFormat ->
+                ItemOutcome.Failed("State belongs to ${result.writerCore ?: "another core"}")
         }
     }
 

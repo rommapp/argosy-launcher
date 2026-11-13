@@ -145,6 +145,7 @@
     <string name="ui_save_channel_notice_restored_state">已還原%1$s</string>
     <string name="ui_save_channel_notice_state_not_cached">快取中找不到該即時存檔</string>
     <string name="ui_save_channel_notice_state_no_config">此模擬器沒有即時存檔設定</string>
+    <string name="ui_save_channel_notice_state_other_core">此即時存檔由其他核心儲存，無法在此讀取</string>
     <string name="ui_save_channel_notice_delete_target_auto">自動即時存檔</string>
     <string name="ui_save_channel_notice_delete_target_slot">第%1$d格的即時存檔</string>
     <string name="ui_save_channel_notice_deleted_state">已刪除%1$s</string>

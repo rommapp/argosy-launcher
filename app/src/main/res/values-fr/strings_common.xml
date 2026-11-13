@@ -162,6 +162,7 @@
     <string name="ui_save_channel_notice_restored_state">%1$s restauré</string>
     <string name="ui_save_channel_notice_state_not_cached">État introuvable dans le cache</string>
     <string name="ui_save_channel_notice_state_no_config">Aucune configuration d\'état pour cet émulateur</string>
+    <string name="ui_save_channel_notice_state_other_core">Cet état a été sauvegardé par un autre cœur et ne peut pas être chargé ici</string>
     <string name="ui_save_channel_notice_delete_target_auto">état auto</string>
     <string name="ui_save_channel_notice_delete_target_slot">emplacement d\'état %1$d</string>
     <string name="ui_save_channel_notice_deleted_state">%1$s supprimé</string>

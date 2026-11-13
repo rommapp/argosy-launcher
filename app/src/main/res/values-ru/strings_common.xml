@@ -152,6 +152,7 @@
     <string name="ui_save_channel_notice_restored_state">Восстановлено: %1$s</string>
     <string name="ui_save_channel_notice_state_not_cached">Состояние не найдено в кэше</string>
     <string name="ui_save_channel_notice_state_no_config">Нет конфигурации состояний для этого эмулятора</string>
+    <string name="ui_save_channel_notice_state_other_core">Это состояние сохранено другим ядром и не может быть загружено здесь</string>
     <string name="ui_save_channel_notice_delete_target_auto">авто-состояние</string>
     <string name="ui_save_channel_notice_delete_target_slot">слот состояния %1$d</string>
     <string name="ui_save_channel_notice_deleted_state">Удалено: %1$s</string>

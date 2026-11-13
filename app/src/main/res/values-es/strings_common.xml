@@ -151,6 +151,7 @@
     <string name="ui_save_channel_notice_restored_state">%1$s restaurado</string>
     <string name="ui_save_channel_notice_state_not_cached">Estado no encontrado en la caché</string>
     <string name="ui_save_channel_notice_state_no_config">No hay configuración de estado para este emulador</string>
+    <string name="ui_save_channel_notice_state_other_core">Este estado lo guardó otro núcleo y no se puede cargar aquí</string>
     <string name="ui_save_channel_notice_delete_target_auto">estado automático</string>
     <string name="ui_save_channel_notice_delete_target_slot">ranura de estado %1$d</string>
     <string name="ui_save_channel_notice_deleted_state">%1$s eliminado</string>

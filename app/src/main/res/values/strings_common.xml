@@ -323,6 +323,7 @@
     <string name="ui_save_channel_notice_state_not_cached">State not found in cache</string>
     <!-- Brief message when Argosy has no state location for the emulator the game runs on. -->
     <string name="ui_save_channel_notice_state_no_config">No state configuration for this emulator</string>
+    <string name="ui_save_channel_notice_state_other_core">This state was saved by a different core and can\'t load here</string>
     <!-- Names the state that was erased, when it is the automatic one. Lower case. -->
     <string name="ui_save_channel_notice_delete_target_auto">auto state</string>
     <!-- Names the state that was erased, when it is a numbered slot. %1$d is the slot number.

@@ -4,6 +4,7 @@ import android.content.Context
 import com.nendo.argosy.data.emulator.ArchiveRomNaming
 import com.nendo.argosy.data.emulator.EmulatorRegistry
 import com.nendo.argosy.data.emulator.EmulatorResolver
+import com.nendo.argosy.libretro.LibretroStateFormat
 import com.nendo.argosy.libretro.LibretroStateSlots
 import com.nendo.argosy.data.local.dao.GameDao
 import com.nendo.argosy.data.local.dao.SaveCacheDao
@@ -596,7 +597,7 @@ class SnapshotSyncEngine @Inject constructor(
         val kept = liveSlots(dir, romBaseName).filter { (slot, file) ->
             val banked = bank[slot]?.contentHash
             banked != null && saveArchiver.calculateContentHash(file) == banked
-        }.keys
+        }.keys.toMutableSet()
         val staging = File(dir, "$STAGING_PREFIX${System.nanoTime()}")
         val placements = mutableListOf<Pair<File, File>>()
         var written = 0
@@ -608,14 +609,22 @@ class SnapshotSyncEngine @Inject constructor(
                 path to target,
                 banked.screenshot?.downloadPath?.let { it to File(dir, "${target.name}$STATE_SCREENSHOT_EXTENSION") }
             )
+            val fetched = mutableListOf<Pair<File, File>>()
             for ((download, destination) in wanted) {
                 val temp = File(staging, destination.name)
                 if (!fetchTo(ctx.api, download, temp)) {
                     staging.deleteRecursively()
                     return BankStage.Failed("could not fetch $download for slot $slot of snapshot #${snapshot.id} ($core)")
                 }
-                placements += temp to destination
+                fetched += temp to destination
             }
+            if (!LibretroStateFormat.readableBy(core, fetched.first().first)) {
+                Logger.warn(TAG, "Snapshot #${snapshot.id} slot $slot was saved by another core; $core keeps its live state")
+                fetched.forEach { (temp, _) -> temp.delete() }
+                kept += slot
+                continue
+            }
+            placements += fetched
             written++
         }
         return BankStage.Staged(StagedBank(dir, romBaseName, kept, staging, placements, written, bank.size))

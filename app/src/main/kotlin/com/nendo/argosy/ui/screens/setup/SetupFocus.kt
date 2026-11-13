@@ -35,6 +35,7 @@ sealed interface SetupTarget {
 enum class SetupActionId {
     PRIMARY,
     IMPORT_CERTIFICATE,
+    IMPORT_CLIENT_CERTIFICATE,
     USE_PAIRING_CODE,
     EDIT_ADDRESS,
     APPROVE_ON_DEVICE,
@@ -50,7 +51,8 @@ data class SetupActionSpec(
     @StringRes val label: Int,
     val primary: Boolean = false,
     val hiddenWhenDocked: Boolean = false,
-    val labelCount: Int? = null
+    val labelCount: Int? = null,
+    val labelArg: String? = null
 )
 
 enum class SetupMove(val dx: Int, val dy: Int) {
@@ -149,6 +151,13 @@ private fun libraryActions(state: SetupUiState): List<SetupActionSpec> {
             } else {
                 SetupActionSpec(SetupActionId.IMPORT_CERTIFICATE, R.string.firstrun_romm_certificate_button)
             },
+            signIn.clientCert.summary?.let { summary ->
+                SetupActionSpec(
+                    SetupActionId.IMPORT_CLIENT_CERTIFICATE,
+                    R.string.firstrun_romm_client_certificate_button_active,
+                    labelArg = summary.displayName
+                )
+            } ?: SetupActionSpec(SetupActionId.IMPORT_CLIENT_CERTIFICATE, R.string.firstrun_romm_client_certificate_button),
             primary(
                 if (signIn.isConnecting) R.string.firstrun_romm_url_button_checking else R.string.setup_library_address_button_continue,
                 hiddenWhenDocked = true
@@ -247,10 +256,14 @@ fun primaryTarget(state: SetupUiState): SetupTarget? =
 fun defaultFocus(state: SetupUiState): SetupTarget? {
     val content = contentTargetsFor(state)
     val preferred: SetupTarget? = when (state.page) {
-        SetupPage.LIBRARY -> if (state.signIn.error?.certificate == true && state.signIn.view == LibraryView.ADDRESS) {
-            SetupTarget.Action(SetupActionId.IMPORT_CERTIFICATE)
-        } else {
-            content.firstOrNull()
+        SetupPage.LIBRARY -> {
+            val error = state.signIn.error
+            when {
+                state.signIn.view != LibraryView.ADDRESS -> content.firstOrNull()
+                error?.certificate == true -> SetupTarget.Action(SetupActionId.IMPORT_CERTIFICATE)
+                error?.clientCertificate == true -> SetupTarget.Action(SetupActionId.IMPORT_CLIENT_CERTIFICATE)
+                else -> content.firstOrNull()
+            }
         }
         SetupPage.PERMISSIONS -> firstUnmetRequired(state.access)?.let { SetupTarget.Permission(it) }
         SetupPage.ACCESSIBILITY -> firstIncompleteStep(state.access)?.let { SetupTarget.AccessibilityStep(it) }

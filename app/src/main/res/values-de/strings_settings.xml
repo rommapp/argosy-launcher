@@ -2789,5 +2789,27 @@
     <string name="settings_builtin_gpu_driver_reason_core_system_only">%1$s nutzt den Systemtreiber</string>
     <string name="settings_builtin_gpu_driver_reason_backend">Gilt, wenn das Backend Vulkan ist</string>
     <string name="settings_builtin_gpu_driver_reason_device">Eigene Treiber benötigen eine Adreno-GPU</string>
+    <string name="settings_client_cert_row_title">Client-Zertifikat</string>
+    <string name="settings_client_cert_row_subtitle_none">Für Server, die ein Client-Zertifikat verlangen (mTLS)</string>
+    <string name="settings_client_cert_row_subtitle_active">%1$s · gültig bis %2$s</string>
+    <string name="settings_client_cert_modal_header">Client-Zertifikat</string>
+    <string name="settings_client_cert_modal_title_none">Kein Client-Zertifikat importiert</string>
+    <string name="settings_client_cert_modal_title_active">%1$s · gültig bis %2$s</string>
+    <string name="settings_client_cert_use_romm_title">Für RomM verwenden</string>
+    <string name="settings_client_cert_use_romm_subtitle">Dieses Zertifikat beim Verbinden mit deinem RomM-Server vorlegen</string>
+    <string name="settings_client_cert_use_jellyfin_title">Für Jellyfin verwenden</string>
+    <string name="settings_client_cert_use_jellyfin_subtitle">Dieses Zertifikat beim Verbinden mit deinem Jellyfin-Server vorlegen</string>
+    <string name="settings_client_cert_import_subtitle">Eine .p12- oder .pfx-Datei mit Zertifikat und privatem Schlüssel wählen</string>
+    <string name="settings_client_cert_replace_subtitle">Eine andere .p12- oder .pfx-Datei an Stelle dieser importieren</string>
+    <string name="settings_client_cert_remove_subtitle">Zertifikat und privaten Schlüssel von diesem Gerät löschen</string>
+    <string name="settings_client_cert_import">Zertifikat importieren…</string>
+    <string name="settings_client_cert_replace">Zertifikat ersetzen…</string>
+    <string name="settings_client_cert_remove">Zertifikat entfernen</string>
+    <string name="settings_client_cert_remove_title">Client-Zertifikat entfernen?</string>
+    <string name="settings_client_cert_remove_message">Das Zertifikat und sein privater Schlüssel werden von diesem Gerät gelöscht. Server, die es verlangen, lehnen Verbindungen ab, bis du die Datei erneut importierst.</string>
+    <string name="settings_client_cert_remove_confirm">Entfernen</string>
+    <string name="settings_client_cert_filebrowser_title">Client-Zertifikat auswählen</string>
+    <string name="settings_romm_config_error_client_certificate_required">Der Server verlangt ein Client-Zertifikat. Importiere eines unter Client-Zertifikat oder schalte dort „Für RomM verwenden“ ein.</string>
+    <string name="settings_accounts_pairing_error_client_certificate_required">Der Server verlangt ein Client-Zertifikat. Importiere eines unter Client-Zertifikat oder schalte dort „Für RomM verwenden“ ein.</string>
+    <string name="settings_jellyfin_error_client_certificate_required">Der Server verlangt ein Client-Zertifikat. Aktiviere „Für Jellyfin verwenden“ unter Client-Zertifikat.</string>
 </resources>
-

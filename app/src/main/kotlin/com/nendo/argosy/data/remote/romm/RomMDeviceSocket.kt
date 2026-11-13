@@ -1,5 +1,8 @@
 package com.nendo.argosy.data.remote.romm
 
+import com.nendo.argosy.data.remote.ssl.ClientCertStore
+import com.nendo.argosy.data.remote.ssl.ClientCertTarget
+import com.nendo.argosy.data.remote.ssl.scopeFor
 import com.nendo.argosy.data.remote.ssl.UserCertStore
 import com.nendo.argosy.data.remote.ssl.UserCertTrustManager.withUserCertTrust
 import com.nendo.argosy.util.Logger
@@ -34,7 +37,8 @@ private const val SERVER_DISCONNECT_REASON = "io server disconnect"
  */
 @Singleton
 class RomMDeviceSocket @Inject constructor(
-    private val userCertStore: UserCertStore
+    private val userCertStore: UserCertStore,
+    private val clientCertStore: ClientCertStore
 ) {
     sealed interface Event {
         data object Connected : Event
@@ -87,7 +91,7 @@ class RomMDeviceSocket @Inject constructor(
         val prefix = base.rawPath.orEmpty().trimEnd('/')
         val client = OkHttpClient.Builder()
             .readTimeout(READ_TIMEOUT_SECONDS, TimeUnit.SECONDS)
-            .withUserCertTrust(userCertStore)
+            .withUserCertTrust(userCertStore, clientCertStore, ClientCertTarget.ROMM.scopeFor(next.baseUrl))
             .build()
         val options = IO.Options().apply {
             path = "$prefix$SOCKET_PATH"

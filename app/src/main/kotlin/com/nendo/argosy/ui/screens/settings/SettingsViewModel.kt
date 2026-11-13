@@ -96,6 +96,8 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
+import com.nendo.argosy.ui.screens.common.ClientCertDelegate
+import com.nendo.argosy.data.remote.ssl.ClientCertTarget
 
 private const val AMBIENT_LIBRARY_WIDE = -1L
 
@@ -150,6 +152,7 @@ class SettingsViewModel @Inject constructor(
     val steamDelegate: SteamSettingsDelegate,
     val jellyfinDelegate: com.nendo.argosy.ui.screens.settings.delegates.JellyfinSettingsDelegate,
     val raDelegate: RASettingsDelegate,
+    val clientCertDelegate: ClientCertDelegate,
     val permissionsDelegate: PermissionsSettingsDelegate,
     val biosDelegate: BiosSettingsDelegate,
     val driversDelegate: com.nendo.argosy.ui.screens.settings.delegates.DriversSettingsDelegate,
@@ -2204,6 +2207,24 @@ class SettingsViewModel @Inject constructor(
     }
 
     fun importCertificate(path: String) = serverDelegate.importCertificate(viewModelScope, path)
+
+    val openClientCertPickerEvent: SharedFlow<Unit> = clientCertDelegate.openFilePickerEvent
+    fun openClientCertManager(target: ClientCertTarget) =
+        clientCertDelegate.openManager(target)
+    fun closeClientCertManager() = clientCertDelegate.closeManager()
+    fun moveClientCertManagerFocus(delta: Int) = clientCertDelegate.moveManagerFocus(delta)
+    fun selectClientCertAction(index: Int? = null) = clientCertDelegate.selectManagerAction(viewModelScope, index)
+    fun onClientCertFilePicked(path: String) = clientCertDelegate.onFilePicked(path)
+    fun setClientCertPassword(draft: String) = clientCertDelegate.setPasswordDraft(draft)
+    fun moveClientCertPasswordRow(row: TextEntryRow) = clientCertDelegate.movePasswordRow(row)
+    fun moveClientCertPasswordButton(delta: Int) = clientCertDelegate.movePasswordButton(delta)
+    fun confirmClientCertPassword() = clientCertDelegate.confirmPasswordEntry(viewModelScope)
+    fun submitClientCertPassword() = clientCertDelegate.submitPassword(viewModelScope)
+    fun closeClientCertPassword() = clientCertDelegate.closePasswordEntry()
+    fun setFocusedClientCertToggle(enabled: Boolean) =
+        clientCertDelegate.setFocusedToggle(viewModelScope, enabled)
+    fun confirmClientCertRemoval() = clientCertDelegate.confirmRemoval(viewModelScope)
+    fun cancelClientCertRemoval() = clientCertDelegate.cancelRemoval()
 
     fun clearRommFocusField() = serverDelegate.clearRommFocusField()
 

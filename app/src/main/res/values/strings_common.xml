@@ -2355,4 +2355,30 @@
     <string name="common_game_confirm_hide_message">Hidden games can be shown again in the Library by filtering Source to Hidden.</string>
     <!-- Confirm button of the hide dialog. Verb. -->
     <string name="common_game_confirm_hide_confirm">Hide</string>
+    <!-- Dialog title. Noun: the password protecting a .p12/.pfx certificate file. -->
+    <string name="ui_client_cert_password_title">Certificate Password</string>
+    <!-- Text field label. Noun. -->
+    <string name="ui_client_cert_password_label">Password</string>
+    <!-- Dialog message. %1$s is the chosen file's name. -->
+    <string name="ui_client_cert_password_message">Enter the password for %1$s. Leave it empty if the file has none.</string>
+    <!-- Confirm button. Verb: import the certificate. -->
+    <string name="ui_client_cert_password_import">Import</string>
+    <!-- Same button while the import runs. -->
+    <string name="ui_client_cert_password_import_busy">Importing…</string>
+    <!-- Cancel button of the password dialog. Verb. -->
+    <string name="ui_client_cert_password_cancel">Cancel</string>
+    <!-- Status line while the certificate is being imported. -->
+    <string name="ui_client_cert_password_status_importing">Importing the certificate…</string>
+    <!-- Error: the chosen file could not be opened. -->
+    <string name="ui_client_cert_password_error_not_a_file">That file could not be opened.</string>
+    <!-- Error: the password does not open the certificate file. -->
+    <string name="ui_client_cert_password_error_wrong_password">Wrong password for this certificate file.</string>
+    <!-- Error: the file holds a certificate but not its private key. -->
+    <string name="ui_client_cert_password_error_no_private_key">This file holds no private key. Export the certificate together with its key.</string>
+    <!-- Error: the file is not a PKCS#12 certificate. .p12 and .pfx are file extensions, do not translate. -->
+    <string name="ui_client_cert_password_error_unreadable">That file is not a readable .p12 or .pfx certificate.</string>
+    <!-- Error: the certificate's validity has ended. -->
+    <string name="ui_client_cert_password_error_expired">This certificate has expired.</string>
+    <!-- Error: the device keystore refused the key. RSA and EC are key algorithm names, do not translate. -->
+    <string name="ui_client_cert_password_error_unsupported_key">This device cannot store this key type. Use an RSA or EC key.</string>
 </resources>

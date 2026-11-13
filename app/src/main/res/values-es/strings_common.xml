@@ -1189,4 +1189,17 @@
     <string name="gamelist_row_running">En ejecución</string>
     <string name="gamelist_row_running_in">En ejecución en %1$s</string>
     <string name="gamelist_row_saving">Guardando</string>
+    <string name="ui_client_cert_password_title">Contraseña del certificado</string>
+    <string name="ui_client_cert_password_label">Contraseña</string>
+    <string name="ui_client_cert_password_message">Introduce la contraseña de %1$s. Déjalo vacío si el archivo no tiene.</string>
+    <string name="ui_client_cert_password_import">Importar</string>
+    <string name="ui_client_cert_password_import_busy">Importando…</string>
+    <string name="ui_client_cert_password_cancel">Cancelar</string>
+    <string name="ui_client_cert_password_status_importing">Importando el certificado…</string>
+    <string name="ui_client_cert_password_error_not_a_file">No se pudo abrir el archivo.</string>
+    <string name="ui_client_cert_password_error_wrong_password">Contraseña incorrecta para este archivo de certificado.</string>
+    <string name="ui_client_cert_password_error_no_private_key">Este archivo no contiene clave privada. Exporta el certificado junto con su clave.</string>
+    <string name="ui_client_cert_password_error_unreadable">Este archivo no es un certificado .p12 o .pfx legible.</string>
+    <string name="ui_client_cert_password_error_expired">Este certificado ha caducado.</string>
+    <string name="ui_client_cert_password_error_unsupported_key">Este dispositivo no puede guardar este tipo de clave. Usa una clave RSA o EC.</string>
 </resources>

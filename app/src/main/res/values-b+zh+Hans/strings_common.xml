@@ -1087,4 +1087,17 @@
     <string name="gamelist_row_running">运行中</string>
     <string name="gamelist_row_running_in">正在 %1$s 中运行</string>
     <string name="gamelist_row_saving">正在保存</string>
+    <string name="ui_client_cert_password_title">证书密码</string>
+    <string name="ui_client_cert_password_label">密码</string>
+    <string name="ui_client_cert_password_message">请输入 %1$s 的密码。如果文件没有密码，请留空。</string>
+    <string name="ui_client_cert_password_import">导入</string>
+    <string name="ui_client_cert_password_import_busy">正在导入…</string>
+    <string name="ui_client_cert_password_cancel">取消</string>
+    <string name="ui_client_cert_password_status_importing">正在导入证书…</string>
+    <string name="ui_client_cert_password_error_not_a_file">无法打开该文件。</string>
+    <string name="ui_client_cert_password_error_wrong_password">此证书文件的密码错误。</string>
+    <string name="ui_client_cert_password_error_no_private_key">此文件不含私钥。请将证书连同私钥一起导出。</string>
+    <string name="ui_client_cert_password_error_unreadable">该文件不是可读取的 .p12 或 .pfx 证书。</string>
+    <string name="ui_client_cert_password_error_expired">此证书已过期。</string>
+    <string name="ui_client_cert_password_error_unsupported_key">此设备无法存储该类型的密钥。请使用 RSA 或 EC 密钥。</string>
 </resources>

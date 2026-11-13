@@ -1,6 +1,8 @@
 package com.nendo.argosy.data.remote.jellyfin
 
 import com.nendo.argosy.BuildConfig
+import com.nendo.argosy.data.remote.ssl.ClientCertTarget
+import com.nendo.argosy.data.remote.ssl.scopeFor
 import com.nendo.argosy.data.remote.ssl.UserCertTrustManager.withUserCertTrust
 import com.squareup.moshi.Moshi
 import okhttp3.Interceptor
@@ -26,8 +28,12 @@ private const val CLIENT_NAME = "Argosy"
 @Singleton
 class JellyfinApiFactory @Inject constructor(
     private val moshi: Moshi,
-    private val userCertStore: com.nendo.argosy.data.remote.ssl.UserCertStore
+    private val userCertStore: com.nendo.argosy.data.remote.ssl.UserCertStore,
+    private val clientCertStore: com.nendo.argosy.data.remote.ssl.ClientCertStore
 ) {
+
+    fun requestedClientCertificate(url: String): Boolean =
+        clientCertStore.requestedWithoutCertificate(url)
 
     fun create(baseUrl: String, deviceId: String, deviceName: String, token: String?): JellyfinApi {
         val loggingInterceptor = HttpLoggingInterceptor().apply {
@@ -64,7 +70,7 @@ class JellyfinApiFactory @Inject constructor(
             .readTimeout(60, TimeUnit.SECONDS)
             .writeTimeout(60, TimeUnit.SECONDS)
             .dns(okhttp3.Dns.SYSTEM)
-            .withUserCertTrust(userCertStore)
+            .withUserCertTrust(userCertStore, clientCertStore, ClientCertTarget.JELLYFIN.scopeFor(baseUrl))
             .build()
 
         return Retrofit.Builder()

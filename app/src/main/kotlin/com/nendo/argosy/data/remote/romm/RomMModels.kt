@@ -598,7 +598,8 @@ data class RomMPairingExchangeResponse(
  * underlying exception text names neither the cause nor the fix.
  */
 enum class RomMErrorKind {
-    UNTRUSTED_CERTIFICATE
+    UNTRUSTED_CERTIFICATE,
+    CLIENT_CERTIFICATE_REQUIRED
 }
 
 sealed class RomMResult<out T> {

@@ -2927,4 +2927,27 @@
     <string name="settings_builtin_gpu_driver_reason_core_system_only">%1$s использует системный драйвер</string>
     <string name="settings_builtin_gpu_driver_reason_backend">Действует, когда рендерер Vulkan</string>
     <string name="settings_builtin_gpu_driver_reason_device">Свои драйверы требуют GPU Adreno</string>
+    <string name="settings_client_cert_row_title">Клиентский сертификат</string>
+    <string name="settings_client_cert_row_subtitle_none">Для серверов, требующих клиентский сертификат (mTLS)</string>
+    <string name="settings_client_cert_row_subtitle_active">%1$s · действителен до %2$s</string>
+    <string name="settings_client_cert_modal_header">Клиентский сертификат</string>
+    <string name="settings_client_cert_modal_title_none">Клиентский сертификат не импортирован</string>
+    <string name="settings_client_cert_modal_title_active">%1$s · действителен до %2$s</string>
+    <string name="settings_client_cert_use_romm_title">Использовать для RomM</string>
+    <string name="settings_client_cert_use_romm_subtitle">Предъявлять этот сертификат при подключении к вашему серверу RomM</string>
+    <string name="settings_client_cert_use_jellyfin_title">Использовать для Jellyfin</string>
+    <string name="settings_client_cert_use_jellyfin_subtitle">Предъявлять этот сертификат при подключении к вашему серверу Jellyfin</string>
+    <string name="settings_client_cert_import_subtitle">Выберите файл .p12 или .pfx с сертификатом и закрытым ключом</string>
+    <string name="settings_client_cert_replace_subtitle">Импортировать другой файл .p12 или .pfx вместо этого</string>
+    <string name="settings_client_cert_remove_subtitle">Удалить сертификат и его закрытый ключ с этого устройства</string>
+    <string name="settings_client_cert_import">Импортировать сертификат…</string>
+    <string name="settings_client_cert_replace">Заменить сертификат…</string>
+    <string name="settings_client_cert_remove">Удалить сертификат</string>
+    <string name="settings_client_cert_remove_title">Удалить клиентский сертификат?</string>
+    <string name="settings_client_cert_remove_message">Сертификат и его закрытый ключ будут удалены с этого устройства. Серверы, которые его требуют, будут отклонять подключения, пока вы снова не импортируете файл.</string>
+    <string name="settings_client_cert_remove_confirm">Удалить</string>
+    <string name="settings_client_cert_filebrowser_title">Выберите клиентский сертификат</string>
+    <string name="settings_romm_config_error_client_certificate_required">Сервер требует клиентский сертификат. Импортируйте его в разделе «Клиентский сертификат» или включите там «Использовать для RomM».</string>
+    <string name="settings_accounts_pairing_error_client_certificate_required">Сервер требует клиентский сертификат. Импортируйте его в разделе «Клиентский сертификат» или включите там «Использовать для RomM».</string>
+    <string name="settings_jellyfin_error_client_certificate_required">Сервер требует клиентский сертификат. Включите «Использовать для Jellyfin» в разделе «Клиентский сертификат».</string>
 </resources>

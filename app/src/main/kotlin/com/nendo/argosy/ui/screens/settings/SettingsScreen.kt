@@ -174,6 +174,8 @@ import com.nendo.argosy.ui.util.observeTouchDown
 import com.nendo.argosy.ui.screens.settings.components.LocalSettingsTouchFocus
 import com.nendo.argosy.ui.screens.settings.components.SettingsTouchFocus
 import com.nendo.argosy.ui.screens.settings.sections.LibrarySection
+import com.nendo.argosy.ui.screens.common.ClientCertPasswordModal
+import com.nendo.argosy.ui.screens.settings.components.ClientCertManagerModal
 
 @Composable
 fun SettingsScreen(
@@ -247,6 +249,7 @@ fun SettingsScreen(
     var fileBrowserCallback by remember { mutableStateOf<((String) -> Unit)?>(null) }
     var showSettingsBackupBrowser by remember { mutableStateOf(false) }
     var showCertBrowser by remember { mutableStateOf(false) }
+    var showClientCertBrowser by remember { mutableStateOf(false) }
     var showCustomFrameBrowser by remember { mutableStateOf(false) }
 
     val blePermissionLauncher = rememberLauncherForActivityResult(
@@ -307,6 +310,12 @@ fun SettingsScreen(
     LaunchedEffect(Unit) {
         viewModel.openCertificatePickerEvent.collect {
             showCertBrowser = true
+        }
+    }
+
+    LaunchedEffect(Unit) {
+        viewModel.openClientCertPickerEvent.collect {
+            showClientCertBrowser = true
         }
     }
 
@@ -1260,6 +1269,33 @@ fun SettingsScreen(
         }
     }
 
+    if (uiState.clientCert.managerOpenFor != null) {
+        ClientCertManagerModal(
+            state = uiState.clientCert,
+            onSelect = { viewModel.selectClientCertAction(it) },
+            onDismiss = { viewModel.closeClientCertManager() }
+        )
+    }
+
+    ArgosyConfirmModalHost(
+        visible = uiState.clientCert.confirmingRemoval,
+        title = stringResource(R.string.settings_client_cert_remove_title),
+        message = stringResource(R.string.settings_client_cert_remove_message),
+        confirmLabel = stringResource(R.string.settings_client_cert_remove_confirm),
+        destructive = true,
+        onConfirm = { viewModel.confirmClientCertRemoval() },
+        onDismiss = { viewModel.cancelClientCertRemoval() }
+    )
+
+    uiState.clientCert.passwordEntry?.let { entry ->
+        ClientCertPasswordModal(
+            entry = entry,
+            onDraftChange = { viewModel.setClientCertPassword(it) },
+            onSubmit = { viewModel.submitClientCertPassword() },
+            onDismiss = { viewModel.closeClientCertPassword() }
+        )
+    }
+
     uiState.retroAchievements.webApiKeyEditor?.let { editor ->
         RAWebApiKeyModal(
             editor = editor,
@@ -1299,6 +1335,19 @@ fun SettingsScreen(
                 fileBrowserTitle = null
                 fileBrowserCallback = null
             }
+        )
+    }
+
+    if (showClientCertBrowser) {
+        FileBrowserScreen(
+            mode = FileBrowserMode.FILE_SELECTION,
+            title = stringResource(R.string.settings_client_cert_filebrowser_title),
+            fileFilter = com.nendo.argosy.ui.filebrowser.FileFilter.CLIENT_CERTIFICATE,
+            onPathSelected = { path ->
+                showClientCertBrowser = false
+                viewModel.onClientCertFilePicked(path)
+            },
+            onDismiss = { showClientCertBrowser = false }
         )
     }
 

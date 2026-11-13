@@ -2540,4 +2540,27 @@
     <string name="settings_builtin_gpu_driver_reason_core_system_only">%1$s 使用系統驅動程式</string>
     <string name="settings_builtin_gpu_driver_reason_backend">渲染後端為 Vulkan 時生效</string>
     <string name="settings_builtin_gpu_driver_reason_device">自訂驅動程式需要 Adreno GPU</string>
+    <string name="settings_client_cert_row_title">用戶端憑證</string>
+    <string name="settings_client_cert_row_subtitle_none">用於需要用戶端憑證的伺服器 (mTLS)</string>
+    <string name="settings_client_cert_row_subtitle_active">%1$s · 有效期限至 %2$s</string>
+    <string name="settings_client_cert_modal_header">用戶端憑證</string>
+    <string name="settings_client_cert_modal_title_none">尚未匯入用戶端憑證</string>
+    <string name="settings_client_cert_modal_title_active">%1$s · 有效期限至 %2$s</string>
+    <string name="settings_client_cert_use_romm_title">用於 RomM</string>
+    <string name="settings_client_cert_use_romm_subtitle">連線至你的 RomM 伺服器時出示此憑證</string>
+    <string name="settings_client_cert_use_jellyfin_title">用於 Jellyfin</string>
+    <string name="settings_client_cert_use_jellyfin_subtitle">連線至你的 Jellyfin 伺服器時出示此憑證</string>
+    <string name="settings_client_cert_import_subtitle">選擇包含憑證及其私密金鑰的 .p12 或 .pfx 檔案</string>
+    <string name="settings_client_cert_replace_subtitle">匯入另一個 .p12 或 .pfx 檔案取代目前憑證</string>
+    <string name="settings_client_cert_remove_subtitle">從此裝置刪除憑證及其私密金鑰</string>
+    <string name="settings_client_cert_import">匯入憑證…</string>
+    <string name="settings_client_cert_replace">替換憑證…</string>
+    <string name="settings_client_cert_remove">移除憑證</string>
+    <string name="settings_client_cert_remove_title">移除用戶端憑證？</string>
+    <string name="settings_client_cert_remove_message">憑證及其私密金鑰將從此裝置刪除。需要該憑證的伺服器將拒絕連線，直到你再次匯入該檔案。</string>
+    <string name="settings_client_cert_remove_confirm">移除</string>
+    <string name="settings_client_cert_filebrowser_title">選擇用戶端憑證</string>
+    <string name="settings_romm_config_error_client_certificate_required">伺服器需要用戶端憑證。請在「用戶端憑證」中匯入，或在其中開啟「用於 RomM」。</string>
+    <string name="settings_accounts_pairing_error_client_certificate_required">伺服器需要用戶端憑證。請在「用戶端憑證」中匯入，或在其中開啟「用於 RomM」。</string>
+    <string name="settings_jellyfin_error_client_certificate_required">伺服器需要用戶端憑證。請在「用戶端憑證」中開啟「用於 Jellyfin」。</string>
 </resources>

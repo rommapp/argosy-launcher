@@ -2707,4 +2707,27 @@
     <string name="settings_builtin_gpu_driver_reason_core_system_only">%1$s 使用系统驱动</string>
     <string name="settings_builtin_gpu_driver_reason_backend">渲染后端为 Vulkan 时生效</string>
     <string name="settings_builtin_gpu_driver_reason_device">自定义驱动需要 Adreno GPU</string>
+    <string name="settings_client_cert_row_title">客户端证书</string>
+    <string name="settings_client_cert_row_subtitle_none">用于需要客户端证书的服务器 (mTLS)</string>
+    <string name="settings_client_cert_row_subtitle_active">%1$s · 有效期至 %2$s</string>
+    <string name="settings_client_cert_modal_header">客户端证书</string>
+    <string name="settings_client_cert_modal_title_none">尚未导入客户端证书</string>
+    <string name="settings_client_cert_modal_title_active">%1$s · 有效期至 %2$s</string>
+    <string name="settings_client_cert_use_romm_title">用于 RomM</string>
+    <string name="settings_client_cert_use_romm_subtitle">连接你的 RomM 服务器时出示此证书</string>
+    <string name="settings_client_cert_use_jellyfin_title">用于 Jellyfin</string>
+    <string name="settings_client_cert_use_jellyfin_subtitle">连接你的 Jellyfin 服务器时出示此证书</string>
+    <string name="settings_client_cert_import_subtitle">选择包含证书及其私钥的 .p12 或 .pfx 文件</string>
+    <string name="settings_client_cert_replace_subtitle">导入另一个 .p12 或 .pfx 文件替换当前证书</string>
+    <string name="settings_client_cert_remove_subtitle">从此设备删除证书及其私钥</string>
+    <string name="settings_client_cert_import">导入证书…</string>
+    <string name="settings_client_cert_replace">替换证书…</string>
+    <string name="settings_client_cert_remove">移除证书</string>
+    <string name="settings_client_cert_remove_title">移除客户端证书？</string>
+    <string name="settings_client_cert_remove_message">证书及其私钥将从此设备删除。需要该证书的服务器将拒绝连接，直到你再次导入该文件。</string>
+    <string name="settings_client_cert_remove_confirm">移除</string>
+    <string name="settings_client_cert_filebrowser_title">选择客户端证书</string>
+    <string name="settings_romm_config_error_client_certificate_required">服务器需要客户端证书。请在“客户端证书”中导入，或在其中开启“用于 RomM”。</string>
+    <string name="settings_accounts_pairing_error_client_certificate_required">服务器需要客户端证书。请在“客户端证书”中导入，或在其中开启“用于 RomM”。</string>
+    <string name="settings_jellyfin_error_client_certificate_required">服务器需要客户端证书。请在“客户端证书”中开启“用于 Jellyfin”。</string>
 </resources>

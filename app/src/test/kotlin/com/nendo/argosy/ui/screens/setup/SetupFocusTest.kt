@@ -7,6 +7,8 @@ import com.nendo.argosy.domain.model.PermissionAvailability
 import com.nendo.argosy.domain.model.PermissionSnapshot
 import com.nendo.argosy.domain.model.ScreenRole
 import com.nendo.argosy.domain.model.SetupFacts
+import com.nendo.argosy.ui.common.ClientCertSummary
+import com.nendo.argosy.ui.screens.common.ClientCertState
 import com.nendo.argosy.ui.screens.settings.ScreenAssignment
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
@@ -122,6 +124,31 @@ class SetupFocusTest {
             signIn = RommSignInState(view = LibraryView.ADDRESS, error = SetupError(certificate = true))
         )
         assertEquals(SetupTarget.Action(SetupActionId.IMPORT_CERTIFICATE), focusedTarget(address))
+    }
+
+    @Test
+    fun `a demanded client certificate moves focus to the client certificate action`() {
+        val address = SetupUiState(
+            page = SetupPage.LIBRARY,
+            signIn = RommSignInState(view = LibraryView.ADDRESS, error = SetupError(clientCertificate = true))
+        )
+        assertEquals(SetupTarget.Action(SetupActionId.IMPORT_CLIENT_CERTIFICATE), focusedTarget(address))
+    }
+
+    @Test
+    fun `the address view offers the client certificate and names an imported one`() {
+        val address = SetupUiState(page = SetupPage.LIBRARY, signIn = RommSignInState(view = LibraryView.ADDRESS))
+        assertEquals(
+            listOf(SetupActionId.IMPORT_CERTIFICATE, SetupActionId.IMPORT_CLIENT_CERTIFICATE, SetupActionId.PRIMARY),
+            actionsFor(address).map { it.id }
+        )
+        assertNull(actionsFor(address)[1].labelArg)
+
+        val summary = ClientCertSummary(displayName = "client-ec", expiresAtMillis = 0L, forRomm = true, forJellyfin = false)
+        val imported = address.copy(signIn = address.signIn.copy(clientCert = ClientCertState(summary = summary)))
+        val action = actionsFor(imported)[1]
+        assertEquals(R.string.firstrun_romm_client_certificate_button_active, action.label)
+        assertEquals("client-ec", action.labelArg)
     }
 
     @Test

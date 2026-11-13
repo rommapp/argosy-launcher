@@ -1150,4 +1150,17 @@
     <string name="gamelist_row_running">Läuft</string>
     <string name="gamelist_row_running_in">Läuft in %1$s</string>
     <string name="gamelist_row_saving">Speichert</string>
+    <string name="ui_client_cert_password_title">Zertifikatspasswort</string>
+    <string name="ui_client_cert_password_label">Passwort</string>
+    <string name="ui_client_cert_password_message">Gib das Passwort für %1$s ein. Lass das Feld leer, wenn die Datei keines hat.</string>
+    <string name="ui_client_cert_password_import">Importieren</string>
+    <string name="ui_client_cert_password_import_busy">Importiere…</string>
+    <string name="ui_client_cert_password_cancel">Abbrechen</string>
+    <string name="ui_client_cert_password_status_importing">Zertifikat wird importiert…</string>
+    <string name="ui_client_cert_password_error_not_a_file">Die Datei konnte nicht geöffnet werden.</string>
+    <string name="ui_client_cert_password_error_wrong_password">Falsches Passwort für diese Zertifikatsdatei.</string>
+    <string name="ui_client_cert_password_error_no_private_key">Die Datei enthält keinen privaten Schlüssel. Exportiere das Zertifikat zusammen mit dem Schlüssel.</string>
+    <string name="ui_client_cert_password_error_unreadable">Die Datei ist kein lesbares .p12- oder .pfx-Zertifikat.</string>
+    <string name="ui_client_cert_password_error_expired">Dieses Zertifikat ist abgelaufen.</string>
+    <string name="ui_client_cert_password_error_unsupported_key">Dieses Gerät kann diesen Schlüsseltyp nicht speichern. Verwende einen RSA- oder EC-Schlüssel.</string>
 </resources>

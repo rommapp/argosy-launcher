@@ -3,6 +3,7 @@ package com.nendo.argosy.ui.screens.settings.delegates
 import android.content.Context
 import com.nendo.argosy.R
 import com.nendo.argosy.data.remote.romm.DeviceAuthOutcome
+import com.nendo.argosy.data.remote.romm.RomMErrorKind
 import com.nendo.argosy.data.remote.romm.RomMResult
 import com.nendo.argosy.data.remote.romm.RomMRepository
 import com.nendo.argosy.data.remote.romm.pollDeviceAuthUntilResolved
@@ -373,7 +374,13 @@ class AccountsSettingsDelegate @Inject constructor(
                     }
                     pollForApproval(data.deviceCode, data.interval, data.expiresIn)
                 }
-                is RomMResult.Error -> failPairing(init.message)
+                is RomMResult.Error -> failPairing(
+                    if (init.kind == RomMErrorKind.CLIENT_CERTIFICATE_REQUIRED) {
+                        context.getString(R.string.settings_accounts_pairing_error_client_certificate_required)
+                    } else {
+                        init.message
+                    }
+                )
             }
         }
     }

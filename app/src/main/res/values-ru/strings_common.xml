@@ -1204,4 +1204,17 @@
     <string name="gamelist_row_running">Запущена</string>
     <string name="gamelist_row_running_in">Запущена в %1$s</string>
     <string name="gamelist_row_saving">Сохранение</string>
+    <string name="ui_client_cert_password_title">Пароль сертификата</string>
+    <string name="ui_client_cert_password_label">Пароль</string>
+    <string name="ui_client_cert_password_message">Введите пароль для %1$s. Оставьте поле пустым, если пароля нет.</string>
+    <string name="ui_client_cert_password_import">Импорт</string>
+    <string name="ui_client_cert_password_import_busy">Импорт…</string>
+    <string name="ui_client_cert_password_cancel">Отмена</string>
+    <string name="ui_client_cert_password_status_importing">Импорт сертификата…</string>
+    <string name="ui_client_cert_password_error_not_a_file">Не удалось открыть файл.</string>
+    <string name="ui_client_cert_password_error_wrong_password">Неверный пароль для этого файла сертификата.</string>
+    <string name="ui_client_cert_password_error_no_private_key">В файле нет закрытого ключа. Экспортируйте сертификат вместе с ключом.</string>
+    <string name="ui_client_cert_password_error_unreadable">Файл не является читаемым сертификатом .p12 или .pfx.</string>
+    <string name="ui_client_cert_password_error_expired">Срок действия сертификата истёк.</string>
+    <string name="ui_client_cert_password_error_unsupported_key">Устройство не может сохранить ключ этого типа. Используйте ключ RSA или EC.</string>
 </resources>

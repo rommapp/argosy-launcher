@@ -564,12 +564,18 @@ class SigilSaveHandler @Inject constructor(
             ?: emulatorSaveConfigRepository.resolveEvaluatedSavePath(config.emulatorId)
         val candidates = listOfNotNull(chosen) + registered
         val roots = candidates.mapNotNull {
-            if (layout == FLYCAST_STANDALONE_LAYOUT) it.trimEnd('/') else rootFor(it, layout)
+            if (layout == FLYCAST_STANDALONE_LAYOUT) it.trimEnd('/') else rootFor(it, layout) ?: rootAbove(it, layout)
         }.distinct()
         if (roots.isEmpty()) {
             Logger.warn(TAG, "[SaveSync] SIGIL | no root for layout=$layout in ${candidates.firstOrNull()}")
         }
         return roots.firstOrNull { fal.isDirectory(it) } ?: roots.firstOrNull()
+    }
+
+    private fun rootAbove(path: String, layout: String): String? {
+        val root = path.trimEnd('/')
+        val anchors = ROOT_ANCHORS[layout] ?: return null
+        return root.takeIf { anchors.any { anchor -> fal.isDirectory("$root/${anchor.substringBefore('/')}") } }
     }
 
     private fun accessPaths(route: SigilRoute): Array<String> = saveLocator.accessPaths(route).toTypedArray()

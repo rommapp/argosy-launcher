@@ -10,8 +10,11 @@ internal open class CategorySplitFolderHandler(
     fal: FileAccessLayer,
     saveArchiver: SaveArchiver,
     platformSlug: String,
-    private val categoryDir: Regex
+    private val categoryDir: Regex,
+    private val categoryParents: List<String> = emptyList()
 ) : FolderSaveHandler(context, fal, saveArchiver, platformSlug = platformSlug) {
+
+    private val access = fal
 
     companion object {
         private const val ID_HEX_LENGTH = 8
@@ -24,12 +27,22 @@ internal open class CategorySplitFolderHandler(
             saveId.replace("/", "").takeIf { FULL_ID.matches(it) }?.take(ID_HEX_LENGTH)?.lowercase()
     }
 
+    /**
+     * The category directory [saveId] lives in. [basePath] is normally that directory or a sibling
+     * category; a folder above it, such as a save path override set to the emulator's `Wii` or
+     * `User` folder, is followed down through [categoryParents] to the category that exists there.
+     */
     fun categoryBase(basePath: String, saveId: String): String {
         val base = basePath.trimEnd('/')
         val category = categoryOf(saveId) ?: return base
         val lastSegment = base.substringAfterLast('/')
-        if (!categoryDir.matches(lastSegment) || lastSegment.equals(category, ignoreCase = true)) return base
-        return "${base.substringBeforeLast('/')}/$category"
+        if (categoryDir.matches(lastSegment)) {
+            return if (lastSegment.equals(category, ignoreCase = true)) base else "${base.substringBeforeLast('/')}/$category"
+        }
+        return categoryParents
+            .map { parent -> if (parent.isEmpty()) "$base/$category" else "$base/$parent/$category" }
+            .firstOrNull { access.isDirectory(it) }
+            ?: base
     }
 
     override fun folderMatches(folderName: String, saveId: String): Boolean =

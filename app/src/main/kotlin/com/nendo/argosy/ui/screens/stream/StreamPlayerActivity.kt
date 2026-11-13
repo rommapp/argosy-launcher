@@ -40,7 +40,9 @@ import com.nendo.argosy.data.streaming.StreamEndReason
 import com.nendo.argosy.data.streaming.StreamPhase
 import com.nendo.argosy.data.streaming.StreamSession
 import com.nendo.argosy.data.streaming.StreamSessionManager
+import com.nendo.argosy.core.input.SoundType
 import com.nendo.argosy.ui.input.GamepadEvent
+import com.nendo.argosy.ui.input.SoundFeedbackManager
 import com.nendo.argosy.ui.input.LocalABIconsSwapped
 import com.nendo.argosy.ui.input.LocalSwapStartSelect
 import com.nendo.argosy.ui.input.LocalXYIconsSwapped
@@ -83,6 +85,9 @@ class StreamPlayerActivity : ComponentActivity() {
 
     @Inject
     lateinit var userPreferencesRepository: UserPreferencesRepository
+
+    @Inject
+    lateinit var soundFeedbackManager: SoundFeedbackManager
 
     @Inject
     lateinit var quickPanelOverlay: com.nendo.argosy.ui.quickpanel.QuickPanelOverlay
@@ -187,7 +192,7 @@ class StreamPlayerActivity : ComponentActivity() {
         )
         onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
             override fun handleOnBackPressed() {
-                if (uiState.value.controlsOpen) closeControls() else openControls()
+                if (uiState.value.controlsOpen) dismissControls() else openControls()
             }
         })
         sessions.attachTask(taskId)
@@ -511,26 +516,36 @@ class StreamPlayerActivity : ComponentActivity() {
         when (event) {
             GamepadEvent.Up -> moveControlsFocus(-1)
             GamepadEvent.Down -> moveControlsFocus(1)
-            GamepadEvent.Confirm -> state.focusedRow?.let(::runControl)
-            GamepadEvent.Back -> closeControls()
+            GamepadEvent.Confirm -> state.focusedRow?.let { row ->
+                soundFeedbackManager.play(SoundType.SELECT)
+                runControl(row)
+            }
+            GamepadEvent.Back -> dismissControls()
             else -> Unit
         }
     }
 
     private fun moveControlsFocus(delta: Int) {
+        if (uiState.value.rows.isEmpty()) return
         uiState.update { state ->
-            if (state.rows.isEmpty()) state
-            else state.copy(controlsFocusIndex = (state.controlsFocusIndex + delta).mod(state.rows.size))
+            state.copy(controlsFocusIndex = (state.controlsFocusIndex + delta).mod(state.rows.size))
         }
+        soundFeedbackManager.play(SoundType.NAVIGATE)
     }
 
     private fun openControls() {
         if (uiState.value.stage != StreamPlayerStage.PLAYING) return
         uiState.update { it.copy(controlsOpen = true, controlsFocusIndex = 0, notice = null) }
+        soundFeedbackManager.play(SoundType.OPEN_MODAL)
     }
 
     private fun closeControls() {
         uiState.update { it.copy(controlsOpen = false, notice = null) }
+    }
+
+    private fun dismissControls() {
+        closeControls()
+        soundFeedbackManager.play(SoundType.CLOSE_MODAL)
     }
 
     private fun runControl(row: StreamControlRow) {

@@ -16,8 +16,6 @@ import dagger.assisted.Assisted
 import dagger.assisted.AssistedInject
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import java.net.HttpURLConnection
-import java.net.URL
 import java.time.Instant
 import java.util.concurrent.TimeUnit
 
@@ -80,7 +78,7 @@ class CoreUpdateCheckWorker @AssistedInject constructor(
                     Logger.warn(TAG, "Core ${coreInfo.displayName} failed integrity check")
                 }
 
-                val latestVersion = fetchLatestVersion(coreInfo.fileName)
+                val latestVersion = coreManager.latestVersion(coreInfo)
                 if (latestVersion == null) {
                     Logger.warn(TAG, "Failed to check version for ${coreInfo.displayName}")
                     continue
@@ -114,28 +112,4 @@ class CoreUpdateCheckWorker @AssistedInject constructor(
         }
     }
 
-    private fun fetchLatestVersion(fileName: String): String? {
-        return try {
-            val url = URL("${LibretroBuildbot.baseUrl}/$fileName.zip")
-            val connection = url.openConnection() as HttpURLConnection
-            connection.requestMethod = "HEAD"
-            connection.connectTimeout = 10_000
-            connection.readTimeout = 10_000
-
-            try {
-                connection.connect()
-                if (connection.responseCode == HttpURLConnection.HTTP_OK) {
-                    connection.getHeaderField("Last-Modified")
-                        ?: connection.contentLengthLong.toString()
-                } else {
-                    null
-                }
-            } finally {
-                connection.disconnect()
-            }
-        } catch (e: Exception) {
-            Logger.warn(TAG, "Failed to fetch version for $fileName: ${e.message}")
-            null
-        }
-    }
 }

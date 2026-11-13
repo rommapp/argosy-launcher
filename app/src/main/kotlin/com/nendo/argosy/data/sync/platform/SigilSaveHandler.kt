@@ -169,7 +169,7 @@ class SigilSaveHandler @Inject constructor(
             "lime3ds" to listOf("sdmc")
         )
 
-        private val GB_CORES = setOf("gambatte", "mgba", "vbam", "sameboy", "tgbdual")
+        private val GB_CORES = setOf("gambatte", "mgba", "vbam", "sameboy", "tgbdual", "armgba")
 
         private val LIBRETRO_LAYOUTS: Map<String, Set<String>> = mapOf(
             "saturn" to setOf("mednafen_saturn", "kronos", "yabause", "yabasanshiro"),

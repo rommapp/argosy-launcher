@@ -7,6 +7,23 @@ enum class NetplaySupportLevel {
     UNSUPPORTED
 }
 
+/**
+ * Where a built-in core is downloaded from. [Buildbot] is libretro's nightly Android build;
+ * [GitHubRelease] is a core libretro does not build, taken from its author's latest release,
+ * whose zip for the device ABI ends in [assetSuffix] followed by the ABI and `.zip`.
+ */
+sealed interface CoreSource {
+    data object Buildbot : CoreSource
+
+    data class GitHubRelease(
+        val owner: String,
+        val repo: String,
+        val assetSuffix: String
+    ) : CoreSource {
+        fun assetNameMatches(name: String, abi: String): Boolean = name.endsWith("$assetSuffix$abi.zip")
+    }
+}
+
 object LibretroCoreRegistry {
 
     data class CoreInfo(
@@ -32,7 +49,8 @@ object LibretroCoreRegistry {
          * timer and never at unload, so pausing or quitting inside the window loses the save.
          */
         val saveFlushWindowMs: Long = 0L,
-        val requires64BitProcess: Boolean = false
+        val requires64BitProcess: Boolean = false,
+        val source: CoreSource = CoreSource.Buildbot
     )
 
     private val cores: List<CoreInfo> by lazy { coresFor(LibretroBuildbot.processIs64Bit) }
@@ -122,6 +140,14 @@ object LibretroCoreRegistry {
             platforms = setOf("gba"),
             estimatedSizeBytes = 600_000L,
             requiresBios = listOf("gba_bios.bin")
+        ),
+        CoreInfo(
+            coreId = "armgba",
+            fileName = "armgba_libretro_android.so",
+            displayName = "armGBA",
+            platforms = setOf("gb", "gbc", "gba"),
+            estimatedSizeBytes = 1_800_000L,
+            source = CoreSource.GitHubRelease(owner = "MagnominusGit", repo = "armGBA", assetSuffix = "-android-")
         ),
 
         // Nintendo 64

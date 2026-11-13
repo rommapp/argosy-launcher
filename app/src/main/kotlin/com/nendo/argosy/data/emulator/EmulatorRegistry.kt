@@ -1418,9 +1418,9 @@ object EmulatorRegistry {
         "gc" to listOf("dolphin"),
         "ngc" to listOf("dolphin"),
         "wii" to listOf("dolphin"),
-        "gb" to listOf("gambatte", "mgba", "sameboy", "gearboy", "tgbdual"),
-        "gbc" to listOf("gambatte", "mgba", "sameboy", "gearboy", "tgbdual"),
-        "gba" to listOf("mgba", "vbam", "gpsp"),
+        "gb" to listOf("gambatte", "mgba", "sameboy", "gearboy", "tgbdual", "armgba"),
+        "gbc" to listOf("gambatte", "mgba", "sameboy", "gearboy", "tgbdual", "armgba"),
+        "gba" to listOf("mgba", "vbam", "gpsp", "armgba"),
         "nds" to listOf("melondsds", "melonds", "desmume"),
         "3ds" to listOf("citra"),
         "genesis" to listOf("genesis_plus_gx", "picodrive"),
@@ -1506,20 +1506,23 @@ object EmulatorRegistry {
             RetroArchCore("mgba", "mGBA"),
             RetroArchCore("sameboy", "SameBoy"),
             RetroArchCore("gearboy", "Gearboy"),
-            RetroArchCore("tgbdual", "TGB Dual")
+            RetroArchCore("tgbdual", "TGB Dual"),
+            RetroArchCore("armgba", "armGBA")
         ),
         "gbc" to listOf(
             RetroArchCore("gambatte", "Gambatte"),
             RetroArchCore("mgba", "mGBA"),
             RetroArchCore("sameboy", "SameBoy"),
             RetroArchCore("gearboy", "Gearboy"),
-            RetroArchCore("tgbdual", "TGB Dual")
+            RetroArchCore("tgbdual", "TGB Dual"),
+            RetroArchCore("armgba", "armGBA")
         ),
         "gba" to listOf(
             RetroArchCore("mgba", "mGBA"),
             RetroArchCore("vba_next", "VBA Next"),
             RetroArchCore("vbam", "VBA-M"),
-            RetroArchCore("gpsp", "gpSP")
+            RetroArchCore("gpsp", "gpSP"),
+            RetroArchCore("armgba", "armGBA")
         ),
         "nds" to listOf(
             RetroArchCore("melondsds", "melonDS DS"),
@@ -1798,6 +1801,7 @@ object EmulatorRegistry {
         "mupen64plus_next_gles2" to "Mupen64Plus-Next",
         "parallel_n64" to "ParaLLEl N64",
         "tgbdual" to "TGB Dual",
+        "armgba" to "armGBA",
         "vba_next" to "VBA Next",
         "vbam" to "VBA-M",
         "desmume2015" to "DeSmuME 2015",

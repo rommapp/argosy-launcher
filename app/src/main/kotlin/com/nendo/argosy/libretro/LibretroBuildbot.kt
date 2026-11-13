@@ -18,8 +18,8 @@ object LibretroBuildbot {
      */
     val detectedAbi: String by lazy {
         val is64Bit = Process.is64Bit()
-        val bitnessAbis = if (is64Bit) Build.SUPPORTED_64_BIT_ABIS.toList()
-                          else Build.SUPPORTED_32_BIT_ABIS.toList()
+        val bitnessAbis = (if (is64Bit) Build.SUPPORTED_64_BIT_ABIS else Build.SUPPORTED_32_BIT_ABIS)
+            ?.toList().orEmpty()
         val fallback = if (is64Bit) "arm64-v8a" else "armeabi-v7a"
         val selected = bitnessAbis.firstOrNull { it in SUPPORTED_ABIS } ?: fallback
         Log.i(TAG, "Process is64Bit=$is64Bit, bitness ABIs=$bitnessAbis, selected=$selected")
@@ -53,5 +53,7 @@ object LibretroBuildbot {
         get() = abiOverride ?: detectedAbi
 
     val baseUrl: String
-        get() = "https://buildbot.libretro.com/nightly/android/latest/$deviceAbi"
+        get() = baseUrlFor(deviceAbi)
+
+    fun baseUrlFor(abi: String): String = "https://buildbot.libretro.com/nightly/android/latest/$abi"
 }

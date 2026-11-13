@@ -55,7 +55,7 @@ fun formatCoreDownloadError(failure: CoreDownloadFailure): String = when (failur
     CoreDownloadFailure.NotPublished ->
         "Core is not published for ${LibretroBuildbot.deviceAbi}. " +
             "This core may not be available on 32-bit devices."
-    CoreDownloadFailure.ServerError -> "Libretro buildbot server error. Try again later."
+    CoreDownloadFailure.ServerError -> "The core's download server did not answer. Try again later."
     CoreDownloadFailure.Corrupted -> "Downloaded core file is corrupted. Try again."
     CoreDownloadFailure.TimedOut -> "Download timed out. Check your network connection."
     CoreDownloadFailure.Offline ->

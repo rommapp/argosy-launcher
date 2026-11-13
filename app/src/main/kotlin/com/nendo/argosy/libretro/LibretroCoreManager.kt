@@ -7,7 +7,10 @@ import com.nendo.argosy.data.local.dao.CoreVersionDao
 import com.nendo.argosy.data.local.dao.CoreVersionHistoryDao
 import com.nendo.argosy.data.local.entity.CoreVersionEntity
 import com.nendo.argosy.data.local.entity.CoreVersionHistoryEntity
+import com.nendo.argosy.data.remote.github.GitHubReleaseClient
+import com.nendo.argosy.data.remote.github.ReleaseLookup
 import com.nendo.argosy.data.storage.StorageAttributionRepository
+import com.nendo.argosy.data.update.UpdateApkFiles
 import com.nendo.argosy.data.storage.StorageCategory
 import com.nendo.argosy.util.AppPaths
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -17,6 +20,7 @@ import kotlinx.coroutines.withTimeoutOrNull
 import java.io.File
 import java.net.HttpURLConnection
 import java.net.URL
+import java.security.DigestInputStream
 import java.security.MessageDigest
 import java.time.Instant
 import java.util.zip.ZipInputStream
@@ -26,6 +30,10 @@ import javax.inject.Singleton
 private const val TAG = "LibretroCoreManager"
 private val ELF_MAGIC = byteArrayOf(0x7F, 'E'.code.toByte(), 'L'.code.toByte(), 'F'.code.toByte())
 private const val CORE_HISTORY_LIMIT = 10
+private const val DRAIN_BUFFER_BYTES = 64 * 1024
+private const val VERSION_CHECK_TIMEOUT_MS = 10_000
+
+internal data class CoreDownloadTarget(val url: String, val version: String?, val sha256: String?)
 
 @Singleton
 class LibretroCoreManager @Inject constructor(
@@ -34,7 +42,8 @@ class LibretroCoreManager @Inject constructor(
     private val coreVersionHistoryDao: CoreVersionHistoryDao,
     private val coreSystemDataManager: CoreSystemDataManager,
     private val compatCoreCache: CompatCoreCache,
-    private val attributionRepository: StorageAttributionRepository
+    private val attributionRepository: StorageAttributionRepository,
+    private val releaseClient: GitHubReleaseClient
 ) {
     private val downloadedCoresDir = File(context.filesDir, "libretro/cores").apply { mkdirs() }
     private val coreHistoryDir = File(context.filesDir, "libretro/core_history").apply { mkdirs() }
@@ -186,7 +195,8 @@ class LibretroCoreManager @Inject constructor(
                     compatCoreCache.storeCompatCore(targetFile, existingHash)
                     archiveToHistory(coreInfo.coreId, targetFile, existingHash)
                 }
-                val zipUrl = "${LibretroBuildbot.baseUrl}/${coreInfo.fileName}.zip"
+                val target = resolveDownload(coreInfo)
+                val zipUrl = target.url
 
                 Log.i(TAG, "Downloading ${coreInfo.displayName}: $zipUrl")
                 Log.i(TAG, "Device ABI: ${LibretroBuildbot.deviceAbi}")
@@ -209,11 +219,14 @@ class LibretroCoreManager @Inject constructor(
                     throw CoreDownloadException(failure, "Core not available: $errorMessage")
                 }
 
-                val version = connection.getHeaderField("Last-Modified")
+                val version = target.version
+                    ?: connection.getHeaderField("Last-Modified")
                     ?: connection.contentLengthLong.toString()
 
                 val zipLength = connection.contentLengthLong
-                val countingInput = object : java.io.FilterInputStream(connection.inputStream) {
+                val zipDigest = MessageDigest.getInstance("SHA-256")
+                val hashedInput = DigestInputStream(connection.inputStream, zipDigest)
+                val countingInput = object : java.io.FilterInputStream(hashedInput) {
                     private var read = 0L
                     override fun read(b: ByteArray, off: Int, len: Int): Int {
                         val n = super.read(b, off, len)
@@ -241,6 +254,17 @@ class LibretroCoreManager @Inject constructor(
                                 }
                             } else {
                                 throw IllegalStateException("Expected ${coreInfo.fileName} in zip, got ${entry?.name}")
+                            }
+                            if (target.sha256 != null) {
+                                val drain = ByteArray(DRAIN_BUFFER_BYTES)
+                                while (countingInput.read(drain) >= 0) Unit
+                                val actual = zipDigest.digest().joinToString("") { "%02x".format(it) }
+                                if (!actual.equals(target.sha256, ignoreCase = true)) {
+                                    throw CoreDownloadException(
+                                        CoreDownloadFailure.Corrupted,
+                                        "Downloaded core does not match its release checksum"
+                                    )
+                                }
                             }
                         }
                     }
@@ -295,6 +319,67 @@ class LibretroCoreManager @Inject constructor(
                 targetFile
             }
         }
+
+    internal suspend fun resolveDownload(
+        coreInfo: LibretroCoreRegistry.CoreInfo,
+        abi: String = LibretroBuildbot.deviceAbi
+    ): CoreDownloadTarget =
+        when (val source = coreInfo.source) {
+            CoreSource.Buildbot ->
+                CoreDownloadTarget("${LibretroBuildbot.baseUrlFor(abi)}/${coreInfo.fileName}.zip", version = null, sha256 = null)
+            is CoreSource.GitHubRelease -> {
+                val release = when (val lookup = releaseClient.latestRelease(source.owner, source.repo)) {
+                    is ReleaseLookup.Found -> lookup.release
+                    ReleaseLookup.NotFound -> throw CoreDownloadException(
+                        CoreDownloadFailure.NotPublished,
+                        "${source.owner}/${source.repo} has no release"
+                    )
+                    is ReleaseLookup.RateLimited, is ReleaseLookup.Failed -> throw CoreDownloadException(
+                        CoreDownloadFailure.ServerError,
+                        "GitHub did not answer the release lookup for ${source.owner}/${source.repo}"
+                    )
+                }
+                val asset = release.assets.firstOrNull { source.assetNameMatches(it.name, abi) }
+                    ?: throw CoreDownloadException(
+                        CoreDownloadFailure.NotPublished,
+                        "${release.tagName} of ${source.owner}/${source.repo} has no $abi build"
+                    )
+                CoreDownloadTarget(asset.downloadUrl, release.tagName, UpdateApkFiles.sha256Of(asset.digest))
+            }
+        }
+
+    /**
+     * The version a fresh download of [coreInfo] would install: the buildbot zip's Last-Modified,
+     * or the GitHub release tag. Null when the source could not be asked.
+     */
+    suspend fun latestVersion(coreInfo: LibretroCoreRegistry.CoreInfo): String? = withContext(Dispatchers.IO) {
+        when (coreInfo.source) {
+            CoreSource.Buildbot -> buildbotVersion(coreInfo.fileName)
+            is CoreSource.GitHubRelease -> runCatching { resolveDownload(coreInfo).version }
+                .onFailure { Log.w(TAG, "Release check failed for ${coreInfo.coreId}: ${it.message}") }
+                .getOrNull()
+        }
+    }
+
+    private fun buildbotVersion(fileName: String): String? = try {
+        val connection = URL("${LibretroBuildbot.baseUrl}/$fileName.zip").openConnection() as HttpURLConnection
+        connection.requestMethod = "HEAD"
+        connection.connectTimeout = VERSION_CHECK_TIMEOUT_MS
+        connection.readTimeout = VERSION_CHECK_TIMEOUT_MS
+        try {
+            connection.connect()
+            if (connection.responseCode == HttpURLConnection.HTTP_OK) {
+                connection.getHeaderField("Last-Modified") ?: connection.contentLengthLong.toString()
+            } else {
+                null
+            }
+        } finally {
+            connection.disconnect()
+        }
+    } catch (e: Exception) {
+        Log.w(TAG, "Failed to fetch version for $fileName: ${e.message}")
+        null
+    }
 
     suspend fun resolveNetplayCorePath(coreId: String, hostCoreHash: String): NetplayCoreResolution {
         val currentPath = getCorePathForCoreId(coreId)

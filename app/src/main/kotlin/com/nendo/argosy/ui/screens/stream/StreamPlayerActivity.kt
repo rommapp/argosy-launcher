@@ -82,6 +82,9 @@ class StreamPlayerActivity : ComponentActivity() {
     @Inject
     lateinit var userPreferencesRepository: UserPreferencesRepository
 
+    @Inject
+    lateinit var quickPanelOverlay: com.nendo.argosy.ui.quickpanel.QuickPanelOverlay
+
     private lateinit var webView: WebView
     private lateinit var overlay: ComposeView
     private val uiState = MutableStateFlow(StreamPlayerUiState())
@@ -101,6 +104,7 @@ class StreamPlayerActivity : ComponentActivity() {
     private var swapXY by mutableStateOf(false)
     private var swapStartSelect by mutableStateOf(false)
     private var backHoldJob: Job? = null
+    private var backHoldFired = false
     private var noticeJob: Job? = null
     private var ownsCompanion = false
     private var pendingPermission: PermissionRequest? = null
@@ -350,6 +354,7 @@ class StreamPlayerActivity : ComponentActivity() {
     }
 
     override fun onDestroy() {
+        quickPanelOverlay.hideNow()
         val dsm = DualScreenManagerHolder.instance
         if (dsm != null) {
             if (dsm.emulatorKeyDispatcher === forwardedKeyDispatcher) dsm.emulatorKeyDispatcher = null
@@ -413,6 +418,7 @@ class StreamPlayerActivity : ComponentActivity() {
         val dsm = DualScreenManagerHolder.instance
         if (dsm != null && !dsm.claimInput(event)) return true
         if (event.keyCode in SYSTEM_KEYS) return super.dispatchKeyEvent(event)
+        if (quickPanelOverlay.isOpen.value) return true
         if (event.keyCode == KeyEvent.KEYCODE_BACK && !uiState.value.capturesInput) return onBackKey(event)
         if (uiState.value.capturesInput) {
             if (event.action == KeyEvent.ACTION_DOWN && event.repeatCount == 0) {
@@ -430,7 +436,7 @@ class StreamPlayerActivity : ComponentActivity() {
     }
 
     override fun dispatchGenericMotionEvent(event: MotionEvent): Boolean {
-        if (uiState.value.capturesInput) return true
+        if (uiState.value.capturesInput || quickPanelOverlay.isOpen.value) return true
         val fromPad = event.isFromSource(android.view.InputDevice.SOURCE_JOYSTICK) ||
             event.isFromSource(android.view.InputDevice.SOURCE_GAMEPAD)
         if (fromPad && event.action == MotionEvent.ACTION_MOVE) {
@@ -450,17 +456,28 @@ class StreamPlayerActivity : ComponentActivity() {
         when (event.action) {
             KeyEvent.ACTION_DOWN -> if (event.repeatCount == 0) {
                 backHoldJob?.cancel()
+                backHoldFired = false
                 backHoldJob = lifecycleScope.launch {
                     delay(BACK_HOLD_MS)
-                    openControls()
+                    backHoldFired = true
+                    onBackHeld()
                 }
             }
             KeyEvent.ACTION_UP -> {
-                backHoldJob?.cancel()
+                val job = backHoldJob ?: return true
+                job.cancel()
                 backHoldJob = null
+                if (!backHoldFired) openControls()
             }
         }
         return true
+    }
+
+    private fun onBackHeld() {
+        if (uiState.value.capturesInput) return
+        val displayId = (if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.R) display else null)
+            ?.displayId ?: android.view.Display.DEFAULT_DISPLAY
+        if (!quickPanelOverlay.show(displayId, resultOwner = this)) openControls()
     }
 
     private fun routeOverlay(event: GamepadEvent) {

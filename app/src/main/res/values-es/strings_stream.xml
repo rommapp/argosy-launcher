@@ -42,6 +42,7 @@
     <string name="stream_launch_notice_refused">RomM no pudo iniciar la transmisión con esa partida o ese estado.</string>
     <string name="stream_launch_notice_not_found">RomM no encontró este juego para transmitirlo.</string>
     <string name="stream_launch_notice_unreachable">No se pudo conectar con RomM.</string>
+    <string name="stream_launch_notice_game_running">Cierra el juego en ejecución para transmitir.</string>
     <string name="stream_launch_notice_failed">No se pudo iniciar la transmisión.</string>
     <string name="stream_launch_notice_join_ended">Esa sesión ha terminado o ya no admite más jugadores.</string>
     <string name="stream_launch_action_start">Transmitir</string>

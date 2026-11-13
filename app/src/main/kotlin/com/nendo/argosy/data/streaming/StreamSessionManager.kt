@@ -13,10 +13,8 @@ import com.nendo.argosy.data.remote.romm.RomMStreamSlotCapabilities
 import com.nendo.argosy.data.remote.romm.RomMStreamSlotRequest
 import com.nendo.argosy.data.remote.romm.RomMStreamSwapDiscRequest
 import com.nendo.argosy.data.remote.romm.RomMStreamingContainer
-import com.nendo.argosy.data.repository.SaveSyncRepository
 import com.nendo.argosy.util.Logger
 import com.squareup.moshi.Moshi
-import dagger.Lazy
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
@@ -100,7 +98,6 @@ data class StreamSession(
 class StreamSessionManager internal constructor(
     private val connectionManager: RomMConnectionManager,
     private val configStore: StreamingConfigStore,
-    private val saveSyncRepository: Lazy<SaveSyncRepository>,
     private val tracker: PlaySessionTracker,
     private val releaser: StreamClaimReleaser,
     private val scope: CoroutineScope,
@@ -111,13 +108,11 @@ class StreamSessionManager internal constructor(
     constructor(
         connectionManager: RomMConnectionManager,
         configStore: StreamingConfigStore,
-        saveSyncRepository: Lazy<SaveSyncRepository>,
         tracker: PlaySessionTracker,
         releaser: StreamClaimReleaser
     ) : this(
         connectionManager,
         configStore,
-        saveSyncRepository,
         tracker,
         releaser,
         CoroutineScope(SupervisorJob() + Dispatchers.IO),
@@ -166,6 +161,7 @@ class StreamSessionManager internal constructor(
         saveId: Long?,
         cardImport: String?
     ): StreamClaimOutcome = withContext(io) {
+        if (holdsOtherSession()) return@withContext StreamClaimOutcome.GameRunning
         val api = connectionManager.getApi() ?: return@withContext StreamClaimOutcome.Unreachable
         val response = try {
             api.claimStreamSession(
@@ -184,7 +180,12 @@ class StreamSessionManager internal constructor(
         }
         val launch = response.body()
         if (response.isSuccessful && launch != null) {
-            begin(target, launch.container, launch.claimedAt)
+            val claim = StreamClaim(target.platform, launch.container, launch.claimedAt)
+            if (!begin(target, claim)) {
+                val released = releaser.release(claim)
+                Logger.warn(TAG, "a game session opened during the claim, stream on ${claim.platform} released with outcome $released")
+                return@withContext StreamClaimOutcome.GameRunning
+            }
             return@withContext StreamClaimOutcome.Launching(launch)
         }
         val body = runCatching { response.errorBody()?.string() }.getOrNull()
@@ -309,9 +310,16 @@ class StreamSessionManager internal constructor(
         }
     }
 
-    private fun begin(target: StreamTarget, containerKey: String, claimedAt: String) {
+    private fun holdsOtherSession(): Boolean {
+        val active = tracker.activeSession.value ?: return false
+        return active.streamClaim == null
+    }
+
+    private fun begin(target: StreamTarget, claim: StreamClaim): Boolean {
         stopJobs()
         val previous = _session.value?.claim
+        val containerKey = claim.containerKey
+        val claimedAt = claim.claimedAt
         _session.value = StreamSession(
             target = target,
             containerKey = containerKey,
@@ -327,9 +335,13 @@ class StreamSessionManager internal constructor(
             endReason = null
         )
         previous?.let(tracker::endStreamSession)
-        tracker.startStreamSession(target.gameId, StreamClaim(target.platform, containerKey, claimedAt))
+        if (!tracker.startStreamSession(target.gameId, claim)) {
+            markEnded(StreamEndReason.LAUNCH_FAILED)
+            return false
+        }
         roomJob = scope.launch(io) { awaitRoom(target.platform, claimedAt) }
         heartbeatJob = scope.launch(io) { beat(target.platform, containerKey, claimedAt) }
+        return true
     }
 
     private suspend fun awaitRoom(platform: String, claimedAt: String) {
@@ -394,7 +406,6 @@ class StreamSessionManager internal constructor(
             val outcome = releaser.release(claim)
             Logger.info(TAG, "stream on ${claim.platform} released with outcome $outcome")
             tracker.endStreamSession(claim)
-            fetchSavesAfterTeardown(current.target)
         }
     }
 
@@ -417,17 +428,6 @@ class StreamSessionManager internal constructor(
         roomJob = null
     }
 
-    private suspend fun fetchSavesAfterTeardown(target: StreamTarget) {
-        delay(SAVE_FETCH_DELAY_MS)
-        try {
-            saveSyncRepository.get().checkSavesForGame(target.gameId, target.rommId)
-        } catch (e: CancellationException) {
-            throw e
-        } catch (e: Exception) {
-            Logger.warn(TAG, "saves for game ${target.gameId} could not be fetched after the stream: ${e.message}")
-        }
-    }
-
     private inline fun <T> parse(block: () -> T?): T? = try {
         block()
     } catch (e: Exception) {
@@ -439,7 +439,6 @@ class StreamSessionManager internal constructor(
         internal const val HEARTBEAT_MS = 30_000L
         internal const val ROOM_POLL_MS = 2_000L
         internal const val ROOM_WAIT_MS = 10 * 60 * 1000L
-        internal const val SAVE_FETCH_DELAY_MS = 5_000L
         private const val TAG = "StreamSessionManager"
 
         fun discsOf(files: List<RomMRomFile>): List<StreamDisc> =

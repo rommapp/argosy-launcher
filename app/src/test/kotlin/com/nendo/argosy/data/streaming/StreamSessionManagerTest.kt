@@ -11,7 +11,6 @@ import com.nendo.argosy.data.remote.romm.RomMStreamLaunching
 import com.nendo.argosy.data.remote.romm.RomMStreamSaveAndExitResponse
 import com.nendo.argosy.data.remote.romm.RomMStreamSessionStatus
 import com.nendo.argosy.data.remote.romm.RomMStreamSlotCapabilities
-import com.nendo.argosy.data.repository.SaveSyncRepository
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
@@ -46,10 +45,10 @@ class StreamSessionManagerTest {
         every { getBaseUrl() } returns "https://romm.example/"
     }
     private val configStore: StreamingConfigStore = mockk(relaxed = true)
-    private val saveSync: SaveSyncRepository = mockk(relaxed = true)
     private val trackedSession = MutableStateFlow<ActiveSession?>(null)
     private val tracker: PlaySessionTracker = mockk(relaxed = true) {
         every { activeSession } returns trackedSession
+        every { startStreamSession(any(), any()) } returns true
     }
     private val claim = StreamClaim(platform = "psx", containerKey = "box-1", claimedAt = "2026-11-13T09:00:00+00:00")
 
@@ -71,7 +70,6 @@ class StreamSessionManagerTest {
         return StreamSessionManager(
             connectionManager = connectionManager,
             configStore = configStore,
-            saveSyncRepository = dagger.Lazy { saveSync },
             tracker = tracker,
             releaser = StreamClaimReleaser(connectionManager, dispatcher),
             scope = scope,
@@ -212,7 +210,7 @@ class StreamSessionManagerTest {
     }
 
     @Test
-    fun `a stream records and uploads no play session, and fetches the game's saves after teardown`() = runTest {
+    fun `a stream records and uploads no play session`() = runTest {
         launched()
         val scope = managerScope()
         val manager = manager(scope)
@@ -223,13 +221,42 @@ class StreamSessionManagerTest {
 
         manager.saveAndExit()
         runCurrent()
-        advanceTimeBy(StreamSessionManager.SAVE_FETCH_DELAY_MS)
-        runCurrent()
 
         coVerify(exactly = 0) { api.ingestPlaySessions(any()) }
         coVerify(exactly = 0) { api.sendActivityHeartbeat(any()) }
-        coVerify(exactly = 1) { saveSync.checkSavesForGame(11, 42) }
         assertEquals(StreamEndReason.SAVED_AND_EXITED, manager.session.value?.endReason)
+        scope.cancel()
+    }
+
+    @Test
+    fun `a running game refuses the stream before anything is claimed`() = runTest {
+        launched()
+        trackedSession.value = ActiveSession(gameId = 3, startTime = Instant.EPOCH, emulatorPackage = "org.ppsspp.ppsspp")
+        val scope = managerScope()
+        val manager = manager(scope)
+
+        val outcome = manager.claim(target, null, null, null)
+
+        assertEquals(StreamClaimOutcome.GameRunning, outcome)
+        coVerify(exactly = 0) { api.claimStreamSession(any()) }
+        assertNull(manager.session.value)
+        scope.cancel()
+    }
+
+    @Test
+    fun `a tracker that refuses the stream session releases the claim on RomM`() = runTest {
+        launched()
+        every { tracker.startStreamSession(any(), any()) } returns false
+        val scope = managerScope()
+        val manager = manager(scope)
+
+        val outcome = manager.claim(target, null, null, null)
+        runCurrent()
+
+        assertEquals(StreamClaimOutcome.GameRunning, outcome)
+        coVerify(exactly = 1) { api.saveAndExitStreamSession("psx", any(), "box-1", claim.claimedAt) }
+        coVerify(exactly = 0) { api.heartbeatStreamSession(any(), any(), any()) }
+        assertEquals(StreamPhase.ENDED, manager.session.value?.phase)
         scope.cancel()
     }
 

@@ -29,6 +29,8 @@ sealed interface StreamClaimOutcome {
 
     data object Unreachable : StreamClaimOutcome
 
+    data object GameRunning : StreamClaimOutcome
+
     data class Failed(val status: Int) : StreamClaimOutcome
 }
 

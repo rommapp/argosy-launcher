@@ -40,6 +40,7 @@
     <string name="stream_launch_notice_refused">RomM 無法使用該存檔或即時存檔啟動串流。</string>
     <string name="stream_launch_notice_not_found">RomM 找不到可串流的此遊戲。</string>
     <string name="stream_launch_notice_unreachable">無法連線到 RomM。</string>
+    <string name="stream_launch_notice_game_running">請先關閉正在執行的遊戲再串流。</string>
     <string name="stream_launch_notice_failed">無法啟動串流。</string>
     <string name="stream_launch_notice_join_ended">該工作階段已結束或不再開放加入。</string>
     <string name="stream_launch_action_start">串流</string>

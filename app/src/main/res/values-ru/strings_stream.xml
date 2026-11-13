@@ -43,6 +43,7 @@
     <string name="stream_launch_notice_refused">RomM не смог запустить стриминг с этим сохранением или состоянием.</string>
     <string name="stream_launch_notice_not_found">RomM не нашёл эту игру для стриминга.</string>
     <string name="stream_launch_notice_unreachable">Не удалось связаться с RomM.</string>
+    <string name="stream_launch_notice_game_running">Закройте запущенную игру, чтобы начать трансляцию.</string>
     <string name="stream_launch_notice_failed">Не удалось запустить стриминг.</string>
     <string name="stream_launch_notice_join_ended">Эта сессия завершена или больше не открыта для подключения.</string>
     <string name="stream_launch_action_start">Запустить</string>

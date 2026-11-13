@@ -263,6 +263,7 @@ class StreamLaunchController private constructor(
                 is StreamClaimOutcome.Refused -> showNotice(R.string.stream_launch_notice_refused, outcome.detail)
                 StreamClaimOutcome.NotFound -> showNotice(R.string.stream_launch_notice_not_found, null)
                 StreamClaimOutcome.Unreachable -> showNotice(R.string.stream_launch_notice_unreachable, null)
+                StreamClaimOutcome.GameRunning -> showNotice(R.string.stream_launch_notice_game_running, null)
                 is StreamClaimOutcome.Failed -> showNotice(R.string.stream_launch_notice_failed, null)
             }
         }

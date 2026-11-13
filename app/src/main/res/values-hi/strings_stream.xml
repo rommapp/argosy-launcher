@@ -41,6 +41,7 @@
     <string name="stream_launch_notice_refused">RomM उस सेव या स्टेट के साथ स्ट्रीम शुरू नहीं कर सका।</string>
     <string name="stream_launch_notice_not_found">RomM को स्ट्रीमिंग के लिए यह गेम नहीं मिला।</string>
     <string name="stream_launch_notice_unreachable">RomM से संपर्क नहीं हो सका।</string>
+    <string name="stream_launch_notice_game_running">स्ट्रीम करने के लिए चल रहा गेम बंद करें।</string>
     <string name="stream_launch_notice_failed">स्ट्रीम शुरू नहीं की जा सकी।</string>
     <string name="stream_launch_notice_join_ended">वह सत्र खत्म हो गया है या अब जुड़ने के लिए खुला नहीं है।</string>
     <string name="stream_launch_action_start">स्ट्रीम करें</string>

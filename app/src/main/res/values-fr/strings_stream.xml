@@ -42,6 +42,7 @@
     <string name="stream_launch_notice_refused">RomM n\'a pas pu lancer la diffusion avec cette sauvegarde ou cet état.</string>
     <string name="stream_launch_notice_not_found">RomM n\'a pas trouvé ce jeu pour la diffusion.</string>
     <string name="stream_launch_notice_unreachable">Impossible de joindre RomM.</string>
+    <string name="stream_launch_notice_game_running">Fermez le jeu en cours pour lancer le streaming.</string>
     <string name="stream_launch_notice_failed">La diffusion n\'a pas pu être lancée.</string>
     <string name="stream_launch_notice_join_ended">Cette session est terminée ou n\'accepte plus de joueurs.</string>
     <string name="stream_launch_action_start">Diffuser</string>

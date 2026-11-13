@@ -41,6 +41,7 @@
     <string name="stream_launch_notice_refused">RomM konnte den Stream mit diesem Spielstand oder Zustand nicht starten.</string>
     <string name="stream_launch_notice_not_found">RomM hat dieses Spiel zum Streamen nicht gefunden.</string>
     <string name="stream_launch_notice_unreachable">RomM ist nicht erreichbar.</string>
+    <string name="stream_launch_notice_game_running">Beende das laufende Spiel, um zu streamen.</string>
     <string name="stream_launch_notice_failed">Der Stream konnte nicht gestartet werden.</string>
     <string name="stream_launch_notice_join_ended">Diese Sitzung ist beendet oder nicht mehr zum Beitreten offen.</string>
     <string name="stream_launch_action_start">Streamen</string>

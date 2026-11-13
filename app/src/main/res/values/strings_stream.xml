@@ -74,6 +74,7 @@
     <string name="stream_launch_notice_refused">RomM could not start the stream with that save or state.</string>
     <string name="stream_launch_notice_not_found">RomM could not find this game for streaming.</string>
     <string name="stream_launch_notice_unreachable">RomM could not be reached.</string>
+    <string name="stream_launch_notice_game_running">Close the running game to stream.</string>
     <string name="stream_launch_notice_failed">The stream could not be started.</string>
     <string name="stream_launch_notice_join_ended">That session has ended or is no longer open to join.</string>
     <!-- Button that starts the stream. Verb. -->

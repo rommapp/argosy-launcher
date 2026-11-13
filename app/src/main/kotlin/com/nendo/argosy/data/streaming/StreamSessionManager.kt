@@ -311,6 +311,7 @@ class StreamSessionManager internal constructor(
     }
 
     private fun holdsOtherSession(): Boolean {
+        if (_session.value?.let { it.isHost && it.phase != StreamPhase.ENDED } == true) return true
         val active = tracker.activeSession.value ?: return false
         return active.streamClaim == null
     }

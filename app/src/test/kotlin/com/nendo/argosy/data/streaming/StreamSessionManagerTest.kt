@@ -244,6 +244,41 @@ class StreamSessionManagerTest {
     }
 
     @Test
+    fun `a live hosted stream refuses a second claim and keeps its own`() = runTest {
+        launched()
+        val scope = managerScope()
+        val manager = manager(scope)
+        manager.claim(target, null, null, null)
+        runCurrent()
+
+        val outcome = manager.claim(target.copy(gameId = 12, rommId = 43), null, null, null)
+        runCurrent()
+
+        assertEquals(StreamClaimOutcome.GameRunning, outcome)
+        coVerify(exactly = 1) { api.claimStreamSession(any()) }
+        assertEquals(11L, manager.session.value?.target?.gameId)
+        assertEquals(StreamPhase.PLAYING, manager.session.value?.phase)
+        verify(exactly = 0) { tracker.endStreamSession(any()) }
+        scope.cancel()
+    }
+
+    @Test
+    fun `an ended stream does not block the next claim`() = runTest {
+        launched()
+        val scope = managerScope()
+        val manager = manager(scope)
+        manager.claim(target, null, null, null)
+        runCurrent()
+        manager.saveAndExit()
+        runCurrent()
+
+        val outcome = manager.claim(target.copy(gameId = 12, rommId = 43), null, null, null)
+
+        assertTrue(outcome is StreamClaimOutcome.Launching)
+        scope.cancel()
+    }
+
+    @Test
     fun `a tracker that refuses the stream session releases the claim on RomM`() = runTest {
         launched()
         every { tracker.startStreamSession(any(), any()) } returns false

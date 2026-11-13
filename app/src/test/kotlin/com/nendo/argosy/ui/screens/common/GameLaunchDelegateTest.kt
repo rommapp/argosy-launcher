@@ -64,6 +64,7 @@ class GameLaunchDelegateTest {
     private val trackerSessionEnding = MutableStateFlow(false)
     private val sessionConflict = MutableStateFlow<SaveConflictEvent?>(null)
     private val sessionEndCoordinator: SessionEndCoordinator = mockk(relaxed = true)
+    private val gameLauncher: com.nendo.argosy.data.emulator.GameLauncher = mockk(relaxed = true)
     private val permissionWatch: com.nendo.argosy.data.permissions.PermissionWatch = mockk {
         coEvery { clearForLaunch() } returns true
     }
@@ -110,7 +111,7 @@ class GameLaunchDelegateTest {
         launchGameUseCase = launchGameUseCase,
         launchWithSyncUseCase = mockk(relaxed = true),
         playSessionTracker = playSessionTracker,
-        gameLauncher = mockk(relaxed = true),
+        gameLauncher = gameLauncher,
         hapticManager = mockk(relaxed = true),
         notificationManager = mockk(relaxed = true),
         sessionEndCoordinator = sessionEndCoordinator,
@@ -159,6 +160,28 @@ class GameLaunchDelegateTest {
         verify(exactly = 1) { tracker.finish(any(), true) }
         verify(exactly = 0) { tracker.finish(any(), false) }
         assertNotNull(tracker.begin(gameId, "Game"))
+    }
+
+    @Test
+    fun `a launch over a stream session ends it without stopping a package for it`() = runTest {
+        useCaseReturns(LaunchResult.Success(intent))
+        every { playSessionTracker.activeSession } returns MutableStateFlow(
+            com.nendo.argosy.data.emulator.ActiveSession(
+                gameId = 9L,
+                startTime = Instant.EPOCH,
+                emulatorPackage = com.nendo.argosy.data.streaming.StreamSessionManager.STREAM_PACKAGE
+            )
+        )
+        coEvery { playSessionTracker.endSession(any(), any()) } returns com.nendo.argosy.data.emulator.SessionEndResult.Skipped
+        val tracker = tracker()
+
+        delegate(tracker, router()).launchSimple(this, gameId, callbacks = callbacks())
+        runCurrent()
+
+        coVerify(exactly = 1) { playSessionTracker.endSession(any(), any()) }
+        coVerify(exactly = 0) {
+            gameLauncher.forceStopEmulator(com.nendo.argosy.data.streaming.StreamSessionManager.STREAM_PACKAGE)
+        }
     }
 
     @Test

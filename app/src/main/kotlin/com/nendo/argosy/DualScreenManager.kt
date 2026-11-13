@@ -581,7 +581,7 @@ class DualScreenManager(
     }
 
     /** Live in-memory session check; unlike SessionStateStore.hasActiveSession this flips false the moment session teardown begins, not after save sync completes. */
-    fun hasLiveSession(): Boolean = playSessionTracker.activeSession.value != null
+    fun hasLiveSession(): Boolean = playSessionTracker.activeSession.value?.isStream == false
 
     fun teardownCompanion() {
         stopStartupGuard()
@@ -1991,9 +1991,9 @@ class DualScreenManager(
         val gameDisplay = emulatorDisplayId
         if (gameDisplay != null && gameDisplay != ownDisplay) return
         focusCheck = scope.launch {
-            if (playSessionTracker.activeSession.value == null &&
-                preferencesRepository.getPersistedSession() == null
-            ) return@launch
+            val live = playSessionTracker.activeSession.value
+            if (live?.isStream == true) return@launch
+            if (live == null && preferencesRepository.getPersistedSession()?.takeUnless { it.isStream } == null) return@launch
             closeBackgroundedBuiltInGame(activity)
             val left = emulatorLeftScreen(
                 activity,

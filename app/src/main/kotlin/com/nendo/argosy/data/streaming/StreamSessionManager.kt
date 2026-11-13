@@ -1,5 +1,6 @@
 package com.nendo.argosy.data.streaming
 
+import com.nendo.argosy.data.emulator.PlaySessionTracker
 import com.nendo.argosy.data.remote.romm.RomMApi
 import com.nendo.argosy.data.remote.romm.RomMConnectionManager
 import com.nendo.argosy.data.remote.romm.RomMDetailResponse
@@ -8,7 +9,6 @@ import com.nendo.argosy.data.remote.romm.RomMStreamBusyEnvelope
 import com.nendo.argosy.data.remote.romm.RomMStreamCardImportEnvelope
 import com.nendo.argosy.data.remote.romm.RomMStreamClaimRequest
 import com.nendo.argosy.data.remote.romm.RomMStreamJoinableSession
-import com.nendo.argosy.data.remote.romm.RomMStreamSaveAndExitRequest
 import com.nendo.argosy.data.remote.romm.RomMStreamSlotCapabilities
 import com.nendo.argosy.data.remote.romm.RomMStreamSlotRequest
 import com.nendo.argosy.data.remote.romm.RomMStreamSwapDiscRequest
@@ -79,20 +79,30 @@ data class StreamSession(
     val canSwapDisc: Boolean
         get() = isHost && target.capabilities.supportsDiscSwap && target.discs.size > 1
 
+    val claim: StreamClaim?
+        get() = if (isHost && containerKey != null && claimedAt != null) {
+            StreamClaim(target.platform, containerKey, claimedAt)
+        } else {
+            null
+        }
+
     private companion object {
         const val FIRST_SLOT = 1
     }
 }
 
 /**
- * The one RomM stream this device holds: its claim, room, heartbeat and teardown. Nothing here
- * opens a local play session or uploads one; RomM records the streamed session itself at teardown.
+ * The one RomM stream this device holds: its claim, room, heartbeat and teardown. A held claim is
+ * a stream session in [PlaySessionTracker], which records no play time; RomM records the streamed
+ * session itself at teardown.
  */
 @Singleton
 class StreamSessionManager internal constructor(
     private val connectionManager: RomMConnectionManager,
     private val configStore: StreamingConfigStore,
     private val saveSyncRepository: Lazy<SaveSyncRepository>,
+    private val tracker: PlaySessionTracker,
+    private val releaser: StreamClaimReleaser,
     private val scope: CoroutineScope,
     private val io: CoroutineDispatcher,
     private val clock: () -> Long
@@ -101,11 +111,15 @@ class StreamSessionManager internal constructor(
     constructor(
         connectionManager: RomMConnectionManager,
         configStore: StreamingConfigStore,
-        saveSyncRepository: Lazy<SaveSyncRepository>
+        saveSyncRepository: Lazy<SaveSyncRepository>,
+        tracker: PlaySessionTracker,
+        releaser: StreamClaimReleaser
     ) : this(
         connectionManager,
         configStore,
         saveSyncRepository,
+        tracker,
+        releaser,
         CoroutineScope(SupervisorJob() + Dispatchers.IO),
         Dispatchers.IO,
         System::currentTimeMillis
@@ -124,6 +138,24 @@ class StreamSessionManager internal constructor(
     private val grace = StreamGraceTimer(scope) { endWithSave(StreamEndReason.GRACE_EXPIRED) }
 
     val isGraceArmed: Boolean get() = grace.isArmed
+
+    init {
+        scope.launch {
+            var held: StreamClaim? = null
+            tracker.activeSession.collect { active ->
+                val released = held
+                held = active?.streamClaim
+                if (released != null && released != held) onTrackerSessionEnded(released)
+            }
+        }
+    }
+
+    private fun onTrackerSessionEnded(claim: StreamClaim) {
+        val current = _session.value ?: return
+        if (current.phase == StreamPhase.ENDED || current.claim != claim) return
+        Logger.info(TAG, "the stream session on ${claim.platform} was ended outside the stream, ending the stream")
+        endWithSave(StreamEndReason.LEFT)
+    }
 
     fun isLive(gameId: Long): Boolean =
         _session.value?.let { it.target.gameId == gameId && it.phase != StreamPhase.ENDED } == true
@@ -279,6 +311,7 @@ class StreamSessionManager internal constructor(
 
     private fun begin(target: StreamTarget, containerKey: String, claimedAt: String) {
         stopJobs()
+        val previous = _session.value?.claim
         _session.value = StreamSession(
             target = target,
             containerKey = containerKey,
@@ -293,6 +326,8 @@ class StreamSessionManager internal constructor(
             lastStateSavedAtMillis = null,
             endReason = null
         )
+        previous?.let(tracker::endStreamSession)
+        tracker.startStreamSession(target.gameId, StreamClaim(target.platform, containerKey, claimedAt))
         roomJob = scope.launch(io) { awaitRoom(target.platform, claimedAt) }
         heartbeatJob = scope.launch(io) { beat(target.platform, containerKey, claimedAt) }
     }
@@ -349,27 +384,27 @@ class StreamSessionManager internal constructor(
     private fun endWithSave(reason: StreamEndReason) {
         val current = _session.value ?: return
         if (current.phase == StreamPhase.ENDED) return
-        end(reason)
-        if (!current.isHost) return
+        val claim = current.claim
+        if (claim == null) {
+            end(reason)
+            return
+        }
+        markEnded(reason)
         scope.launch(io) {
-            val api = connectionManager.getApi()
-            try {
-                api?.saveAndExitStreamSession(
-                    current.target.platform,
-                    RomMStreamSaveAndExitRequest(),
-                    current.containerKey,
-                    current.claimedAt
-                )
-            } catch (e: CancellationException) {
-                throw e
-            } catch (e: Exception) {
-                Logger.warn(TAG, "save and exit failed for ${current.target.platform}: ${e.message}")
-            }
+            val outcome = releaser.release(claim)
+            Logger.info(TAG, "stream on ${claim.platform} released with outcome $outcome")
+            tracker.endStreamSession(claim)
             fetchSavesAfterTeardown(current.target)
         }
     }
 
     private fun end(reason: StreamEndReason) {
+        val claim = _session.value?.takeIf { it.phase != StreamPhase.ENDED }?.claim
+        markEnded(reason)
+        claim?.let(tracker::endStreamSession)
+    }
+
+    private fun markEnded(reason: StreamEndReason) {
         stopJobs()
         _session.update { it?.copy(phase = StreamPhase.ENDED, endReason = reason) }
     }

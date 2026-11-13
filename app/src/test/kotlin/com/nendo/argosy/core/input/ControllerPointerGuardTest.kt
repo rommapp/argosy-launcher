@@ -5,6 +5,7 @@ import com.nendo.argosy.data.emulator.ActiveSession
 import com.nendo.argosy.data.emulator.PlaySessionTracker
 import com.nendo.argosy.data.preferences.UserPreferences
 import com.nendo.argosy.data.preferences.UserPreferencesRepository
+import com.nendo.argosy.data.streaming.StreamSessionManager
 import io.mockk.every
 import io.mockk.mockk
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -18,6 +19,7 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import java.time.Instant
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class ControllerPointerGuardTest {
@@ -143,10 +145,22 @@ class ControllerPointerGuardTest {
         val guarding = controllerTouchpadGuarding(tracker, repository)
 
         assertFalse(guarding.first())
-        session.value = mockk()
+        session.value = ActiveSession(gameId = 1L, startTime = Instant.EPOCH, emulatorPackage = "org.ppsspp.ppsspp")
         assertTrue(guarding.first())
         prefs.value = UserPreferences(ignoreControllerTouchpad = false)
         assertFalse(guarding.first())
+    }
+
+    @Test
+    fun `a stream session does not guard the touchpad`() = runTest {
+        val session = MutableStateFlow<ActiveSession?>(
+            ActiveSession(gameId = 1L, startTime = Instant.EPOCH, emulatorPackage = StreamSessionManager.STREAM_PACKAGE)
+        )
+        val prefs = MutableStateFlow(UserPreferences(ignoreControllerTouchpad = true))
+        val tracker = mockk<PlaySessionTracker> { every { activeSession } returns session }
+        val repository = mockk<UserPreferencesRepository> { every { userPreferences } returns prefs }
+
+        assertFalse(controllerTouchpadGuarding(tracker, repository).first())
     }
 
     @Test

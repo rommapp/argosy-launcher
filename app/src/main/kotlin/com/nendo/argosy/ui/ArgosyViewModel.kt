@@ -596,7 +596,7 @@ class ArgosyViewModel @Inject constructor(
         )
 
     val isEmulatorRunning: StateFlow<Boolean> = playSessionTracker.activeSession
-        .map { it != null }
+        .map { it?.isStream == false }
         .stateIn(
             scope = viewModelScope,
             started = SharingStarted.WhileSubscribed(5000),

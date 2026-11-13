@@ -211,10 +211,18 @@ data class RomMStreamSaveAndExitResponse(
     @Json(name = "saved") val saved: Boolean = false,
     @Json(name = "platform") val platform: String = "",
     @Json(name = "released") val released: Boolean = true
-)
+) {
+    val isNotFound: Boolean get() = status == STATUS_NOT_FOUND
+
+    companion object {
+        const val STATUS_NOT_FOUND = "not_found"
+    }
+}
 
 @JsonClass(generateAdapter = true)
 data class RomMStreamReleaseResponse(
     @Json(name = "status") val status: String = "",
     @Json(name = "platform") val platform: String = ""
-)
+) {
+    val isNotFound: Boolean get() = status == RomMStreamSaveAndExitResponse.STATUS_NOT_FOUND
+}

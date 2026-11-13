@@ -85,7 +85,8 @@ class PlaySessionTrackerNoticesTest {
         sessionEndNotices = notices,
         snapshotRouter = lazyMock(),
         sessionRecapFactsRecorder = mockk(relaxed = true),
-        sessionScreenshotScanner = screenshotScanner
+        sessionScreenshotScanner = screenshotScanner,
+        streamClaimReleaser = lazyMock()
     )
 
     private suspend fun trackerWithLiveSession(): PlaySessionTracker {

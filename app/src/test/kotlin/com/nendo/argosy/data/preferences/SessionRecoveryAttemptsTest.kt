@@ -1,6 +1,8 @@
 package com.nendo.argosy.data.preferences
 
 import androidx.datastore.preferences.core.PreferenceDataStoreFactory
+import com.nendo.argosy.data.streaming.StreamClaim
+import com.nendo.argosy.data.streaming.StreamSessionManager
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestScope
@@ -78,5 +80,45 @@ class SessionRecoveryAttemptsTest {
 
         assertTrue(repo.keepSessionForRetry(maxAttempts = 3))
         assertEquals(6L, repo.getPersistedSession()?.gameId)
+    }
+
+    @Test
+    fun `a stream session keeps its claim until the session is cleared`() = runTest {
+        val repo = repo()
+        val start = Instant.parse("2026-11-13T09:00:05Z")
+        val claim = StreamClaim("psx", "box-1", "2026-11-13T09:00:00+00:00")
+        repo.persistActiveSession(
+            gameId = 11L,
+            emulatorPackage = StreamSessionManager.STREAM_PACKAGE,
+            startTime = start,
+            coreName = null,
+            isHardcore = false,
+            streamClaim = claim
+        )
+
+        val persisted = repo.getPersistedSession()
+        assertEquals(claim, persisted?.streamClaim)
+        assertTrue(persisted?.isStream == true)
+
+        repo.clearActiveSession(startedAt = start)
+        assertNull(repo.getPersistedSession())
+    }
+
+    @Test
+    fun `a session written over a stream drops the stream claim`() = runTest {
+        val repo = repo()
+        repo.persistActiveSession(
+            gameId = 11L,
+            emulatorPackage = StreamSessionManager.STREAM_PACKAGE,
+            startTime = Instant.parse("2026-11-13T09:00:05Z"),
+            coreName = null,
+            isHardcore = false,
+            streamClaim = StreamClaim("psx", "box-1", "2026-11-13T09:00:00+00:00")
+        )
+
+        repo.persist()
+
+        assertNull(repo.getPersistedSession()?.streamClaim)
+        assertFalse(repo.getPersistedSession()?.isStream == true)
     }
 }

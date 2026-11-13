@@ -717,8 +717,11 @@ class UserPreferencesRepository @Inject constructor(
         channelName: String? = null,
         variantFileId: Long? = null,
         origin: LaunchOrigin = LaunchOrigin.INTERNAL,
-        isNetplayGuest: Boolean = false
-    ) = sessionPrefs.persistActiveSession(gameId, emulatorPackage, startTime, coreName, isHardcore, channelName, variantFileId, origin, isNetplayGuest)
+        isNetplayGuest: Boolean = false,
+        streamClaim: com.nendo.argosy.data.streaming.StreamClaim? = null
+    ) = sessionPrefs.persistActiveSession(
+        gameId, emulatorPackage, startTime, coreName, isHardcore, channelName, variantFileId, origin, isNetplayGuest, streamClaim
+    )
 
     suspend fun clearActiveSession(startedAt: Instant? = null) = sessionPrefs.clearActiveSession(startedAt)
 

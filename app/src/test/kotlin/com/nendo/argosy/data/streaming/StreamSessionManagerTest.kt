@@ -1,8 +1,12 @@
 package com.nendo.argosy.data.streaming
 
+import com.nendo.argosy.data.emulator.ActiveSession
+import com.nendo.argosy.data.emulator.PlaySessionTracker
 import com.nendo.argosy.data.remote.romm.RomMApi
 import com.nendo.argosy.data.remote.romm.RomMConnectionManager
 import com.nendo.argosy.data.remote.romm.RomMStreamClaimRequest
+import com.nendo.argosy.data.remote.romm.RomMStreamJoinableSession
+import com.nendo.argosy.data.remote.romm.RomMStreamJoined
 import com.nendo.argosy.data.remote.romm.RomMStreamLaunching
 import com.nendo.argosy.data.remote.romm.RomMStreamSaveAndExitResponse
 import com.nendo.argosy.data.remote.romm.RomMStreamSessionStatus
@@ -18,6 +22,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.advanceTimeBy
@@ -30,6 +35,7 @@ import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import retrofit2.Response
+import java.time.Instant
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class StreamSessionManagerTest {
@@ -41,6 +47,11 @@ class StreamSessionManagerTest {
     }
     private val configStore: StreamingConfigStore = mockk(relaxed = true)
     private val saveSync: SaveSyncRepository = mockk(relaxed = true)
+    private val trackedSession = MutableStateFlow<ActiveSession?>(null)
+    private val tracker: PlaySessionTracker = mockk(relaxed = true) {
+        every { activeSession } returns trackedSession
+    }
+    private val claim = StreamClaim(platform = "psx", containerKey = "box-1", claimedAt = "2026-11-13T09:00:00+00:00")
 
     private val target = StreamTarget(
         gameId = 11,
@@ -61,6 +72,8 @@ class StreamSessionManagerTest {
             connectionManager = connectionManager,
             configStore = configStore,
             saveSyncRepository = dagger.Lazy { saveSync },
+            tracker = tracker,
+            releaser = StreamClaimReleaser(connectionManager, dispatcher),
             scope = scope,
             io = dispatcher,
             clock = { testScheduler.currentTime }
@@ -237,6 +250,91 @@ class StreamSessionManagerTest {
         assertEquals(StreamEndReason.ENDED_BY_SERVER, manager.session.value?.endReason)
         coVerify(exactly = 0) { api.saveAndExitStreamSession(any(), any(), any(), any()) }
         assertTrue(manager.session.value?.phase == StreamPhase.ENDED)
+        verify(exactly = 1) { tracker.endStreamSession(claim) }
+        scope.cancel()
+    }
+
+    @Test
+    fun `a launched claim opens a tracker stream session holding the claim`() = runTest {
+        launched()
+        val scope = managerScope()
+
+        manager(scope).claim(target, null, null, null)
+
+        verify(exactly = 1) { tracker.startStreamSession(11, claim) }
+        verify(exactly = 0) { tracker.endStreamSession(any()) }
+        scope.cancel()
+    }
+
+    @Test
+    fun `save and exit ends the tracker session once RomM answered`() = runTest {
+        launched()
+        val scope = managerScope()
+        val manager = manager(scope)
+        manager.claim(target, null, null, null)
+        runCurrent()
+
+        manager.saveAndExit()
+        verify(exactly = 0) { tracker.endStreamSession(any()) }
+        runCurrent()
+
+        coVerify(exactly = 1) { api.saveAndExitStreamSession("psx", any(), "box-1", claim.claimedAt) }
+        verify(exactly = 1) { tracker.endStreamSession(claim) }
+        scope.cancel()
+    }
+
+    @Test
+    fun `grace expiry ends the tracker session`() = runTest {
+        launched()
+        val scope = managerScope()
+        val manager = manager(scope)
+        manager.claim(target, null, null, null)
+        runCurrent()
+
+        manager.onPlayerHidden()
+        advanceTimeBy(StreamGraceTimer.DEFAULT_GRACE_MS)
+        runCurrent()
+
+        verify(exactly = 1) { tracker.endStreamSession(claim) }
+        scope.cancel()
+    }
+
+    @Test
+    fun `a tracker session ended elsewhere saves and exits the stream`() = runTest {
+        launched()
+        val scope = managerScope()
+        val manager = manager(scope)
+        runCurrent()
+        manager.claim(target, null, null, null)
+        trackedSession.value = ActiveSession(
+            gameId = 11,
+            startTime = Instant.EPOCH,
+            emulatorPackage = StreamSessionManager.STREAM_PACKAGE,
+            streamClaim = claim
+        )
+        runCurrent()
+
+        trackedSession.value = null
+        runCurrent()
+
+        assertEquals(StreamEndReason.LEFT, manager.session.value?.endReason)
+        coVerify(exactly = 1) { api.saveAndExitStreamSession("psx", any(), "box-1", claim.claimedAt) }
+        scope.cancel()
+    }
+
+    @Test
+    fun `a joined stream opens no tracker session`() = runTest {
+        coEvery { api.joinStreamSession("psx", "box-1") } returns Response.success(
+            RomMStreamJoined(platform = "psx", host = "/stream/psx/room")
+        )
+        val scope = managerScope()
+        val manager = manager(scope)
+
+        assertTrue(manager.join(target, RomMStreamJoinableSession(container = "box-1", platform = "psx")))
+        manager.leave()
+
+        verify(exactly = 0) { tracker.startStreamSession(any(), any()) }
+        verify(exactly = 0) { tracker.endStreamSession(any()) }
         scope.cancel()
     }
 }

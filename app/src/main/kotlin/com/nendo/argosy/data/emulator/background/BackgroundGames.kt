@@ -98,7 +98,7 @@ class BackgroundGames @Inject constructor(
      * this directly.
      */
     suspend fun remember(session: ActiveSession) {
-        if (session.emulatorPackage == EmulatorRegistry.BUILTIN_PACKAGE) return
+        if (session.emulatorPackage == EmulatorRegistry.BUILTIN_PACKAGE || session.isStream) return
         if (!keepsAlive(session.emulatorPackage)) return
         val pid = read()?.processes?.get(session.emulatorPackage)?.pid ?: return
         store.put(

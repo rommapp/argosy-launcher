@@ -252,6 +252,10 @@ class GameLaunchDelegate @Inject constructor(
         session: com.nendo.argosy.data.emulator.ActiveSession,
         endBehindSwitch: Boolean = false
     ): String? {
+        if (session.isStream) {
+            playSessionTracker.endSession()
+            return null
+        }
         if (endBehindSwitch && backgroundGameLaunch.keepsAlive(session.emulatorPackage)) {
             endSessionBehindSwitch(session)
             backgroundGameLaunch.remember(session)
@@ -391,7 +395,7 @@ class GameLaunchDelegate @Inject constructor(
                         ticket,
                         emulatorPackage,
                         stoppedPackage,
-                        noTrackedSession = activeSession == null,
+                        noTrackedSession = activeSession == null || activeSession.isStream,
                         platformSlug = game?.platformSlug
                     )
                 ) {
@@ -840,7 +844,7 @@ class GameLaunchDelegate @Inject constructor(
                     ticket,
                     emulatorResolver.getEmulatorPackageForGame(game.id, game.platformId, game.platformSlug),
                     stoppedPackage,
-                    noTrackedSession = activeSession == null,
+                    noTrackedSession = activeSession == null || activeSession.isStream,
                     platformSlug = game.platformSlug
                 )
                 if (!cleared) {

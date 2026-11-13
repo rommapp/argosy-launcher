@@ -82,7 +82,7 @@ fun controllerTouchpadGuarding(
     sessions: PlaySessionTracker,
     preferences: UserPreferencesRepository
 ): Flow<Boolean> = combine(sessions.activeSession, preferences.userPreferences) { session, prefs ->
-    session != null && prefs.ignoreControllerTouchpad
+    session?.isStream == false && prefs.ignoreControllerTouchpad
 }
 
 fun isControllerTouchpadEvent(event: MotionEvent): Boolean {

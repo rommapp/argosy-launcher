@@ -1,12 +1,15 @@
 package com.nendo.argosy.data.preferences
 
 import androidx.datastore.core.DataStore
+import androidx.datastore.preferences.core.MutablePreferences
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import com.nendo.argosy.data.emulator.LaunchOrigin
+import com.nendo.argosy.data.streaming.StreamClaim
+import com.nendo.argosy.data.streaming.StreamSessionManager
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
@@ -23,8 +26,11 @@ data class PersistedSession(
     val channelName: String? = null,
     val variantFileId: Long? = null,
     val origin: LaunchOrigin = LaunchOrigin.INTERNAL,
-    val isNetplayGuest: Boolean = false
-)
+    val isNetplayGuest: Boolean = false,
+    val streamClaim: StreamClaim? = null
+) {
+    val isStream: Boolean get() = emulatorPackage == StreamSessionManager.STREAM_PACKAGE
+}
 
 @Singleton
 class SessionPreferencesRepository @Inject constructor(
@@ -42,6 +48,9 @@ class SessionPreferencesRepository @Inject constructor(
         val ACTIVE_SESSION_NETPLAY_GUEST = booleanPreferencesKey("active_session_netplay_guest")
         val ACTIVE_SESSION_RECOVERY_ATTEMPTS = intPreferencesKey("active_session_recovery_attempts")
         val ACTIVE_SESSION_RA_LAUNCH_SNAPSHOT = stringPreferencesKey("active_session_ra_launch_snapshot")
+        val ACTIVE_SESSION_STREAM_PLATFORM = stringPreferencesKey("active_session_stream_platform")
+        val ACTIVE_SESSION_STREAM_CONTAINER = stringPreferencesKey("active_session_stream_container")
+        val ACTIVE_SESSION_STREAM_CLAIMED_AT = stringPreferencesKey("active_session_stream_claimed_at")
     }
 
     /**
@@ -70,10 +79,18 @@ class SessionPreferencesRepository @Inject constructor(
         channelName: String? = null,
         variantFileId: Long? = null,
         origin: LaunchOrigin = LaunchOrigin.INTERNAL,
-        isNetplayGuest: Boolean = false
+        isNetplayGuest: Boolean = false,
+        streamClaim: StreamClaim? = null
     ) {
         dataStore.edit { prefs ->
             prefs.remove(Keys.ACTIVE_SESSION_RECOVERY_ATTEMPTS)
+            if (streamClaim != null) {
+                prefs[Keys.ACTIVE_SESSION_STREAM_PLATFORM] = streamClaim.platform
+                prefs[Keys.ACTIVE_SESSION_STREAM_CONTAINER] = streamClaim.containerKey
+                prefs[Keys.ACTIVE_SESSION_STREAM_CLAIMED_AT] = streamClaim.claimedAt
+            } else {
+                prefs.removeStreamClaim()
+            }
             prefs[Keys.ACTIVE_SESSION_NETPLAY_GUEST] = isNetplayGuest
             prefs[Keys.ACTIVE_SESSION_GAME_ID] = gameId.toString()
             prefs[Keys.ACTIVE_SESSION_EMULATOR] = emulatorPackage
@@ -106,7 +123,14 @@ class SessionPreferencesRepository @Inject constructor(
             prefs.remove(Keys.ACTIVE_SESSION_LAUNCH_ORIGIN)
             prefs.remove(Keys.ACTIVE_SESSION_NETPLAY_GUEST)
             prefs.remove(Keys.ACTIVE_SESSION_RECOVERY_ATTEMPTS)
+            prefs.removeStreamClaim()
         }
+    }
+
+    private fun MutablePreferences.removeStreamClaim() {
+        remove(Keys.ACTIVE_SESSION_STREAM_PLATFORM)
+        remove(Keys.ACTIVE_SESSION_STREAM_CONTAINER)
+        remove(Keys.ACTIVE_SESSION_STREAM_CLAIMED_AT)
     }
 
     /**
@@ -147,7 +171,15 @@ class SessionPreferencesRepository @Inject constructor(
             channelName = this[Keys.ACTIVE_SESSION_CHANNEL_NAME],
             variantFileId = this[Keys.ACTIVE_SESSION_VARIANT_FILE_ID]?.toLongOrNull(),
             origin = LaunchOrigin.fromString(this[Keys.ACTIVE_SESSION_LAUNCH_ORIGIN]),
-            isNetplayGuest = this[Keys.ACTIVE_SESSION_NETPLAY_GUEST] ?: false
+            isNetplayGuest = this[Keys.ACTIVE_SESSION_NETPLAY_GUEST] ?: false,
+            streamClaim = toStreamClaim()
         )
+    }
+
+    private fun Preferences.toStreamClaim(): StreamClaim? {
+        val platform = this[Keys.ACTIVE_SESSION_STREAM_PLATFORM] ?: return null
+        val containerKey = this[Keys.ACTIVE_SESSION_STREAM_CONTAINER] ?: return null
+        val claimedAt = this[Keys.ACTIVE_SESSION_STREAM_CLAIMED_AT] ?: return null
+        return StreamClaim(platform, containerKey, claimedAt)
     }
 }

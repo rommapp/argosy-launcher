@@ -72,7 +72,7 @@ suspend fun moveRunningTask(taskId: Int, target: RunningMoveTarget): Boolean {
  * for the built-in emulator only the same game and variant.
  */
 fun isSessionFront(session: ActiveSession?, packageName: String, gameId: Long?, variantFileId: Long?): Boolean {
-    if (session == null || packageName != session.emulatorPackage) return false
+    if (session == null || session.isStream || packageName != session.emulatorPackage) return false
     if (packageName != EmulatorRegistry.BUILTIN_PACKAGE) return true
     return gameId == session.gameId && variantFileId == session.variantFileId
 }

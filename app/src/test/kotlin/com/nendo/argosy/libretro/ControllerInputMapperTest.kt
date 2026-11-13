@@ -53,6 +53,55 @@ class ControllerInputMapperTest {
     }
 
     @Test
+    fun `an unbound C and Z reach Genesis C and Z`() {
+        assertEquals(
+            KeyEvent.KEYCODE_BUTTON_A,
+            ControllerInputMapper.resolveMappedKey(gbaWithoutTurboR, KeyEvent.KEYCODE_BUTTON_C, "genesis")
+        )
+        assertEquals(
+            KeyEvent.KEYCODE_BUTTON_R1,
+            ControllerInputMapper.resolveMappedKey(gbaWithoutTurboR, KeyEvent.KEYCODE_BUTTON_Z, "genesis")
+        )
+    }
+
+    @Test
+    fun `an unbound C and Z reach Saturn C and Z`() {
+        assertEquals(
+            KeyEvent.KEYCODE_BUTTON_R1,
+            ControllerInputMapper.resolveMappedKey(gbaWithoutTurboR, KeyEvent.KEYCODE_BUTTON_C, "saturn")
+        )
+        assertEquals(
+            KeyEvent.KEYCODE_BUTTON_L1,
+            ControllerInputMapper.resolveMappedKey(gbaWithoutTurboR, KeyEvent.KEYCODE_BUTTON_Z, "saturn")
+        )
+    }
+
+    @Test
+    fun `C and Z reach their target with no mapping resolved at all`() {
+        assertEquals(
+            KeyEvent.KEYCODE_BUTTON_A,
+            ControllerInputMapper.resolveMappedKey(null, KeyEvent.KEYCODE_BUTTON_C, "genesis")
+        )
+    }
+
+    @Test
+    fun `a user's own C binding wins over the platform target`() {
+        val withC = gbaWithoutTurboR + (InputSource.Button(KeyEvent.KEYCODE_BUTTON_C) to RetroButton.B)
+        assertEquals(
+            KeyEvent.KEYCODE_BUTTON_B,
+            ControllerInputMapper.resolveMappedKey(withC, KeyEvent.KEYCODE_BUTTON_C, "genesis")
+        )
+    }
+
+    @Test
+    fun `C and Z stay silent on a platform with no C or Z button`() {
+        assertEquals(
+            KeyEvent.KEYCODE_UNKNOWN,
+            ControllerInputMapper.resolveMappedKey(gbaWithoutTurboR, KeyEvent.KEYCODE_BUTTON_Z, "snes")
+        )
+    }
+
+    @Test
     fun `an unbindable keycode keeps its default route when the mapping omits it`() {
         assertEquals(
             KeyEvent.KEYCODE_DPAD_UP_LEFT,

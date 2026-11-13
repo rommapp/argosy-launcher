@@ -608,6 +608,7 @@ open class LibretroActivity : ComponentActivity() {
         platformId = game?.platformId ?: -1L
         platformSlug = intent.getStringExtra(EXTRA_PLATFORM_SLUG)?.takeIf { it.isNotBlank() }
             ?: game?.platformSlug ?: ""
+        inputMapper.platformSlug = platformSlug.takeIf { it.isNotEmpty() }
         ownLiveGame?.let { live ->
             (sessionLink as? com.nendo.argosy.libretro.slot.RemoteGameSessionLink)?.register(
                 taskId = taskId,

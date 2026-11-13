@@ -20,6 +20,7 @@ class ControllerInputMapper : KeyMapper {
     private var extendedMappings: Map<String, Map<InputSource, Int>> = emptyMap()
     private val activeAnalogDirections = mutableMapOf<String, MutableSet<InputSource.AnalogDirection>>()
     private var portResolver: ((InputDevice) -> Int)? = null
+    var platformSlug: String? = null
 
     fun setPortResolver(resolver: (InputDevice) -> Int) {
         portResolver = resolver
@@ -39,7 +40,7 @@ class ControllerInputMapper : KeyMapper {
     }
 
     override fun mapKey(device: InputDevice, keyCode: Int): Int =
-        resolveMappedKey(extendedMappings[controllerIdOf(device)], keyCode)
+        resolveMappedKey(extendedMappings[controllerIdOf(device)], keyCode, platformSlug)
 
     fun processMotionEvent(event: MotionEvent): List<SyntheticKeyEvent> {
         val device = event.device ?: return emptyList()
@@ -118,13 +119,15 @@ class ControllerInputMapper : KeyMapper {
          * keep their defaults instead: a null or empty mapping, which means no binding set was
          * resolved at all rather than an empty one, and a keycode outside
          * [InputPresets.BINDABLE_KEYCODES], which the editor never offered the user any control
-         * over.
+         * over. A six-button pad's C and Z have no default binding, so unbound they reach the
+         * button [platformSlug] labels C or Z ([InputPresets.sixButtonTarget]) rather than nothing.
          */
-        fun resolveMappedKey(mapping: Map<InputSource, Int>?, keyCode: Int): Int {
+        fun resolveMappedKey(mapping: Map<InputSource, Int>?, keyCode: Int, platformSlug: String? = null): Int {
+            val bound = mapping?.get(InputSource.Button(keyCode))
+            if (bound != null) return retroButtonToAndroidKeyCode(bound)
+            InputPresets.sixButtonTarget(keyCode, platformSlug)?.let { return retroButtonToAndroidKeyCode(it) }
             if (mapping.isNullOrEmpty()) return keyCode
-            val retroButton = mapping[InputSource.Button(keyCode)]
-                ?: return if (keyCode in InputPresets.BINDABLE_KEYCODES) KeyEvent.KEYCODE_UNKNOWN else keyCode
-            return retroButtonToAndroidKeyCode(retroButton)
+            return if (keyCode in InputPresets.BINDABLE_KEYCODES) KeyEvent.KEYCODE_UNKNOWN else keyCode
         }
 
         fun retroButtonToAndroidKeyCode(retroButton: Int): Int {

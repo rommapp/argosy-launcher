@@ -190,11 +190,6 @@ data class RomMStreamSlotRequest(
 )
 
 @JsonClass(generateAdapter = true)
-data class RomMStreamVolumeRequest(
-    @Json(name = "level") val level: Int
-)
-
-@JsonClass(generateAdapter = true)
 data class RomMStreamSwapDiscRequest(
     @Json(name = "file_id") val fileId: Long
 )

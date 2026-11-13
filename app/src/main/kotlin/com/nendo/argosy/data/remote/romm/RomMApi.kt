@@ -560,14 +560,6 @@ interface RomMApi {
         @Query("claimed_at") claimedAt: String?
     ): Response<ResponseBody>
 
-    @POST("api/streaming/sessions/{platform}/volume")
-    suspend fun setStreamVolume(
-        @Path("platform") platform: String,
-        @Body body: RomMStreamVolumeRequest,
-        @Query("container") container: String?,
-        @Query("claimed_at") claimedAt: String?
-    ): Response<ResponseBody>
-
     @POST("api/streaming/sessions/{platform}/save-and-exit")
     suspend fun saveAndExitStreamSession(
         @Path("platform") platform: String,

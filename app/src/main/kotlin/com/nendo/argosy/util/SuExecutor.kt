@@ -1,7 +1,6 @@
 package com.nendo.argosy.util
 
 import java.io.File
-import java.util.concurrent.TimeUnit
 
 /**
  * Root commands through a root manager's `su`, such as Magisk's. [requestGrant] and [execute] can
@@ -38,6 +37,7 @@ object SuExecutor : RootCommandRunner {
     private const val TIMEOUT_SECONDS = 30L
     private const val SCRIPT_TIMEOUT_SECONDS = 600L
     private const val ROOT_UID_MARKER = "uid=0("
+    private const val SHELL_COUNT = 2
     private val knownDirs = listOf("/system/bin", "/system_ext/bin", "/system/xbin", "/sbin", "/debug_ramdisk")
 
     @Volatile
@@ -59,20 +59,21 @@ object SuExecutor : RootCommandRunner {
     }
 
     override fun execute(command: String): Result<String> = runCatching {
-        val su = binary ?: error("su is not installed")
-        val process = ProcessBuilder(su.path, "-c", command).redirectErrorStream(true).start()
-        process.outputStream.close()
-        if (!process.waitFor(TIMEOUT_SECONDS, TimeUnit.SECONDS)) {
-            process.destroyForcibly()
-            error("su timed out")
-        }
-        val output = process.inputStream.bufferedReader().use { it.readText() }
-        check(process.exitValue() == 0) { "su exited ${process.exitValue()}: ${output.trim()}" }
+        val result = idleShell()?.run(command, TIMEOUT_SECONDS) ?: error("su refused or timed out")
+        val output = result.output.joinToString(separator = "") { "$it\n" }
+        check(result.succeeded) { "su exited ${result.exitCode}: ${output.trim()}" }
         output
     }
 
-    override fun runScript(script: String): RootShell.Result? {
-        val su = binary ?: return null
-        return ShellProcess.run(listOf(su.path), script, SCRIPT_TIMEOUT_SECONDS)
+    override fun runScript(script: String): RootShell.Result? =
+        idleShell()?.run(script, SCRIPT_TIMEOUT_SECONDS)
+
+    private val shells: List<PersistentShell>? by lazy {
+        binary?.let { su -> List(SHELL_COUNT) { PersistentShell(listOf(su.path)) } }
+    }
+
+    private fun idleShell(): PersistentShell? {
+        val pool = shells ?: return null
+        return pool.firstOrNull { !it.isBusy } ?: pool.first()
     }
 }

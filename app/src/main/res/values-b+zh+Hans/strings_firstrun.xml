@@ -40,4 +40,5 @@
     </plurals>
     <string name="firstrun_platform_select_button_select_all">全选</string>
     <string name="firstrun_platform_select_button_deselect_all">取消全选</string>
+    <string name="firstrun_romm_error_sign_in_interrupted">无法完成登录，请重试。</string>
 </resources>

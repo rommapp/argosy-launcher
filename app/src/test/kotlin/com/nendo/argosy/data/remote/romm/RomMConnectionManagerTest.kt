@@ -1,6 +1,7 @@
 package com.nendo.argosy.data.remote.romm
 
 import android.content.Context
+import com.nendo.argosy.data.local.entity.RomMAccountEntity
 import com.nendo.argosy.data.preferences.UserPreferences
 import com.nendo.argosy.data.preferences.UserPreferencesRepository
 import com.nendo.argosy.data.repository.BiosRepository
@@ -11,6 +12,7 @@ import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
 import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.delay
@@ -24,6 +26,7 @@ import org.junit.Assert.assertNull
 import org.junit.Test
 import retrofit2.Response
 import java.util.concurrent.atomic.AtomicInteger
+import java.time.Instant
 
 class RomMConnectionManagerTest {
 
@@ -296,6 +299,7 @@ class RomMConnectionManagerTest {
     @Test
     fun `additional device pairing stores its avatar without publishing over the live profile`() = runBlocking {
         val manager = manager(stored = storedAccount())
+        coEvery { accountRepository.activeAccount() } returns activeAccount()
         manager.initialize()
         prepareDeviceAuth(manager)
         coEvery { api.getCurrentUser() } returns Response.success(
@@ -305,8 +309,128 @@ class RomMConnectionManagerTest {
         assertTrue(manager.pollDeviceAuthOnce("code", activateOnSuccess = false) is DeviceAuthPoll.AddedAccount)
 
         assertEquals(1L, manager.currentUser?.id)
+        assertEquals("token", manager.getAccessToken())
         coVerify { accountRepository.registerAdditional(2L, "second", "http://romm.local/", "paired-token", "paired-device", any(), "second.png") }
         coVerify(exactly = 0) { preferences.setRomMCredentials(any(), "paired-token", any(), any(), any()) }
+    }
+
+    @Test
+    fun `pairing the active identity rotates stored and live credentials and remains reconnectable`() = runBlocking {
+        val manager = manager(stored = storedAccount())
+        val stored = MutableStateFlow(storedAccount())
+        var account = activeAccount()
+        every { preferences.preferences } returns stored
+        coEvery { accountRepository.activeAccount() } coAnswers { account }
+        coEvery { accountRepository.accounts() } coAnswers { listOf(account) }
+        coEvery { preferences.setRomMCredentials(any(), any(), any(), any(), any()) } coAnswers {
+            stored.value = stored.value.copy(
+                rommBaseUrl = firstArg(), rommToken = secondArg(), rommUsername = thirdArg(),
+                rommUserId = arg(3), rommAvatarPath = arg(4)
+            )
+        }
+        coEvery { accountRepository.onSignedIn(any(), any(), any(), any(), any(), any(), any()) } coAnswers {
+            account = account.copy(username = arg(1), baseUrl = arg(2), token = arg(3), avatarPath = arg(6))
+            account.id
+        }
+        assertTrue(manager.initialize())
+        prepareDeviceAuth(manager)
+        coEvery { api.getCurrentUser() } returns Response.success(
+            RomMUser(id = 1L, username = "repaired", enabled = true, role = "admin", avatarPath = "repaired.png")
+        )
+
+        val paired = manager.pollDeviceAuthOnce("code", activateOnSuccess = false)
+
+        assertTrue(paired is DeviceAuthPoll.Approved)
+        assertEquals("paired-token", account.token)
+        assertEquals(account.token, stored.value.rommToken)
+        assertEquals(account.token, manager.getAccessToken())
+        assertEquals("repaired", manager.currentUser?.username)
+        coVerify(exactly = 2) { api.getCurrentUser() }
+        coVerify(exactly = 0) { accountRepository.registerAdditional(any(), any(), any(), any(), any(), any(), any()) }
+
+        expireVerification(manager)
+        manager.checkConnection()
+        assertTrue(manager.reconnectWithStoredAddresses() is RomMResult.Success)
+        assertEquals("paired-token", manager.getAccessToken())
+        coVerify { accountRepository.refreshProfile(account.id, 1L, "paired-token", 1L, "http://romm.local/", "repaired", "repaired.png", null) }
+    }
+
+    @Test
+    fun `delayed pairing after signout or switch cannot publish credentials`() = runBlocking {
+        for (signedOut in listOf(true, false)) {
+            val manager = manager(stored = storedAccount())
+            val stored = MutableStateFlow(storedAccount())
+            every { preferences.preferences } returns stored
+            assertTrue(manager.initialize())
+            prepareDeviceAuth(manager)
+            val requested = CompletableDeferred<Unit>()
+            val response = CompletableDeferred<Response<RomMUser>>()
+            coEvery { api.getCurrentUser() } coAnswers {
+                requested.complete(Unit)
+                response.await()
+            }
+            val pairing = async { manager.pollDeviceAuthOnce("code", activateOnSuccess = false) }
+            requested.await()
+            if (signedOut) manager.disconnect()
+            stored.value = if (signedOut) UserPreferences() else storedAccount().copy(rommUserId = 2L, rommToken = "other-token")
+            response.complete(Response.success(RomMUser(id = 1L, username = "stale", enabled = true, role = "admin")))
+
+            val failure = pairing.await() as DeviceAuthPoll.Failed
+            assertEquals(RomMErrorKind.SESSION_CHANGED, failure.kind)
+            assertFalse(failure.retryable)
+            assertEquals(if (signedOut) null else "token", manager.getAccessToken())
+            coVerify(exactly = 0) { preferences.setRomMCredentials(any(), "paired-token", any(), any(), any()) }
+        }
+    }
+
+    @Test
+    fun `unavailable paired identity returns a structured terminal failure`() = runBlocking {
+        for (activate in listOf(true, false)) {
+            val manager = manager()
+            prepareDeviceAuth(manager)
+            coEvery { api.getCurrentUser() } throws java.io.IOException("offline")
+
+            val failure = manager.pollDeviceAuthOnce("code", activateOnSuccess = activate) as DeviceAuthPoll.Failed
+
+            assertEquals(RomMErrorKind.IDENTITY_UNAVAILABLE, failure.kind)
+            assertFalse(failure.retryable)
+            coVerify(exactly = 0) { preferences.setRomMCredentials(any(), any(), any(), any(), any()) }
+        }
+    }
+
+    @Test
+    fun `cancelled identity request is not converted into a failed approval`() = runBlocking {
+        val manager = manager()
+        prepareDeviceAuth(manager)
+        coEvery { api.getCurrentUser() } throws CancellationException("cancelled")
+
+        val result = runCatching { manager.pollDeviceAuthOnce("code") }
+
+        assertTrue(result.exceptionOrNull() is CancellationException)
+        coVerify(exactly = 0) { preferences.setRomMCredentials(any(), any(), any(), any(), any()) }
+    }
+
+    private fun activeAccount() = RomMAccountEntity(
+        id = 3, rommUserId = 1, username = "player", baseUrl = "http://romm.local/",
+        token = "token", deviceId = "device-1", isActive = true,
+        lastLoginAt = Instant.EPOCH, createdAt = Instant.EPOCH
+    )
+
+    @Test
+    fun `stored user mismatch returns structured failure without persisting candidate profile`() = runBlocking {
+        val manager = manager(stored = storedAccount())
+        coEvery { api.getCurrentUser() } returns Response.success(
+            RomMUser(id = 2L, username = "different", enabled = true, role = "admin", avatarPath = "different.png")
+        )
+
+        val failure = manager.reconnectWithStoredAddresses() as RomMResult.Error
+
+        assertEquals(RomMErrorKind.IDENTITY_UNAVAILABLE, failure.kind)
+        assertNull(manager.currentUser)
+        coVerify(exactly = 0) { accountRepository.refreshProfile(any(), any(), any(), any(), any(), any(), any(), any()) }
+        coVerify(exactly = 0) { preferences.setRomMCredentials(any(), any(), any(), any(), any()) }
+        coVerify(exactly = 0) { accountRepository.onSignedIn(any(), any(), any(), any(), any(), any(), any()) }
+        manager.disconnect()
     }
 
     private fun prepareDeviceAuth(manager: RomMConnectionManager) {

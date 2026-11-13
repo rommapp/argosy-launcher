@@ -2789,5 +2789,6 @@
     <string name="settings_builtin_gpu_driver_reason_core_system_only">%1$s nutzt den Systemtreiber</string>
     <string name="settings_builtin_gpu_driver_reason_backend">Gilt, wenn das Backend Vulkan ist</string>
     <string name="settings_builtin_gpu_driver_reason_device">Eigene Treiber benötigen eine Adreno-GPU</string>
+    <string name="settings_server_delegate_pairing_interrupted">Die Anmeldung konnte nicht abgeschlossen werden. Bitte versuche es erneut.</string>
+    <string name="settings_accounts_delegate_pairing_interrupted">Die Anmeldung konnte nicht abgeschlossen werden. Bitte versuche es erneut.</string>
 </resources>
-

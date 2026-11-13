@@ -2780,4 +2780,6 @@
     <string name="settings_builtin_gpu_driver_reason_core_system_only">%1$s सिस्टम ड्राइवर इस्तेमाल करता है</string>
     <string name="settings_builtin_gpu_driver_reason_backend">बैकएंड Vulkan होने पर लागू होता है</string>
     <string name="settings_builtin_gpu_driver_reason_device">कस्टम ड्राइवर के लिए Adreno GPU चाहिए</string>
+    <string name="settings_server_delegate_pairing_interrupted">साइन इन पूरा नहीं हो सका। कृपया फिर से कोशिश करें।</string>
+    <string name="settings_accounts_delegate_pairing_interrupted">साइन इन पूरा नहीं हो सका। कृपया फिर से कोशिश करें।</string>
 </resources>

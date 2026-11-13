@@ -18,6 +18,7 @@ import com.nendo.argosy.util.Logger
 import com.squareup.moshi.Moshi
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
@@ -51,6 +52,8 @@ private const val MIN_DEVICE_API_VERSION = "4.7.0"
 private const val CANDIDATE_PROBE_TIMEOUT_SECONDS = 5L
 private const val TOKEN_RECHECK_WINDOW_MS = 60_000L
 private const val RECENT_CONNECT_MS = 5_000L
+
+private class RomMConnectionFailure(val kind: RomMErrorKind) : Exception(kind.name)
 
 private val RECONNECT_BACKOFF_MS = listOf(5_000L, 10_000L, 20_000L, 40_000L, 60_000L)
 
@@ -92,7 +95,7 @@ sealed class DeviceAuthPoll {
      * consumed server-side, or the flow was never started. Retryable failures are transient
      * transport or gateway noise and the caller is expected to keep polling.
      */
-    data class Failed(val message: String, val retryable: Boolean = true) : DeviceAuthPoll()
+    data class Failed(val message: String, val retryable: Boolean = true, val kind: RomMErrorKind? = null) : DeviceAuthPoll()
 }
 
 @Singleton
@@ -330,7 +333,8 @@ class RomMConnectionManager @Inject constructor(
     private suspend fun fetchCurrentUser(target: RomMApi): RomMUser? = try {
         val response = target.getCurrentUser()
         if (response.isSuccessful) response.body() else null
-    } catch (_: Exception) {
+    } catch (e: Exception) {
+        if (e is CancellationException) throw e
         null
     }
 
@@ -388,11 +392,13 @@ class RomMConnectionManager @Inject constructor(
     }
 
     private suspend fun persistRommCredentials(newBaseUrl: String, token: String, user: RomMUser?) {
-        checkNotNull(user) { "Could not identify the paired user" }
+        if (user == null) throw RomMConnectionFailure(RomMErrorKind.IDENTITY_UNAVAILABLE)
         val generation = sessionGeneration.get()
         val session = profileSession()
         requireSameInstance(newBaseUrl)
-        check(generation == sessionGeneration.get() && session == profileSession()) { "Session changed" }
+        if (generation != sessionGeneration.get() || session != profileSession()) {
+            throw RomMConnectionFailure(RomMErrorKind.SESSION_CHANGED)
+        }
         userPreferencesRepository.setRomMCredentials(newBaseUrl, token, user.username, user.id, user.avatarPath)
         val stored = userPreferencesRepository.preferences.first()
         rommAccountRepository.get().onSignedIn(
@@ -472,7 +478,7 @@ class RomMConnectionManager @Inject constructor(
                     }
                     is RomMResult.Error -> {
                         if (generation != sessionGeneration.get() || session != profileSession()) {
-                            return RomMResult.Error("Session changed")
+                            return RomMResult.Error(RomMErrorKind.SESSION_CHANGED.name, kind = RomMErrorKind.SESSION_CHANGED)
                         }
                         lastFailure = outcome
                     }
@@ -505,19 +511,19 @@ class RomMConnectionManager @Inject constructor(
                     return RomMResult.Error("Sign in again")
                 }
             } else null
-            if (sessionGeneration.get() != generation) return RomMResult.Error("Session changed")
-            if (profileSession != profileSession()) return RomMResult.Error("Session changed")
+            if (sessionGeneration.get() != generation) throw RomMConnectionFailure(RomMErrorKind.SESSION_CHANGED)
+            if (profileSession != profileSession()) throw RomMConnectionFailure(RomMErrorKind.SESSION_CHANGED)
             if (recordAddress && (!profileSession.matchesAccount || profileSession.token != token)) {
-                return RomMResult.Error("Session changed")
+                throw RomMConnectionFailure(RomMErrorKind.SESSION_CHANGED)
             }
             if (recordAddress && user != null && profileSession.userId != null && profileSession.userId != user.id) {
-                return RomMResult.Error("Sign in again")
+                throw RomMConnectionFailure(RomMErrorKind.IDENTITY_UNAVAILABLE)
             }
             if (recordAddress && token != null && user != null && token == profileSession.token) {
                 refreshProfile(profileSession, token, user, normalizedUrl)
-                if (profileSession.copy(baseUrl = normalizedUrl) != profileSession()) return RomMResult.Error("Session changed")
+                if (profileSession.copy(baseUrl = normalizedUrl) != profileSession()) throw RomMConnectionFailure(RomMErrorKind.SESSION_CHANGED)
             }
-            if (sessionGeneration.get() != generation) return RomMResult.Error("Session changed")
+            if (sessionGeneration.get() != generation) throw RomMConnectionFailure(RomMErrorKind.SESSION_CHANGED)
             if (baseUrl.isNotEmpty() && baseUrl != normalizedUrl) {
                 Logger.info(TAG, "connect: moving from $baseUrl to $normalizedUrl")
             }
@@ -546,7 +552,9 @@ class RomMConnectionManager @Inject constructor(
             return RomMResult.Success(normalizedUrl)
         } catch (e: Exception) {
             Logger.info(TAG, "connect: exception at $normalizedUrl: ${e.message}")
-            val kind = if (e.isCertificateTrustFailure()) RomMErrorKind.UNTRUSTED_CERTIFICATE else null
+            if (e is CancellationException) throw e
+            val kind = (e as? RomMConnectionFailure)?.kind
+                ?: if (e.isCertificateTrustFailure()) RomMErrorKind.UNTRUSTED_CERTIFICATE else null
             return RomMResult.Error(e.message ?: "Connection failed", kind = kind)
         }
     }
@@ -561,7 +569,7 @@ class RomMConnectionManager @Inject constructor(
 
         val currentApi = api ?: return RomMResult.Error("Not connected")
         return try {
-            if (accessToken != token || api !== currentApi) return RomMResult.Error("Session changed")
+            if (accessToken != token || api !== currentApi) throw RomMConnectionFailure(RomMErrorKind.SESSION_CHANGED)
             persistRommCredentials(baseUrl, token, currentUser)
 
             if (isVersionAtLeast(MIN_DEVICE_API_VERSION)) {
@@ -570,7 +578,8 @@ class RomMConnectionManager @Inject constructor(
 
             RomMResult.Success(token)
         } catch (e: Exception) {
-            RomMResult.Error(e.message ?: "Failed to verify token")
+            if (e is CancellationException) throw e
+            RomMResult.Error(e.message ?: "Failed to verify token", kind = (e as? RomMConnectionFailure)?.kind)
         }
     }
 
@@ -662,9 +671,8 @@ class RomMConnectionManager @Inject constructor(
     }
 
     /**
-     * [activateOnSuccess] false pairs an ADDITIONAL account: the row is stored but the device
-     * stays signed in as whoever it was. Activating on pair would skip the switch teardown and
-     * leave the new account playing on the previous one's saves.
+     * [activateOnSuccess] false stores a different identity without activating it. Re-pairing
+     * the active identity refreshes its credentials and live connection.
      */
     suspend fun pollDeviceAuthOnce(
         deviceCode: String,
@@ -684,18 +692,15 @@ class RomMConnectionManager @Inject constructor(
                         finalizeDeviceAuth(base, body)
                         DeviceAuthPoll.Approved(body.accessToken)
                     } else {
-                        val accountId = registerAdditionalAccount(base, body)
-                            ?: return DeviceAuthPoll.Failed(
-                                "Could not identify the paired user",
-                                retryable = false
-                            )
-                        DeviceAuthPoll.AddedAccount(accountId)
+                        registerAdditionalAccount(base, body)
                     }
                 } catch (e: Exception) {
+                    if (e is CancellationException) throw e
                     Logger.info(TAG, "pollDeviceAuthOnce: approval landed but sign-in failed: ${e.message}")
                     DeviceAuthPoll.Failed(
                         e.message ?: "Approved, but signing in failed",
-                        retryable = false
+                        retryable = false,
+                        kind = (e as? RomMConnectionFailure)?.kind
                     )
                 }
             } else {
@@ -708,6 +713,7 @@ class RomMConnectionManager @Inject constructor(
                 }
             }
         } catch (e: Exception) {
+            if (e is CancellationException) throw e
             DeviceAuthPoll.Failed(e.message ?: "Connection failed")
         }
     }
@@ -720,9 +726,19 @@ class RomMConnectionManager @Inject constructor(
     private suspend fun registerAdditionalAccount(
         base: String,
         body: RomMDeviceAuthTokenResponse
-    ): Long? {
+    ): DeviceAuthPoll {
+        val generation = sessionGeneration.get()
+        val session = profileSession()
         val newApi = createApi(base, body.accessToken)
-        val user = fetchCurrentUser(newApi) ?: return null
+        val user = fetchCurrentUser(newApi) ?: throw RomMConnectionFailure(RomMErrorKind.IDENTITY_UNAVAILABLE)
+        val active = rommAccountRepository.get().activeAccount()
+        if (generation != sessionGeneration.get() || session.accountId != active?.id || session != profileSession()) {
+            throw RomMConnectionFailure(RomMErrorKind.SESSION_CHANGED)
+        }
+        if (active != null && active.id == session.accountId && active.rommUserId == user.id && session.userId == user.id) {
+            finalizeDeviceAuth(base, body, user)
+            return DeviceAuthPoll.Approved(body.accessToken)
+        }
         val accountId = rommAccountRepository.get().registerAdditional(
             rommUserId = user.id,
             username = user.username,
@@ -735,14 +751,17 @@ class RomMConnectionManager @Inject constructor(
         deviceAuthApi = null
         deviceAuthBaseUrl = null
         Logger.info(TAG, "registerAdditionalAccount: stored account $accountId for user ${user.id} without activating")
-        return accountId
+        return DeviceAuthPoll.AddedAccount(accountId)
     }
 
-    private suspend fun finalizeDeviceAuth(base: String, body: RomMDeviceAuthTokenResponse) {
+    private suspend fun finalizeDeviceAuth(base: String, body: RomMDeviceAuthTokenResponse, verifiedUser: RomMUser? = null) {
         val generation = sessionGeneration.get()
         val session = profileSession()
         val newApi = createApi(base, body.accessToken)
-        val heartbeat = try { newApi.heartbeat() } catch (_: Exception) { null }
+        val heartbeat = try { newApi.heartbeat() } catch (e: Exception) {
+            if (e is CancellationException) throw e
+            null
+        }
         val version = heartbeat?.body()?.version ?: "unknown"
         val capabilities = RomMCapabilities.from(
             version,
@@ -751,8 +770,10 @@ class RomMConnectionManager @Inject constructor(
             heartbeat?.body()?.snapshotsEnabled == true
         )
 
-        val user = fetchCurrentUser(newApi)
-        check(generation == sessionGeneration.get() && session == profileSession()) { "Session changed" }
+        val user = verifiedUser ?: fetchCurrentUser(newApi)
+        if (generation != sessionGeneration.get() || session != profileSession()) {
+            throw RomMConnectionFailure(RomMErrorKind.SESSION_CHANGED)
+        }
         persistRommCredentials(base, body.accessToken, user)
         userPreferencesRepository.setRommDeviceId(body.deviceId, BuildConfig.VERSION_NAME)
         rommAccountRepository.get().recordDeviceRegistration(body.deviceId, BuildConfig.VERSION_NAME)
@@ -887,6 +908,7 @@ class RomMConnectionManager @Inject constructor(
         val response = candidate.getCurrentUser()
         response.body()?.takeIf { response.isSuccessful }
     } catch (e: Exception) {
+        if (e is CancellationException) throw e
         Logger.info(TAG, "verifiedUser: identity call failed: ${e.message}")
         null
     }

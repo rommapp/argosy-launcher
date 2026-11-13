@@ -2707,4 +2707,6 @@
     <string name="settings_builtin_gpu_driver_reason_core_system_only">%1$s 使用系统驱动</string>
     <string name="settings_builtin_gpu_driver_reason_backend">渲染后端为 Vulkan 时生效</string>
     <string name="settings_builtin_gpu_driver_reason_device">自定义驱动需要 Adreno GPU</string>
+    <string name="settings_server_delegate_pairing_interrupted">无法完成登录，请重试。</string>
+    <string name="settings_accounts_delegate_pairing_interrupted">无法完成登录，请重试。</string>
 </resources>

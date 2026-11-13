@@ -5357,4 +5357,6 @@
     <string name="settings_builtin_gpu_driver_reason_backend">Applies when Backend is Vulkan</string>
     <!-- Second line of a read-only GPU Driver row on a device that cannot load custom drivers. -->
     <string name="settings_builtin_gpu_driver_reason_device">Custom drivers need an Adreno GPU</string>
+    <string name="settings_server_delegate_pairing_interrupted">Unable to complete sign-in. Please try again.</string>
+    <string name="settings_accounts_delegate_pairing_interrupted">Unable to complete sign-in. Please try again.</string>
 </resources>

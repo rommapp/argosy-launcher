@@ -43,4 +43,5 @@
     </plurals>
     <string name="firstrun_platform_select_button_select_all">Alle auswählen</string>
     <string name="firstrun_platform_select_button_deselect_all">Alle abwählen</string>
+    <string name="firstrun_romm_error_sign_in_interrupted">Die Anmeldung konnte nicht abgeschlossen werden. Bitte versuche es erneut.</string>
 </resources>

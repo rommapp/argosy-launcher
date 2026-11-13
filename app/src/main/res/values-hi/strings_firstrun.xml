@@ -55,4 +55,5 @@
     </plurals>
     <string name="firstrun_platform_select_button_select_all">सभी चुनें</string>
     <string name="firstrun_platform_select_button_deselect_all">सभी अनचुनें</string>
+    <string name="firstrun_romm_error_sign_in_interrupted">साइन इन पूरा नहीं हो सका। कृपया फिर से कोशिश करें।</string>
 </resources>

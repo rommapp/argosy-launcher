@@ -4156,4 +4156,6 @@
         <item quantity="many">%1$d jogos neste dispositivo que o RomM não possui</item>
     </plurals>
 
+    <string name="settings_server_delegate_pairing_interrupted">Não foi possível concluir o login. Tente novamente.</string>
+    <string name="settings_accounts_delegate_pairing_interrupted">Não foi possível concluir o login. Tente novamente.</string>
 </resources>

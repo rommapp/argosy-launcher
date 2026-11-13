@@ -2865,4 +2865,6 @@
     <string name="settings_builtin_gpu_driver_reason_core_system_only">%1$s usa el controlador del sistema</string>
     <string name="settings_builtin_gpu_driver_reason_backend">Se aplica cuando el motor de renderizado es Vulkan</string>
     <string name="settings_builtin_gpu_driver_reason_device">Los controladores personalizados requieren una GPU Adreno</string>
+    <string name="settings_server_delegate_pairing_interrupted">No se pudo completar el inicio de sesión. Inténtalo de nuevo.</string>
+    <string name="settings_accounts_delegate_pairing_interrupted">No se pudo completar el inicio de sesión. Inténtalo de nuevo.</string>
 </resources>

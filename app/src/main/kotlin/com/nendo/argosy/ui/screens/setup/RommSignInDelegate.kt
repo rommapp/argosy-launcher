@@ -26,10 +26,17 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withTimeoutOrNull
 import javax.inject.Inject
 
-private fun RomMResult.Error.toProbeError(): SetupError = when (kind) {
+internal fun RomMErrorKind?.setupSignInError(message: String): SetupError = when (this) {
     RomMErrorKind.UNTRUSTED_CERTIFICATE ->
         SetupError(textRes = R.string.firstrun_romm_error_untrusted_certificate, certificate = true)
+    RomMErrorKind.IDENTITY_UNAVAILABLE, RomMErrorKind.SESSION_CHANGED ->
+        SetupError(textRes = R.string.firstrun_romm_error_sign_in_interrupted)
+    null -> SetupError(serverMessage = message)
+}
+
+internal fun RomMResult.Error.toProbeError(): SetupError = when (kind) {
     null -> SetupError(textRes = R.string.setup_library_address_error_unreachable)
+    else -> kind.setupSignInError(message)
 }
 
 /**
@@ -172,7 +179,7 @@ class RommSignInDelegate @Inject constructor(
             when (val result = romMRepository.exchangePairingCode(current.url, code)) {
                 is RomMResult.Success -> onAuthSuccess()
                 is RomMResult.Error -> _state.update {
-                    it.copy(isConnecting = false, error = SetupError(serverMessage = result.message), pairingCode = "")
+                    it.copy(isConnecting = false, error = result.kind.setupSignInError(result.message), pairingCode = "")
                 }
             }
         }
@@ -230,7 +237,7 @@ class RommSignInDelegate @Inject constructor(
                     it.copy(
                         isConnecting = false,
                         view = LibraryView.ADDRESS,
-                        error = SetupError(serverMessage = init.message)
+                        error = init.kind.setupSignInError(init.message)
                     )
                 }
             }
@@ -253,7 +260,7 @@ class RommSignInDelegate @Inject constructor(
                 failDevicePairing(SetupError(textRes = R.string.firstrun_device_pairing_error_expired))
             is DeviceAuthOutcome.AddedAccount ->
                 failDevicePairing(SetupError(textRes = R.string.firstrun_device_pairing_error_unexpected))
-            is DeviceAuthOutcome.Failed -> failDevicePairing(SetupError(serverMessage = outcome.message))
+            is DeviceAuthOutcome.Failed -> failDevicePairing(outcome.kind.setupSignInError(outcome.message))
         }
     }
 

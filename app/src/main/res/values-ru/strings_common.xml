@@ -209,6 +209,7 @@
     <string name="ui_keyboard_key_symbols">Символы</string>
     <string name="ui_keyboard_key_letters">Буквы</string>
     <string name="ui_keyboard_key_layout">Сменить раскладку</string>
+    <string name="ui_keyboard_paste">Вставить</string>
     <string name="ui_keyboard_key_enter_default">Готово</string>
     <plurals name="ui_keyboard_password_announce">
         <item quantity="one">%d символ</item>

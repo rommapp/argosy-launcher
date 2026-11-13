@@ -171,6 +171,17 @@ class HangulComposerTest {
     }
 
     @Test
+    fun `paste closes the syllable being composed`() {
+        val engine = hangulEngine()
+        engine.typeKeys(h, a)
+
+        engine.paste("!")
+        engine.typeKeys(n)
+
+        assertEquals(ha + "!" + n, engine.state.value.text)
+    }
+
+    @Test
     fun `typing keys through the engine yields hangeul`() {
         val engine = hangulEngine()
         engine.typeKeys(h, a, n, g, eu, r)

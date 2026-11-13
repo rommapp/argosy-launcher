@@ -207,6 +207,7 @@
     <string name="ui_keyboard_key_symbols">Symbole</string>
     <string name="ui_keyboard_key_letters">Buchstaben</string>
     <string name="ui_keyboard_key_layout">Layout wechseln</string>
+    <string name="ui_keyboard_paste">Einfügen</string>
     <string name="ui_keyboard_key_enter_default">Fertig</string>
     <plurals name="ui_keyboard_password_announce">
         <item quantity="one">%d Zeichen</item>

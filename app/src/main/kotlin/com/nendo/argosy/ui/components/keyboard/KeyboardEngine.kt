@@ -19,7 +19,8 @@ class KeyboardEngine(
     session: KeyboardSession,
     private val doubleTapTimeoutMs: Long = DEFAULT_DOUBLE_TAP_TIMEOUT_MS,
     private val onTextChange: (String) -> Unit = {},
-    private val nowMs: () -> Long = { System.nanoTime() / NANOS_PER_MILLI }
+    private val nowMs: () -> Long = { System.nanoTime() / NANOS_PER_MILLI },
+    private val readClipboard: () -> String? = { null }
 ) {
     private var activeLayout: KeyboardLayout = layout
     private var composer: KeyboardComposer? = keyboardComposerFor(layout.composer)
@@ -65,6 +66,15 @@ class KeyboardEngine(
         if (!current.enabled) return KeyboardFeedback.NONE
         if (current.accentStrip != null) return moveInStrip(dx)
         if (dx == 0 && dy == 0) return KeyboardFeedback.NONE
+        if (current.pasteFocused) {
+            if (dy <= 0) return KeyboardFeedback.BOUNDARY
+            _state.update { it.copy(pasteFocused = false) }
+            return KeyboardFeedback.NAVIGATE
+        }
+        if (dx == 0 && dy < 0 && current.focus.row == 0 && current.pasteAvailable) {
+            _state.update { it.copy(pasteFocused = true) }
+            return KeyboardFeedback.NAVIGATE
+        }
         val rows = current.rows
         val horizontal = if (dx == 0) {
             current.focus
@@ -81,6 +91,7 @@ class KeyboardEngine(
         val current = _state.value
         if (!current.enabled) return KeyboardFeedback.NONE
         current.accentStrip?.let { return pickAccent(it, it.focused) }
+        if (current.pasteFocused) return pasteClipboard()
         return when (val key = current.rows.keyAt(current.focus)) {
             is KeyboardKey.Character -> insert(current.typedText(key), consumeShift = true)
             is KeyboardKey.Function -> runFunction(key.function)
@@ -91,7 +102,7 @@ class KeyboardEngine(
     fun longActivate(): KeyboardFeedback {
         val current = _state.value
         if (!current.enabled) return KeyboardFeedback.NONE
-        if (current.accentStrip != null) return activate()
+        if (current.accentStrip != null || current.pasteFocused) return activate()
         val key = current.rows.keyAt(current.focus) as? KeyboardKey.Character ?: return activate()
         val options = if (current.fieldType.isAsciiOnly) emptyList() else accentOptions(current, key)
         if (options.isEmpty()) return activate()
@@ -253,7 +264,7 @@ class KeyboardEngine(
         val current = _state.value
         if (!current.enabled || !current.rows.isFocusable(position)) return false
         column = centerOf(current.rows, position)
-        _state.update { it.copy(focus = position, accentStrip = null) }
+        _state.update { it.copy(focus = position, accentStrip = null, pasteFocused = false) }
         return true
     }
 
@@ -281,6 +292,38 @@ class KeyboardEngine(
             KeyboardFeedback.NONE
         }
         FunctionKey.ENTER -> submit()
+    }
+
+    /**
+     * Shows or hides the Paste stop above the top row as the clipboard gains or loses text. Focus
+     * on it returns to the key it came from when it goes.
+     */
+    fun setPasteAvailable(available: Boolean) {
+        _state.update {
+            it.copy(pasteAvailable = available, pasteFocused = it.pasteFocused && available)
+        }
+    }
+
+    fun pasteClipboard(): KeyboardFeedback {
+        if (!_state.value.enabled) return KeyboardFeedback.NONE
+        val text = readClipboard() ?: return KeyboardFeedback.BOUNDARY
+        return paste(text)
+    }
+
+    /**
+     * Inserts clipboard [text] at the caret as typed for this field: line breaks become spaces,
+     * URI, email, password and number fields drop surrounding whitespace, a number field keeps
+     * only digits, and text past the length limit is cut. Nothing fitting reads as a boundary.
+     */
+    fun paste(text: String): KeyboardFeedback {
+        val current = _state.value
+        if (!current.enabled) return KeyboardFeedback.NONE
+        composer?.commit()
+        val cleaned = pasteText(text, current.fieldType)
+        val room = current.maxLength?.let { (it - current.text.length).coerceAtLeast(0) } ?: cleaned.length
+        val fitting = cleaned.take(room)
+        if (fitting.isEmpty()) return KeyboardFeedback.BOUNDARY
+        return insertPlain(fitting, consumeShift = false)
     }
 
     private fun insert(text: String, consumeShift: Boolean): KeyboardFeedback {
@@ -409,6 +452,17 @@ class KeyboardEngine(
             )
             return KeyboardRow(listOfNotNull(pageToggle, slot, comma, space, period, enter))
         }
+    }
+}
+
+private val LINE_BREAKS = Regex("\\r\\n|\\r|\\n")
+
+internal fun pasteText(text: String, fieldType: KeyboardFieldType): String {
+    val oneLine = text.replace(LINE_BREAKS, " ").filter { !it.isISOControl() }
+    return when (fieldType) {
+        KeyboardFieldType.TEXT -> oneLine
+        KeyboardFieldType.NUMBER -> oneLine.filter { it.isDigit() }
+        KeyboardFieldType.URI, KeyboardFieldType.EMAIL, KeyboardFieldType.PASSWORD -> oneLine.trim()
     }
 }
 

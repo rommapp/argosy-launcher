@@ -449,6 +449,7 @@
     <string name="ui_keyboard_key_letters">Letters</string>
     <!-- The key that switches to the next keyboard language layout. Verb phrase. -->
     <string name="ui_keyboard_key_layout">Switch layout</string>
+    <string name="ui_keyboard_paste">Paste</string>
     <!-- Default label of the key that finishes typing and submits the text. Verb, as in "I am done". -->
     <string name="ui_keyboard_key_enter_default">Done</string>
     <!-- Spoken instead of a password's characters. %d is how many characters have been typed. -->

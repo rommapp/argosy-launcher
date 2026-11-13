@@ -200,6 +200,7 @@
     <string name="ui_keyboard_key_symbols">符号</string>
     <string name="ui_keyboard_key_letters">字母</string>
     <string name="ui_keyboard_key_layout">切换布局</string>
+    <string name="ui_keyboard_paste">粘贴</string>
     <string name="ui_keyboard_key_enter_default">完成</string>
     <plurals name="ui_keyboard_password_announce">
         <item quantity="other">%d 个字符</item>

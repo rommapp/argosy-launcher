@@ -195,6 +195,7 @@
     <string name="ui_keyboard_key_symbols">Símbolos</string>
     <string name="ui_keyboard_key_letters">Letras</string>
     <string name="ui_keyboard_key_layout">Trocar layout</string>
+    <string name="ui_keyboard_paste">Colar</string>
     <string name="ui_keyboard_key_enter_default">Concluir</string>
     <plurals name="ui_keyboard_password_announce">
         <item quantity="one">%d caractere</item>

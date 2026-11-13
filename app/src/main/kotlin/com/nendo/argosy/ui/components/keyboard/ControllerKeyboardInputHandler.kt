@@ -27,7 +27,7 @@ internal class ControllerKeyboardInputHandler(
     override fun onSecondaryAction(): InputResult = run(engine.space())
     override fun onLeftStickClick(): InputResult = run(engine.shiftClick())
     override fun onPrevTrigger(): InputResult = run(engine.toggleSymbols())
-    override fun onNextTrigger(): InputResult = InputResult.HANDLED
+    override fun onNextTrigger(): InputResult = run(engine.pasteClipboard())
     override fun onSelect(): InputResult = onCycleLayout().toInputResult()
     override fun onMenu(): InputResult = run(engine.submit())
     override fun onPrevSection(): InputResult = run(engine.moveCaret(-1))

@@ -1,5 +1,8 @@
 package com.nendo.argosy.ui.components.keyboard
 
+import android.content.ClipDescription
+import android.content.ClipboardManager
+import android.content.Context
 import android.view.ViewConfiguration
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
@@ -51,6 +54,7 @@ fun ControllerKeyboardHost() {
             .keyboardLayouts()
     }
     val scope = rememberCoroutineScope()
+    val clipboard = remember(context) { context.getSystemService(ClipboardManager::class.java) }
     var engine by remember(request) { mutableStateOf<KeyboardEngine?>(null) }
     var choices by remember(request) { mutableStateOf<List<KeyboardLayoutChoice>>(emptyList()) }
 
@@ -85,7 +89,8 @@ fun ControllerKeyboardHost() {
                 maxLength = request.maxLength
             ),
             doubleTapTimeoutMs = ViewConfiguration.getDoubleTapTimeout().toLong(),
-            onTextChange = request.onTextChange
+            onTextChange = request.onTextChange,
+            readClipboard = { clipboard.firstText(context) }
         )
     }
 
@@ -123,6 +128,12 @@ fun ControllerKeyboardHost() {
             else -> Unit
         }
     }
+    DisposableEffect(keyboard, clipboard) {
+        keyboard.setPasteAvailable(clipboard.holdsText())
+        val listener = ClipboardManager.OnPrimaryClipChangedListener { keyboard.setPasteAvailable(clipboard.holdsText()) }
+        clipboard?.addPrimaryClipChangedListener(listener)
+        onDispose { clipboard?.removePrimaryClipChangedListener(listener) }
+    }
     val handler = remember(keyboard) {
         ControllerKeyboardInputHandler(keyboard, onFeedback, cycleLayout)
     }
@@ -138,6 +149,16 @@ fun ControllerKeyboardHost() {
         onAccentTap = { index -> onFeedback(keyboard.tapAccent(index)) },
         onDismissTap = { ControllerKeyboard.dismissActive() },
         onCaretTap = { index -> keyboard.setCaret(index) },
+        onPasteTap = { onFeedback(keyboard.pasteClipboard()) },
         modifier = Modifier.fillMaxSize()
     )
 }
+
+private fun ClipboardManager?.firstText(context: Context): String? =
+    this?.primaryClip?.takeIf { it.itemCount > 0 }?.getItemAt(0)?.coerceToText(context)?.toString()
+
+private fun ClipboardManager?.holdsText(): Boolean =
+    this?.primaryClipDescription?.let {
+        it.hasMimeType(ClipDescription.MIMETYPE_TEXT_PLAIN) || it.hasMimeType(ClipDescription.MIMETYPE_TEXT_HTML) ||
+            it.hasMimeType(ClipDescription.MIMETYPE_TEXT_URILIST)
+    } == true

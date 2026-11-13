@@ -221,6 +221,7 @@
     <string name="ui_keyboard_key_symbols">Symboles</string>
     <string name="ui_keyboard_key_letters">Lettres</string>
     <string name="ui_keyboard_key_layout">Changer de disposition</string>
+    <string name="ui_keyboard_paste">Coller</string>
     <string name="ui_keyboard_key_enter_default">OK</string>
     <plurals name="ui_keyboard_password_announce">
         <item quantity="one">%d caractère</item>

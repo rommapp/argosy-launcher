@@ -120,7 +120,7 @@ internal fun KeyboardKeyView(
     onKeyTap: (KeyPosition) -> Unit,
     onKeyLongPress: (KeyPosition) -> Unit
 ) {
-    val focused = state.accentStrip == null && state.focus == geometry.position
+    val focused = state.accentStrip == null && !state.pasteFocused && state.focus == geometry.position
     val placement = Modifier
         .offset(geometry.x, geometry.y)
         .size(geometry.width, keyHeight)
@@ -275,7 +275,7 @@ private fun FunctionLabel(text: String, color: Color) {
 }
 
 @Composable
-private fun KeySurface(
+internal fun KeySurface(
     fill: Color,
     focused: Boolean,
     enabled: Boolean,

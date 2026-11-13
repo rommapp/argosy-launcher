@@ -204,6 +204,7 @@
     <string name="ui_keyboard_key_symbols">符號</string>
     <string name="ui_keyboard_key_letters">字母</string>
     <string name="ui_keyboard_key_layout">切換配置</string>
+    <string name="ui_keyboard_paste">貼上</string>
     <string name="ui_keyboard_key_enter_default">完成</string>
     <plurals name="ui_keyboard_password_announce">
         <item quantity="other">%d 個字元</item>

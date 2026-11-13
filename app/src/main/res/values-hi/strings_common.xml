@@ -207,6 +207,7 @@
     <string name="ui_keyboard_key_symbols">चिह्न</string>
     <string name="ui_keyboard_key_letters">अक्षर</string>
     <string name="ui_keyboard_key_layout">लेआउट बदलें</string>
+    <string name="ui_keyboard_paste">पेस्ट करें</string>
     <string name="ui_keyboard_key_enter_default">हो गया</string>
     <plurals name="ui_keyboard_password_announce">
         <item quantity="one">%d वर्ण</item>

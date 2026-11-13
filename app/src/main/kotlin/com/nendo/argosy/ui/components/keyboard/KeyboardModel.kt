@@ -147,7 +147,9 @@ data class KeyboardUiState(
     val languageLabel: String,
     val accentStrip: AccentStrip?,
     val shiftRule: ShiftRule = ShiftRule.Upper,
-    val localeTag: String? = null
+    val localeTag: String? = null,
+    val pasteAvailable: Boolean = false,
+    val pasteFocused: Boolean = false
 ) {
     val units: Float get() = rows.maxOfOrNull { row -> row.keys.sumOf { it.width.toDouble() }.toFloat() } ?: 1f
 

@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -31,9 +32,11 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.CustomAccessibilityAction
 import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.customActions
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.text.TextLayoutResult
@@ -55,9 +58,11 @@ internal fun KeyboardEcho(
     multiline: Boolean,
     height: Dp,
     onCaretTap: (Int) -> Unit,
+    onPasteTap: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     val theme = LocalArgosyTheme.current
+    val pasteLabel = stringResource(R.string.ui_keyboard_paste)
     val shape = RoundedCornerShape(Dimens.radiusControl)
     val error = state.error
     val labelText = error ?: state.label
@@ -85,6 +90,14 @@ internal fun KeyboardEcho(
                 contentDescription = labelText
                 stateDescription = announcement
                 liveRegion = LiveRegionMode.Polite
+                if (state.pasteAvailable) {
+                    customActions = listOf(
+                        CustomAccessibilityAction(pasteLabel) {
+                            onPasteTap()
+                            true
+                        }
+                    )
+                }
             },
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(Dimens.spacingSm)
@@ -117,6 +130,25 @@ internal fun KeyboardEcho(
             )
         }
         InputGlyph(button = InputButton.RB, size = Dimens.iconMd)
+        if (state.pasteAvailable) {
+            KeySurface(
+                fill = theme.surfaceElevated,
+                focused = state.pasteFocused,
+                enabled = state.enabled,
+                onTap = onPasteTap,
+                onLongPress = onPasteTap,
+                modifier = Modifier.fillMaxHeight().padding(vertical = Dimens.spacingXs)
+            ) {
+                InputGlyph(button = InputButton.RT, size = Dimens.iconMd)
+                Text(
+                    text = pasteLabel,
+                    style = MaterialTheme.typography.labelMedium,
+                    color = if (state.pasteFocused) theme.focusAccent else theme.textPrimary,
+                    maxLines = 1,
+                    modifier = Modifier.padding(start = Dimens.spacingXs)
+                )
+            }
+        }
     }
 }
 

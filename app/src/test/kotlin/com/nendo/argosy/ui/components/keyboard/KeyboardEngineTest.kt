@@ -2,6 +2,7 @@ package com.nendo.argosy.ui.components.keyboard
 
 import java.io.File
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
@@ -377,5 +378,124 @@ class KeyboardEngineTest {
         assertEquals(KeyPosition(1, 0), engine.state.value.focus)
         assertEquals("q", engine.state.value.text)
         assertEquals(KeyboardFeedback.NONE, engine.tapKey(KeyPosition(2, 0)))
+    }
+
+    @Test
+    fun `paste inserts at the caret and reports the text`() {
+        var reported = ""
+        val engine = engine(session(initialText = "ad"), onTextChange = { reported = it })
+        engine.moveCaret(-1)
+
+        assertEquals(KeyboardFeedback.SELECT, engine.paste("bc"))
+
+        assertEquals("abcd", engine.state.value.text)
+        assertEquals(3, engine.state.value.caret)
+        assertEquals("abcd", reported)
+    }
+
+    @Test
+    fun `paste cuts text past the length limit and a full field refuses it`() {
+        val engine = engine(session(initialText = "ab", maxLength = 4))
+
+        engine.paste("cdef")
+        assertEquals("abcd", engine.state.value.text)
+        assertEquals(KeyboardFeedback.BOUNDARY, engine.paste("e"))
+        assertEquals("abcd", engine.state.value.text)
+    }
+
+    @Test
+    fun `paste leaves shift as it was`() {
+        val engine = engine()
+        engine.shiftClick(0L)
+
+        engine.paste("x")
+
+        assertEquals(ShiftState.ONCE, engine.state.value.shift)
+    }
+
+    @Test
+    fun `a disabled keyboard ignores paste`() {
+        val engine = engine()
+        engine.updateSession(error = null, canSubmit = true, enabled = false)
+
+        assertEquals(KeyboardFeedback.NONE, engine.paste("x"))
+        assertEquals("", engine.state.value.text)
+    }
+
+    @Test
+    fun `paste text is cleaned for the field type`() {
+        assertEquals("line one line two", pasteText("line one\r\nline two", KeyboardFieldType.TEXT))
+        assertEquals("  spaced ", pasteText("  spaced\n", KeyboardFieldType.TEXT))
+        assertEquals("https://romm.example", pasteText(" https://romm.example\n", KeyboardFieldType.URI))
+        assertEquals("me@example.com", pasteText("me@example.com\t", KeyboardFieldType.EMAIL))
+        assertEquals("p a ss", pasteText("\np a ss\n", KeyboardFieldType.PASSWORD))
+        assertEquals("5551234", pasteText("555-1234\n", KeyboardFieldType.NUMBER))
+    }
+
+    private fun clipboardEngine(clip: String?) =
+        KeyboardEngine(qwerty, session(initialFocus = KeyPosition(0, 4)), readClipboard = { clip })
+
+    @Test
+    fun `up from the top row reaches paste when the clipboard holds text, and ok pastes`() {
+        val engine = clipboardEngine("hello")
+        engine.setPasteAvailable(true)
+
+        assertEquals(KeyboardFeedback.NAVIGATE, engine.move(0, -1))
+        assertTrue(engine.state.value.pasteFocused)
+        assertEquals(KeyboardFeedback.SELECT, engine.activate())
+        assertEquals("hello", engine.state.value.text)
+    }
+
+    @Test
+    fun `down from paste returns to the key it came from and up stops there`() {
+        val engine = clipboardEngine("x")
+        engine.setPasteAvailable(true)
+        val from = engine.state.value.focus
+        engine.move(0, -1)
+
+        assertEquals(KeyboardFeedback.BOUNDARY, engine.move(0, -1))
+        assertEquals(KeyboardFeedback.BOUNDARY, engine.move(1, 0))
+        engine.move(0, 1)
+
+        assertFalse(engine.state.value.pasteFocused)
+        assertEquals(from, engine.state.value.focus)
+    }
+
+    @Test
+    fun `without clipboard text up from the top row wraps as before`() {
+        val engine = clipboardEngine(null)
+
+        engine.move(0, -1)
+
+        assertFalse(engine.state.value.pasteFocused)
+        assertEquals(engine.state.value.rows.lastIndex, engine.state.value.focus.row)
+    }
+
+    @Test
+    fun `paste focus leaves when the clipboard empties and a key tap takes focus back`() {
+        val engine = clipboardEngine("x")
+        engine.setPasteAvailable(true)
+        engine.move(0, -1)
+
+        engine.setPasteAvailable(false)
+        assertFalse(engine.state.value.pasteFocused)
+
+        engine.setPasteAvailable(true)
+        engine.move(0, -1)
+        engine.tapKey(KeyPosition(2, 5))
+        assertFalse(engine.state.value.pasteFocused)
+        assertEquals("g", engine.state.value.text)
+    }
+
+    @Test
+    fun `pasting an empty clipboard is a boundary`() {
+        assertEquals(KeyboardFeedback.BOUNDARY, clipboardEngine(null).pasteClipboard())
+    }
+
+    @Test
+    fun `paste of nothing usable is a boundary`() {
+        val engine = engine(session(fieldType = KeyboardFieldType.NUMBER))
+
+        assertEquals(KeyboardFeedback.BOUNDARY, engine.paste("abc"))
     }
 }

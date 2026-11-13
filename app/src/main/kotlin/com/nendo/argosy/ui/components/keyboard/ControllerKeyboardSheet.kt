@@ -48,7 +48,8 @@ fun ControllerKeyboardSheet(
     onAccentTap: (Int) -> Unit,
     onDismissTap: () -> Unit,
     onCaretTap: (Int) -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    onPasteTap: () -> Unit = {}
 ) {
     val scale = LocalUiScale.current.scale
     BoxWithConstraints(modifier = modifier.fillMaxSize()) {
@@ -82,7 +83,8 @@ fun ControllerKeyboardSheet(
                 onKeyTap = onKeyTap,
                 onKeyLongPress = onKeyLongPress,
                 onAccentTap = onAccentTap,
-                onCaretTap = onCaretTap
+                onCaretTap = onCaretTap,
+                onPasteTap = onPasteTap
             )
         }
     }
@@ -98,7 +100,8 @@ private fun KeyboardSurface(
     onKeyTap: (KeyPosition) -> Unit,
     onKeyLongPress: (KeyPosition) -> Unit,
     onAccentTap: (Int) -> Unit,
-    onCaretTap: (Int) -> Unit
+    onCaretTap: (Int) -> Unit,
+    onPasteTap: () -> Unit
 ) {
     val theme = LocalArgosyTheme.current
     val full = sizing.placement == KeyboardPlacement.FULL_SCREEN
@@ -136,7 +139,8 @@ private fun KeyboardSurface(
             compact = sizing.compact,
             multiline = full,
             height = sizing.echoHeightDp.scaledDp(scale),
-            onCaretTap = onCaretTap
+            onCaretTap = onCaretTap,
+            onPasteTap = onPasteTap
         )
         KeyboardGrid(
             state = state,

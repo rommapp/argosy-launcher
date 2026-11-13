@@ -195,6 +195,7 @@ class StreamPlayerActivity : ComponentActivity() {
 
     @SuppressLint("SetJavaScriptEnabled")
     private fun buildWebView(): WebView = WebView(this).apply {
+        WebView.setWebContentsDebuggingEnabled(com.nendo.argosy.BuildConfig.DEBUG)
         setBackgroundColor(android.graphics.Color.BLACK)
         isFocusable = true
         isFocusableInTouchMode = true

@@ -86,6 +86,14 @@ class StreamPlayerActivity : ComponentActivity() {
     private lateinit var overlay: ComposeView
     private val uiState = MutableStateFlow(StreamPlayerUiState())
     private var loadedRoom: String? = null
+    private var framePacing = false
+    private val frameTick = object : android.view.Choreographer.FrameCallback {
+        override fun doFrame(frameTimeNanos: Long) {
+            if (!framePacing) return
+            if (::webView.isInitialized) webView.invalidate()
+            android.view.Choreographer.getInstance().postFrameCallback(this)
+        }
+    }
     private var roomOrigin: String? = null
     private var swapAB by mutableStateOf(false)
     private var swapXY by mutableStateOf(false)
@@ -297,6 +305,10 @@ class StreamPlayerActivity : ComponentActivity() {
         super.onStart()
         sessions.onPlayerShown()
         claimCompanion()
+        if (!framePacing) {
+            framePacing = true
+            android.view.Choreographer.getInstance().postFrameCallback(frameTick)
+        }
     }
 
     override fun onResume() {
@@ -311,6 +323,8 @@ class StreamPlayerActivity : ComponentActivity() {
     }
 
     override fun onStop() {
+        framePacing = false
+        android.view.Choreographer.getInstance().removeFrameCallback(frameTick)
         backHoldJob?.cancel()
         backHoldJob = null
         if (!isChangingConfigurations && !isFinishing) sessions.onPlayerHidden()

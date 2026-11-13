@@ -90,6 +90,7 @@ class StateCacheManager @Inject constructor(
         private const val BUFFER_SIZE = 8192
         private const val DISPLACED_DIR = "displaced"
         private const val DISPLACED_RETENTION_DAYS = 14L
+        private const val DOWNLOAD_STAGING_SUFFIX = ".download"
         private val LOCAL_ONLY_STATUSES = setOf(StateCacheEntity.STATUS_LOCAL_NEWER, StateCacheEntity.STATUS_PENDING_UPLOAD)
         private val UPLOAD_TIMESTAMP_FORMAT = DateTimeFormatter.ofPattern("yyyy-MM-dd_HH-mm-ss")
         private val STATE_NAME_TIMESTAMP =
@@ -1187,14 +1188,18 @@ class StateCacheManager @Inject constructor(
             coreDir.mkdirs()
 
             val cachedFile = File(coreDir, fileName)
-            body.byteStream().use { input ->
-                cachedFile.outputStream().use { output ->
-                    input.copyTo(output)
+            val staged = File(coreDir, "$fileName$DOWNLOAD_STAGING_SUFFIX")
+            runCatching {
+                body.byteStream().use { input ->
+                    staged.outputStream().use { output -> input.copyTo(output) }
                 }
+            }.onFailure {
+                staged.delete()
+                throw it
             }
-            val header = LibretroStateFormat.headerOf(cachedFile)
+            val header = LibretroStateFormat.headerOf(staged)
             if (!LibretroStateFormat.readableBy(readableByCore, header)) {
-                cachedFile.delete()
+                staged.delete()
                 val writer = LibretroStateFormat.writerOf(header)
                 Log.w(
                     TAG,
@@ -1203,6 +1208,11 @@ class StateCacheManager @Inject constructor(
                 )
                 return@withContext StateCloudResult.OtherCoreFormat(writer)
             }
+            java.nio.file.Files.move(
+                staged.toPath(),
+                cachedFile.toPath(),
+                java.nio.file.StandardCopyOption.REPLACE_EXISTING
+            )
 
             var screenshotCachePath: String? = null
             val screenshot = serverState?.screenshot

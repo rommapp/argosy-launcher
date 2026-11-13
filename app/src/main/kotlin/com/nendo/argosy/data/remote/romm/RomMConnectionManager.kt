@@ -42,6 +42,7 @@ import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Retrofit
 import retrofit2.converter.moshi.MoshiConverterFactory
 import java.util.concurrent.TimeUnit
+import java.util.concurrent.atomic.AtomicLong
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -117,6 +118,7 @@ class RomMConnectionManager @Inject constructor(
             _baseUrl.value = value
         }
     private var accessToken: String? = null
+    private val sessionGeneration = AtomicLong()
     private val _deviceId = MutableStateFlow<String?>(null)
     val deviceIdState: StateFlow<String?> = _deviceId.asStateFlow()
     private var cachedDeviceId: String?
@@ -258,19 +260,12 @@ class RomMConnectionManager @Inject constructor(
         return StoredConnection(candidates, prefs.rommToken, prefs.rommDeviceId)
     }
 
-    /**
-     * Gives an install that predates account identity a user id and an account row.
-     *
-     * Such an install reconnects with a stored token and never passes through a pairing path, so
-     * nothing would ever record who it belongs to and every owner stamp would stay null. Only the
-     * absence of an id triggers this, so it costs one request once.
-     */
     private suspend fun backfillIdentityIfMissing(token: String?) {
         if (token.isNullOrBlank()) return
         val stored = userPreferencesRepository.preferences.first()
         if (stored.rommUserId != null) return
-        val currentApi = api ?: return
-        val user = fetchCurrentUser(currentApi) ?: return
+        if (stored.rommToken != token || accessToken != token) return
+        val user = currentUser ?: return
         Logger.info(TAG, "backfillIdentityIfMissing: adopting user ${user.id} for an install with no stored identity")
         persistRommCredentials(baseUrl, token, user)
     }
@@ -393,19 +388,22 @@ class RomMConnectionManager @Inject constructor(
     }
 
     private suspend fun persistRommCredentials(newBaseUrl: String, token: String, user: RomMUser?) {
+        checkNotNull(user) { "Could not identify the paired user" }
+        val generation = sessionGeneration.get()
+        val session = profileSession()
         requireSameInstance(newBaseUrl)
-        userPreferencesRepository.setRomMCredentials(newBaseUrl, token, user?.username, user?.id)
-        if (user != null) {
-            val stored = userPreferencesRepository.preferences.first()
-            rommAccountRepository.get().onSignedIn(
-                rommUserId = user.id,
-                username = user.username,
-                baseUrl = newBaseUrl,
-                token = token,
-                deviceId = stored.rommDeviceId,
-                deviceClientVersion = stored.rommDeviceClientVersion
-            )
-        }
+        check(generation == sessionGeneration.get() && session == profileSession()) { "Session changed" }
+        userPreferencesRepository.setRomMCredentials(newBaseUrl, token, user.username, user.id, user.avatarPath)
+        val stored = userPreferencesRepository.preferences.first()
+        rommAccountRepository.get().onSignedIn(
+            rommUserId = user.id,
+            username = user.username,
+            baseUrl = newBaseUrl,
+            token = token,
+            deviceId = stored.rommDeviceId,
+            deviceClientVersion = stored.rommDeviceClientVersion,
+            avatarPath = user.avatarPath
+        )
     }
 
     suspend fun connect(url: String, token: String? = null): RomMResult<String> {
@@ -461,19 +459,23 @@ class RomMConnectionManager @Inject constructor(
         registerDevice: Boolean,
         recordAddress: Boolean
     ): RomMResult<String> = connectMutex.withLock {
+        val generation = sessionGeneration.get()
+        val session = profileSession()
         var lastFailure: RomMResult.Error? = null
 
         for (address in candidates) {
             for (candidateUrl in buildUrlsToTry(address)) {
                 val normalizedUrl = candidateUrl.trimEnd('/') + "/"
-                when (val outcome = connectAt(normalizedUrl, token, registerDevice)) {
+                when (val outcome = connectAt(normalizedUrl, token, registerDevice, recordAddress)) {
                     is RomMResult.Success -> {
-                        if (recordAddress && token != null) {
-                            userPreferencesRepository.setRomMCredentials(normalizedUrl, token)
-                        }
                         return outcome
                     }
-                    is RomMResult.Error -> lastFailure = outcome
+                    is RomMResult.Error -> {
+                        if (generation != sessionGeneration.get() || session != profileSession()) {
+                            return RomMResult.Error("Session changed")
+                        }
+                        lastFailure = outcome
+                    }
                 }
             }
         }
@@ -484,8 +486,11 @@ class RomMConnectionManager @Inject constructor(
     private suspend fun connectAt(
         normalizedUrl: String,
         token: String?,
-        registerDevice: Boolean
+        registerDevice: Boolean,
+        recordAddress: Boolean
     ): RomMResult<String> {
+        val generation = sessionGeneration.get()
+        val profileSession = profileSession()
         try {
             val response = createProbeApi(normalizedUrl).heartbeat()
             if (!response.isSuccessful) {
@@ -494,19 +499,33 @@ class RomMConnectionManager @Inject constructor(
             }
             apiFactory.reachability.recordReachable(normalizedUrl)
             val newApi = createApi(normalizedUrl, token)
-            if (token != null) {
-                val user = verifiedUser(newApi) ?: run {
+            val user = if (token != null) {
+                verifiedUser(newApi) ?: run {
                     Logger.info(TAG, "connect: server live at $normalizedUrl but the token was rejected")
                     return RomMResult.Error("Sign in again")
                 }
-                userPreferencesRepository.setRomMAvatarPath(user.avatarPath)
+            } else null
+            if (sessionGeneration.get() != generation) return RomMResult.Error("Session changed")
+            if (profileSession != profileSession()) return RomMResult.Error("Session changed")
+            if (recordAddress && (!profileSession.matchesAccount || profileSession.token != token)) {
+                return RomMResult.Error("Session changed")
             }
+            if (recordAddress && user != null && profileSession.userId != null && profileSession.userId != user.id) {
+                return RomMResult.Error("Sign in again")
+            }
+            if (recordAddress && token != null && user != null && token == profileSession.token) {
+                refreshProfile(profileSession, token, user, normalizedUrl)
+                if (profileSession.copy(baseUrl = normalizedUrl) != profileSession()) return RomMResult.Error("Session changed")
+            }
+            if (sessionGeneration.get() != generation) return RomMResult.Error("Session changed")
             if (baseUrl.isNotEmpty() && baseUrl != normalizedUrl) {
                 Logger.info(TAG, "connect: moving from $baseUrl to $normalizedUrl")
             }
             baseUrl = normalizedUrl
             accessToken = token
             api = newApi
+            currentUser = user
+            lastTokenVerifiedAt = if (user == null) 0L else SystemClock.elapsedRealtime()
             saveSyncRepository.get().setApi(api)
             biosRepository.setApi(api)
             val body = response.body()
@@ -542,7 +561,8 @@ class RomMConnectionManager @Inject constructor(
 
         val currentApi = api ?: return RomMResult.Error("Not connected")
         return try {
-            persistRommCredentials(baseUrl, token, fetchCurrentUser(currentApi))
+            if (accessToken != token || api !== currentApi) return RomMResult.Error("Session changed")
+            persistRommCredentials(baseUrl, token, currentUser)
 
             if (isVersionAtLeast(MIN_DEVICE_API_VERSION)) {
                 registerDeviceIfNeeded()
@@ -709,7 +729,8 @@ class RomMConnectionManager @Inject constructor(
             baseUrl = base,
             token = body.accessToken,
             deviceId = body.deviceId,
-            deviceClientVersion = BuildConfig.VERSION_NAME
+            deviceClientVersion = BuildConfig.VERSION_NAME,
+            avatarPath = user.avatarPath
         )
         deviceAuthApi = null
         deviceAuthBaseUrl = null
@@ -718,6 +739,8 @@ class RomMConnectionManager @Inject constructor(
     }
 
     private suspend fun finalizeDeviceAuth(base: String, body: RomMDeviceAuthTokenResponse) {
+        val generation = sessionGeneration.get()
+        val session = profileSession()
         val newApi = createApi(base, body.accessToken)
         val heartbeat = try { newApi.heartbeat() } catch (_: Exception) { null }
         val version = heartbeat?.body()?.version ?: "unknown"
@@ -728,13 +751,17 @@ class RomMConnectionManager @Inject constructor(
             heartbeat?.body()?.snapshotsEnabled == true
         )
 
-        persistRommCredentials(base, body.accessToken, fetchCurrentUser(newApi))
+        val user = fetchCurrentUser(newApi)
+        check(generation == sessionGeneration.get() && session == profileSession()) { "Session changed" }
+        persistRommCredentials(base, body.accessToken, user)
         userPreferencesRepository.setRommDeviceId(body.deviceId, BuildConfig.VERSION_NAME)
         rommAccountRepository.get().recordDeviceRegistration(body.deviceId, BuildConfig.VERSION_NAME)
 
         baseUrl = base
         accessToken = body.accessToken
         api = newApi
+        currentUser = user
+        lastTokenVerifiedAt = if (user == null) 0L else SystemClock.elapsedRealtime()
         cachedDeviceId = body.deviceId
         saveSyncRepository.get().setApi(newApi)
         biosRepository.setApi(newApi)
@@ -763,6 +790,7 @@ class RomMConnectionManager @Inject constructor(
     private fun deviceDisplayName(): String = "${Build.MANUFACTURER} ${Build.MODEL}".trim()
 
     fun disconnect() {
+        sessionGeneration.incrementAndGet()
         reconnectPending = false
         reconnectJob?.cancel()
         reconnectJob = null
@@ -857,10 +885,7 @@ class RomMConnectionManager @Inject constructor(
      */
     private suspend fun verifiedUser(candidate: RomMApi): RomMUser? = try {
         val response = candidate.getCurrentUser()
-        response.body()?.takeIf { response.isSuccessful }?.also {
-            currentUser = it
-            lastTokenVerifiedAt = SystemClock.elapsedRealtime()
-        }
+        response.body()?.takeIf { response.isSuccessful }
     } catch (e: Exception) {
         Logger.info(TAG, "verifiedUser: identity call failed: ${e.message}")
         null
@@ -868,6 +893,30 @@ class RomMConnectionManager @Inject constructor(
 
     private fun tokenVerifiedRecently(): Boolean =
         currentUser != null && SystemClock.elapsedRealtime() - lastTokenVerifiedAt < TOKEN_RECHECK_WINDOW_MS
+
+    private data class ProfileSession(
+        val accountId: Long?,
+        val token: String?,
+        val userId: Long?,
+        val baseUrl: String?,
+        val matchesAccount: Boolean
+    )
+
+    private suspend fun profileSession(): ProfileSession {
+        val prefs = userPreferencesRepository.preferences.first()
+        val account = rommAccountRepository.get().activeAccount()
+        return ProfileSession(
+            account?.id, prefs.rommToken, prefs.rommUserId, prefs.rommBaseUrl,
+            account == null || (account.token == prefs.rommToken && account.rommUserId == prefs.rommUserId)
+        )
+    }
+
+    private suspend fun refreshProfile(session: ProfileSession, token: String, user: RomMUser, newBaseUrl: String? = null) {
+        if (!session.matchesAccount || session.token != token || (session.userId != null && session.userId != user.id)) return
+        rommAccountRepository.get().refreshProfile(
+            session.accountId, user.id, token, session.userId, session.baseUrl, user.username, user.avatarPath, newBaseUrl
+        )
+    }
 
     /**
      * Re-checks the live session with the token rather than with liveness.
@@ -883,11 +932,25 @@ class RomMConnectionManager @Inject constructor(
             return
         }
 
+        val generation = sessionGeneration.get()
+        val token = accessToken
+        val session = profileSession()
+        fun sessionChanged() = generation != sessionGeneration.get() || api !== currentApi || accessToken != token
+        if (!session.matchesAccount || session.token != token) return
+
         try {
-            if (accessToken != null && !tokenVerifiedRecently() && verifiedUser(currentApi) == null) {
-                Logger.info(TAG, "checkConnection: token rejected, scheduling reconnect")
-                scheduleReconnect()
-                return
+            if (token != null && !tokenVerifiedRecently()) {
+                val user = verifiedUser(currentApi)
+                if (sessionChanged() || session != profileSession()) return
+                if (user == null || (session.userId != null && session.userId != user.id)) {
+                    Logger.info(TAG, "checkConnection: token rejected, scheduling reconnect")
+                    scheduleReconnect()
+                    return
+                }
+                refreshProfile(session, token, user)
+                if (sessionChanged() || session != profileSession()) return
+                currentUser = user
+                lastTokenVerifiedAt = SystemClock.elapsedRealtime()
             }
 
             val known = _connectionState.value as? ConnectionState.Connected
@@ -898,6 +961,7 @@ class RomMConnectionManager @Inject constructor(
             }
 
             val response = currentApi.heartbeat()
+            if (sessionChanged()) return
             if (response.isSuccessful) {
                 val body = response.body()
                 val version = body?.version ?: "unknown"
@@ -915,6 +979,7 @@ class RomMConnectionManager @Inject constructor(
                 scheduleReconnect()
             }
         } catch (e: Exception) {
+            if (sessionChanged()) return
             Logger.info(TAG, "checkConnection: exception: ${e.message}, scheduling reconnect")
             scheduleReconnect()
         }

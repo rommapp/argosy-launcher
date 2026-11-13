@@ -93,7 +93,8 @@ class RomMAccountRepository @Inject constructor(
         baseUrl: String,
         token: String,
         deviceId: String?,
-        deviceClientVersion: String?
+        deviceClientVersion: String?,
+        avatarPath: String? = null
     ): Long {
         val now = Instant.now()
         val existing = rommAccountDao.getByRommUserId(rommUserId)
@@ -107,7 +108,7 @@ class RomMAccountRepository @Inject constructor(
                 token = token,
                 deviceId = deviceId ?: existing?.deviceId,
                 deviceClientVersion = deviceClientVersion ?: existing?.deviceClientVersion,
-                avatarPath = existing?.avatarPath,
+                avatarPath = avatarPath?.trim()?.takeIf { it.isNotEmpty() },
                 isActive = true,
                 lastLoginAt = now,
                 createdAt = existing?.createdAt ?: now
@@ -171,7 +172,8 @@ class RomMAccountRepository @Inject constructor(
         baseUrl: String,
         token: String,
         deviceId: String?,
-        deviceClientVersion: String?
+        deviceClientVersion: String?,
+        avatarPath: String? = null
     ): Long {
         val now = Instant.now()
         val existing = rommAccountDao.getByRommUserId(rommUserId)
@@ -185,7 +187,7 @@ class RomMAccountRepository @Inject constructor(
                 token = token,
                 deviceId = deviceId ?: existing?.deviceId,
                 deviceClientVersion = deviceClientVersion ?: existing?.deviceClientVersion,
-                avatarPath = existing?.avatarPath,
+                avatarPath = avatarPath?.trim()?.takeIf { it.isNotEmpty() },
                 isActive = existing?.isActive ?: false,
                 lastLoginAt = now,
                 createdAt = existing?.createdAt ?: now
@@ -201,6 +203,21 @@ class RomMAccountRepository @Inject constructor(
         rommApiProvider.invalidate(active.id)
     }
 
+    suspend fun refreshProfile(
+        accountId: Long?,
+        userId: Long,
+        token: String,
+        expectedUserId: Long?,
+        expectedBaseUrl: String?,
+        username: String,
+        avatarPath: String?,
+        newBaseUrl: String? = null
+    ) {
+        val avatar = avatarPath?.trim()?.takeIf { it.isNotEmpty() }
+        if (accountId != null && rommAccountDao.refreshProfile(accountId, userId, token, username, avatar) == 0) return
+        userPreferencesRepository.refreshRomMProfile(token, expectedUserId, expectedBaseUrl, username, avatar, newBaseUrl)
+    }
+
     /**
      * Makes [id] the live account and mirrors its credentials into DataStore. Callers still
      * have to rebind the connection; this only moves the stored identity.
@@ -212,7 +229,8 @@ class RomMAccountRepository @Inject constructor(
             baseUrl = account.baseUrl,
             token = account.token,
             username = account.username,
-            userId = account.rommUserId
+            userId = account.rommUserId,
+            avatarPath = account.avatarPath
         )
         account.deviceId?.let { deviceId ->
             userPreferencesRepository.setRommDeviceId(
@@ -253,7 +271,8 @@ class RomMAccountRepository @Inject constructor(
             baseUrl = baseUrl,
             token = token,
             deviceId = prefs.rommDeviceId,
-            deviceClientVersion = prefs.rommDeviceClientVersion
+            deviceClientVersion = prefs.rommDeviceClientVersion,
+            avatarPath = prefs.rommAvatarPath
         )
     }
 }

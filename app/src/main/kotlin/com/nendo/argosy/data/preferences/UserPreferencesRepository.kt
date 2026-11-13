@@ -58,6 +58,7 @@ class UserPreferencesRepository @Inject constructor(
             rommUsername = sync.rommUsername,
             rommUserId = sync.rommUserId,
             rommAvatarPath = sync.rommAvatarPath,
+            rommProfileRevision = sync.rommProfileRevision,
             rommToken = sync.rommToken,
             rommDeviceId = sync.rommDeviceId,
             rommDeviceClientVersion = sync.rommDeviceClientVersion,
@@ -452,9 +453,10 @@ class UserPreferencesRepository @Inject constructor(
         syncPrefs.downloadCategoryPlatformOverrides.first()[platformSlug] ?: emptyMap()
     suspend fun getEffectiveDownloadDefaults(platformSlug: String): Map<String, Boolean> =
         syncPrefs.getEffectiveDownloadDefaults(platformSlug)
-    suspend fun setRomMCredentials(baseUrl: String, token: String, username: String? = null, userId: Long? = null) =
-        syncPrefs.setRomMCredentials(baseUrl, token, username, userId)
-    suspend fun setRomMAvatarPath(path: String?) = syncPrefs.setRomMAvatarPath(path)
+    suspend fun setRomMCredentials(baseUrl: String, token: String, username: String? = null, userId: Long? = null, avatarPath: String? = null) =
+        syncPrefs.setRomMCredentials(baseUrl, token, username, userId, avatarPath)
+    suspend fun refreshRomMProfile(token: String, expectedUserId: Long?, expectedBaseUrl: String?, username: String, avatarPath: String?, newBaseUrl: String? = null) =
+        syncPrefs.refreshRomMProfile(token, expectedUserId, expectedBaseUrl, username, avatarPath, newBaseUrl)
     suspend fun clearRomMCredentials() = syncPrefs.clearRomMCredentials()
     suspend fun setRommDeviceId(deviceId: String, clientVersion: String) = syncPrefs.setRommDeviceId(deviceId, clientVersion)
     suspend fun clearRommDeviceId() = syncPrefs.clearRommDeviceId()
@@ -881,6 +883,7 @@ data class UserPreferences(
     val rommUsername: String? = null,
     val rommUserId: Long? = null,
     val rommAvatarPath: String? = null,
+    val rommProfileRevision: Long = 0,
     val rommToken: String? = null,
     val rommDeviceId: String? = null,
     val rommDeviceClientVersion: String? = null,

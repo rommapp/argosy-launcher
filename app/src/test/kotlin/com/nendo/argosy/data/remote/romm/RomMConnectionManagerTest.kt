@@ -10,14 +10,17 @@ import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
+import org.junit.Assert.assertNull
 import org.junit.Test
 import retrofit2.Response
 import java.util.concurrent.atomic.AtomicInteger
@@ -28,6 +31,7 @@ class RomMConnectionManagerTest {
     private val heartbeats = AtomicInteger()
 
     private val preferences: UserPreferencesRepository = mockk(relaxed = true)
+    private val accountRepository: RomMAccountRepository = mockk(relaxed = true)
 
     private fun manager(
         serverVersion: String = "5.4.0",
@@ -36,6 +40,7 @@ class RomMConnectionManagerTest {
         rememberedSnapshots: Boolean? = null,
         snapshots: Boolean = false
     ): RomMConnectionManager {
+        coEvery { accountRepository.activeAccount() } returns null
         every { preferences.preferences } returns flowOf(stored)
         coEvery { preferences.getRommSnapshotSupport(any()) } returns null
         coEvery { preferences.getRommSnapshotSupport("romm.local") } returns rememberedSnapshots
@@ -60,7 +65,6 @@ class RomMConnectionManagerTest {
             RomMDeviceRegistrationResponse(deviceId = "device-1")
         )
         val saveSyncRepository: SaveSyncRepository = mockk(relaxed = true)
-        val accountRepository: RomMAccountRepository = mockk(relaxed = true)
         val biosRepository: BiosRepository = mockk(relaxed = true)
         val context = mockk<Context>(relaxed = true)
         every { context.getSystemService(Context.CONNECTIVITY_SERVICE) } returns
@@ -170,6 +174,160 @@ class RomMConnectionManagerTest {
 
         assertFalse(manager.snapshotsEnabled())
         coVerify { preferences.setRommSnapshotSupport("romm.local", false) }
+    }
+
+    @Test
+    fun `routine token checks refresh profile without signing in again`() = runBlocking {
+        val manager = manager(stored = storedAccount())
+        manager.initialize()
+        val refreshed = RomMUser(id = 1L, username = "renamed", enabled = true, role = "viewer", avatarPath = "new.png")
+        coEvery { api.getCurrentUser() } returns Response.success(refreshed)
+        expireVerification(manager)
+
+        manager.checkConnection()
+
+        assertEquals(refreshed, manager.currentUser)
+        coVerify {
+            accountRepository.refreshProfile(null, 1L, "token", 1L, "http://romm.local/", "renamed", "new.png", null)
+        }
+        coVerify(exactly = 0) { accountRepository.onSignedIn(any(), any(), any(), any(), any(), any(), any()) }
+    }
+
+    @Test
+    fun `a delayed token check after disconnect cannot resurrect current user`() = runBlocking {
+        val manager = manager(stored = storedAccount())
+        manager.initialize()
+        expireVerification(manager)
+        val requested = CompletableDeferred<Unit>()
+        val response = CompletableDeferred<Response<RomMUser>>()
+        coEvery { api.getCurrentUser() } coAnswers {
+            requested.complete(Unit)
+            response.await()
+        }
+        val check = async { manager.checkConnection() }
+        requested.await()
+        manager.disconnect()
+        response.complete(Response.success(RomMUser(id = 1L, username = "stale", enabled = true, role = "admin", avatarPath = "stale.png")))
+        check.await()
+
+        assertNull(manager.currentUser)
+        assertFalse(manager.isConnected())
+        coVerify(exactly = 0) {
+            accountRepository.refreshProfile(any(), any(), any(), any(), any(), "stale", any(), any())
+        }
+    }
+
+    @Test
+    fun `a delayed check after stored account switch cannot publish the outgoing profile`() = runBlocking {
+        val manager = manager(stored = storedAccount())
+        val stored = MutableStateFlow(storedAccount())
+        every { preferences.preferences } returns stored
+        manager.initialize()
+        expireVerification(manager)
+        val requested = CompletableDeferred<Unit>()
+        val response = CompletableDeferred<Response<RomMUser>>()
+        coEvery { api.getCurrentUser() } coAnswers {
+            requested.complete(Unit)
+            response.await()
+        }
+        val check = async { manager.checkConnection() }
+        requested.await()
+        stored.value = storedAccount().copy(rommUserId = 2L, rommToken = "other-token")
+        response.complete(Response.success(RomMUser(id = 1L, username = "stale", enabled = true, role = "admin")))
+        check.await()
+
+        assertEquals("player", manager.currentUser?.username)
+        coVerify(exactly = 0) {
+            accountRepository.refreshProfile(any(), any(), any(), any(), any(), "stale", any(), any())
+        }
+    }
+
+    @Test
+    fun `token login persists verified avatar with only one identity request`() = runBlocking {
+        val manager = manager(serverVersion = "4.6.0")
+        coEvery { api.getCurrentUser() } returns Response.success(
+            RomMUser(id = 1L, username = "player", enabled = true, role = "admin", avatarPath = "avatar.png")
+        )
+
+        assertTrue(manager.connectWithToken("http://romm.local/", "token") is RomMResult.Success)
+
+        coVerify(exactly = 1) { api.getCurrentUser() }
+        coVerify { preferences.setRomMCredentials("http://romm.local/", "token", "player", 1L, "avatar.png") }
+        coVerify { accountRepository.onSignedIn(1L, "player", "http://romm.local/", "token", null, null, "avatar.png") }
+    }
+
+    @Test
+    fun `offline reconnect never refreshes cached profile`() = runBlocking {
+        val manager = manager(stored = storedAccount(), reachable = false)
+        manager.initialize()
+        coVerify(exactly = 0) { accountRepository.refreshProfile(any(), any(), any(), any(), any(), any(), any(), any()) }
+    }
+
+    @Test
+    fun `failed token refresh preserves the last verified profile`() = runBlocking {
+        val manager = manager(stored = storedAccount())
+        manager.initialize()
+        val user = manager.currentUser
+        expireVerification(manager)
+        coEvery { api.getCurrentUser() } throws java.io.IOException("offline")
+
+        manager.checkConnection()
+
+        assertEquals(user, manager.currentUser)
+        coVerify(exactly = 1) { accountRepository.refreshProfile(any(), any(), any(), any(), any(), any(), any(), any()) }
+        manager.disconnect()
+    }
+
+    @Test
+    fun `device auth finalization publishes and persists the fetched profile`() = runBlocking {
+        val manager = manager()
+        prepareDeviceAuth(manager)
+        val user = RomMUser(id = 1L, username = "paired", enabled = true, role = "admin", avatarPath = "paired.png")
+        coEvery { api.getCurrentUser() } returns Response.success(user)
+
+        assertTrue(manager.pollDeviceAuthOnce("code") is DeviceAuthPoll.Approved)
+
+        assertEquals(user, manager.currentUser)
+        coVerify(exactly = 1) { api.getCurrentUser() }
+        coVerify { preferences.setRomMCredentials("http://romm.local/", "paired-token", "paired", 1L, "paired.png") }
+        coVerify { accountRepository.onSignedIn(1L, "paired", "http://romm.local/", "paired-token", null, null, "paired.png") }
+    }
+
+    @Test
+    fun `additional device pairing stores its avatar without publishing over the live profile`() = runBlocking {
+        val manager = manager(stored = storedAccount())
+        manager.initialize()
+        prepareDeviceAuth(manager)
+        coEvery { api.getCurrentUser() } returns Response.success(
+            RomMUser(id = 2L, username = "second", enabled = true, role = "viewer", avatarPath = "second.png")
+        )
+
+        assertTrue(manager.pollDeviceAuthOnce("code", activateOnSuccess = false) is DeviceAuthPoll.AddedAccount)
+
+        assertEquals(1L, manager.currentUser?.id)
+        coVerify { accountRepository.registerAdditional(2L, "second", "http://romm.local/", "paired-token", "paired-device", any(), "second.png") }
+        coVerify(exactly = 0) { preferences.setRomMCredentials(any(), "paired-token", any(), any(), any()) }
+    }
+
+    private fun prepareDeviceAuth(manager: RomMConnectionManager) {
+        RomMConnectionManager::class.java.getDeclaredField("deviceAuthApi").apply {
+            isAccessible = true
+            set(manager, api)
+        }
+        RomMConnectionManager::class.java.getDeclaredField("deviceAuthBaseUrl").apply {
+            isAccessible = true
+            set(manager, "http://romm.local/")
+        }
+        coEvery { api.deviceAuthToken(any()) } returns Response.success(
+            RomMDeviceAuthTokenResponse("paired-token", "paired-device")
+        )
+    }
+
+    private fun expireVerification(manager: RomMConnectionManager) {
+        RomMConnectionManager::class.java.getDeclaredField("lastTokenVerifiedAt").apply {
+            isAccessible = true
+            setLong(manager, -60_000L)
+        }
     }
 
     private companion object {

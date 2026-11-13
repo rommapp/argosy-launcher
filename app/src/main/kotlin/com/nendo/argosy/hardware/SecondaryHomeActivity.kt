@@ -12,6 +12,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.focusable
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
+import com.nendo.argosy.core.input.HomeKeys
 import com.nendo.argosy.ui.util.launcherContent
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.ui.focus.focusRequester
@@ -440,9 +441,7 @@ class SecondaryHomeActivity :
         if (::dsm.isInitialized && event.action == android.view.KeyEvent.ACTION_DOWN) {
             dsm.ambientAudioManager.resumeFromSuspend()
         }
-        if (event.keyCode == android.view.KeyEvent.KEYCODE_HOME ||
-            event.keyCode == android.view.KeyEvent.KEYCODE_BUTTON_MODE
-        ) {
+        if (HomeKeys.isHome(event)) {
             if (event.action == android.view.KeyEvent.ACTION_DOWN) {
                 gamepadInputHandler.emitHomeEvent()
             }

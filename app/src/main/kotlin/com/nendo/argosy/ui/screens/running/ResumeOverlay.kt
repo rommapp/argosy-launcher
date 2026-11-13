@@ -31,6 +31,7 @@ import androidx.lifecycle.setViewTreeViewModelStoreOwner
 import androidx.savedstate.setViewTreeSavedStateRegistryOwner
 import com.nendo.argosy.ArgosyHomeIntent
 import com.nendo.argosy.core.input.ConnectedControllerTracker
+import com.nendo.argosy.core.input.HomeKeys
 import com.nendo.argosy.core.input.SoundType
 import com.nendo.argosy.data.cache.ImageCacheManager
 import com.nendo.argosy.data.preferences.UserPreferences
@@ -373,7 +374,7 @@ class ResumeOverlay @Inject constructor(
 
             override fun dispatchKeyEvent(event: KeyEvent): Boolean {
                 if (!shown.value || leaving.value) return true
-                if (event.keyCode == KeyEvent.KEYCODE_BUTTON_MODE) {
+                if (HomeKeys.isHome(event)) {
                     if (event.action == KeyEvent.ACTION_DOWN && event.repeatCount == 0) close(this@Session)
                     return true
                 }

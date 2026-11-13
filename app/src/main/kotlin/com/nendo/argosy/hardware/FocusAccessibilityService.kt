@@ -19,6 +19,7 @@ import android.view.accessibility.AccessibilityEvent
 import com.nendo.argosy.ArgosyActivity
 import com.nendo.argosy.ArgosyHomeIntent
 import com.nendo.argosy.DualScreenManagerHolder
+import com.nendo.argosy.core.input.HomeKeys
 import com.nendo.argosy.data.emulator.EmulatorRegistry
 import com.nendo.argosy.data.emulator.PlaySessionTracker
 import com.nendo.argosy.data.emulator.background.BackgroundGames
@@ -141,9 +142,10 @@ class FocusAccessibilityService : AccessibilityService() {
     }
 
     override fun onKeyEvent(event: KeyEvent): Boolean {
-        if (event.keyCode in HOME_KEYS && closesResumeOverlay(event)) return true
-        if (event.keyCode in HOME_KEYS && routesHomeToGame(event)) return true
-        if (event.keyCode == KeyEvent.KEYCODE_HOME && takesHomeFromExternalGame(event)) return true
+        val systemHome = HomeKeys.isSystemHome(event)
+        if (systemHome && closesResumeOverlay(event)) return true
+        if (systemHome && routesHomeToGame(event)) return true
+        if (systemHome && takesHomeFromExternalGame(event)) return true
         return keyFilter.onKey(event.keyCode, event.action, event.repeatCount)
     }
 
@@ -284,7 +286,6 @@ class FocusAccessibilityService : AccessibilityService() {
     companion object {
         private const val TAG = "FocusA11y"
         private const val BACK_HOLD_MS = 500L
-        private val HOME_KEYS = setOf(KeyEvent.KEYCODE_HOME, KeyEvent.KEYCODE_MOVE_HOME)
 
         private val ARGOSY_INPUT_SURFACES = setOf(
             ArgosyActivity::class.java.name,

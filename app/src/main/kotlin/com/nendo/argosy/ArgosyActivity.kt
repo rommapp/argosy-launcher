@@ -30,6 +30,7 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import com.nendo.argosy.core.input.ControllerPointerGuard
+import com.nendo.argosy.core.input.HomeKeys
 import com.nendo.argosy.core.input.controllerTouchpadGuarding
 import com.nendo.argosy.data.cache.ImageCacheManager
 import com.nendo.argosy.data.local.dao.DownloadQueueDao
@@ -586,7 +587,7 @@ class ArgosyActivity : ComponentActivity() {
         if (gamepadInputHandler.handleKeyEvent(event)) {
             return true
         }
-        if (event.keyCode == KeyEvent.KEYCODE_HOME || event.keyCode == KeyEvent.KEYCODE_BUTTON_MODE) {
+        if (HomeKeys.isHome(event)) {
             if (event.action == KeyEvent.ACTION_DOWN) gamepadInputHandler.emitHomeEvent()
             return true
         }

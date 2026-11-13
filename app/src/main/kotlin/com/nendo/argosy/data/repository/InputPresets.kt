@@ -1,6 +1,7 @@
 package com.nendo.argosy.data.repository
 
 import android.view.KeyEvent
+import com.nendo.argosy.core.input.HomeKeys
 import com.nendo.argosy.core.input.DetectedLayout
 import com.nendo.argosy.data.platform.PlatformDefinitions
 
@@ -1187,11 +1188,8 @@ object InputPresets {
         KeyEvent.KEYCODE_DPAD_RIGHT
     ) + (KeyEvent.KEYCODE_BUTTON_1..KeyEvent.KEYCODE_BUTTON_16)
 
-    private val RESERVED_KEYCODES: Set<Int> = setOf(
-        KeyEvent.KEYCODE_UNKNOWN,
-        KeyEvent.KEYCODE_HOME,
-        KeyEvent.KEYCODE_BACK
-    )
+    private val RESERVED_KEYCODES: Set<Int> =
+        HomeKeys.SYSTEM + setOf(KeyEvent.KEYCODE_UNKNOWN, KeyEvent.KEYCODE_BACK)
 
     /**
      * Whether a key may be recorded as a binding or a hotkey. Every key a physical device sends is

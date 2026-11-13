@@ -2,6 +2,7 @@ package com.nendo.argosy.libretro
 
 import android.os.SystemClock
 import android.view.KeyEvent
+import com.nendo.argosy.core.input.HomeKeys
 import com.nendo.argosy.data.local.entity.CoreInputMode
 import com.nendo.argosy.data.local.entity.HotkeyAction
 import com.nendo.argosy.data.local.entity.HotkeyEntity
@@ -324,7 +325,7 @@ class HotkeyManager(
             KeyEvent.KEYCODE_BACK
         )
 
-        private val RESERVED_KEYS: Set<Int> = setOf(KeyEvent.KEYCODE_UNKNOWN, KeyEvent.KEYCODE_HOME)
+        private val RESERVED_KEYS: Set<Int> = HomeKeys.SYSTEM + KeyEvent.KEYCODE_UNKNOWN
 
         fun isHotkeyKey(keyCode: Int): Boolean = keyCode !in RESERVED_KEYS
 

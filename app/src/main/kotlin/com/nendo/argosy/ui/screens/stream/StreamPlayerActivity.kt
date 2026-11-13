@@ -40,6 +40,7 @@ import com.nendo.argosy.data.streaming.StreamEndReason
 import com.nendo.argosy.data.streaming.StreamPhase
 import com.nendo.argosy.data.streaming.StreamSession
 import com.nendo.argosy.data.streaming.StreamSessionManager
+import com.nendo.argosy.core.input.HomeKeys
 import com.nendo.argosy.core.input.SoundType
 import com.nendo.argosy.ui.input.GamepadEvent
 import com.nendo.argosy.ui.input.SoundFeedbackManager
@@ -448,7 +449,7 @@ class StreamPlayerActivity : ComponentActivity() {
 
     @SuppressLint("RestrictedApi")
     private fun handleKey(event: KeyEvent): Boolean {
-        if (event.keyCode in SYSTEM_KEYS) return super.dispatchKeyEvent(event)
+        if (HomeKeys.isHome(event) || event.keyCode in SYSTEM_KEYS) return super.dispatchKeyEvent(event)
         if (quickPanelOverlay.isOpen.value) return true
         if (event.keyCode == KeyEvent.KEYCODE_BACK && !uiState.value.capturesInput) return onBackKey(event)
         if (uiState.value.capturesInput) {
@@ -603,8 +604,6 @@ class StreamPlayerActivity : ComponentActivity() {
         private const val NOTICE_MS = 2_500L
         private const val PROBE_DRAWING = "true"
         private val SYSTEM_KEYS = setOf(
-            KeyEvent.KEYCODE_HOME,
-            KeyEvent.KEYCODE_BUTTON_MODE,
             KeyEvent.KEYCODE_VOLUME_UP,
             KeyEvent.KEYCODE_VOLUME_DOWN,
             KeyEvent.KEYCODE_VOLUME_MUTE,

@@ -56,6 +56,7 @@ import com.nendo.argosy.ui.notification.asInGameNotice
 import com.nendo.argosy.ui.theme.Dimens
 import com.nendo.argosy.core.input.ConnectedControllerTracker
 import com.nendo.argosy.core.input.ControllerDetector
+import com.nendo.argosy.core.input.HomeKeys
 import com.nendo.argosy.core.input.controllerIdOf
 import com.nendo.argosy.core.input.isPhysicalGamepad
 import com.nendo.argosy.core.input.VirtualPad
@@ -3627,7 +3628,7 @@ open class LibretroActivity : ComponentActivity() {
             if (event.repeatCount == 0) startBackHold()
             return true
         }
-        if (keyCode == KeyEvent.KEYCODE_BUTTON_MODE) {
+        if (HomeKeys.isHome(event)) {
             if (event.repeatCount == 0) startGuideHold()
             return true
         }
@@ -3771,7 +3772,7 @@ open class LibretroActivity : ComponentActivity() {
 
     override fun onKeyUp(keyCode: Int, event: KeyEvent): Boolean {
         if (keyCode == KeyEvent.KEYCODE_BACK && releaseBackHold()) return true
-        if (keyCode == KeyEvent.KEYCODE_BUTTON_MODE && releaseGuideHold()) return true
+        if (HomeKeys.isHome(event) && releaseGuideHold()) return true
         if (isAnyMenuOpen) return super.onKeyUp(keyCode, event)
 
         if (deferredCoreKeys.release(keyCode, event)) return true
@@ -3780,7 +3781,7 @@ open class LibretroActivity : ComponentActivity() {
 
         coreHeldKeys.remove(keyCode)
         return retroView.onKeyUp(keyCode, event) ||
-            keyCode == KeyEvent.KEYCODE_BUTTON_MODE ||
+            HomeKeys.isHome(event) ||
             super.onKeyUp(keyCode, event)
     }
 

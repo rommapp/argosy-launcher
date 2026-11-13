@@ -1,6 +1,7 @@
 package com.nendo.argosy.hardware
 
 import android.view.KeyEvent
+import com.nendo.argosy.core.input.HomeKeys
 
 enum class SystemHotkeyAction { HOME, BACK }
 
@@ -61,12 +62,7 @@ object SystemHotkeyCombos {
     fun isValid(combo: List<Int>): Boolean =
         combo.size in MIN_KEYS..MAX_KEYS && combo.distinct().size == combo.size && combo.all(::isRecordable)
 
-    private val RESERVED = setOf(
-        KeyEvent.KEYCODE_UNKNOWN,
-        KeyEvent.KEYCODE_HOME,
-        KeyEvent.KEYCODE_BACK,
-        KeyEvent.KEYCODE_BUTTON_MODE
-    )
+    private val RESERVED = HomeKeys.RESERVED + setOf(KeyEvent.KEYCODE_UNKNOWN, KeyEvent.KEYCODE_BACK)
 }
 
 /**

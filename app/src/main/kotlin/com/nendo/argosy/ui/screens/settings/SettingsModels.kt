@@ -448,6 +448,7 @@ data class ControlsState(
     val navBarAutoHide: Boolean = true,
     val ignoreControllerTouchpad: Boolean = true,
     val systemHotkeysEnabled: Boolean = true,
+    val homeButtonInGames: Boolean = true,
     val systemHomeCombo: List<Int>? = null,
     val systemBackCombo: List<Int>? = null,
     val systemComboCaptureTarget: com.nendo.argosy.hardware.SystemHotkeyAction? = null,

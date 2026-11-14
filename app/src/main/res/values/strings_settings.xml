@@ -561,11 +561,13 @@
     <!-- Button hint that closes that dialog without assigning. Verb. -->
     <string name="settings_navigation_shortcut_capture_hint_cancel">Cancel</string>
     <!-- Section header for controller combos that act as the Android Home and Back buttons. Noun phrase. -->
-    <string name="settings_navigation_section_system_buttons">System Buttons</string>
+    <string name="settings_navigation_section_system_buttons">Global Hotkeys</string>
     <!-- Switch title. On, held button combos act as the Android Home and Back buttons while another app is open. -->
     <string name="settings_navigation_system_hotkeys_title">Home and Back Combos</string>
     <!-- Second line of that switch. -->
     <string name="settings_navigation_system_hotkeys_subtitle">Controller combos that work as Home and Back while another app is open</string>
+    <string name="settings_navigation_home_button_in_games_title">Hold Home for game switcher</string>
+    <string name="settings_navigation_home_button_in_games_subtitle">Hold the device\'s Home button in a game Argosy launched to open the game switcher. Turn off to leave Home to the device. Needs root</string>
     <!-- Row title. Noun phrase: the Android accessibility service Argosy uses to read buttons in other apps. -->
     <string name="settings_navigation_system_hotkeys_access_title">Accessibility Service</string>
     <!-- Second line of that row. Selecting the row opens the system accessibility settings. -->

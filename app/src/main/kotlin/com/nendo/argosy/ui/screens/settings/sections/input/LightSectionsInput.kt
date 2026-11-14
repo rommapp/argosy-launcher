@@ -338,6 +338,14 @@ internal class LightSectionsInput(
                 return toggleLeftRight(direction, controls.systemHotkeysEnabled) {
                     viewModel.setSystemHotkeysEnabled(it)
                 }
+            NavigationItem.HomeButtonInGames ->
+                return toggleLeftRight(direction, controls.homeButtonInGames) {
+                    viewModel.setHomeButtonInGames(it)
+                }
+            NavigationItem.QuickPanelInEmulators ->
+                return toggleLeftRight(direction, state.display.quickPanelInEmulators) {
+                    viewModel.setQuickPanelInEmulators(it)
+                }
             NavigationItem.SelectLCombo -> return stepOption(
                 ControlsSettingsDelegate.COMBO_OPTIONS,
                 controls.selectLCombo,

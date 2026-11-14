@@ -226,9 +226,11 @@
     <string name="settings_navigation_shortcut_capture_subtitle">此按鍵在 Argosy 選單中將不再執行其他動作</string>
     <string name="settings_navigation_shortcut_capture_reserved">%1$s 用於選單導覽，無法指派</string>
     <string name="settings_navigation_shortcut_capture_hint_cancel">取消</string>
-    <string name="settings_navigation_section_system_buttons">系統按鍵</string>
+    <string name="settings_navigation_section_system_buttons">全域快速鍵</string>
     <string name="settings_navigation_system_hotkeys_title">主畫面與返回組合鍵</string>
     <string name="settings_navigation_system_hotkeys_subtitle">在其他應用程式開啟時用作主畫面和返回的控制器組合鍵</string>
+    <string name="settings_navigation_home_button_in_games_title">長按主畫面鍵開啟遊戲切換器</string>
+    <string name="settings_navigation_home_button_in_games_subtitle">在 Argosy 啟動的遊戲中長按裝置的主畫面鍵可開啟遊戲切換器。關閉後主畫面鍵交還給裝置。需要 root</string>
     <string name="settings_navigation_system_hotkeys_access_title">無障礙服務</string>
     <string name="settings_navigation_system_hotkeys_access_subtitle">組合鍵透過 Argosy 的無障礙服務作用於其他應用程式</string>
     <string name="settings_navigation_system_hotkeys_access_on">已開啟</string>

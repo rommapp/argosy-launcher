@@ -57,6 +57,7 @@ class FocusAccessibilityService : AccessibilityService() {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
     private val handler = Handler(Looper.getMainLooper())
     @Volatile private var quickPanelEnabled = false
+    @Volatile private var homeButtonInGames = true
     @Volatile private var systemHotkeys = SystemHotkeyConfig.DISABLED
     private var homeRoutedToGame = false
     private var homeClosedResume = false
@@ -123,6 +124,12 @@ class FocusAccessibilityService : AccessibilityService() {
         }
         scope.launch {
             preferencesRepository.userPreferences
+                .map { it.homeButtonInGames }
+                .distinctUntilChanged()
+                .collect { homeButtonInGames = it }
+        }
+        scope.launch {
+            preferencesRepository.userPreferences
                 .map { prefs ->
                     SystemHotkeyConfig.resolve(
                         enabled = prefs.systemHotkeysEnabled,
@@ -184,7 +191,7 @@ class FocusAccessibilityService : AccessibilityService() {
             "session=${session?.emulatorPackage} sessionInFront=${externalSessionInFront()} " +
             "gameDisplay=${gameDisplayId()} " +
             "keyguard=${getSystemService(KeyguardManager::class.java)?.isKeyguardLocked} " +
-            "quickPanelInEmulators=$quickPanelEnabled quickPanelOpen=${quickPanelOverlay.isOpen.value} " +
+            "quickPanelInEmulators=$quickPanelEnabled homeButtonInGames=$homeButtonInGames quickPanelOpen=${quickPanelOverlay.isOpen.value} " +
             "resumeOpen=${resumeOverlay.isOpen.value} systemHotkeys=$systemHotkeys"
     }
 
@@ -210,7 +217,7 @@ class FocusAccessibilityService : AccessibilityService() {
     }
 
     private fun externalGameHoldsHome(): Boolean {
-        if (!RootShell.isAvailable) return false
+        if (!homeButtonInGames || !RootShell.isAvailable) return false
         if (!foreground.otherAppInFront || !externalSessionInFront()) return false
         if (gameDisplayId() != Display.DEFAULT_DISPLAY) return false
         if (getSystemService(KeyguardManager::class.java)?.isKeyguardLocked != false) return false

@@ -237,9 +237,11 @@
     <string name="settings_navigation_shortcut_capture_subtitle">该按键在 Argosy 菜单中将不再执行其他操作</string>
     <string name="settings_navigation_shortcut_capture_reserved">%1$s 用于菜单导航，无法分配</string>
     <string name="settings_navigation_shortcut_capture_hint_cancel">取消</string>
-    <string name="settings_navigation_section_system_buttons">系统按键</string>
+    <string name="settings_navigation_section_system_buttons">全局快捷键</string>
     <string name="settings_navigation_system_hotkeys_title">主页与返回组合键</string>
     <string name="settings_navigation_system_hotkeys_subtitle">在其他应用打开时用作主页和返回的手柄组合键</string>
+    <string name="settings_navigation_home_button_in_games_title">长按主页键打开游戏切换器</string>
+    <string name="settings_navigation_home_button_in_games_subtitle">在 Argosy 启动的游戏中长按设备的主页键可打开游戏切换器。关闭后主页键交还给设备。需要 root</string>
     <string name="settings_navigation_system_hotkeys_access_title">无障碍服务</string>
     <string name="settings_navigation_system_hotkeys_access_subtitle">组合键通过 Argosy 的无障碍服务作用于其他应用</string>
     <string name="settings_navigation_system_hotkeys_access_on">已开启</string>

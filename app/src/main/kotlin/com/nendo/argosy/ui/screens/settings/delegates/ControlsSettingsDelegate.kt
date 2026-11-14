@@ -359,6 +359,13 @@ class ControlsSettingsDelegate @Inject constructor(
         }
     }
 
+    fun setHomeButtonInGames(scope: CoroutineScope, enabled: Boolean) {
+        scope.launch {
+            preferencesRepository.setHomeButtonInGames(enabled)
+            _state.update { it.copy(homeButtonInGames = enabled) }
+        }
+    }
+
     fun startSystemComboCapture(action: SystemHotkeyAction) {
         _state.update { it.copy(systemComboCaptureTarget = action) }
     }

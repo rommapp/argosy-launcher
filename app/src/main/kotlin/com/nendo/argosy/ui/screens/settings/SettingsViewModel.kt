@@ -1671,6 +1671,8 @@ class SettingsViewModel @Inject constructor(
         controlsDelegate.clearShortcutKey(viewModelScope, shortcut)
     fun setSystemHotkeysEnabled(enabled: Boolean) =
         controlsDelegate.setSystemHotkeysEnabled(viewModelScope, enabled)
+    fun setHomeButtonInGames(enabled: Boolean) =
+        controlsDelegate.setHomeButtonInGames(viewModelScope, enabled)
     fun startSystemComboCapture(action: com.nendo.argosy.hardware.SystemHotkeyAction) =
         controlsDelegate.startSystemComboCapture(action)
     fun cancelSystemComboCapture() = controlsDelegate.cancelSystemComboCapture()

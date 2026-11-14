@@ -239,9 +239,11 @@
     <string name="settings_navigation_shortcut_capture_subtitle">Argosy के मेनू में यह बटन कोई और काम नहीं करेगा</string>
     <string name="settings_navigation_shortcut_capture_reserved">%1$s मेनू में चलने के लिए है और असाइन नहीं किया जा सकता</string>
     <string name="settings_navigation_shortcut_capture_hint_cancel">रद्द करें</string>
-    <string name="settings_navigation_section_system_buttons">सिस्टम बटन</string>
+    <string name="settings_navigation_section_system_buttons">ग्लोबल हॉटकी</string>
     <string name="settings_navigation_system_hotkeys_title">होम और वापस कॉम्बो</string>
     <string name="settings_navigation_system_hotkeys_subtitle">कंट्रोलर कॉम्बो जो किसी दूसरे ऐप के खुले रहने पर होम और वापस का काम करते हैं</string>
+    <string name="settings_navigation_home_button_in_games_title">गेम स्विचर के लिए होम दबाए रखें</string>
+    <string name="settings_navigation_home_button_in_games_subtitle">Argosy से खोले गए गेम में डिवाइस का होम बटन दबाए रखें, गेम स्विचर खुलेगा। होम को डिवाइस पर छोड़ने के लिए बंद करें। रूट ज़रूरी है</string>
     <string name="settings_navigation_system_hotkeys_access_title">एक्सेसिबिलिटी सेवा</string>
     <string name="settings_navigation_system_hotkeys_access_subtitle">कॉम्बो Argosy की एक्सेसिबिलिटी सेवा के ज़रिए दूसरे ऐप तक पहुँचते हैं</string>
     <string name="settings_navigation_system_hotkeys_access_on">चालू</string>

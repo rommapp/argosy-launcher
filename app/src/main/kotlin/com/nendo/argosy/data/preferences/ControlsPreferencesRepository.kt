@@ -47,6 +47,7 @@ data class ControlsPreferences(
     val navBarAutoHide: Boolean = true,
     val ignoreControllerTouchpad: Boolean = true,
     val systemHotkeysEnabled: Boolean = true,
+    val homeButtonInGames: Boolean = true,
     val systemHomeCombo: List<Int>? = null,
     val systemBackCombo: List<Int>? = null
 ) {
@@ -92,6 +93,7 @@ class ControlsPreferencesRepository @Inject constructor(
         val NAV_BAR_AUTO_HIDE = booleanPreferencesKey("nav_bar_auto_hide")
         val IGNORE_CONTROLLER_TOUCHPAD = booleanPreferencesKey("ignore_controller_touchpad")
         val SYSTEM_HOTKEYS_ENABLED = booleanPreferencesKey("system_hotkeys_enabled")
+        val HOME_BUTTON_IN_GAMES = booleanPreferencesKey("home_button_in_games")
         val SYSTEM_HOME_COMBO = stringPreferencesKey("system_home_combo")
         val SYSTEM_BACK_COMBO = stringPreferencesKey("system_back_combo")
     }
@@ -130,6 +132,7 @@ class ControlsPreferencesRepository @Inject constructor(
             navBarAutoHide = prefs[Keys.NAV_BAR_AUTO_HIDE] ?: true,
             ignoreControllerTouchpad = prefs[Keys.IGNORE_CONTROLLER_TOUCHPAD] ?: true,
             systemHotkeysEnabled = prefs[Keys.SYSTEM_HOTKEYS_ENABLED] ?: true,
+            homeButtonInGames = prefs[Keys.HOME_BUTTON_IN_GAMES] ?: true,
             systemHomeCombo = parseKeyCodes(prefs[Keys.SYSTEM_HOME_COMBO]),
             systemBackCombo = parseKeyCodes(prefs[Keys.SYSTEM_BACK_COMBO])
         )
@@ -298,6 +301,10 @@ class ControlsPreferencesRepository @Inject constructor(
 
     suspend fun setSystemHotkeysEnabled(enabled: Boolean) {
         dataStore.edit { it[Keys.SYSTEM_HOTKEYS_ENABLED] = enabled }
+    }
+
+    suspend fun setHomeButtonInGames(enabled: Boolean) {
+        dataStore.edit { it[Keys.HOME_BUTTON_IN_GAMES] = enabled }
     }
 
     suspend fun setSystemHomeCombo(keyCodes: List<Int>?) {

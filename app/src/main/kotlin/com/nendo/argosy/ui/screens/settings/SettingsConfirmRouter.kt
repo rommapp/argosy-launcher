@@ -740,7 +740,6 @@ private fun routeInterfaceConfirm(vm: SettingsViewModel, state: SettingsUiState)
         InterfaceItem.HideSystemNavigationBar ->
             vm.setHideSystemNavigationBar(!state.display.hideSystemNavigationBar)
         InterfaceItem.HideSystemStatusBar -> vm.setHideSystemStatusBar(!state.display.hideSystemStatusBar)
-        InterfaceItem.QuickPanelInEmulators -> vm.setQuickPanelInEmulators(!state.display.quickPanelInEmulators)
         InterfaceItem.LockScreenArt -> vm.setLockScreenArt(!state.display.lockScreenArt)
         InterfaceItem.HomeApp -> vm.setHomeAppAvailable(!state.display.homeAppAvailable)
         InterfaceItem.StatusClock -> vm.setShowStatusClock(!state.display.showStatusClock)
@@ -1100,6 +1099,16 @@ private fun routeNavigationConfirm(vm: SettingsViewModel, state: SettingsUiState
             return InputResult.toggled(enabled)
         }
         NavigationItem.SystemHotkeysAccess -> vm.openAccessibilitySettings()
+        NavigationItem.HomeButtonInGames -> {
+            val enabled = !state.controls.homeButtonInGames
+            vm.setHomeButtonInGames(enabled)
+            return InputResult.toggled(enabled)
+        }
+        NavigationItem.QuickPanelInEmulators -> {
+            val enabled = !state.display.quickPanelInEmulators
+            vm.setQuickPanelInEmulators(enabled)
+            return InputResult.toggled(enabled)
+        }
         NavigationItem.SystemHomeCombo -> {
             vm.startSystemComboCapture(SystemHotkeyAction.HOME)
             return InputResult.handled(SoundType.OPEN_MODAL)

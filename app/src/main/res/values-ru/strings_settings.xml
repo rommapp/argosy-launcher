@@ -242,9 +242,11 @@
     <string name="settings_navigation_shortcut_capture_subtitle">В меню Argosy кнопка больше не будет делать ничего другого</string>
     <string name="settings_navigation_shortcut_capture_reserved">%1$s нужна для перемещения по меню и не может быть назначена</string>
     <string name="settings_navigation_shortcut_capture_hint_cancel">Отмена</string>
-    <string name="settings_navigation_section_system_buttons">Системные кнопки</string>
+    <string name="settings_navigation_section_system_buttons">Глобальные сочетания</string>
     <string name="settings_navigation_system_hotkeys_title">Комбинации Домой и Назад</string>
     <string name="settings_navigation_system_hotkeys_subtitle">Комбинации кнопок контроллера, которые работают как Домой и Назад, пока открыто другое приложение</string>
+    <string name="settings_navigation_home_button_in_games_title">Удерживать Домой для смены игры</string>
+    <string name="settings_navigation_home_button_in_games_subtitle">Удерживайте кнопку Домой на устройстве в игре, запущенной Argosy, чтобы открыть переключатель игр. Выключите, чтобы оставить кнопку Домой устройству. Нужен root</string>
     <string name="settings_navigation_system_hotkeys_access_title">Служба специальных возможностей</string>
     <string name="settings_navigation_system_hotkeys_access_subtitle">Комбинации доходят до других приложений через службу специальных возможностей Argosy</string>
     <string name="settings_navigation_system_hotkeys_access_on">Вкл.</string>

@@ -18,7 +18,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import com.nendo.argosy.R
-import com.nendo.argosy.domain.model.ArgosyPermission
 import com.nendo.argosy.data.preferences.AppLanguage
 import com.nendo.argosy.data.preferences.ScreenOrientationMode
 import com.nendo.argosy.ui.components.CyclePreference
@@ -35,7 +34,6 @@ import com.nendo.argosy.ui.screens.settings.SettingsUiState
 import com.nendo.argosy.ui.screens.settings.SettingsViewModel
 import com.nendo.argosy.ui.screens.settings.menu.SettingsLayout
 import com.nendo.argosy.ui.theme.Dimens
-import com.nendo.argosy.ui.theme.LocalLauncherTheme
 
 internal data class InterfaceLayoutState(
     val display: DisplayState
@@ -63,7 +61,6 @@ internal sealed class InterfaceItem(
     data object CompactFooter : InterfaceItem("compactFooter", SECTION_GENERAL)
     data object HideSystemNavigationBar : InterfaceItem("hideSystemNavigationBar", SECTION_GENERAL)
     data object HideSystemStatusBar : InterfaceItem("hideSystemStatusBar", SECTION_GENERAL)
-    data object QuickPanelInEmulators : InterfaceItem("quickPanelInEmulators", SECTION_GENERAL)
     data object ControllerGrip : InterfaceItem("controllerGrip", SECTION_GENERAL)
     data object HomeScreen : InterfaceItem("homeScreen", SECTION_SCREENS)
     data object LibraryView : InterfaceItem("libraryView", SECTION_SCREENS)
@@ -121,7 +118,7 @@ internal sealed class InterfaceItem(
             get() = listOf(
                 Header("generalHeader", SECTION_GENERAL, R.string.settings_interface_section_general),
                 Language, UiScale, CompactFooter, HideSystemNavigationBar, HideSystemStatusBar,
-                QuickPanelInEmulators, ControllerGrip, ScreenOrientation,
+                ControllerGrip, ScreenOrientation,
                 Header("screensHeader", SECTION_SCREENS, R.string.settings_interface_section_screens),
                 HomeScreen, LibraryView, BoxArt, Presentation, LockScreenArt,
                 HomeApp, HomeAppLocked,
@@ -297,23 +294,6 @@ fun InterfaceSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
                     isFocused = isFocused(item),
                     onToggle = { viewModel.setHideSystemStatusBar(it) }
                 )
-
-                InterfaceItem.QuickPanelInEmulators -> {
-                    val serviceOff = display.quickPanelInEmulators &&
-                        !uiState.permissions.snapshot.isGranted(ArgosyPermission.ACCESSIBILITY)
-                    SwitchPreference(
-                        title = stringResource(R.string.settings_interface_quick_panel_in_emulators_title),
-                        subtitle = if (serviceOff) {
-                            stringResource(R.string.settings_interface_quick_panel_in_emulators_service_off)
-                        } else {
-                            stringResource(R.string.settings_interface_quick_panel_in_emulators_subtitle)
-                        },
-                        subtitleColor = if (serviceOff) LocalLauncherTheme.current.semanticColors.warning else null,
-                        isEnabled = display.quickPanelInEmulators,
-                        isFocused = isFocused(item),
-                        onToggle = { viewModel.setQuickPanelInEmulators(it) }
-                    )
-                }
 
                 InterfaceItem.LockScreenArt -> SwitchPreference(
                     title = stringResource(R.string.settings_interface_lock_screen_art_title),

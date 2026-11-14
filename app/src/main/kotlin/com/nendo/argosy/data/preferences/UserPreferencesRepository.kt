@@ -113,6 +113,7 @@ class UserPreferencesRepository @Inject constructor(
             navBarAutoHide = controls.navBarAutoHide,
             ignoreControllerTouchpad = controls.ignoreControllerTouchpad,
             systemHotkeysEnabled = controls.systemHotkeysEnabled,
+            homeButtonInGames = controls.homeButtonInGames,
             systemHomeCombo = controls.systemHomeCombo,
             systemBackCombo = controls.systemBackCombo,
             lastRommSync = sync.lastRommSync,
@@ -553,6 +554,7 @@ class UserPreferencesRepository @Inject constructor(
     suspend fun setNavBarAutoHide(enabled: Boolean) = controlsPrefs.setNavBarAutoHide(enabled)
     suspend fun setIgnoreControllerTouchpad(enabled: Boolean) = controlsPrefs.setIgnoreControllerTouchpad(enabled)
     suspend fun setSystemHotkeysEnabled(enabled: Boolean) = controlsPrefs.setSystemHotkeysEnabled(enabled)
+    suspend fun setHomeButtonInGames(enabled: Boolean) = controlsPrefs.setHomeButtonInGames(enabled)
     suspend fun setSystemHomeCombo(keyCodes: List<Int>?) = controlsPrefs.setSystemHomeCombo(keyCodes)
     suspend fun setSystemBackCombo(keyCodes: List<Int>?) = controlsPrefs.setSystemBackCombo(keyCodes)
 
@@ -937,6 +939,7 @@ data class UserPreferences(
     val navBarAutoHide: Boolean = true,
     val ignoreControllerTouchpad: Boolean = true,
     val systemHotkeysEnabled: Boolean = true,
+    val homeButtonInGames: Boolean = true,
     val systemHomeCombo: List<Int>? = null,
     val systemBackCombo: List<Int>? = null,
     val lastRommSync: Instant? = null,

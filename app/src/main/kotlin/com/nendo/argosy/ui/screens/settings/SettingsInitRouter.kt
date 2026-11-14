@@ -704,6 +704,7 @@ internal fun routeLoadSettings(vm: SettingsViewModel) {
             navBarAutoHide = prefs.navBarAutoHide,
             ignoreControllerTouchpad = prefs.ignoreControllerTouchpad,
             systemHotkeysEnabled = prefs.systemHotkeysEnabled,
+            homeButtonInGames = prefs.homeButtonInGames,
             systemHomeCombo = prefs.systemHomeCombo,
             systemBackCombo = prefs.systemBackCombo
         ))

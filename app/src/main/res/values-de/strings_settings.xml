@@ -249,9 +249,11 @@
     <string name="settings_navigation_shortcut_capture_subtitle">Die Taste hat in den Argosy-Menüs keine andere Funktion mehr</string>
     <string name="settings_navigation_shortcut_capture_reserved">%1$s dient zur Menünavigation und kann nicht belegt werden</string>
     <string name="settings_navigation_shortcut_capture_hint_cancel">Abbrechen</string>
-    <string name="settings_navigation_section_system_buttons">Systemtasten</string>
+    <string name="settings_navigation_section_system_buttons">Globale Tastenkürzel</string>
     <string name="settings_navigation_system_hotkeys_title">Kombinationen für Home und Zurück</string>
     <string name="settings_navigation_system_hotkeys_subtitle">Controller-Kombinationen, die als Home und Zurück dienen, während eine andere App geöffnet ist</string>
+    <string name="settings_navigation_home_button_in_games_title">Home halten für Spielwechsler</string>
+    <string name="settings_navigation_home_button_in_games_subtitle">Die Home-Taste des Geräts in einem von Argosy gestarteten Spiel gedrückt halten, um den Spielwechsler zu öffnen. Ausschalten, um Home dem Gerät zu überlassen. Benötigt Root</string>
     <string name="settings_navigation_system_hotkeys_access_title">Bedienungshilfe-Dienst</string>
     <string name="settings_navigation_system_hotkeys_access_subtitle">Die Kombinationen erreichen andere Apps über den Bedienungshilfe-Dienst von Argosy</string>
     <string name="settings_navigation_system_hotkeys_access_on">An</string>

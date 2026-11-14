@@ -112,17 +112,14 @@ class InterfaceCompactFooterLayoutTest {
             InterfaceItem.CompactFooter,
             InterfaceItem.HideSystemNavigationBar,
             InterfaceItem.HideSystemStatusBar,
-            InterfaceItem.QuickPanelInEmulators,
             InterfaceItem.ControllerGrip
         ).map { interfaceFocusIndexOf(it, layoutState) }
 
         assertEquals(order.first() + 1, order[1])
         assertEquals(order[1] + 1, order[2])
         assertEquals(order[2] + 1, order[3])
-        assertEquals(order[3] + 1, order[4])
         assertEquals(InterfaceItem.CompactFooter.section, InterfaceItem.HideSystemNavigationBar.section)
         assertEquals(InterfaceItem.CompactFooter.section, InterfaceItem.HideSystemStatusBar.section)
-        assertEquals(InterfaceItem.CompactFooter.section, InterfaceItem.QuickPanelInEmulators.section)
     }
 
     @Test

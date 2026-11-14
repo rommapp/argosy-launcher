@@ -44,6 +44,7 @@ import com.nendo.argosy.ui.screens.settings.components.SystemComboCaptureModal
 import com.nendo.argosy.ui.screens.settings.delegates.ControlsSettingsDelegate
 import com.nendo.argosy.ui.screens.settings.menu.SettingsLayout
 import com.nendo.argosy.ui.theme.Dimens
+import com.nendo.argosy.ui.theme.LocalLauncherTheme
 import kotlin.math.roundToInt
 
 internal sealed class NavigationItem(
@@ -104,12 +105,10 @@ internal sealed class NavigationItem(
     data object OpenNavigationShortcut : NavigationItem("openNavigationKey", "shortcuts")
     data object OpenQuickPanelShortcut : NavigationItem("openQuickPanelKey", "shortcuts")
 
+    data object SystemHotkeysAccess : NavigationItem("systemHotkeysAccess", "system")
+    data object HomeButtonInGames : NavigationItem("homeButtonInGames", "system")
+    data object QuickPanelInEmulators : NavigationItem("quickPanelInEmulators", "system")
     data object SystemHotkeys : NavigationItem("systemHotkeys", "system")
-    data object SystemHotkeysAccess : NavigationItem(
-        key = "systemHotkeysAccess",
-        section = "system",
-        visibleWhen = { it.systemHotkeysEnabled }
-    )
     data object SystemHomeCombo : NavigationItem(
         key = "systemHomeCombo",
         section = "system",
@@ -163,7 +162,8 @@ internal sealed class NavigationItem(
                 ShortcutsSpacer, ShortcutsHeader,
                 OpenNavigationShortcut, OpenQuickPanelShortcut,
                 SystemSpacer, SystemHeader,
-                SystemHotkeys, SystemHotkeysAccess, SystemHomeCombo, SystemBackCombo
+                SystemHotkeysAccess, HomeButtonInGames, QuickPanelInEmulators,
+                SystemHotkeys, SystemHomeCombo, SystemBackCombo
             )
     }
 }
@@ -408,6 +408,31 @@ fun NavigationSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
                 isFocused = isFocused(item),
                 onToggle = { viewModel.setSystemHotkeysEnabled(it) }
             )
+
+            NavigationItem.HomeButtonInGames -> SwitchPreference(
+                title = stringResource(R.string.settings_navigation_home_button_in_games_title),
+                subtitle = stringResource(R.string.settings_navigation_home_button_in_games_subtitle),
+                isEnabled = controls.homeButtonInGames,
+                isFocused = isFocused(item),
+                onToggle = { viewModel.setHomeButtonInGames(it) }
+            )
+
+            NavigationItem.QuickPanelInEmulators -> {
+                val serviceOff = uiState.display.quickPanelInEmulators &&
+                    !uiState.permissions.snapshot.isGranted(ArgosyPermission.ACCESSIBILITY)
+                SwitchPreference(
+                    title = stringResource(R.string.settings_interface_quick_panel_in_emulators_title),
+                    subtitle = if (serviceOff) {
+                        stringResource(R.string.settings_interface_quick_panel_in_emulators_service_off)
+                    } else {
+                        stringResource(R.string.settings_interface_quick_panel_in_emulators_subtitle)
+                    },
+                    subtitleColor = if (serviceOff) LocalLauncherTheme.current.semanticColors.warning else null,
+                    isEnabled = uiState.display.quickPanelInEmulators,
+                    isFocused = isFocused(item),
+                    onToggle = { viewModel.setQuickPanelInEmulators(it) }
+                )
+            }
 
             NavigationItem.SystemHotkeysAccess -> ActionPreference(
                 title = stringResource(R.string.settings_navigation_system_hotkeys_access_title),

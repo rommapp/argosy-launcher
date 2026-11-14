@@ -143,6 +143,7 @@ object SettingsBackupKeys {
         SettingsBackupKey("nav_bar_auto_hide", SettingsBackupType.BOOLEAN),
         SettingsBackupKey("ignore_controller_touchpad", SettingsBackupType.BOOLEAN),
         SettingsBackupKey("system_hotkeys_enabled", SettingsBackupType.BOOLEAN),
+        SettingsBackupKey("home_button_in_games", SettingsBackupType.BOOLEAN),
         SettingsBackupKey("system_home_combo", SettingsBackupType.STRING),
         SettingsBackupKey("system_back_combo", SettingsBackupType.STRING),
         SettingsBackupKey("grip_reserve_enabled", SettingsBackupType.BOOLEAN),

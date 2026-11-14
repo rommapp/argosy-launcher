@@ -29,6 +29,7 @@ import com.nendo.argosy.libretro.LibretroActivity
 import com.nendo.argosy.ui.quickpanel.QuickPanelOverlay
 import com.nendo.argosy.ui.screens.running.ResumeOverlay
 import com.nendo.argosy.ui.screens.player.PlayerActivity
+import com.nendo.argosy.util.Logger
 import com.nendo.argosy.util.RootShell
 import com.nendo.argosy.util.SecondaryHomeComponent
 import dagger.hilt.android.AndroidEntryPoint
@@ -98,6 +99,11 @@ class FocusAccessibilityService : AccessibilityService() {
         if (event?.eventType != AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED) return
         val source = event.packageName?.toString() ?: return
         foreground.onWindowStateChanged(source, event.className?.toString())
+        Logger.info(
+            TAG,
+            "window $source/${event.className} foreground=${foreground.foregroundPackage} " +
+                "otherAppInFront=${foreground.otherAppInFront}"
+        )
     }
 
     private fun currentImePackage(): String? =
@@ -129,7 +135,7 @@ class FocusAccessibilityService : AccessibilityService() {
                 .distinctUntilChanged()
                 .collect { systemHotkeys = it }
         }
-        Log.d(TAG, "Accessibility service connected")
+        Logger.info(TAG, "Accessibility service connected in $packageName")
     }
 
     override fun onDestroy() {
@@ -137,16 +143,45 @@ class FocusAccessibilityService : AccessibilityService() {
         handler.removeCallbacks(homeHold)
         keyFilter.reset()
         scope.cancel()
-        Log.d(TAG, "Accessibility service destroyed")
+        Logger.info(TAG, "Accessibility service destroyed in $packageName")
         super.onDestroy()
     }
 
     override fun onKeyEvent(event: KeyEvent): Boolean {
         val systemHome = HomeKeys.isSystemHome(event)
-        if (systemHome && closesResumeOverlay(event)) return true
-        if (systemHome && routesHomeToGame(event)) return true
-        if (systemHome && takesHomeFromExternalGame(event)) return true
-        return keyFilter.onKey(event.keyCode, event.action, event.repeatCount)
+        if (event.action == KeyEvent.ACTION_DOWN && event.repeatCount == 0 &&
+            (systemHome || event.keyCode == KeyEvent.KEYCODE_BACK)
+        ) {
+            Logger.info(TAG, "gates ${gateSnapshot()}")
+        }
+        val consumedBy = when {
+            systemHome && closesResumeOverlay(event) -> "resumeOverlay"
+            systemHome && routesHomeToGame(event) -> "builtInGame"
+            systemHome && takesHomeFromExternalGame(event) -> "externalGame"
+            keyFilter.onKey(event.keyCode, event.action, event.repeatCount) -> "keyFilter"
+            else -> null
+        }
+        if (event.repeatCount == 0) {
+            Logger.info(
+                TAG,
+                "key ${KeyEvent.keyCodeToString(event.keyCode)} " +
+                    "${if (event.action == KeyEvent.ACTION_DOWN) "down" else "up"} " +
+                    "device=${event.device?.name} systemHome=$systemHome consumedBy=${consumedBy ?: "none"}"
+            )
+        }
+        return consumedBy != null
+    }
+
+    private fun gateSnapshot(): String {
+        val session = playSessionTracker.activeSession.value
+        return "package=$packageName root=${RootShell.isAvailable} " +
+            "defaultHome=${SecondaryHomeComponent.isDefaultHome(this)} " +
+            "otherAppInFront=${foreground.otherAppInFront} foreground=${foreground.foregroundPackage} " +
+            "session=${session?.emulatorPackage} sessionInFront=${externalSessionInFront()} " +
+            "gameDisplay=${gameDisplayId()} " +
+            "keyguard=${getSystemService(KeyguardManager::class.java)?.isKeyguardLocked} " +
+            "quickPanelInEmulators=$quickPanelEnabled quickPanelOpen=${quickPanelOverlay.isOpen.value} " +
+            "resumeOpen=${resumeOverlay.isOpen.value} systemHotkeys=$systemHotkeys"
     }
 
     private fun takesHomeFromExternalGame(event: KeyEvent): Boolean = when (event.action) {
@@ -213,6 +248,7 @@ class FocusAccessibilityService : AccessibilityService() {
     }
 
     private fun performSystemHotkey(action: SystemHotkeyAction) {
+        Logger.info(TAG, "system hotkey $action")
         when (action) {
             SystemHotkeyAction.HOME ->
                 if (externalGameHoldsHome()) showArgosyWithoutTransition() else performGlobalAction(GLOBAL_ACTION_HOME)

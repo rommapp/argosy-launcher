@@ -161,7 +161,7 @@ class FocusAccessibilityService : AccessibilityService() {
             keyFilter.onKey(event.keyCode, event.action, event.repeatCount) -> "keyFilter"
             else -> null
         }
-        if (event.repeatCount == 0) {
+        if (event.repeatCount == 0 && logsKey(event, systemHome, consumedBy)) {
             Logger.info(
                 TAG,
                 "key ${KeyEvent.keyCodeToString(event.keyCode)} " +
@@ -171,6 +171,10 @@ class FocusAccessibilityService : AccessibilityService() {
         }
         return consumedBy != null
     }
+
+    private fun logsKey(event: KeyEvent, systemHome: Boolean, consumedBy: String?): Boolean =
+        systemHome || consumedBy != null || event.keyCode == KeyEvent.KEYCODE_BACK ||
+            KeyEvent.isGamepadButton(event.keyCode)
 
     private fun gateSnapshot(): String {
         val session = playSessionTracker.activeSession.value

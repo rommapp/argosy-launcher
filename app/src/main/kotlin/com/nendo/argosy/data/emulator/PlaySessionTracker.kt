@@ -49,6 +49,7 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+import kotlinx.coroutines.withContext
 import java.time.Duration
 import java.time.Instant
 import java.util.concurrent.atomic.AtomicBoolean
@@ -776,7 +777,10 @@ class PlaySessionTracker @Inject constructor(
         sessionServiceStarted.set(true)
     }
 
-    suspend fun endSession(stopService: Boolean = true, skipSaveSync: Boolean = false): SessionEndResult {
+    suspend fun endSession(stopService: Boolean = true, skipSaveSync: Boolean = false): SessionEndResult =
+        withContext(Dispatchers.IO) { endSessionOffMain(stopService, skipSaveSync) }
+
+    private suspend fun endSessionOffMain(stopService: Boolean, skipSaveSync: Boolean): SessionEndResult {
         if (!saveRecoveryGate.tryClaimSessionEnd()) {
             Logger.debug(TAG, "[SaveSync] SESSION | endSession already in progress, skipping")
             return SessionEndResult.Skipped

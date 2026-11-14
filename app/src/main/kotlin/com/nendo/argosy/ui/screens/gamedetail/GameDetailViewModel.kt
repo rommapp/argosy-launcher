@@ -125,6 +125,7 @@ class GameDetailViewModel @Inject constructor(
     private val gameDocumentLoader: com.nendo.argosy.data.repository.GameDocumentLoader,
     private val documentHighlightStore: com.nendo.argosy.data.repository.DocumentHighlightStore,
     val pickerModalDelegate: PickerModalDelegate,
+    val modInstallDelegate: com.nendo.argosy.ui.screens.gamedetail.delegates.ModInstallDelegate,
     private val achievementDelegate: AchievementDelegate,
     private val downloadDelegate: DownloadDelegate,
     private val saveManagement: SaveManagementDelegate,
@@ -168,6 +169,8 @@ class GameDetailViewModel @Inject constructor(
 
     private val _uiState = MutableStateFlow(GameDetailUiState())
     val uiState: StateFlow<GameDetailUiState> = _uiState.asStateFlow()
+    val modInstallInputHandler: InputHandler = modInstallDelegate.inputHandler(viewModelScope)
+    fun activateModInstallRow(index: Int) = modInstallDelegate.activate(viewModelScope, index)
 
     private val _downloadProgress = MutableStateFlow(0f)
 
@@ -1483,6 +1486,10 @@ class GameDetailViewModel @Inject constructor(
             MoreOptionAction.SelectVariant -> showVariantPickerFromMenu()
             MoreOptionAction.ActiveVariant -> showActiveVariantChooser()
             MoreOptionAction.Files -> showFilesPicker()
+            MoreOptionAction.Mods -> {
+                toggleMoreOptions()
+                modInstallDelegate.open(viewModelScope, currentGameId)
+            }
             MoreOptionAction.RefreshData -> refreshAndroidOrRommData()
             MoreOptionAction.RefreshTitleId -> refreshTitleId()
             MoreOptionAction.SpeedrunSplits -> {
@@ -2627,6 +2634,7 @@ class GameDetailViewModel @Inject constructor(
     }
 
     private fun resetAllModals() {
+        modInstallDelegate.reset()
         pickerModalDelegate.reset()
         moreOptionsDelegate.reset()
         perGameSettingsDelegate.reset()

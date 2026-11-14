@@ -235,6 +235,9 @@ fun buildMoreOptions(ctx: MoreOptionsContext): List<MoreOptionAction> = buildLis
     if (ctx.hasVariants && isEmulatedGame) add(MoreOptionAction.SelectVariant)
     if (ctx.hasSiblingGroup) add(MoreOptionAction.ActiveVariant)
     if ((ctx.hasManageableFiles || ctx.hasUpdates) && ctx.isDownloaded) add(MoreOptionAction.Files)
+    if (ctx.isDownloaded && ctx.platformSlug?.let(com.nendo.argosy.data.platform.PlatformDefinitions::getCanonicalSlug) == "switch") {
+        add(MoreOptionAction.Mods)
+    }
     if (canTrackProgress) add(MoreOptionAction.RefreshData)
     add(MoreOptionAction.AddToCollection)
     add(MoreOptionAction.Artwork)
@@ -260,6 +263,7 @@ sealed class MoreOptionAction {
     data object SelectVariant : MoreOptionAction()
     data object ActiveVariant : MoreOptionAction()
     data object Files : MoreOptionAction()
+    data object Mods : MoreOptionAction()
     data object RefreshData : MoreOptionAction()
     data object AddToCollection : MoreOptionAction()
     data object RefreshTitleId : MoreOptionAction()

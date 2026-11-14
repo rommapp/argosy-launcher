@@ -109,6 +109,7 @@ sealed class LaunchResult {
     ) : LaunchResult()
     data class NoScummVMGameId(val gameName: String) : LaunchResult()
     data class Error(val message: String) : LaunchResult()
+    data object ModInstallPending : LaunchResult()
     data object Cancelled : LaunchResult()
 }
 
@@ -220,6 +221,11 @@ class GameLauncher @Inject constructor(
             }
 
         Logger.debug(TAG, "Launching: platform=${game.platformId}, source=${game.source}, multiDisc=${game.isMultiDisc}")
+
+        if (PlatformDefinitions.getCanonicalSlug(game.platformSlug) == "switch" &&
+            com.nendo.argosy.data.mod.SwitchModLaunchGate.isBlocked(context.filesDir)) {
+            return LaunchResult.ModInstallPending
+        }
 
         if (game.source == GameSource.STEAM) {
             return launchSteamGame(game)

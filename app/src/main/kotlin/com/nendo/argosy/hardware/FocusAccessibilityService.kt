@@ -194,14 +194,16 @@ class FocusAccessibilityService : AccessibilityService() {
                 homeTakenFromGame = externalGameHoldsHome()
                 homeHoldFired = false
                 handler.removeCallbacks(homeHold)
-                if (homeTakenFromGame) handler.postDelayed(homeHold, SystemHotkeyDetector.GUIDE_HOLD_MS)
+                if (homeTakenFromGame) {
+                    handler.postDelayed(homeHold, SystemHotkeyDetector.GUIDE_HOLD_MS)
+                    scope.launch { backgroundGames.withTransitionsOff {} }
+                }
             }
             homeTakenFromGame
         }
-        KeyEvent.ACTION_UP -> homeTakenFromGame.also { taken ->
+        KeyEvent.ACTION_UP -> (homeTakenFromGame && homeHoldFired).also {
             homeTakenFromGame = false
             handler.removeCallbacks(homeHold)
-            if (taken && !homeHoldFired) showArgosyWithoutTransition()
             homeHoldFired = false
         }
         else -> false

@@ -2544,4 +2544,6 @@
     <string name="settings_builtin_gpu_driver_reason_core_system_only">%1$s 使用系統驅動程式</string>
     <string name="settings_builtin_gpu_driver_reason_backend">渲染後端為 Vulkan 時生效</string>
     <string name="settings_builtin_gpu_driver_reason_device">自訂驅動程式需要 Adreno GPU</string>
+    <string name="settings_server_delegate_pairing_interrupted">無法完成登入，請重試。</string>
+    <string name="settings_accounts_delegate_pairing_interrupted">無法完成登入，請重試。</string>
 </resources>

@@ -12,7 +12,7 @@ import org.junit.Test
 class SettingsBackupKeysTest {
 
     private val credentialsAndIdentity = setOf(
-        "romm_token", "romm_url", "romm_username", "romm_user_id", "romm_avatar_path",
+        "romm_token", "romm_url", "romm_username", "romm_user_id", "romm_avatar_path", "romm_profile_revision",
         "romm_device_id",
         "romm_device_client_version", "romm_snapshots_server", "romm_snapshots_supported", "ra_token", "ra_web_api_key", "ra_username", "ra_proxy_enabled",
         "ra_proxy_address", "social_session_token", "social_user_id", "social_username",

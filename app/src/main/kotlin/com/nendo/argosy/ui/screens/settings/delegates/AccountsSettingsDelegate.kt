@@ -1,8 +1,10 @@
 package com.nendo.argosy.ui.screens.settings.delegates
 
 import android.content.Context
+import androidx.annotation.StringRes
 import com.nendo.argosy.R
 import com.nendo.argosy.data.remote.romm.DeviceAuthOutcome
+import com.nendo.argosy.data.remote.romm.RomMErrorKind
 import com.nendo.argosy.data.remote.romm.RomMResult
 import com.nendo.argosy.data.remote.romm.RomMRepository
 import com.nendo.argosy.data.remote.romm.pollDeviceAuthUntilResolved
@@ -432,7 +434,9 @@ class AccountsSettingsDelegate @Inject constructor(
             }
             DeviceAuthOutcome.Denied -> failPairing(context.getString(R.string.settings_accounts_delegate_pairing_denied))
             DeviceAuthOutcome.Expired -> failPairing(context.getString(R.string.settings_accounts_delegate_pairing_expired))
-            is DeviceAuthOutcome.Failed -> failPairing(outcome.message)
+            is DeviceAuthOutcome.Failed -> failPairing(
+                accountsPairingErrorRes(outcome.kind)?.let { context.getString(it) } ?: outcome.message
+            )
         }
     }
 
@@ -538,4 +542,11 @@ class AccountsSettingsDelegate @Inject constructor(
         AccountSwitchBlocker.UnknownAccount ->
             context.getString(R.string.settings_accounts_delegate_blocker_unknown_account)
     }
+}
+
+@StringRes
+internal fun accountsPairingErrorRes(kind: RomMErrorKind?): Int? = when (kind) {
+    RomMErrorKind.IDENTITY_UNAVAILABLE, RomMErrorKind.SESSION_CHANGED ->
+        R.string.settings_accounts_delegate_pairing_interrupted
+    else -> null
 }

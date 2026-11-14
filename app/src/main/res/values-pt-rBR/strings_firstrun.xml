@@ -46,4 +46,5 @@
     </plurals>
     <string name="firstrun_platform_select_button_select_all">Selecionar tudo</string>
     <string name="firstrun_platform_select_button_deselect_all">Desselecionar tudo</string>
+    <string name="firstrun_romm_error_sign_in_interrupted">Não foi possível concluir o login. Tente novamente.</string>
 </resources>

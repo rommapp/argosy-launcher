@@ -24,6 +24,7 @@ data class SyncPreferences(
     val rommUsername: String? = null,
     val rommUserId: Long? = null,
     val rommAvatarPath: String? = null,
+    val rommProfileRevision: Long = 0,
     val rommToken: String? = null,
     val rommDeviceId: String? = null,
     val rommDeviceClientVersion: String? = null,
@@ -85,6 +86,7 @@ class SyncPreferencesRepository @Inject constructor(
         val ROMM_USERNAME = stringPreferencesKey("romm_username")
         val ROMM_USER_ID = longPreferencesKey("romm_user_id")
         val ROMM_AVATAR_PATH = stringPreferencesKey("romm_avatar_path")
+        val ROMM_PROFILE_REVISION = longPreferencesKey("romm_profile_revision")
         val ROMM_TOKEN = stringPreferencesKey("romm_token")
         val ROMM_DEVICE_ID = stringPreferencesKey("romm_device_id")
         val ROMM_DEVICE_CLIENT_VERSION = stringPreferencesKey("romm_device_client_version")
@@ -350,6 +352,7 @@ class SyncPreferencesRepository @Inject constructor(
             rommUsername = prefs[Keys.ROMM_USERNAME],
             rommUserId = prefs[Keys.ROMM_USER_ID],
             rommAvatarPath = prefs[Keys.ROMM_AVATAR_PATH],
+            rommProfileRevision = prefs[Keys.ROMM_PROFILE_REVISION] ?: 0,
             rommToken = prefs[Keys.ROMM_TOKEN],
             rommDeviceId = prefs[Keys.ROMM_DEVICE_ID],
             rommDeviceClientVersion = prefs[Keys.ROMM_DEVICE_CLIENT_VERSION],
@@ -415,7 +418,8 @@ class SyncPreferencesRepository @Inject constructor(
         baseUrl: String,
         token: String,
         username: String? = null,
-        userId: Long? = null
+        userId: Long? = null,
+        avatarPath: String? = null
     ) {
         dataStore.edit { prefs ->
             val previousUserId = prefs[Keys.ROMM_USER_ID]
@@ -423,6 +427,11 @@ class SyncPreferencesRepository @Inject constructor(
             prefs[Keys.ROMM_TOKEN] = token
             if (username != null) prefs[Keys.ROMM_USERNAME] = username
             if (userId != null) prefs[Keys.ROMM_USER_ID] = userId
+            if (userId != null) {
+                val avatar = avatarPath?.trim()?.takeIf { it.isNotEmpty() }
+                if (avatar == null) prefs.remove(Keys.ROMM_AVATAR_PATH) else prefs[Keys.ROMM_AVATAR_PATH] = avatar
+                prefs[Keys.ROMM_PROFILE_REVISION] = maxOf(System.currentTimeMillis(), (prefs[Keys.ROMM_PROFILE_REVISION] ?: 0) + 1)
+            }
             val userChanged = previousUserId != null && userId != null && previousUserId != userId
             if (userChanged) {
                 prefs.remove(Keys.ROMM_DEVICE_ID)
@@ -439,6 +448,7 @@ class SyncPreferencesRepository @Inject constructor(
             prefs.remove(Keys.ROMM_USERNAME)
             prefs.remove(Keys.ROMM_USER_ID)
             prefs.remove(Keys.ROMM_AVATAR_PATH)
+            prefs.remove(Keys.ROMM_PROFILE_REVISION)
             prefs.remove(Keys.ROMM_DEVICE_ID)
             prefs.remove(Keys.ROMM_DEVICE_CLIENT_VERSION)
             prefs.remove(Keys.ROMM_PLAY_SESSION_BACKFILL_DONE)
@@ -447,10 +457,23 @@ class SyncPreferencesRepository @Inject constructor(
         }
     }
 
-    suspend fun setRomMAvatarPath(path: String?) {
+    suspend fun refreshRomMProfile(
+        token: String,
+        expectedUserId: Long?,
+        expectedBaseUrl: String?,
+        username: String,
+        avatarPath: String?,
+        newBaseUrl: String? = null
+    ) {
         dataStore.edit { prefs ->
-            val trimmed = path?.trim().orEmpty()
-            if (trimmed.isEmpty()) prefs.remove(Keys.ROMM_AVATAR_PATH) else prefs[Keys.ROMM_AVATAR_PATH] = trimmed
+            if (prefs[Keys.ROMM_TOKEN] != token || prefs[Keys.ROMM_USER_ID] != expectedUserId ||
+                prefs[Keys.ROMM_URL] != expectedBaseUrl
+            ) return@edit
+            prefs[Keys.ROMM_USERNAME] = username
+            if (newBaseUrl != null) prefs[Keys.ROMM_URL] = newBaseUrl
+            val avatar = avatarPath?.trim()?.takeIf { it.isNotEmpty() }
+            if (avatar == null) prefs.remove(Keys.ROMM_AVATAR_PATH) else prefs[Keys.ROMM_AVATAR_PATH] = avatar
+            prefs[Keys.ROMM_PROFILE_REVISION] = maxOf(System.currentTimeMillis(), (prefs[Keys.ROMM_PROFILE_REVISION] ?: 0) + 1)
         }
     }
 

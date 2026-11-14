@@ -2931,4 +2931,6 @@
     <string name="settings_builtin_gpu_driver_reason_core_system_only">%1$s использует системный драйвер</string>
     <string name="settings_builtin_gpu_driver_reason_backend">Действует, когда рендерер Vulkan</string>
     <string name="settings_builtin_gpu_driver_reason_device">Свои драйверы требуют GPU Adreno</string>
+    <string name="settings_server_delegate_pairing_interrupted">Не удалось завершить вход. Попробуйте ещё раз.</string>
+    <string name="settings_accounts_delegate_pairing_interrupted">Не удалось завершить вход. Попробуйте ещё раз.</string>
 </resources>

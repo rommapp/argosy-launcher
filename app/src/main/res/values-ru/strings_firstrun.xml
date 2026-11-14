@@ -49,4 +49,5 @@
     </plurals>
     <string name="firstrun_platform_select_button_select_all">Выбрать все</string>
     <string name="firstrun_platform_select_button_deselect_all">Снять выбор со всех</string>
+    <string name="firstrun_romm_error_sign_in_interrupted">Не удалось завершить вход. Попробуйте ещё раз.</string>
 </resources>

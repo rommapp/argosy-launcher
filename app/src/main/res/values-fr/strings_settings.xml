@@ -2857,4 +2857,6 @@
     <string name="settings_builtin_gpu_driver_reason_core_system_only">%1$s utilise le pilote système</string>
     <string name="settings_builtin_gpu_driver_reason_backend">S\'applique quand le moteur de rendu est Vulkan</string>
     <string name="settings_builtin_gpu_driver_reason_device">Les pilotes personnalisés exigent un GPU Adreno</string>
+    <string name="settings_server_delegate_pairing_interrupted">La connexion n’a pas pu aboutir. Réessayez.</string>
+    <string name="settings_accounts_delegate_pairing_interrupted">La connexion n’a pas pu aboutir. Réessayez.</string>
 </resources>

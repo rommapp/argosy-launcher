@@ -861,9 +861,9 @@ class ArgosyViewModel @Inject constructor(
     }
 }
 
-private fun rommAvatarUrl(prefs: UserPreferences): String? {
+internal fun rommAvatarUrl(prefs: UserPreferences): String? {
     if (prefs.rommAvatarPath.isNullOrBlank()) return null
     val baseUrl = prefs.rommBaseUrl?.trim()?.trimEnd('/')?.takeIf { it.isNotEmpty() } ?: return null
     val userId = prefs.rommUserId ?: return null
-    return "$baseUrl/api/users/$userId/avatar"
+    return "$baseUrl/api/users/$userId/avatar?revision=${prefs.rommProfileRevision}"
 }

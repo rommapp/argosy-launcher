@@ -11,7 +11,7 @@ sealed class DeviceAuthOutcome {
     data class AddedAccount(val accountId: Long) : DeviceAuthOutcome()
     data object Denied : DeviceAuthOutcome()
     data object Expired : DeviceAuthOutcome()
-    data class Failed(val message: String) : DeviceAuthOutcome()
+    data class Failed(val message: String, val kind: RomMErrorKind? = null) : DeviceAuthOutcome()
 }
 
 private const val TAG = "DeviceAuthPoller"
@@ -57,11 +57,11 @@ suspend fun pollDeviceAuthUntilResolved(
                 intervalMs = (intervalMs + SLOW_DOWN_STEP_MS).coerceAtMost(MAX_INTERVAL_MS)
             }
             is DeviceAuthPoll.Failed -> {
-                if (!result.retryable) return DeviceAuthOutcome.Failed(result.message)
+                if (!result.retryable) return DeviceAuthOutcome.Failed(result.message, result.kind)
                 consecutiveFailures++
                 if (consecutiveFailures >= MAX_CONSECUTIVE_FAILURES) {
                     Logger.info(TAG, "giving up after $consecutiveFailures failed polls: ${result.message}")
-                    return DeviceAuthOutcome.Failed(result.message)
+                    return DeviceAuthOutcome.Failed(result.message, result.kind)
                 }
                 Logger.info(
                     TAG,

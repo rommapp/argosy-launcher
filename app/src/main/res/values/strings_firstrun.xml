@@ -124,4 +124,5 @@
     <!-- Label the same button takes on once every platform is already on, which switches them
          all off. Verb phrase, imperative. -->
     <string name="firstrun_platform_select_button_deselect_all">Deselect All</string>
+    <string name="firstrun_romm_error_sign_in_interrupted">Unable to complete sign-in. Please try again.</string>
 </resources>

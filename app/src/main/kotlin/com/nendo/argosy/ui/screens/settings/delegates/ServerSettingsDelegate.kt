@@ -1,6 +1,7 @@
 package com.nendo.argosy.ui.screens.settings.delegates
 
 import android.content.Context
+import androidx.annotation.StringRes
 import android.util.Log
 import com.nendo.argosy.R
 import com.nendo.argosy.core.notification.NotificationManager
@@ -9,6 +10,7 @@ import com.nendo.argosy.core.notification.NotificationType
 import com.nendo.argosy.core.notification.showError
 import com.nendo.argosy.core.notification.showSuccess
 import com.nendo.argosy.data.remote.romm.DeviceAuthOutcome
+import com.nendo.argosy.data.remote.romm.RomMErrorKind
 import com.nendo.argosy.data.sync.AccountRemovalResult
 import com.nendo.argosy.data.remote.romm.RomMCapabilities
 import com.nendo.argosy.data.remote.romm.RomMConnectionManager
@@ -58,18 +60,8 @@ class ServerSettingsDelegate @Inject constructor(
 
     private var devicePollJob: Job? = null
 
-    /**
-     * A failure the user can act on reads as app-authored text, not as the server's.
-     *
-     * An untrusted chain arrives as a validator message naming neither the cause nor the remedy,
-     * so passing it through leaves the reader with nothing connecting the failure to the
-     * certificate they need to import.
-     */
-    private fun RomMResult.Error.describe(): String = when (kind) {
-        com.nendo.argosy.data.remote.romm.RomMErrorKind.UNTRUSTED_CERTIFICATE ->
-            context.getString(R.string.settings_romm_config_error_untrusted_certificate)
-        null -> message
-    }
+    private fun RomMResult.Error.describe(): String =
+        serverSignInErrorRes(kind)?.let { context.getString(it) } ?: message
 
     fun importCertificate(scope: CoroutineScope, path: String) {
         scope.launch {
@@ -702,7 +694,9 @@ class ServerSettingsDelegate @Inject constructor(
                 failPairing(context.getString(R.string.settings_server_delegate_pairing_expired))
             is DeviceAuthOutcome.AddedAccount ->
                 failPairing(context.getString(R.string.settings_server_delegate_pairing_unexpected_result))
-            is DeviceAuthOutcome.Failed -> failPairing(outcome.message)
+            is DeviceAuthOutcome.Failed -> failPairing(
+                serverSignInErrorRes(outcome.kind)?.let { context.getString(it) } ?: outcome.message
+            )
         }
     }
 
@@ -752,4 +746,12 @@ class ServerSettingsDelegate @Inject constructor(
         }
     }
 
+}
+
+@StringRes
+internal fun serverSignInErrorRes(kind: RomMErrorKind?): Int? = when (kind) {
+    RomMErrorKind.UNTRUSTED_CERTIFICATE -> R.string.settings_romm_config_error_untrusted_certificate
+    RomMErrorKind.IDENTITY_UNAVAILABLE, RomMErrorKind.SESSION_CHANGED ->
+        R.string.settings_server_delegate_pairing_interrupted
+    null -> null
 }

@@ -18,6 +18,7 @@ data class SavePathConfig(
     val usesInternalStorage: Boolean = false,
     val usesGciFormat: Boolean = false,
     val savesBesideRom: Boolean = false,
+    val retroArchCoreSubpath: String? = null,
     private val supported: Boolean = true,
     val requiresRoot: Boolean = false
 ) {
@@ -145,7 +146,8 @@ object SavePathRegistry {
                 "{extStorage}/Android/data/com.retroarch/files/saves/User/Wii/title/00010000"
             ),
             saveExtensions = listOf("*"),
-            usesFolderBasedSaves = true
+            usesFolderBasedSaves = true,
+            retroArchCoreSubpath = "User/Wii/title/00010000"
         ),
         "retroarch_64_wii" to SavePathConfig(
             emulatorId = "retroarch_64_wii",
@@ -156,7 +158,8 @@ object SavePathRegistry {
                 "{extStorage}/Android/data/com.retroarch.aarch64/files/saves/User/Wii/title/00010000"
             ),
             saveExtensions = listOf("*"),
-            usesFolderBasedSaves = true
+            usesFolderBasedSaves = true,
+            retroArchCoreSubpath = "User/Wii/title/00010000"
         ),
         "retroarch_32_ngc" to SavePathConfig(
             emulatorId = "retroarch_32_ngc",

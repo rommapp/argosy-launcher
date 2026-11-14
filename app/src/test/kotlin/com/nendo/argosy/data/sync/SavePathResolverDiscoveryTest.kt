@@ -1000,6 +1000,54 @@ class SavePathResolverDiscoveryTest {
         coVerify(exactly = 0) { gameDao.setSaveId(any(), any()) }
     }
 
+    private val wiiSaveId = "00010000/534f4d45"
+    private val retroArch64 = "com.retroarch.aarch64"
+
+    private fun retroArchWiiTitles(): File {
+        val sortedSaves = File(tempDir, "Cocoon/Emulation/saves/retroarch/saves/wii").apply { mkdirs() }
+        coEvery {
+            retroArchPathResolver.resolveSaveDirectoriesForPlatform(
+                match { it.emulatorId == "retroarch_64" }, "wii"
+            )
+        } returns listOf(sortedSaves.absolutePath)
+        every { saveHandlerRegistry.getFolderHandler("wii") } returns
+            com.nendo.argosy.data.sync.platform.CategorySplitFolderHandler(
+                context, realFsFal(), saveArchiver, platformSlug = "wii",
+                categoryDir = Regex("0001[0-9a-fA-F]{4}"),
+                categoryParents = listOf("", "title", "Wii/title", "User/Wii/title", "dolphin-emu/User/Wii/title")
+            )
+        return File(sortedSaves, "User/Wii/title/00010000").apply { mkdirs() }
+    }
+
+    @Test
+    fun `a RetroArch Wii save is found under the save directory retroarch cfg sorts it into`() = runTest {
+        stubBuiltinSettings()
+        val titleFolder = File(retroArchWiiTitles(), "534f4d45").apply { mkdirs() }
+        File(titleFolder, "data.bin").writeBytes(byteArrayOf(1))
+
+        val result = resolver.discoverSavePath(
+            emulatorId = "retroarch_64", gameTitle = "Rhythm Heaven Fever", platformSlug = "wii",
+            romPath = "/roms/wii/Rhythm Heaven Fever (USA).rvz", cachedSaveId = wiiSaveId,
+            emulatorPackage = retroArch64, gameId = 1L,
+        )
+
+        assertEquals(titleFolder.absolutePath, result)
+    }
+
+    @Test
+    fun `a RetroArch Wii download lands under the save directory retroarch cfg sorts it into`() = runTest {
+        stubBuiltinSettings()
+        val titles = retroArchWiiTitles()
+
+        val target = resolver.constructFolderSavePathWithOverride(
+            emulatorId = "retroarch_64", platformSlug = "wii",
+            romPath = "/roms/wii/Rhythm Heaven Fever (USA).rvz", gameId = 1L,
+            gameTitle = "Rhythm Heaven Fever", cachedSaveId = wiiSaveId, emulatorPackage = retroArch64,
+        )
+
+        assertEquals(File(titles, "534f4d45").absolutePath, target)
+    }
+
     private fun rommGame(): GameEntity = GameEntity(
         id = 1L, platformId = 10L, platformSlug = "switch",
         title = "BOTW", sortTitle = "botw",

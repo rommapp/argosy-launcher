@@ -143,13 +143,23 @@ class RetroArchPathResolver @Inject constructor(
         romPath?.let { File(it).parent }
 
     companion object {
+        private val EMULATOR_IDS = setOf("retroarch", "retroarch_64", "retroarch_32")
+
         fun packageForEmulatorId(emulatorId: String): String = when (emulatorId) {
             "retroarch_64" -> "com.retroarch.aarch64"
             "retroarch_32" -> "com.retroarch.ra32"
             else -> "com.retroarch"
         }
 
-        fun isRetroArch(emulatorId: String): Boolean =
-            emulatorId == "retroarch" || emulatorId == "retroarch_64" || emulatorId == "retroarch_32"
+        fun isRetroArch(emulatorId: String): Boolean = emulatorId in EMULATOR_IDS
+
+        /**
+         * The RetroArch emulator id a platform save config such as `retroarch_64_wii` belongs to,
+         * or null when the config is not RetroArch's.
+         */
+        fun emulatorIdOfConfig(configEmulatorId: String): String? =
+            EMULATOR_IDS
+                .filter { configEmulatorId == it || configEmulatorId.startsWith("${it}_") }
+                .maxByOrNull { it.length }
     }
 }

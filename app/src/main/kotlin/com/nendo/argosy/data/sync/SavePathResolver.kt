@@ -3,6 +3,7 @@ package com.nendo.argosy.data.sync
 import android.content.Context
 import com.nendo.argosy.data.emulator.EmulatorRegistry
 import com.nendo.argosy.data.emulator.RetroArchConfigParser
+import com.nendo.argosy.data.emulator.RetroArchPathResolver
 import com.nendo.argosy.data.emulator.SavePathConfig
 import com.nendo.argosy.data.emulator.SavePathRegistry
 import com.nendo.argosy.data.emulator.SwitchTitleIds
@@ -185,7 +186,7 @@ class SavePathResolver @Inject constructor(
                     else retroArchPathResolver.resolveSaveDirectoriesForPlatform(req, platformSlug)
                 )
             } else if (config.usesFolderBasedSaves) {
-                addAll(resolveFolderBasePaths(config, emulatorPackage, gameId))
+                addAll(resolveFolderBasePaths(config, emulatorPackage, gameId, platformSlug, romPath))
             } else {
                 addAll(resolveSavePaths(config, platformSlug, gameId, emulatorPackage))
             }
@@ -451,7 +452,7 @@ class SavePathResolver @Inject constructor(
             }
             listOf(effectivePath)
         } else {
-            resolveFolderBasePaths(config, emulatorPackage, gameId)
+            resolveFolderBasePaths(config, emulatorPackage, gameId, platformSlug, romPath)
         }
         val resolvedPaths = if (selectedMemcardPath != null && platformSlug == "ps2") {
             listOf(selectedMemcardPath) + baseList.filterNot { it == selectedMemcardPath }
@@ -829,14 +830,31 @@ class SavePathResolver @Inject constructor(
     private suspend fun resolveFolderBasePaths(
         config: SavePathConfig,
         emulatorPackage: String?,
-        gameId: Long?
-    ): List<String> = SavePathRegistry.resolvePathWithPackage(
-        config,
-        emulatorPackage,
-        context.filesDir.absolutePath,
-        fal.externalStorageRoots(),
-        builtinSavesDir(config, gameId)
-    )
+        gameId: Long?,
+        platformSlug: String,
+        romPath: String?
+    ): List<String> = (
+        retroArchFolderBases(config, platformSlug, romPath) +
+            SavePathRegistry.resolvePathWithPackage(
+                config,
+                emulatorPackage,
+                context.filesDir.absolutePath,
+                fal.externalStorageRoots(),
+                builtinSavesDir(config, gameId)
+            )
+        ).distinct()
+
+    private suspend fun retroArchFolderBases(
+        config: SavePathConfig,
+        platformSlug: String,
+        romPath: String?
+    ): List<String> {
+        val subpath = config.retroArchCoreSubpath ?: return emptyList()
+        val retroArchId = RetroArchPathResolver.emulatorIdOfConfig(config.emulatorId) ?: return emptyList()
+        val request = RetroArchPathResolver.Request(emulatorId = retroArchId, coreName = null, romPath = romPath)
+        return retroArchPathResolver.resolveSaveDirectoriesForPlatform(request, platformSlug)
+            .map { "${it.trimEnd('/')}/$subpath" }
+    }
 
     private fun allowsFuzzyTitle(platformSlug: String, emulatorId: String): Boolean =
         !(platformSlug == "psx" && emulatorId == DUCKSTATION_EMULATOR_ID)
@@ -1094,11 +1112,12 @@ class SavePathResolver @Inject constructor(
         val baseDir = if (platformSlug == "switch") {
             switchSaveHandler.resolveBasePath(config, basePathOverride, emulatorPackage)
         } else {
-            val packaged = resolveFolderBasePaths(config, emulatorPackage, gameId)
+            val folderHandler = saveHandlerRegistry.getFolderHandler(platformSlug)
+            val packaged = resolveFolderBasePaths(config, emulatorPackage, gameId, platformSlug, romPath)
             selectedMemcard
-                ?: saveHandlerRegistry.getFolderHandler(platformSlug)
-                    ?.resolveBasePath(config, basePathOverride)
-                ?: basePathOverride
+                ?: basePathOverride?.let { folderHandler?.resolveBasePath(config, it) ?: it }
+                ?: retroArchFolderBases(config, platformSlug, romPath).firstOrNull { directoryExists(it) }
+                ?: folderHandler?.resolveBasePath(config, null)
                 ?: packaged.firstOrNull { directoryExists(it) }
                 ?: packaged.firstOrNull()
         } ?: return null

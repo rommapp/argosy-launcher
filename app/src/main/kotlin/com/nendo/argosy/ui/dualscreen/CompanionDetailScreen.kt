@@ -47,6 +47,7 @@ fun CompanionDetailScreen(
     style: PresentationStyle = PresentationStyle(),
     bottomInset: Dp = 0.dp,
     backgroundBlur: Int = 0,
+    onVideoPlayingChange: (Boolean) -> Unit = {},
     footerHints: @Composable (() -> Unit)? = null
 ) {
     if (detail.isGameTitle) {
@@ -55,6 +56,7 @@ fun CompanionDetailScreen(
             style = style,
             bottomInset = bottomInset,
             backgroundBlur = backgroundBlur,
+            onVideoPlayingChange = onVideoPlayingChange,
             modifier = modifier
         )
         return

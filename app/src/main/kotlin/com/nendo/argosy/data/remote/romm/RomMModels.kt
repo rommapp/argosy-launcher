@@ -363,7 +363,8 @@ data class RomMSsMetadata(
     @Json(name = "box2d_side_path") val box2dSidePath: String? = null,
     @Json(name = "logo_path") val logoPath: String? = null,
     @Json(name = "fanart_path") val fanartPath: String? = null,
-    @Json(name = "fanart_url") val fanartUrl: String? = null
+    @Json(name = "fanart_url") val fanartUrl: String? = null,
+    @Json(name = "video_normalized_path") val videoNormalizedPath: String? = null
 )
 
 @JsonClass(generateAdapter = true)

@@ -47,6 +47,8 @@ object ComponentDefaults {
         const val floatTravelDp = 6
         const val floatSlideMs = 2400
         const val floatHoldMs = 1600
+        const val videoLogoHeightDp = 72
+        const val videoLogoRiseDp = 24
     }
 
     object BoxArt {

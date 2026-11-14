@@ -1,5 +1,14 @@
 package com.nendo.argosy.ui.dualscreen
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -135,6 +144,7 @@ fun GameShowcase(
     style: PresentationStyle,
     bottomInset: Dp,
     backgroundBlur: Int = 0,
+    onVideoPlayingChange: (Boolean) -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     val art = detail.gameId?.let { com.nendo.argosy.ui.common.rememberResolvedArt(it) }
@@ -160,6 +170,7 @@ fun GameShowcase(
         style = style,
         bottomInset = bottomInset,
         backgroundBlur = backgroundBlur,
+        onVideoPlayingChange = onVideoPlayingChange,
         modifier = modifier
     )
 }
@@ -187,6 +198,7 @@ private fun GameShowcaseContent(
     style: PresentationStyle,
     bottomInset: Dp,
     backgroundBlur: Int,
+    onVideoPlayingChange: (Boolean) -> Unit,
     modifier: Modifier
 ) {
     val contentBottom = bottomInset + Dimens.spacingMd
@@ -200,6 +212,12 @@ private fun GameShowcaseContent(
     }
     var viewportOrigin by remember { mutableStateOf(Offset.Zero) }
     var titleBounds by remember { mutableStateOf(Rect.Zero) }
+    var videoPlaying by remember { mutableStateOf(false) }
+    val chromeAlpha by animateFloatAsState(
+        targetValue = if (videoPlaying) 0f else 1f,
+        animationSpec = tween(durations.backdropCrossfadeMs),
+        label = "showcaseChrome"
+    )
     val cinematicText = if (heldDetail != null && style.layout == PresentationLayout.CINEMATIC) {
         rememberShowcaseLayer(
             motion, durations, durations.textDelayMs, durations.textRiseDp,
@@ -213,47 +231,43 @@ private fun GameShowcaseContent(
           viewportOrigin = it.positionInRoot()
       }) {
         val gutter = maxWidth * GUTTER_SHARE
+        val viewportWidth = maxWidth
+        val viewportHeight = maxHeight
         Box(Modifier.fillMaxSize().frostedBackdropSource(backdrop).background(theme.surfaceBase)) {
-            val running = detail.gameId?.let { com.nendo.argosy.ui.common.LocalRunningGames.current.markFor(it) }
-            val runningFrame = com.nendo.argosy.ui.common.rememberTaskSnapshotRequest(
-                running?.snapshotPath,
-                running?.snapshotTakenAtMillis ?: 0L
-            )
-            if (runningFrame != null) {
+            (detail.backdropUrl ?: detail.artUrl)?.let { background ->
+                val isScreenshot = detail.backdropIsScreenshotOrArt && background == detail.backdropUrl
+                val backdropImage = rememberShowcaseBackdrop(
+                    background,
+                    durations.backdropCrossfadeMs,
+                    stackedScreenshot = isScreenshot
+                )
                 AsyncImage(
-                    model = runningFrame,
+                    model = backdropImage.request,
                     contentDescription = null,
                     contentScale = ContentScale.Crop,
+                    onSuccess = backdropImage.onSuccess,
                     modifier = Modifier
                         .fillMaxSize()
                         .then(if (backgroundBlurRadius > 0.dp) Modifier.blur(backgroundBlurRadius) else Modifier)
                 )
-            } else {
-                (detail.backdropUrl ?: detail.artUrl)?.let { background ->
-                    val isScreenshot = detail.backdropIsScreenshotOrArt && background == detail.backdropUrl
-                    val backdropImage = rememberShowcaseBackdrop(
-                        background,
-                        durations.backdropCrossfadeMs,
-                        stackedScreenshot = isScreenshot
-                    )
-                    AsyncImage(
-                        model = backdropImage.request,
-                        contentDescription = null,
-                        contentScale = ContentScale.Crop,
-                        onSuccess = backdropImage.onSuccess,
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .then(if (backgroundBlurRadius > 0.dp) Modifier.blur(backgroundBlurRadius) else Modifier)
-                    )
-                }
             }
-            ShowcaseScrim(style = style, color = theme.surfaceBase)
+            ShowcaseVideo(
+                detail = detail,
+                fadeMs = durations.backdropCrossfadeMs,
+                onPlayingChange = {
+                    videoPlaying = it
+                    onVideoPlayingChange(it)
+                }
+            )
+            Box(Modifier.fillMaxSize().graphicsLayer { alpha = chromeAlpha }) {
+                ShowcaseScrim(style = style, color = theme.surfaceBase)
+            }
             if (style.layout == PresentationLayout.CINEMATIC && style.scrim == PresentationScrim.GRADIENT) {
                 val color = presentationScrimColor()
                 val strength = style.scrimStrength / DEFAULT_STRENGTH
                 Box(Modifier.fillMaxSize().drawBehind {
                     val bounds = titleBounds.translate(-viewportOrigin)
-                    val textAlpha = cinematicText?.alpha ?: 0f
+                    val textAlpha = (cinematicText?.alpha ?: 0f) * chromeAlpha
                     if (bounds.width > 0f && bounds.height > 0f && strength > 0f) {
                         val radii = presentationTitleRadii(
                             size.width, size.height, bounds.width, bounds.height,
@@ -282,6 +296,7 @@ private fun GameShowcaseContent(
         }
 
         if (heldDetail != null) {
+          Box(Modifier.fillMaxSize().graphicsLayer { alpha = chromeAlpha }) {
             when (style.layout) {
                 PresentationLayout.LOGO -> LogoShowcase(
                     detail = heldDetail,
@@ -297,8 +312,8 @@ private fun GameShowcaseContent(
                     detail = heldDetail,
                     style = style,
                     bottom = bottomInset,
-                    viewportWidth = maxWidth,
-                    viewportHeight = maxHeight,
+                    viewportWidth = viewportWidth,
+                    viewportHeight = viewportHeight,
                     onTitleBoundsChanged = { titleBounds = it },
                     coverLayer = rememberShowcaseLayer(
                         motion, durations, durations.coverDelayMs, durations.coverDriftDp, horizontal = true
@@ -311,13 +326,22 @@ private fun GameShowcaseContent(
                     friends = friends,
                     gutter = gutter,
                     bottom = contentBottom,
-                    columnWidth = maxWidth * JOURNAL_COLUMN_WIDTH_SHARE,
+                    columnWidth = viewportWidth * JOURNAL_COLUMN_WIDTH_SHARE,
                     textLayer = rememberShowcaseLayer(
                         motion, durations, durations.textDelayMs, durations.textRiseDp,
                         horizontal = false, onFinished = onEntranceFinished
                     ).modifier
                 )
             }
+          }
+          ShowcaseVideoTitle(
+              detail = heldDetail,
+              visible = videoPlaying,
+              durations = durations,
+              modifier = Modifier
+                  .align(Alignment.BottomStart)
+                  .padding(start = gutter, bottom = gutter)
+          )
         }
       }
     }
@@ -419,6 +443,45 @@ private fun LogoShowcase(
                     adaptiveSize = true
                 )
             }
+        }
+    }
+}
+
+@Composable
+private fun ShowcaseVideoTitle(
+    detail: CompanionDetail,
+    visible: Boolean,
+    durations: ShowcaseMotionDurations,
+    modifier: Modifier = Modifier
+) {
+    val density = LocalDensity.current
+    val rise = with(density) { ComponentDefaults.GameShowcase.videoLogoRiseDp.dp.roundToPx() }
+    AnimatedVisibility(
+        visible = visible,
+        enter = fadeIn(tween(durations.backdropCrossfadeMs)) +
+            slideInVertically(tween(durations.backdropCrossfadeMs)) { rise },
+        exit = fadeOut(tween(durations.backdropCrossfadeMs)) +
+            slideOutVertically(tween(durations.backdropCrossfadeMs)) { rise },
+        modifier = modifier
+    ) {
+        var logoFailed by remember(detail.logoUrl) { mutableStateOf(false) }
+        val logo = detail.logoUrl?.takeIf { !logoFailed }
+        if (logo != null) {
+            AsyncImage(
+                model = rememberFileImageModel(logo),
+                contentDescription = detail.title,
+                contentScale = ContentScale.Fit,
+                alignment = Alignment.BottomStart,
+                onError = { logoFailed = true },
+                modifier = Modifier.height(ComponentDefaults.GameShowcase.videoLogoHeightDp.dp)
+            )
+        } else {
+            GameTitle(
+                title = detail.title,
+                titleStyle = MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.Bold),
+                titleColor = LocalArgosyTheme.current.textPrimary,
+                maxLines = 1
+            )
         }
     }
 }

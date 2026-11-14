@@ -71,6 +71,7 @@ suspend fun GameEntity.toHomeGameUi(
         packageName = packageName,
         needsInstall = needsAndroidInstall,
         youtubeVideoId = youtubeVideoId,
+        videoNormalizedPath = videoNormalizedPath,
         isNew = addedAt.isAfter(newThreshold) && lastPlayed == null,
         sortTitle = sortTitle,
         franchises = franchises,

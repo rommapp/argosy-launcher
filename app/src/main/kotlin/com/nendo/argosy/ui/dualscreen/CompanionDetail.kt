@@ -7,6 +7,8 @@ package com.nendo.argosy.ui.dualscreen
  * [backdropUrl] is the full-bleed image and [artUrl] the upright one; a destination with only one
  * leaves the other null. [logoUrl] is the game's clear logo, drawn in place of the title text where
  * a layout shows one. [isGameTitle] routes [title] through the series/entry formatter.
+ * [videoPath] is the game's RomM gameplay video relative to the server's resources, and
+ * [youtubeVideoId] the trailer played when it has none.
  */
 data class CompanionDetail(
     val title: String,
@@ -23,7 +25,9 @@ data class CompanionDetail(
     val box3dUrl: String? = null,
     val logoUrl: String? = null,
     val stats: CompanionGameStats? = null,
-    val gameId: Long? = null
+    val gameId: Long? = null,
+    val videoPath: String? = null,
+    val youtubeVideoId: String? = null
 )
 
 /**

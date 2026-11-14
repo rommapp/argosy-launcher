@@ -47,6 +47,9 @@ class RomMGameMetadataTest {
         md5Hash = "md5",
         sha1Hash = "sha1",
         youtubeVideoId = "abc123",
+        ssMetadata = RomMSsMetadata(
+            videoNormalizedPath = "roms/21/42/video_normalized/video-normalized.mp4"
+        ),
         alternativeNames = listOf("Zelda OoT 3D"),
         titleId = titleId,
         saveTarget = saveTarget,
@@ -94,6 +97,7 @@ class RomMGameMetadataTest {
         assertEquals(55L, result.mobyId)
         assertEquals("md5", result.md5Hash)
         assertEquals("abc123", result.youtubeVideoId)
+        assertEquals("roms/21/42/video_normalized/video-normalized.mp4", result.videoNormalizedPath)
         assertEquals("Zelda OoT 3D", result.alternativeNames)
         assertTrue(result.hasManual)
     }

@@ -114,6 +114,7 @@ data class HomeGameUi(
     val packageName: String? = null,
     val needsInstall: Boolean = false,
     val youtubeVideoId: String? = null,
+    val videoNormalizedPath: String? = null,
     val isNew: Boolean = false,
     val isHidden: Boolean = false,
     val sortTitle: String = "",

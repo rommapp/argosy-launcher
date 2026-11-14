@@ -84,6 +84,7 @@ internal fun GameEntity.withRomMetadata(rom: RomMRom): GameEntity = copy(
     remoteHasSoundtrack = rom.hasSoundtrack,
     isIdentified = rom.isIdentified,
     youtubeVideoId = rom.youtubeVideoId,
+    videoNormalizedPath = rom.ssMetadata?.videoNormalizedPath,
     achievementCount = rom.raMetadata?.achievements?.size ?: achievementCount,
     fileSizeBytes = rom.fileSize.takeIf { it > 0 },
     titleId = titleId ?: remoteTitleId(rom, platformSlug),

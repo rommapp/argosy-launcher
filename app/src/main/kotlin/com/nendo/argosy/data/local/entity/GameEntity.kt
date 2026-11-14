@@ -133,6 +133,7 @@ data class GameEntity(
     val saveId: String? = null,
     val saveFeatures: Int? = null,
     val youtubeVideoId: String? = null,
+    val videoNormalizedPath: String? = null,
 
     val cheatsFetched: Boolean = false,
     val cheatsFetchedAt: Long? = null,

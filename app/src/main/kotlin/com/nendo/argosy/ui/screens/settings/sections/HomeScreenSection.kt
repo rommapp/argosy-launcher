@@ -78,17 +78,17 @@ internal sealed class HomeScreenItem(
     data object VideoWallpaper : HomeScreenItem(
         key = "videoWallpaper",
         section = "video",
-        visibleWhen = { drawsBackgroundArt(it) }
+        visibleWhen = { playsVideo(it) }
     )
     data object VideoDelay : HomeScreenItem(
         key = "videoDelay",
         section = "video",
-        visibleWhen = { it.videoWallpaperEnabled && drawsBackgroundArt(it) }
+        visibleWhen = { it.videoWallpaperEnabled && playsVideo(it) }
     )
     data object VideoMuted : HomeScreenItem(
         key = "videoMuted",
         section = "video",
-        visibleWhen = { it.videoWallpaperEnabled && drawsBackgroundArt(it) }
+        visibleWhen = { it.videoWallpaperEnabled && playsVideo(it) }
     )
 
     data object LayoutPreview : HomeScreenItem("layoutPreview", "layout")
@@ -150,6 +150,10 @@ internal sealed class HomeScreenItem(
 
         private fun drawsBackgroundArt(state: DisplayState): Boolean =
             state.homeLayout.selected == HomeLayoutKind.CAROUSEL
+
+        private fun playsVideo(state: DisplayState): Boolean =
+            drawsBackgroundArt(state) ||
+                (state.dualScreenEnabled && state.hasSecondaryDisplay && !state.secondaryDisplayUnsupported)
 
         private val BackgroundHeader =
             Header("backgroundHeader", "background", R.string.settings_home_screen_section_background)

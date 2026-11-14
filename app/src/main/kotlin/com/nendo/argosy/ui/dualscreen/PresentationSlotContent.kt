@@ -33,6 +33,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalContext
 import androidx.core.content.ContextCompat
 import androidx.compose.foundation.layout.offset
@@ -125,10 +126,19 @@ private fun PresentationSlotBody(
         com.nendo.argosy.ui.components.launchRecapBackdropBlur(),
         com.nendo.argosy.ui.components.recap.monthlyRecapBackdropBlur()
     ).takeIf { slot !is PresentationSlot.InGame } ?: 0.dp
+    var videoPlaying by remember { mutableStateOf(false) }
+    val chromeAlpha by androidx.compose.animation.core.animateFloatAsState(
+        targetValue = if (videoPlaying) 0f else 1f,
+        animationSpec = androidx.compose.animation.core.tween(
+            com.nendo.argosy.ui.theme.generated.ComponentDefaults.GameShowcase.backdropCrossfadeMs
+        ),
+        label = "presentationChrome"
+    )
     Box(modifier = Modifier.fillMaxSize()) {
         PresentationSlotScene(
             slot = slot,
             hintsHeight = hintsHeight,
+            onVideoPlayingChange = { videoPlaying = it },
             modifier = Modifier
                 .fillMaxSize()
                 .then(if (recapBlur > 0.dp) Modifier.blur(recapBlur) else Modifier)
@@ -138,11 +148,13 @@ private fun PresentationSlotBody(
                 modifier = Modifier
                     .align(Alignment.TopEnd)
                     .padding(Dimens.spacingLg)
+                    .graphicsLayer { alpha = chromeAlpha }
             )
             if (showControlHints && hints.isNotEmpty()) {
                 Box(
                     modifier = Modifier
                         .align(Alignment.BottomCenter)
+                        .graphicsLayer { alpha = chromeAlpha }
                         .onSizeChanged { measuredHintsHeight = with(density) { it.height.toDp() } }
                 ) {
                     PresentationControlHints(hints)
@@ -174,6 +186,7 @@ private fun PresentationSlotBody(
 private fun PresentationSlotScene(
     slot: PresentationSlot,
     hintsHeight: Dp,
+    onVideoPlayingChange: (Boolean) -> Unit,
     modifier: Modifier = Modifier
 ) {
     val frostedBackdrop = LocalFrostedBackdrop.current
@@ -218,6 +231,7 @@ private fun PresentationSlotScene(
                         style = style,
                         backgroundBlur = backgroundBlur,
                         bottomInset = hintsHeight,
+                        onVideoPlayingChange = onVideoPlayingChange,
                         modifier = Modifier.fillMaxSize()
                     )
                 }

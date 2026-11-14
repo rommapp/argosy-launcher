@@ -73,7 +73,7 @@ fun YouTubeVideoPlayer(
             <style>
                 * { margin: 0; padding: 0; box-sizing: border-box; }
                 html, body { width: 100%; height: 100%; background: transparent; overflow: hidden; }
-                #player { position: fixed; top: 0; left: 0; width: 100%; height: 100%; }
+                #player { position: fixed; top: -80px; left: 0; width: 100%; height: calc(100% + 160px); }
             </style>
         </head>
         <body>
@@ -88,11 +88,15 @@ fun YouTubeVideoPlayer(
                         playerVars: {
                             'autoplay': 1, 'controls': 0, 'disablekb': 1, 'fs': 0,
                             'modestbranding': 1, 'rel': 0, 'showinfo': 0, 'iv_load_policy': 3,
-                            'playsinline': 1, 'mute': $muteValue, 'loop': 1, 'playlist': '$videoId'
+                            'playsinline': 1, 'mute': $muteValue
                         },
                         events: {
                             'onReady': function(e) { e.target.playVideo(); },
                             'onStateChange': function(e) {
+                                if (e.data == YT.PlayerState.ENDED) {
+                                    e.target.seekTo(0, true);
+                                    e.target.playVideo();
+                                }
                                 if (e.data == YT.PlayerState.PLAYING && !hasReportedReady) {
                                     hasReportedReady = true;
                                     Android.onVideoReady();

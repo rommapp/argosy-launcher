@@ -4344,6 +4344,12 @@ object Migration_222_223 : Migration(222, 223) {
     }
 }
 
+object Migration_223_224 : Migration(223, 224) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL("ALTER TABLE `games` ADD COLUMN `videoNormalizedPath` TEXT")
+    }
+}
+
 object Migration_203_204 : Migration(203, 204) {
     override fun migrate(db: SupportSQLiteDatabase) {
         db.execSQL(

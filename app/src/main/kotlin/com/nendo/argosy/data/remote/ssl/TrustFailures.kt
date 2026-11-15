@@ -1,7 +1,12 @@
 package com.nendo.argosy.data.remote.ssl
 
+import java.io.IOException
+import java.io.InterruptedIOException
+import java.net.ConnectException
+import java.net.UnknownHostException
 import java.security.cert.CertPathValidatorException
 import java.security.cert.CertificateException
+import javax.net.ssl.SSLException
 import javax.net.ssl.SSLPeerUnverifiedException
 
 /**
@@ -30,3 +35,34 @@ fun Throwable.isCertificateTrustFailure(): Boolean {
     }
     return false
 }
+
+private val CLIENT_CERT_ALERT_MARKERS = listOf(
+    "certificate_required",
+    "certificate required",
+    "bad_certificate",
+    "bad certificate",
+    "unknown_ca",
+    "certificate_unknown",
+    "certificate_expired",
+    "certificate_revoked"
+)
+
+fun Throwable.isClientCertificateRejection(requestedWithoutCertificate: Boolean = false): Boolean {
+    if (isCertificateTrustFailure()) return false
+    var current: Throwable? = this
+    val seen = mutableSetOf<Throwable>()
+    while (current != null && seen.add(current)) {
+        when (current) {
+            is UnknownHostException, is ConnectException, is InterruptedIOException -> return false
+            is SSLException -> {
+                val message = current.message?.lowercase().orEmpty()
+                if (CLIENT_CERT_ALERT_MARKERS.any { it in message }) return true
+            }
+        }
+        current = current.cause
+    }
+    return requestedWithoutCertificate && this is IOException
+}
+
+fun isClientCertificateRejection(code: Int, body: String?): Boolean =
+    code == 400 && body?.contains("SSL certificate", ignoreCase = true) == true

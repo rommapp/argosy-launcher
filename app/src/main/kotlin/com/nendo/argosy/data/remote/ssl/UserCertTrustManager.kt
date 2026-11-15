@@ -30,15 +30,23 @@ object UserCertTrustManager {
     )
 
     fun OkHttpClient.Builder.withUserCertTrust(
-        store: UserCertStore? = null
+        store: UserCertStore? = null,
+        clientCerts: ClientCertStore? = null,
+        scope: ClientCertScope = ClientCertScope.ByHost
     ): OkHttpClient.Builder {
-        val imported = store?.trustManager() ?: return this
+        if (store == null && clientCerts == null) return this
         val platform = platformTrustManager() ?: return this
-        val trustManager = ImportedForUserHosts(platform, imported)
-        val sslContext = SSLContext.getInstance("TLS").apply {
-            init(null, arrayOf(trustManager), null)
+        val trustManager = ImportedForUserHosts(platform) { store?.trustManager() }
+        if (clientCerts == null) {
+            val sslContext = SSLContext.getInstance("TLS").apply { init(null, arrayOf(trustManager), null) }
+            return sslSocketFactory(sslContext.socketFactory, trustManager)
         }
-        return sslSocketFactory(sslContext.socketFactory, trustManager)
+        val keyManager = ClientCertKeyManager(clientCerts, scope)
+        val socketFactory = ClientCertRevisionSocketFactory(clientCerts) {
+            SSLContext.getInstance("TLS").apply { init(arrayOf(keyManager), arrayOf(trustManager), null) }
+        }
+        return addInterceptor(ClientCertPoolReset(socketFactory).application)
+            .sslSocketFactory(socketFactory, trustManager)
     }
 
     fun acceptsImportedCertFor(host: String?): Boolean =
@@ -58,7 +66,7 @@ object UserCertTrustManager {
 
     private class ImportedForUserHosts(
         private val platform: X509ExtendedTrustManager,
-        private val imported: X509TrustManager
+        private val imported: () -> X509TrustManager?
     ) : X509ExtendedTrustManager() {
 
         override fun checkServerTrusted(
@@ -112,7 +120,7 @@ object UserCertTrustManager {
         }
 
         override fun getAcceptedIssuers(): Array<X509Certificate> =
-            platform.acceptedIssuers + imported.acceptedIssuers
+            platform.acceptedIssuers + imported()?.acceptedIssuers.orEmpty()
 
         private fun retryWithImported(
             chain: Array<out X509Certificate>?,
@@ -121,8 +129,9 @@ object UserCertTrustManager {
             rejected: CertificateException
         ) {
             if (!acceptsImportedCertFor(host)) throw rejected
+            val current = imported() ?: throw rejected
             try {
-                imported.checkServerTrusted(chain, authType)
+                current.checkServerTrusted(chain, authType)
             } catch (_: CertificateException) {
                 throw rejected
             }

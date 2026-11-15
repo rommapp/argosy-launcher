@@ -41,6 +41,8 @@ internal class ModalInputRouter(private val viewModel: SettingsViewModel) {
         interceptAddressEditor(state, method)?.let { return it }
         interceptAddressMenu(state, method)?.let { return it }
         interceptRAWebApiKeyEditor(state, method)?.let { return it }
+        interceptClientCertPassword(state, method)?.let { return it }
+        interceptClientCertManager(state, method)?.let { return it }
         interceptUpdateModal(state, method)?.let { return it }
         interceptVariantPicker(state, method)?.let { return it }
         interceptSteamVariantPicker(state, method)?.let { return it }
@@ -457,6 +459,36 @@ internal class ModalInputRouter(private val viewModel: SettingsViewModel) {
             InputMethod.RIGHT -> { viewModel.moveRAWebApiKeyButton(1); InputResult.HANDLED }
             InputMethod.CONFIRM -> { viewModel.confirmRAWebApiKeyEditor(); InputResult.HANDLED }
             InputMethod.BACK -> { viewModel.closeRAWebApiKeyEditor(); InputResult.handled(SoundType.CLOSE_MODAL) }
+            else -> InputResult.HANDLED
+        }
+    }
+
+    private fun interceptClientCertPassword(state: SettingsUiState, method: InputMethod): InputResult? {
+        if (state.clientCert.passwordEntry == null) return null
+        return when (method) {
+            InputMethod.UP -> { viewModel.moveClientCertPasswordRow(TextEntryRow.FIELD); InputResult.HANDLED }
+            InputMethod.DOWN -> { viewModel.moveClientCertPasswordRow(TextEntryRow.BUTTONS); InputResult.HANDLED }
+            InputMethod.LEFT -> { viewModel.moveClientCertPasswordButton(-1); InputResult.HANDLED }
+            InputMethod.RIGHT -> { viewModel.moveClientCertPasswordButton(1); InputResult.HANDLED }
+            InputMethod.CONFIRM -> { viewModel.confirmClientCertPassword(); InputResult.HANDLED }
+            InputMethod.BACK -> { viewModel.closeClientCertPassword(); InputResult.handled(SoundType.CLOSE_MODAL) }
+            else -> InputResult.HANDLED
+        }
+    }
+
+    private fun interceptClientCertManager(state: SettingsUiState, method: InputMethod): InputResult? {
+        if (state.clientCert.managerOpenFor == null) return null
+        return when (method) {
+            InputMethod.UP -> { viewModel.moveClientCertManagerFocus(-1); InputResult.HANDLED }
+            InputMethod.DOWN -> { viewModel.moveClientCertManagerFocus(1); InputResult.HANDLED }
+            InputMethod.LEFT, InputMethod.RIGHT ->
+                if (viewModel.setFocusedClientCertToggle(enabled = method == InputMethod.RIGHT)) {
+                    InputResult.handled(SoundType.TOGGLE)
+                } else {
+                    InputResult.HANDLED
+                }
+            InputMethod.CONFIRM -> { viewModel.selectClientCertAction(); InputResult.HANDLED }
+            InputMethod.BACK -> { viewModel.closeClientCertManager(); InputResult.handled(SoundType.CLOSE_MODAL) }
             else -> InputResult.HANDLED
         }
     }

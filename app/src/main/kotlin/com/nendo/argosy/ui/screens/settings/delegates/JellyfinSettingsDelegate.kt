@@ -9,6 +9,7 @@ import com.nendo.argosy.core.notification.NotificationType
 import com.nendo.argosy.core.notification.showError
 import com.nendo.argosy.data.download.MediaDownloadManager
 import com.nendo.argosy.data.media.MediaDirectoryManager
+import com.nendo.argosy.data.remote.jellyfin.JELLYFIN_CLIENT_CERTIFICATE_REQUIRED
 import com.nendo.argosy.data.remote.jellyfin.JellyfinResult
 import com.nendo.argosy.data.remote.jellyfin.JellyfinSyncProgress
 import com.nendo.argosy.data.remote.jellyfin.JellyfinSyncResult
@@ -290,13 +291,18 @@ class JellyfinSettingsDelegate @Inject constructor(
      */
     fun onSignInFailed(reason: String, onFocusReset: () -> Unit) {
         val state = _state.value
-        val fallBackToPassword = !state.showLoginForm && state.quickConnectCode.isBlank()
+        val fallBackToPassword = !state.showLoginForm && state.quickConnectCode.isBlank() &&
+            reason != JELLYFIN_CLIENT_CERTIFICATE_REQUIRED
         _state.update {
             it.copy(
                 quickConnectRequested = false,
                 quickConnectCode = "",
                 isSigningIn = false,
-                signInError = reason,
+                signInError = if (reason == JELLYFIN_CLIENT_CERTIFICATE_REQUIRED) {
+                    context.getString(R.string.settings_jellyfin_error_client_certificate_required)
+                } else {
+                    reason
+                },
                 passwordFallbackOffered = true,
                 showLoginForm = it.showLoginForm || fallBackToPassword,
                 loginUsername = if (fallBackToPassword) "" else it.loginUsername,

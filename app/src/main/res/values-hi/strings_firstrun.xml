@@ -55,4 +55,7 @@
     </plurals>
     <string name="firstrun_platform_select_button_select_all">सभी चुनें</string>
     <string name="firstrun_platform_select_button_deselect_all">सभी अनचुनें</string>
+    <string name="firstrun_romm_client_certificate_button">क्लाइंट प्रमाणपत्र जोड़ें</string>
+    <string name="firstrun_romm_client_certificate_button_active">क्लाइंट प्रमाणपत्र: %1$s</string>
+    <string name="firstrun_romm_error_client_certificate_required">सर्वर को क्लाइंट प्रमाणपत्र चाहिए। कनेक्ट करने के लिए इसे जोड़ें।</string>
 </resources>

@@ -40,4 +40,7 @@
     </plurals>
     <string name="firstrun_platform_select_button_select_all">全選</string>
     <string name="firstrun_platform_select_button_deselect_all">取消全選</string>
+    <string name="firstrun_romm_client_certificate_button">新增用戶端憑證</string>
+    <string name="firstrun_romm_client_certificate_button_active">用戶端憑證：%1$s</string>
+    <string name="firstrun_romm_error_client_certificate_required">伺服器需要用戶端憑證。請新增後再連線。</string>
 </resources>

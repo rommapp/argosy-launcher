@@ -1,6 +1,7 @@
 package com.nendo.argosy.data.remote.romm
 
 import com.nendo.argosy.data.local.dao.PlatformDao
+import com.nendo.argosy.data.remote.ssl.ClientCertStore
 import com.nendo.argosy.data.remote.ssl.UserCertStore
 import io.mockk.every
 import io.mockk.mockk
@@ -18,7 +19,7 @@ class RomMDownloadCallTest {
     private fun client(server: MockWebServer): RomMApiClient {
         val certs = mockk<UserCertStore>()
         every { certs.trustManager() } returns null
-        val api = RomMApiFactory(certs, mockk()).create(
+        val api = RomMApiFactory(certs, mockk<ClientCertStore>(relaxed = true), mockk()).create(
             server.url("/romm/").toString(), "synthetic-test-token", probeTimeoutSeconds = 5
         )
         val connection = mockk<RomMConnectionManager>()

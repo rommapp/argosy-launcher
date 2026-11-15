@@ -188,6 +188,11 @@ internal fun routeObserveDelegateStates(vm: SettingsViewModel) {
         vm._uiState.update { it.copy(retroAchievements = ra) }
     }.launchIn(vm.viewModelScope)
 
+    vm.clientCertDelegate.state.onEach { clientCert ->
+        vm._uiState.update { it.copy(clientCert = clientCert) }
+    }.launchIn(vm.viewModelScope)
+    vm.clientCertDelegate.start(vm.viewModelScope)
+
     vm.permissionsDelegate.state.onEach { permissions ->
         vm._uiState.update { it.copy(permissions = permissions) }
     }.launchIn(vm.viewModelScope)

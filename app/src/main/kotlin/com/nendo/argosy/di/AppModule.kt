@@ -36,6 +36,8 @@ import javax.inject.Singleton
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
+import com.nendo.argosy.data.remote.ssl.AndroidKeyStoreVault
+import com.nendo.argosy.data.remote.ssl.ClientKeyVault
 
 @Module
 @InstallIn(SingletonComponent::class)
@@ -44,6 +46,10 @@ abstract class AppModule {
     @Binds
     @Singleton
     abstract fun bindFileAccessLayer(impl: FileAccessLayerImpl): FileAccessLayer
+
+    @Binds
+    @Singleton
+    abstract fun bindClientKeyVault(impl: AndroidKeyStoreVault): ClientKeyVault
 
     @Binds
     @Singleton

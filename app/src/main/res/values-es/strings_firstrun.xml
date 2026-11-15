@@ -46,4 +46,7 @@
     </plurals>
     <string name="firstrun_platform_select_button_select_all">Seleccionar todo</string>
     <string name="firstrun_platform_select_button_deselect_all">Deseleccionar todo</string>
+    <string name="firstrun_romm_client_certificate_button">Añadir certificado de cliente</string>
+    <string name="firstrun_romm_client_certificate_button_active">Certificado de cliente: %1$s</string>
+    <string name="firstrun_romm_error_client_certificate_required">El servidor exige un certificado de cliente. Añádelo para conectarte.</string>
 </resources>

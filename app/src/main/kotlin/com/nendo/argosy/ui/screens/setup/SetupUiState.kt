@@ -6,6 +6,7 @@ import com.nendo.argosy.data.preferences.BoxArtShape
 import com.nendo.argosy.data.preferences.LibraryLayout
 import com.nendo.argosy.data.preferences.ThemeMode
 import com.nendo.argosy.domain.model.HomeLayoutSettings
+import com.nendo.argosy.ui.screens.common.ClientCertState
 import com.nendo.argosy.ui.screens.settings.ScreenAssignment
 import com.nendo.argosy.ui.screens.setup.components.ButtonCheckState
 import com.nendo.argosy.domain.model.ArgosyPermission
@@ -25,13 +26,15 @@ enum class SetupField { SERVER_ADDRESS, PAIRING_CODE }
  * A sign-in failure to show on the library page. Either app-authored text, held as [textRes] plus
  * an optional [arg] so the render site resolves it in the person's locale, or [serverMessage],
  * which the server supplied and the app cannot translate. [certificate] marks a failure the
- * person fixes by importing a certificate.
+ * person fixes by importing a server certificate, [clientCertificate] one they fix by importing a
+ * client certificate.
  */
 data class SetupError(
     @StringRes val textRes: Int? = null,
     val arg: String? = null,
     val serverMessage: String? = null,
-    val certificate: Boolean = false
+    val certificate: Boolean = false,
+    val clientCertificate: Boolean = false
 )
 
 data class RommSignInState(
@@ -45,6 +48,7 @@ data class RommSignInState(
     val isConnecting: Boolean = false,
     val error: SetupError? = null,
     val importedCertCount: Int = 0,
+    val clientCert: ClientCertState = ClientCertState(),
     val gameCount: Int = 0,
     val platformCount: Int = 0,
     val summaryLoaded: Boolean = false

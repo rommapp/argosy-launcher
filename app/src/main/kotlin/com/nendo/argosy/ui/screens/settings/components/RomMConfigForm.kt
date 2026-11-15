@@ -45,6 +45,7 @@ import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.input.ImeAction
+import com.nendo.argosy.data.remote.ssl.ClientCertTarget
 import com.nendo.argosy.R
 import com.nendo.argosy.ui.components.ActionPreference
 import com.nendo.argosy.ui.components.CyclePreference
@@ -81,6 +82,7 @@ internal data class RomMConfigIndices(
     val pairingCodeIndex: Int?,
     val connectIndex: Int,
     val certificateIndex: Int,
+    val clientCertificateIndex: Int,
     val cancelIndex: Int
 ) {
     val maxIndex: Int get() = cancelIndex
@@ -99,6 +101,7 @@ internal fun rommConfigIndices(server: ServerState): RomMConfigIndices {
     val code = if (pairingCode) next++ else null
     val connect = next++
     val certificate = next++
+    val clientCertificate = next++
     val cancel = next
     return RomMConfigIndices(
         firstFieldIndex = firstField,
@@ -108,6 +111,7 @@ internal fun rommConfigIndices(server: ServerState): RomMConfigIndices {
         pairingCodeIndex = code,
         connectIndex = connect,
         certificateIndex = certificate,
+        clientCertificateIndex = clientCertificate,
         cancelIndex = cancel
     )
 }
@@ -329,6 +333,12 @@ fun RomMConfigForm(uiState: SettingsUiState, viewModel: SettingsViewModel) {
             },
             isFocused = uiState.focusedIndex == indices.certificateIndex,
             onClick = { viewModel.requestCertificatePicker() }
+        )
+
+        ClientCertificatePreference(
+            summary = uiState.clientCert.summary,
+            isFocused = uiState.focusedIndex == indices.clientCertificateIndex,
+            onClick = { viewModel.openClientCertManager(ClientCertTarget.ROMM) }
         )
 
         ActionPreference(

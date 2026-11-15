@@ -89,7 +89,7 @@ class RomMReachabilityTest {
         val context = mockk<Context> {
             every { getSystemService(Context.CONNECTIVITY_SERVICE) } returns connectivity
         }
-        return RomMReachability(context, mockk(relaxed = true))
+        return RomMReachability(context, mockk(relaxed = true), mockk(relaxed = true))
     }
 
     private fun chainAnswering(code: Int, path: String = "api/saves"): Interceptor.Chain {

@@ -124,4 +124,10 @@
     <!-- Label the same button takes on once every platform is already on, which switches them
          all off. Verb phrase, imperative. -->
     <string name="firstrun_platform_select_button_deselect_all">Deselect All</string>
+    <!-- Button. Verb: import a client certificate (.p12/.pfx) for a server that demands one. -->
+    <string name="firstrun_romm_client_certificate_button">Add Client Certificate</string>
+    <!-- Same button once one is imported. %1$s is the certificate's name. -->
+    <string name="firstrun_romm_client_certificate_button_active">Client Certificate: %1$s</string>
+    <!-- Error shown when the server demanded a client certificate. Names the remedy, the Add Client Certificate button. -->
+    <string name="firstrun_romm_error_client_certificate_required">The server requires a client certificate. Add it to connect.</string>
 </resources>

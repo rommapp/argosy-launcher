@@ -44,6 +44,8 @@ import com.nendo.argosy.ui.components.permissions.rememberPermissionGrantLaunche
 import com.nendo.argosy.ui.filebrowser.FileBrowserMode
 import com.nendo.argosy.ui.filebrowser.FileBrowserScreen
 import com.nendo.argosy.ui.filebrowser.FileFilter
+import com.nendo.argosy.ui.input.ModalInputEffect
+import com.nendo.argosy.ui.screens.common.ClientCertPasswordModal
 import com.nendo.argosy.ui.input.LocalInputDispatcher
 import com.nendo.argosy.ui.navigation.Screen
 import com.nendo.argosy.ui.screens.setup.components.SetupAction
@@ -54,7 +56,7 @@ import com.nendo.argosy.ui.theme.generated.ComponentDefaults
 import androidx.lifecycle.repeatOnLifecycle
 import kotlinx.coroutines.delay
 
-private enum class SetupPicker { ROM_FOLDER, COVER_FOLDER, CERTIFICATE }
+private enum class SetupPicker { ROM_FOLDER, COVER_FOLDER, CERTIFICATE, CLIENT_CERTIFICATE }
 
 @Composable
 fun SetupScreen(
@@ -83,6 +85,7 @@ fun SetupScreen(
                 SetupEffect.PickRomFolder -> picker = SetupPicker.ROM_FOLDER
                 SetupEffect.PickCoverFolder -> picker = SetupPicker.COVER_FOLDER
                 SetupEffect.PickCertificate -> picker = SetupPicker.CERTIFICATE
+                SetupEffect.PickClientCertificate -> picker = SetupPicker.CLIENT_CERTIFICATE
                 is SetupEffect.OpenBrowser -> context.openInBrowser(effect.url)
                 SetupEffect.RequestHomeRole -> homeRoleRequest(context)?.let { homeRole.launch(it) }
                 SetupEffect.Finish -> currentOnComplete()
@@ -153,18 +156,36 @@ fun SetupScreen(
 
     picker?.let { shown ->
         FileBrowserScreen(
-            mode = if (shown == SetupPicker.CERTIFICATE) FileBrowserMode.FILE_SELECTION else FileBrowserMode.FOLDER_SELECTION,
-            fileFilter = if (shown == SetupPicker.CERTIFICATE) FileFilter.CERTIFICATE else null,
+            mode = when (shown) {
+                SetupPicker.CERTIFICATE, SetupPicker.CLIENT_CERTIFICATE -> FileBrowserMode.FILE_SELECTION
+                SetupPicker.ROM_FOLDER, SetupPicker.COVER_FOLDER -> FileBrowserMode.FOLDER_SELECTION
+            },
+            fileFilter = when (shown) {
+                SetupPicker.CERTIFICATE -> FileFilter.CERTIFICATE
+                SetupPicker.CLIENT_CERTIFICATE -> FileFilter.CLIENT_CERTIFICATE
+                SetupPicker.ROM_FOLDER, SetupPicker.COVER_FOLDER -> null
+            },
             onPathSelected = { path ->
                 picker = null
                 when (shown) {
                     SetupPicker.ROM_FOLDER -> viewModel.onRomFolderPicked(path)
                     SetupPicker.COVER_FOLDER -> viewModel.onCoverFolderPicked(path)
                     SetupPicker.CERTIFICATE -> viewModel.onCertificatePicked(path)
+                    SetupPicker.CLIENT_CERTIFICATE -> viewModel.onClientCertificatePicked(path)
                 }
             },
             onDismiss = { picker = null }
         )
+    }
+
+    state.signIn.clientCert.passwordEntry?.let { entry ->
+        ClientCertPasswordModal(
+            entry = entry,
+            onDraftChange = viewModel::setClientCertPassword,
+            onSubmit = viewModel::submitClientCertPassword,
+            onDismiss = viewModel::closeClientCertPassword
+        )
+        ModalInputEffect(active = true, handler = viewModel.clientCertPasswordInput)
     }
 }
 
@@ -209,6 +230,7 @@ internal fun SetupPageBody(
                 focused = focus == SetupTarget.Action(it.id),
                 hiddenWhenDocked = it.hiddenWhenDocked,
                 labelCount = it.labelCount,
+                labelArg = it.labelArg,
             )
         },
         onAction = { index -> specs.getOrNull(index)?.let { viewModel.tap(SetupTarget.Action(it.id)) } },

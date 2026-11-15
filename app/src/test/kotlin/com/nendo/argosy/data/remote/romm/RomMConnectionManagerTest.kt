@@ -19,6 +19,7 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import okhttp3.ResponseBody.Companion.toResponseBody
 import retrofit2.Response
 import java.util.concurrent.atomic.AtomicInteger
 
@@ -28,6 +29,8 @@ class RomMConnectionManagerTest {
     private val heartbeats = AtomicInteger()
 
     private val preferences: UserPreferencesRepository = mockk(relaxed = true)
+    private val apiFactory: RomMApiFactory = mockk()
+    private val createdUrls = mutableListOf<String>()
 
     private fun manager(
         serverVersion: String = "5.4.0",
@@ -39,9 +42,12 @@ class RomMConnectionManagerTest {
         every { preferences.preferences } returns flowOf(stored)
         coEvery { preferences.getRommSnapshotSupport(any()) } returns null
         coEvery { preferences.getRommSnapshotSupport("romm.local") } returns rememberedSnapshots
-        val apiFactory: RomMApiFactory = mockk()
-        every { apiFactory.create(any(), any(), any()) } returns api
+        every { apiFactory.create(any(), any(), any()) } answers {
+            createdUrls += firstArg<String>()
+            api
+        }
         every { apiFactory.reachability } returns mockk(relaxed = true)
+        every { apiFactory.requestedClientCertificate(any()) } returns false
         coEvery { api.heartbeat() } coAnswers {
             heartbeats.incrementAndGet()
             delay(HEARTBEAT_DELAY_MS)
@@ -93,6 +99,28 @@ class RomMConnectionManagerTest {
 
         assertTrue("connect: $result", result is RomMResult.Success)
         assertEquals("device-1", manager.deviceIdState.value)
+    }
+
+    @Test
+    fun `a client certificate rejection over https survives the plain http fallback`() = runBlocking {
+        val manager = manager()
+        val tlsApi: RomMApi = mockk(relaxed = true)
+        coEvery { tlsApi.heartbeat() } throws javax.net.ssl.SSLHandshakeException(
+            "error:10000074:SSL routines:OPENSSL_internal:TLSV1_ALERT_CERTIFICATE_REQUIRED"
+        )
+        coEvery { api.heartbeat() } returns Response.error(
+            400,
+            "The plain HTTP request was sent to HTTPS port".toResponseBody()
+        )
+        every { apiFactory.create(match { it.startsWith("https://") }, any(), any()) } answers {
+            createdUrls += firstArg<String>()
+            tlsApi
+        }
+
+        val result = manager.connect("romm.example:8443")
+
+        assertEquals(RomMErrorKind.CLIENT_CERTIFICATE_REQUIRED, (result as RomMResult.Error).kind)
+        assertEquals(listOf("https://romm.example:8443/", "http://romm.example:8443/"), createdUrls)
     }
 
     @Test

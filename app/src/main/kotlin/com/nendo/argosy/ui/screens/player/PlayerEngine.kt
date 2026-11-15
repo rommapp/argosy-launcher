@@ -21,6 +21,7 @@ import androidx.media3.exoplayer.source.DefaultMediaSourceFactory
 import com.nendo.argosy.data.preferences.JellyfinPreferencesRepository
 import com.nendo.argosy.data.remote.jellyfin.JellyfinApiFactory
 import com.nendo.argosy.data.remote.jellyfin.JellyfinConnectionManager
+import com.nendo.argosy.data.remote.ssl.JELLYFIN_CLIENT_CERT_SCOPE
 import com.nendo.argosy.data.remote.ssl.UserCertTrustManager.withUserCertTrust
 import com.nendo.argosy.util.DisplayAffinityHelper
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -56,7 +57,8 @@ class PlayerEngine @Inject constructor(
     private val connectionManager: JellyfinConnectionManager,
     private val jellyfinPreferencesRepository: JellyfinPreferencesRepository,
     private val displayAffinityHelper: DisplayAffinityHelper,
-    private val userCertStore: com.nendo.argosy.data.remote.ssl.UserCertStore
+    private val userCertStore: com.nendo.argosy.data.remote.ssl.UserCertStore,
+    private val clientCertStore: com.nendo.argosy.data.remote.ssl.ClientCertStore
 ) {
 
     suspend fun authorizationHeader(): String = withContext(Dispatchers.IO) {
@@ -243,7 +245,7 @@ class PlayerEngine @Inject constructor(
         val client = OkHttpClient.Builder()
             .connectTimeout(STREAM_CONNECT_TIMEOUT_SECONDS, TimeUnit.SECONDS)
             .readTimeout(STREAM_READ_TIMEOUT_SECONDS, TimeUnit.SECONDS)
-            .withUserCertTrust(userCertStore)
+            .withUserCertTrust(userCertStore, clientCertStore, JELLYFIN_CLIENT_CERT_SCOPE)
             .build()
         val upstream = OkHttpDataSource.Factory(client).apply {
             if (authorizationHeader != null) {

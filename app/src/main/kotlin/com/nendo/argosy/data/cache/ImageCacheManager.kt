@@ -46,7 +46,6 @@ import kotlinx.coroutines.withContext
 import kotlinx.coroutines.yield
 import java.io.File
 import java.io.FileOutputStream
-import java.net.URL
 import java.security.MessageDigest
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -160,7 +159,8 @@ class ImageCacheManager @Inject constructor(
     private val platformDao: PlatformDao,
     private val achievementDao: AchievementDao,
     private val volumeHealth: StorageVolumeHealth,
-    private val fileAccessLayer: FileAccessLayer
+    private val fileAccessLayer: FileAccessLayer,
+    private val artworkFetcher: ArtworkFetcher
 ) {
     private val artModelScope = SafeCoroutineScope(Dispatchers.IO, "GameArtModel")
 
@@ -502,63 +502,67 @@ class ImageCacheManager @Inject constructor(
      */
     private fun downloadAndResize(url: String, maxWidth: Int): Bitmap? {
         return try {
-            val connection = URL(url).openConnection()
-            connection.connectTimeout = 10_000
-            connection.readTimeout = 30_000
-
-            val status = (connection as? java.net.HttpURLConnection)?.responseCode
-            if (status == java.net.HttpURLConnection.HTTP_NOT_FOUND || status == java.net.HttpURLConnection.HTTP_GONE) {
-                missingArt.markMissing(url)
-                Logger.warn(TAG, "Image not on the server ($status), skipping it for a while: $url")
-                return null
-            }
-            val contentType = connection.contentType?.lowercase()
-            if (contentType != null && DOCUMENT_CONTENT_TYPES.any { contentType.contains(it) }) {
-                missingArt.markMissing(url)
-                Logger.warn(TAG, "Served a document, not an image ($contentType), skipping it for a while: $url")
-                return null
-            }
-
-            connection.getInputStream().use { inputStream ->
-                val buffered = java.io.ByteArrayOutputStream(DEFAULT_IMAGE_BUFFER_BYTES)
-                val chunk = ByteArray(DEFAULT_IMAGE_BUFFER_BYTES)
-                while (buffered.size() <= MAX_IN_MEMORY_IMAGE_BYTES) {
-                    val read = inputStream.read(chunk)
-                    if (read == -1) break
-                    buffered.write(chunk, 0, read)
-                }
-
-                if (buffered.size() <= MAX_IN_MEMORY_IMAGE_BYTES) {
-                    val bytes = buffered.toByteArray()
-                    decodeSampled(maxWidth) { options ->
-                        BitmapFactory.decodeByteArray(bytes, 0, bytes.size, options)
-                    } ?: run {
-                        Logger.warn(TAG, "Response did not decode as an image: $url")
-                        null
-                    }
-                } else {
-                    val head = buffered.toByteArray()
-                    val headSize = head.size
-                    val tempFile = File.createTempFile("img_", ".tmp", context.cacheDir)
-                    try {
-                        tempFile.outputStream().use { out ->
-                            out.write(head, 0, headSize)
-                            inputStream.copyTo(out)
-                        }
-                        decodeSampled(maxWidth) { options ->
-                            BitmapFactory.decodeFile(tempFile.absolutePath, options)
-                        }
-                    } finally {
-                        tempFile.delete()
-                    }
-                }
-            }
+            artworkFetcher.open(url).use { response -> decodeArtwork(url, response, maxWidth) }
         } catch (e: java.io.FileNotFoundException) {
             Logger.warn(TAG, "Image not found: $url")
             null
         } catch (e: Throwable) {
             Logger.warn(TAG, "Failed to download image from $url: ${e.javaClass.simpleName}: ${e.message}")
             null
+        }
+    }
+
+    private fun decodeArtwork(url: String, response: ArtworkResponse, maxWidth: Int): Bitmap? {
+        val status = response.status
+        if (response.isGone) {
+            missingArt.markMissing(url)
+            Logger.warn(TAG, "Image not on the server ($status), skipping it for a while: $url")
+            return null
+        }
+        if (!response.isSuccess) {
+            Logger.warn(TAG, "Image request failed ($status): $url")
+            return null
+        }
+        val contentType = response.contentType?.lowercase()
+        if (contentType != null && DOCUMENT_CONTENT_TYPES.any { contentType.contains(it) }) {
+            missingArt.markMissing(url)
+            Logger.warn(TAG, "Served a document, not an image ($contentType), skipping it for a while: $url")
+            return null
+        }
+
+        return response.body().use { inputStream ->
+            val buffered = java.io.ByteArrayOutputStream(DEFAULT_IMAGE_BUFFER_BYTES)
+            val chunk = ByteArray(DEFAULT_IMAGE_BUFFER_BYTES)
+            while (buffered.size() <= MAX_IN_MEMORY_IMAGE_BYTES) {
+                val read = inputStream.read(chunk)
+                if (read == -1) break
+                buffered.write(chunk, 0, read)
+            }
+
+            if (buffered.size() <= MAX_IN_MEMORY_IMAGE_BYTES) {
+                val bytes = buffered.toByteArray()
+                decodeSampled(maxWidth) { options ->
+                    BitmapFactory.decodeByteArray(bytes, 0, bytes.size, options)
+                } ?: run {
+                    Logger.warn(TAG, "Response did not decode as an image: $url")
+                    null
+                }
+            } else {
+                val head = buffered.toByteArray()
+                val headSize = head.size
+                val tempFile = File.createTempFile("img_", ".tmp", context.cacheDir)
+                try {
+                    tempFile.outputStream().use { out ->
+                        out.write(head, 0, headSize)
+                        inputStream.copyTo(out)
+                    }
+                    decodeSampled(maxWidth) { options ->
+                        BitmapFactory.decodeFile(tempFile.absolutePath, options)
+                    }
+                } finally {
+                    tempFile.delete()
+                }
+            }
         }
     }
 
@@ -1211,11 +1215,12 @@ class ImageCacheManager @Inject constructor(
 
     private fun downloadBitmap(url: String): Bitmap? {
         return try {
-            val connection = URL(url).openConnection()
-            connection.connectTimeout = 10_000
-            connection.readTimeout = 30_000
-            connection.getInputStream().use { inputStream ->
-                BitmapFactory.decodeStream(inputStream)
+            artworkFetcher.open(url).use { response ->
+                if (!response.isSuccess) {
+                    Log.e(TAG, "Failed to download bitmap from $url: HTTP ${response.status}")
+                    return null
+                }
+                response.body().use { BitmapFactory.decodeStream(it) }
             }
         } catch (e: Exception) {
             Log.e(TAG, "Failed to download bitmap from $url: ${e.javaClass.simpleName}: ${e.message}", e)
@@ -1536,22 +1541,14 @@ class ImageCacheManager @Inject constructor(
     }
 
     private fun serverHead(url: String): ServerHead = try {
-        val connection = URL(url).openConnection() as java.net.HttpURLConnection
-        try {
-            connection.requestMethod = "HEAD"
-            connection.connectTimeout = 10_000
-            connection.readTimeout = 10_000
-            when (val status = connection.responseCode) {
-                in 200..299 -> ServerHead.Modified(connection.lastModified)
-                java.net.HttpURLConnection.HTTP_NOT_FOUND, java.net.HttpURLConnection.HTTP_GONE -> {
-                    missingArt.markMissing(url)
-                    Logger.warn(TAG, "Image not on the server ($status), skipping it for a while: $url")
-                    ServerHead.Gone
-                }
-                else -> ServerHead.Unknown
+        when (val head = artworkFetcher.head(url)) {
+            is ArtworkHead.Present -> ServerHead.Modified(head.lastModifiedMillis)
+            ArtworkHead.Gone -> {
+                missingArt.markMissing(url)
+                Logger.warn(TAG, "Image not on the server, skipping it for a while: $url")
+                ServerHead.Gone
             }
-        } finally {
-            connection.disconnect()
+            ArtworkHead.Unknown -> ServerHead.Unknown
         }
     } catch (e: Exception) {
         Logger.warn(TAG, "Could not check cached art against the server: ${e.message}")

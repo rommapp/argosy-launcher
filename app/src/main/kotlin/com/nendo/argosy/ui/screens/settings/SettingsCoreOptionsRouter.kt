@@ -2,6 +2,7 @@ package com.nendo.argosy.ui.screens.settings
 
 import androidx.lifecycle.viewModelScope
 import com.nendo.argosy.data.local.entity.CoreOptionOverrideEntity
+import com.nendo.argosy.libretro.GraphicsBackendRegistry
 import com.nendo.argosy.libretro.LibretroCoreRegistry
 import com.nendo.argosy.libretro.coreoptions.CoreOptionManifestRegistry
 import kotlinx.coroutines.flow.update
@@ -194,7 +195,15 @@ private suspend fun loadOptionsForCore(
         ?: return emptyList<CoreOptionViewItem>() to emptyMap()
     val overrides = vm.coreOptionsRepo.getOverridesForCore(coreId)
         .associate { it.optionKey to it.value }
-    val items = manifest.options.map { def ->
+    val current = manifest.options.associate { def ->
+        def.key to (overrides[def.key]?.let { def.resolveStored(it) } ?: def.defaultValue)
+    }
+    val launched = if (vm.vulkanDriverRepository.vulkanSupported()) {
+        current
+    } else {
+        GraphicsBackendRegistry.withoutVulkan(coreId, current)
+    }
+    val items = manifest.options.filter { def -> def.appliesWith(launched::get) }.map { def ->
         val overrideValue = overrides[def.key]
         CoreOptionViewItem(
             key = def.key,

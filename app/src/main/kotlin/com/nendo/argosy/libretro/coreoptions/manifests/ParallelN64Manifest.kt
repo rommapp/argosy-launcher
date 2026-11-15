@@ -2,10 +2,40 @@ package com.nendo.argosy.libretro.coreoptions.manifests
 
 import com.nendo.argosy.libretro.coreoptions.CoreOptionDef
 import com.nendo.argosy.libretro.coreoptions.CoreOptionManifest
+import com.nendo.argosy.libretro.coreoptions.CoreOptionRequirement
 
 object ParallelN64Manifest : CoreOptionManifest {
     override val coreId = "parallel_n64"
-    override val options = listOf(
+    override val options get() = rendererScoped
+
+    private val rendererScoped by lazy { declared.map(::withRendererRequirement) }
+
+    private const val GFX_PLUGIN = "parallel-n64-gfxplugin"
+    private val UPSCALING_RENDERERS = setOf("parallel", "angrylion")
+    private val SCREENSIZE_RENDERERS = setOf("gliden64", "glide64", "gln64", "rice")
+    private val UPSTREAM_GLIDE64_PREFIXED = setOf(
+        "parallel-n64-gfxplugin-accuracy",
+        "parallel-n64-filtering",
+        "parallel-n64-polyoffset-factor",
+        "parallel-n64-polyoffset-units"
+    )
+
+    private fun withRendererRequirement(option: CoreOptionDef): CoreOptionDef {
+        val key = option.key
+        val renderers = when {
+            key == "parallel-n64-upscaling" || key == "parallel-n64-parallel-rdp-native-texture-lod" ->
+                UPSCALING_RENDERERS
+            key == "parallel-n64-screensize" -> SCREENSIZE_RENDERERS
+            "parallel-rdp" in key -> setOf("parallel")
+            "angrylion" in key || key == "parallel-n64-dithering" -> setOf("angrylion")
+            key in UPSTREAM_GLIDE64_PREFIXED -> setOf("glide64")
+            "-gliden64-" in key -> setOf("gliden64")
+            else -> return option
+        }
+        return option.copy(requires = CoreOptionRequirement(GFX_PLUGIN, renderers))
+    }
+
+    private val declared = listOf(
         CoreOptionDef(
             key = "parallel-n64-cpucore",
             displayName = "CPU Core",

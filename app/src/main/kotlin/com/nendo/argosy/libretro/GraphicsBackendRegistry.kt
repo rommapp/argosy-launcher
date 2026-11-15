@@ -117,6 +117,13 @@ object GraphicsBackendRegistry {
         }
     }
 
+    /**
+     * [coreValues], keyed by option, with the same Vulkan swap as the [Variable] form.
+     */
+    fun withoutVulkan(coreId: String?, coreValues: Map<String, String>): Map<String, String> =
+        withoutVulkan(coreId, coreValues.map { (key, value) -> Variable(key, value) })
+            .associate { it.key.orEmpty() to it.value.orEmpty() }
+
     fun prefersVulkan(
         coreId: String?,
         coreVariables: Map<String, String>,

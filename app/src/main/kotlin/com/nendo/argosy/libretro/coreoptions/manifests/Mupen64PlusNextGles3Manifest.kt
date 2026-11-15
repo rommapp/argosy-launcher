@@ -2,6 +2,7 @@ package com.nendo.argosy.libretro.coreoptions.manifests
 
 import com.nendo.argosy.libretro.coreoptions.CoreOptionDef
 import com.nendo.argosy.libretro.coreoptions.CoreOptionManifest
+import com.nendo.argosy.libretro.coreoptions.CoreOptionRequirement
 
 /**
  * What the core's C1 to C4 tokens actually select, named so the choice is legible.
@@ -19,7 +20,37 @@ private val CBUTTON_VALUE_LABELS = mapOf(
 
 object Mupen64PlusNextGles3Manifest : CoreOptionManifest {
     override val coreId = "mupen64plus_next_gles3"
-    override val options = listOf(
+    override val options get() = rendererScoped
+
+    private val rendererScoped by lazy { declared.map(::withRendererRequirement) }
+
+    private const val RDP_PLUGIN = "mupen64plus-rdp-plugin"
+
+    private val UPSTREAM_GLN64_TAGGED = setOf(
+        "43screensize", "169screensize", "aspect", "EnableNativeResFactor", "ThreadedRenderer",
+        "BilinearMode", "HybridFilter", "DitheringPattern", "DitheringQuantization",
+        "RDRAMImageDitheringMode", "MultiSampling", "FXAA", "EnableLODEmulation", "EnableFBEmulation",
+        "EnableCopyAuxToRDRAM", "EnableCopyColorToRDRAM", "EnableCopyColorFromRDRAM",
+        "EnableCopyDepthToRDRAM", "BackgroundMode", "EnableHWLighting", "CorrectTexrectCoords",
+        "EnableInaccurateTextureCoordinates", "EnableTexCoordBounds", "EnableNativeResTexrects",
+        "EnableLegacyBlending", "EnableFragmentDepthWrite", "EnableTextureCache", "EnableOverscan",
+        "OverscanTop", "OverscanLeft", "OverscanRight", "OverscanBottom", "MaxHiResTxVramLimit",
+        "MaxTxCacheSize", "txFilterMode", "txEnhancementMode", "txFilterIgnoreBG", "txHiresEnable",
+        "txCacheCompression", "txHiresFullAlphaChannel", "EnableEnhancedTextureStorage",
+        "EnableHiResAltCRC", "EnableEnhancedHighResStorage", "GLideN64IniBehaviour"
+    ).mapTo(HashSet()) { "mupen64plus-$it" }
+
+    private fun withRendererRequirement(option: CoreOptionDef): CoreOptionDef {
+        val plugin = when {
+            option.key in UPSTREAM_GLN64_TAGGED -> "gliden64"
+            "parallel-rdp" in option.key -> "parallel"
+            "angrylion" in option.key -> "angrylion"
+            else -> return option
+        }
+        return option.copy(requires = CoreOptionRequirement(RDP_PLUGIN, setOf(plugin)))
+    }
+
+    private val declared = listOf(
         // CPU
         CoreOptionDef(
             key = "mupen64plus-cpucore",

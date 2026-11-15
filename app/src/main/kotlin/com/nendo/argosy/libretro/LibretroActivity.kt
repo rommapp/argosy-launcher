@@ -2264,7 +2264,11 @@ open class LibretroActivity : ComponentActivity() {
         val manifest = CoreOptionManifestRegistry.getManifest(coreId) ?: return emptyList()
         val perGame = perGameSettingsEnabled && gameId != -1L
         val held = splitHeldCoreOptions()
-        return manifest.options.map { def ->
+        val rendererKey = (GraphicsBackendRegistry.forCore(coreId) as? GraphicsBackend.CoreOption)?.optionKey
+        val launchedRenderer = rendererKey?.let { key -> coreVariablesFromIntent().firstOrNull { it.key == key }?.value }
+        return manifest.options.filter { def ->
+            def.appliesWith { key -> launchedRenderer.takeIf { key == rendererKey } }
+        }.map { def ->
             val gameOverride = if (perGame) gameCoreOptionOverrides[def.key] else null
             val globalOverride = coreOptionOverrides[def.key]
             val heldValue = held[def.key]

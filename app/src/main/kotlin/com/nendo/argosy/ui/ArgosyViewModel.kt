@@ -11,6 +11,7 @@ import androidx.annotation.StringRes
 import com.nendo.argosy.R
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import java.net.URLEncoder
 import com.nendo.argosy.data.download.DownloadManager
 import com.nendo.argosy.data.download.DownloadQueueState
 import com.nendo.argosy.data.emulator.LaunchOrigin
@@ -861,9 +862,10 @@ class ArgosyViewModel @Inject constructor(
     }
 }
 
-private fun rommAvatarUrl(prefs: UserPreferences): String? {
+internal fun rommAvatarUrl(prefs: UserPreferences): String? {
     if (prefs.rommAvatarPath.isNullOrBlank()) return null
     val baseUrl = prefs.rommBaseUrl?.trim()?.trimEnd('/')?.takeIf { it.isNotEmpty() } ?: return null
     val userId = prefs.rommUserId ?: return null
-    return "$baseUrl/api/users/$userId/avatar"
+    val revision = prefs.rommProfileUpdatedAt?.let { "?ts=${URLEncoder.encode(it, Charsets.UTF_8.name())}" }.orEmpty()
+    return "$baseUrl/api/users/$userId/avatar$revision"
 }

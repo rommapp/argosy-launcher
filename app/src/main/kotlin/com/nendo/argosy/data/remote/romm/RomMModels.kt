@@ -381,6 +381,7 @@ data class RomMUser(
     @Json(name = "enabled") val enabled: Boolean,
     @Json(name = "role") val role: String,
     @Json(name = "avatar_path") val avatarPath: String? = null,
+    @Json(name = "updated_at") val updatedAt: String? = null,
     @Json(name = "ra_username") val raUsername: String? = null,
     @Json(name = "ra_progression") val raProgression: RomMRAProgression? = null
 )

@@ -24,6 +24,7 @@ data class SyncPreferences(
     val rommUsername: String? = null,
     val rommUserId: Long? = null,
     val rommAvatarPath: String? = null,
+    val rommProfileUpdatedAt: String? = null,
     val rommToken: String? = null,
     val rommDeviceId: String? = null,
     val rommDeviceClientVersion: String? = null,
@@ -85,6 +86,7 @@ class SyncPreferencesRepository @Inject constructor(
         val ROMM_USERNAME = stringPreferencesKey("romm_username")
         val ROMM_USER_ID = longPreferencesKey("romm_user_id")
         val ROMM_AVATAR_PATH = stringPreferencesKey("romm_avatar_path")
+        val ROMM_PROFILE_UPDATED_AT = stringPreferencesKey("romm_profile_updated_at")
         val ROMM_TOKEN = stringPreferencesKey("romm_token")
         val ROMM_DEVICE_ID = stringPreferencesKey("romm_device_id")
         val ROMM_DEVICE_CLIENT_VERSION = stringPreferencesKey("romm_device_client_version")
@@ -350,6 +352,7 @@ class SyncPreferencesRepository @Inject constructor(
             rommUsername = prefs[Keys.ROMM_USERNAME],
             rommUserId = prefs[Keys.ROMM_USER_ID],
             rommAvatarPath = prefs[Keys.ROMM_AVATAR_PATH],
+            rommProfileUpdatedAt = prefs[Keys.ROMM_PROFILE_UPDATED_AT],
             rommToken = prefs[Keys.ROMM_TOKEN],
             rommDeviceId = prefs[Keys.ROMM_DEVICE_ID],
             rommDeviceClientVersion = prefs[Keys.ROMM_DEVICE_CLIENT_VERSION],
@@ -425,6 +428,8 @@ class SyncPreferencesRepository @Inject constructor(
             if (userId != null) prefs[Keys.ROMM_USER_ID] = userId
             val userChanged = previousUserId != null && userId != null && previousUserId != userId
             if (userChanged) {
+                prefs.remove(Keys.ROMM_AVATAR_PATH)
+                prefs.remove(Keys.ROMM_PROFILE_UPDATED_AT)
                 prefs.remove(Keys.ROMM_DEVICE_ID)
                 prefs.remove(Keys.ROMM_DEVICE_CLIENT_VERSION)
                 prefs.remove(Keys.ROMM_PLAY_SESSION_LAST_PULL)
@@ -439,6 +444,7 @@ class SyncPreferencesRepository @Inject constructor(
             prefs.remove(Keys.ROMM_USERNAME)
             prefs.remove(Keys.ROMM_USER_ID)
             prefs.remove(Keys.ROMM_AVATAR_PATH)
+            prefs.remove(Keys.ROMM_PROFILE_UPDATED_AT)
             prefs.remove(Keys.ROMM_DEVICE_ID)
             prefs.remove(Keys.ROMM_DEVICE_CLIENT_VERSION)
             prefs.remove(Keys.ROMM_PLAY_SESSION_BACKFILL_DONE)
@@ -447,10 +453,17 @@ class SyncPreferencesRepository @Inject constructor(
         }
     }
 
-    suspend fun setRomMAvatarPath(path: String?) {
+    /**
+     * Mirrors the signed-in user's profile as the server last reported it. A response for any
+     * user other than the stored one is ignored, and an unchanged profile writes nothing.
+     */
+    suspend fun refreshRomMProfile(userId: Long, username: String, avatarPath: String?, updatedAt: String?) {
         dataStore.edit { prefs ->
-            val trimmed = path?.trim().orEmpty()
+            if (prefs[Keys.ROMM_USER_ID] != userId) return@edit
+            prefs[Keys.ROMM_USERNAME] = username
+            val trimmed = avatarPath?.trim().orEmpty()
             if (trimmed.isEmpty()) prefs.remove(Keys.ROMM_AVATAR_PATH) else prefs[Keys.ROMM_AVATAR_PATH] = trimmed
+            if (updatedAt.isNullOrBlank()) prefs.remove(Keys.ROMM_PROFILE_UPDATED_AT) else prefs[Keys.ROMM_PROFILE_UPDATED_AT] = updatedAt
         }
     }
 

@@ -58,6 +58,7 @@ class UserPreferencesRepository @Inject constructor(
             rommUsername = sync.rommUsername,
             rommUserId = sync.rommUserId,
             rommAvatarPath = sync.rommAvatarPath,
+            rommProfileUpdatedAt = sync.rommProfileUpdatedAt,
             rommToken = sync.rommToken,
             rommDeviceId = sync.rommDeviceId,
             rommDeviceClientVersion = sync.rommDeviceClientVersion,
@@ -455,7 +456,8 @@ class UserPreferencesRepository @Inject constructor(
         syncPrefs.getEffectiveDownloadDefaults(platformSlug)
     suspend fun setRomMCredentials(baseUrl: String, token: String, username: String? = null, userId: Long? = null) =
         syncPrefs.setRomMCredentials(baseUrl, token, username, userId)
-    suspend fun setRomMAvatarPath(path: String?) = syncPrefs.setRomMAvatarPath(path)
+    suspend fun refreshRomMProfile(userId: Long, username: String, avatarPath: String?, updatedAt: String?) =
+        syncPrefs.refreshRomMProfile(userId, username, avatarPath, updatedAt)
     suspend fun clearRomMCredentials() = syncPrefs.clearRomMCredentials()
     suspend fun setRommDeviceId(deviceId: String, clientVersion: String) = syncPrefs.setRommDeviceId(deviceId, clientVersion)
     suspend fun clearRommDeviceId() = syncPrefs.clearRommDeviceId()
@@ -884,6 +886,7 @@ data class UserPreferences(
     val rommUsername: String? = null,
     val rommUserId: Long? = null,
     val rommAvatarPath: String? = null,
+    val rommProfileUpdatedAt: String? = null,
     val rommToken: String? = null,
     val rommDeviceId: String? = null,
     val rommDeviceClientVersion: String? = null,

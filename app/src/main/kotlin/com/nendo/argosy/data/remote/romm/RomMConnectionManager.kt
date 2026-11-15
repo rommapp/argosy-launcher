@@ -17,6 +17,7 @@ import android.net.Network
 import com.nendo.argosy.util.Logger
 import com.squareup.moshi.Moshi
 import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.Dispatchers
@@ -495,11 +496,10 @@ class RomMConnectionManager @Inject constructor(
             apiFactory.reachability.recordReachable(normalizedUrl)
             val newApi = createApi(normalizedUrl, token)
             if (token != null) {
-                val user = verifiedUser(newApi) ?: run {
+                verifiedUser(newApi) ?: run {
                     Logger.info(TAG, "connect: server live at $normalizedUrl but the token was rejected")
                     return RomMResult.Error("Sign in again")
                 }
-                userPreferencesRepository.setRomMAvatarPath(user.avatarPath)
             }
             if (baseUrl.isNotEmpty() && baseUrl != normalizedUrl) {
                 Logger.info(TAG, "connect: moving from $baseUrl to $normalizedUrl")
@@ -860,8 +860,10 @@ class RomMConnectionManager @Inject constructor(
         response.body()?.takeIf { response.isSuccessful }?.also {
             currentUser = it
             lastTokenVerifiedAt = SystemClock.elapsedRealtime()
+            userPreferencesRepository.refreshRomMProfile(it.id, it.username, it.avatarPath, it.updatedAt)
         }
     } catch (e: Exception) {
+        if (e is CancellationException) throw e
         Logger.info(TAG, "verifiedUser: identity call failed: ${e.message}")
         null
     }

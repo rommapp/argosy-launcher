@@ -148,7 +148,7 @@ stored `localContentHash`, and restore verification.
   beside the ROM) that the launch uses.
 - `GameCubeHeaderParser` reads only ISO and RVZ; other formats yield a garbage game code.
 - No session watcher runs for a game with no `.gci` yet.
-- On a server whose heartbeat reports `SAVE_SYNC.SNAPSHOTS` (`RomMCapabilities.supportsSnapshots`), standalone Dolphin goes through
+- On a server whose heartbeat carries a `SAVE_SYNC` block (`RomMCapabilities.supportsSnapshots`), standalone Dolphin goes through
   `SigilSaveHandler` (Sigil's `dolphin_standalone` layout, raw cards included), as do the other
   standalone card and profile emulators. On older servers each keeps its legacy handler and
   format, except a game whose saves sit on a container every game shares (a shared memory card,

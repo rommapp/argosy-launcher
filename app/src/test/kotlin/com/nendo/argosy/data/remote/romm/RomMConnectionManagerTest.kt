@@ -55,7 +55,7 @@ class RomMConnectionManagerTest {
             Response.success(
                 RomMHeartbeatResponse(
                     system = RomMSystem(version = serverVersion),
-                    saveSync = RomMSaveSyncFeatures(snapshots = snapshots)
+                    saveSync = if (snapshots) RomMSaveSyncFeatures(snapshotRetention = 10) else null
                 )
             )
         }

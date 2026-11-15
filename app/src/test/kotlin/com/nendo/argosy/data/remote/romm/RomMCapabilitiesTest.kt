@@ -39,11 +39,15 @@ class RomMCapabilitiesTest {
     }
 
     @Test
-    fun `the heartbeat reads the snapshot flag from SAVE_SYNC`() {
+    fun `a SAVE_SYNC block in the heartbeat means the server speaks snapshots`() {
         val adapter = com.squareup.moshi.Moshi.Builder().build().adapter(RomMHeartbeatResponse::class.java)
-        val on = adapter.fromJson("""{"SYSTEM":{"VERSION":"5.5.0"},"SAVE_SYNC":{"SNAPSHOTS":true,"SNAPSHOT_RETENTION":10}}""")
-        val absent = adapter.fromJson("""{"SYSTEM":{"VERSION":"5.4.0"}}""")
-        assertTrue(on!!.snapshotsEnabled)
+        val alpha2 = adapter.fromJson(
+            """{"SYSTEM":{"VERSION":"5.5.0-alpha.2"},"SAVE_SYNC":{"SNAPSHOT_RETENTION":10,"SNAPSHOT_BRANCH_LIFETIME_DAYS":30}}"""
+        )
+        val flagged = adapter.fromJson("""{"SYSTEM":{"VERSION":"5.5.0"},"SAVE_SYNC":{"SNAPSHOTS":true,"SNAPSHOT_RETENTION":10}}""")
+        val absent = adapter.fromJson("""{"SYSTEM":{"VERSION":"5.4.1"}}""")
+        assertTrue(alpha2!!.snapshotsEnabled)
+        assertTrue(flagged!!.snapshotsEnabled)
         assertFalse(absent!!.snapshotsEnabled)
     }
 

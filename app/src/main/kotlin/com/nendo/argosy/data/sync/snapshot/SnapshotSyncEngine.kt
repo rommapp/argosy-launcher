@@ -700,8 +700,11 @@ class SnapshotSyncEngine @Inject constructor(
     }
 
     private suspend fun report(ctx: ChannelView, snapshotId: Long) {
-        runCatching { ctx.api.reportSnapshotHeld(snapshotId, ctx.deviceId) }
-            .onFailure { Logger.warn(TAG, "[SaveSync] SNAPSHOT gameId=${ctx.game.id} | report of #$snapshotId failed: ${it.message}") }
+        val failure = runCatching { ctx.api.getSnapshot(snapshotId, ctx.deviceId, hold = true) }.fold(
+            onSuccess = { response -> "HTTP ${response.code()}".takeUnless { response.isSuccessful } },
+            onFailure = { it.message }
+        ) ?: return
+        Logger.warn(TAG, "[SaveSync] SNAPSHOT gameId=${ctx.game.id} | report of #$snapshotId failed: $failure")
     }
 
     companion object {

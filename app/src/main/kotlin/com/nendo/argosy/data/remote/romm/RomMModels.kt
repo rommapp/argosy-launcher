@@ -446,7 +446,7 @@ data class RomMHeartbeatResponse(
         get() = system?.version
 
     val snapshotsEnabled: Boolean
-        get() = saveSync?.snapshots == true
+        get() = saveSync != null
 
     val libretroApiEnabled: Boolean?
         get() = metadataSources?.libretroApiEnabled
@@ -487,7 +487,7 @@ data class RomMSystem(
 
 @JsonClass(generateAdapter = true)
 data class RomMSaveSyncFeatures(
-    @Json(name = "SNAPSHOTS") val snapshots: Boolean? = null
+    @Json(name = "SNAPSHOT_RETENTION") val snapshotRetention: Int? = null
 )
 
 @JsonClass(generateAdapter = true)

@@ -306,12 +306,6 @@ interface RomMApi {
         @Part parts: List<MultipartBody.Part>
     ): Response<ResponseBody>
 
-    @PUT("api/snapshots/{id}/devices/{deviceId}")
-    suspend fun reportSnapshotHeld(
-        @Path("id") snapshotId: Long,
-        @Path("deviceId") deviceId: String
-    ): Response<Unit>
-
     @Multipart
     @POST("api/screenshots")
     suspend fun uploadScreenshot(

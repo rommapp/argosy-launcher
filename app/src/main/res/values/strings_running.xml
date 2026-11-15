@@ -72,6 +72,8 @@
     <string name="running_card_ra_hardcore">Hardcore</string>
     <!-- Shown over a card while its game saves before closing. Verb in progress. -->
     <string name="running_card_saving">Saving</string>
+    <!-- Shown over a card while an app that is not a game is stopped. Verb in progress. -->
+    <string name="running_card_closing">Closing</string>
     <!-- Shown over a card once its game has closed. -->
     <string name="running_card_closed">Closed</string>
     <!-- Count of friends beyond the avatars shown. -->

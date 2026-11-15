@@ -123,11 +123,12 @@ class RunningGames @Inject constructor(
 
     /**
      * Closes the apps holding [taskIds] through [BackgroundGames.close] and returns once every one
-     * is gone or [CLOSE_TIMEOUT_MS] has passed. The tasks read as closing until then.
+     * is gone or [CLOSE_TIMEOUT_MS] has passed. The tasks read as closing until then. Returns
+     * false when any of them outlived the timeout.
      */
-    suspend fun close(taskIds: Collection<Int>) = withContext(Dispatchers.IO) {
+    suspend fun close(taskIds: Collection<Int>): Boolean = withContext(Dispatchers.IO) {
         val ids = taskIds.toSet()
-        if (ids.isEmpty()) return@withContext
+        if (ids.isEmpty()) return@withContext true
         markClosing(ids, closing = true)
         try {
             val running = backgroundGames.refresh().associateBy { it.taskId }
@@ -151,12 +152,13 @@ class RunningGames @Inject constructor(
         _state.update { it.copy(closingTaskIds = closingTaskIds.value) }
     }
 
-    private suspend fun awaitClosed(taskIds: Set<Int>) {
+    private suspend fun awaitClosed(taskIds: Set<Int>): Boolean {
         val deadline = System.currentTimeMillis() + CLOSE_TIMEOUT_MS
         while (System.currentTimeMillis() < deadline) {
-            if (backgroundGames.refresh().none { it.taskId in taskIds }) return
+            if (backgroundGames.refresh().none { it.taskId in taskIds }) return true
             delay(CLOSE_POLL_MS)
         }
+        return false
     }
 
     private suspend fun playedThisRun(app: RunningApp): Long {

@@ -24,6 +24,7 @@
     <string name="running_card_saved">%1$s儲存</string>
     <string name="running_card_ra_hardcore">硬核</string>
     <string name="running_card_saving">正在儲存</string>
+    <string name="running_card_closing">正在關閉</string>
     <string name="running_card_closed">已關閉</string>
     <string name="running_friends_one">%1$s 正在玩</string>
     <string name="running_friends_two">%1$s 和 %2$s 正在玩</string>

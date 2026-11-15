@@ -29,7 +29,6 @@ import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -533,13 +532,13 @@ private fun RunningAppCard(
                         .padding(Dimens.spacingSm)
                 )
             }
-            if (closeStage != null) CloseStatus(closeStage)
+            if (closeStage != null) CloseStatus(closeStage, isGame = app.gameId != null)
         }
         Row(
-            modifier = Modifier.height(Dimens.runningCardCaptionHeight),
+            modifier = Modifier.heightIn(min = Dimens.runningCardCaptionHeight),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            RunningAppThumb(app = app, modifier = Modifier.fillMaxHeight())
+            RunningAppThumb(app = app, modifier = Modifier.height(Dimens.runningCardCaptionHeight))
             Spacer(modifier = Modifier.width(Dimens.spacingSm))
             RunningAppTitles(app = app, isFocused = isFocused, modifier = Modifier.weight(1f))
             if (isFocused) {
@@ -598,7 +597,7 @@ private fun ResumeZoom(app: RunningAppUi, from: Rect, onFilled: () -> Unit) {
 }
 
 @Composable
-private fun CloseStatus(stage: MakeRoomStage) {
+private fun CloseStatus(stage: MakeRoomStage, isGame: Boolean) {
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -624,7 +623,11 @@ private fun CloseStatus(stage: MakeRoomStage) {
             }
             Text(
                 text = stringResource(
-                    if (stage == MakeRoomStage.CLOSED) R.string.running_card_closed else R.string.running_card_saving
+                    when {
+                        stage == MakeRoomStage.CLOSED -> R.string.running_card_closed
+                        isGame -> R.string.running_card_saving
+                        else -> R.string.running_card_closing
+                    }
                 ),
                 style = MaterialTheme.typography.titleMedium,
                 color = LocalArgosyTheme.current.textPrimary

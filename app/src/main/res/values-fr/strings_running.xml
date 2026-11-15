@@ -24,6 +24,7 @@
     <string name="running_card_saved">Sauvegardé %1$s</string>
     <string name="running_card_ra_hardcore">Hardcore</string>
     <string name="running_card_saving">Sauvegarde en cours</string>
+    <string name="running_card_closing">Fermeture en cours</string>
     <string name="running_card_closed">Fermé</string>
     <string name="running_friends_one">%1$s y joue</string>
     <string name="running_friends_two">%1$s et %2$s y jouent</string>

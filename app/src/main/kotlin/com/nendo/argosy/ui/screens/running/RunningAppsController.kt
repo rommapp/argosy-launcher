@@ -32,6 +32,7 @@ import com.nendo.argosy.util.ScreenCatalog
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.async
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -431,9 +432,11 @@ class RunningAppsController private constructor(
     private fun close(taskIds: List<Int>) {
         scope.launch {
             _uiState.update { state -> state.copy(closing = state.closing + taskIds.associateWith { MakeRoomStage.SAVING }) }
-            launchScope.launch(Dispatchers.IO) { deps.runningGames.close(taskIds) }.join()
-            _uiState.update { state -> state.copy(closing = state.closing + taskIds.associateWith { MakeRoomStage.CLOSED }) }
-            delay(ComponentDefaults.LaunchOverlay.makeRoomClosedHoldMs.toLong())
+            val closed = launchScope.async(Dispatchers.IO) { deps.runningGames.close(taskIds) }.await()
+            if (closed) {
+                _uiState.update { state -> state.copy(closing = state.closing + taskIds.associateWith { MakeRoomStage.CLOSED }) }
+                delay(ComponentDefaults.LaunchOverlay.makeRoomClosedHoldMs.toLong())
+            }
             refresh(duringClose = true)
             _uiState.update { state -> state.copy(closing = state.closing - taskIds.toSet()) }
         }

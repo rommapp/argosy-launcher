@@ -362,12 +362,21 @@ class BackgroundGames @Inject constructor(
             null -> {
                 store.remove(app.packageName)
                 gameLauncher.forceStopEmulator(app.packageName)
+                removeTask(app.taskId)
             }
             0 -> withContext(Dispatchers.Main) { builtInTask()?.let { runCatching { it.finishAndRemoveTask() } } }
             else -> if (!slotRegistry.requestClose(app.slotIndex)) {
                 app.game?.pid?.let { Process.killProcess(it) }
                 slotRegistry.remove(app.slotIndex)
             }
+        }
+    }
+
+    private suspend fun removeTask(taskId: Int) = withContext(Dispatchers.IO) {
+        val tasks = read()?.tasks ?: return@withContext
+        if (tasks.none { it.taskId == taskId }) return@withContext
+        if (RootShell.run(application, "am stack remove $taskId")?.succeeded != true) {
+            Logger.warn(TAG, "task $taskId survived its force-stop and could not be removed")
         }
     }
 

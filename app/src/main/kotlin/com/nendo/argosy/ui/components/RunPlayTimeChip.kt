@@ -26,15 +26,7 @@ import com.nendo.argosy.ui.theme.LocalArgosyTheme
 @Composable
 fun RunPlayTimeChip(playedMs: Long, modifier: Modifier = Modifier) {
     val theme = LocalArgosyTheme.current
-    val totalSeconds = playedMs / MILLIS_PER_SECOND
-    val hours = totalSeconds / SECONDS_PER_HOUR
-    val minutes = (totalSeconds % SECONDS_PER_HOUR) / SECONDS_PER_MINUTE
-    val seconds = totalSeconds % SECONDS_PER_MINUTE
-    val text = when {
-        hours > 0 -> stringResource(R.string.running_card_time_hours_minutes, hours, minutes)
-        minutes > 0 -> stringResource(R.string.running_card_time_minutes_seconds, minutes, seconds)
-        else -> stringResource(R.string.running_card_time_seconds, seconds)
-    }
+    val text = runPlayTimeText(playedMs)
     Row(
         modifier = modifier
             .clip(RoundedCornerShape(Dimens.radiusSm))
@@ -56,6 +48,31 @@ fun RunPlayTimeChip(playedMs: Long, modifier: Modifier = Modifier) {
             maxLines = 1
         )
     }
+}
+
+/**
+ * The two largest units of [playedMs]: hours and minutes, minutes and seconds, or seconds.
+ */
+@Composable
+fun runPlayTimeText(playedMs: Long): String {
+    val totalSeconds = playedMs / MILLIS_PER_SECOND
+    val hours = totalSeconds / SECONDS_PER_HOUR
+    val minutes = (totalSeconds % SECONDS_PER_HOUR) / SECONDS_PER_MINUTE
+    val seconds = totalSeconds % SECONDS_PER_MINUTE
+    return when {
+        hours > 0 -> stringResource(R.string.running_card_time_hours_minutes, hours, minutes)
+        minutes > 0 -> stringResource(R.string.running_card_time_minutes_seconds, minutes, seconds)
+        else -> stringResource(R.string.running_card_time_seconds, seconds)
+    }
+}
+
+/**
+ * Milliseconds until [runPlayTimeText] next changes for a run at [playedMs]: the next second
+ * under an hour, the next minute from then on.
+ */
+fun untilRunPlayTimeChanges(playedMs: Long): Long {
+    val step = if (playedMs < SECONDS_PER_HOUR * MILLIS_PER_SECOND) MILLIS_PER_SECOND else SECONDS_PER_MINUTE * MILLIS_PER_SECOND
+    return step - playedMs.coerceAtLeast(0L) % step
 }
 
 /**

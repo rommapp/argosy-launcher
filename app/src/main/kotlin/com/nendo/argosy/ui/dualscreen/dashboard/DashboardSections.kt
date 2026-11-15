@@ -49,6 +49,8 @@ import coil.request.CachePolicy
 import coil.request.ImageRequest
 import com.nendo.argosy.R
 import com.nendo.argosy.ui.common.ScreenshotImage
+import com.nendo.argosy.ui.components.runPlayTimeText
+import com.nendo.argosy.ui.components.showsRunPlayTime
 import com.nendo.argosy.ui.common.rememberFileImageModel
 import com.nendo.argosy.ui.dualscreen.COVER_ASPECT
 import com.nendo.argosy.ui.screens.gamedetail.components.AchievementList
@@ -253,9 +255,9 @@ private fun SessionHeader(content: DashboardContent, showsCover: Boolean) {
                 style = MaterialTheme.typography.bodySmall,
                 color = theme.textDim
             )
-            if (sessionMinutes > 0) {
+            if (showsRunPlayTime(content.sessionMillis)) {
                 Text(
-                    text = stringResource(R.string.dual_dashboard_session_play, playTimeLabel(sessionMinutes)),
+                    text = stringResource(R.string.dual_dashboard_session_play, runPlayTimeText(content.sessionMillis)),
                     style = MaterialTheme.typography.bodySmall,
                     color = theme.textDim
                 )

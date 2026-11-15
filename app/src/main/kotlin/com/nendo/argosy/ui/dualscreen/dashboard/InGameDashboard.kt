@@ -62,6 +62,7 @@ import com.nendo.argosy.core.game.AchievementUi
 import com.nendo.argosy.hardware.CompanionInGameState
 import com.nendo.argosy.hardware.CompanionSessionTimer
 import com.nendo.argosy.ui.components.SystemStatusBar
+import com.nendo.argosy.ui.components.untilRunPlayTimeChanges
 import com.nendo.argosy.ui.common.rememberFileImageModel
 import com.nendo.argosy.ui.dualscreen.COVER_ASPECT
 import com.nendo.argosy.ui.screens.gamedetail.GameDocument
@@ -109,7 +110,6 @@ private const val SCRIM_ALPHA = 0.35f
 private const val PANEL_ALPHA = 0.78f
 private const val SELECTED_ALPHA = 0.16f
 private const val CONFIRM_WINDOW_MS = 3000L
-private const val MINUTE_MS = 60_000L
 
 /**
  * The touch-only dashboard shown on the screen the game is not on: a rail of sections over
@@ -138,7 +138,7 @@ fun InGameDashboard(
         if (sessionTimer == null) return@LaunchedEffect
         while (true) {
             sessionMillis = sessionTimer.getActiveMillis()
-            delay(untilNextMinute(sessionMillis))
+            delay(untilRunPlayTimeChanges(sessionMillis))
         }
     }
     LaunchedEffect(readerOpen) {
@@ -245,7 +245,6 @@ fun InGameDashboard(
     }
 }
 
-internal fun untilNextMinute(activeMillis: Long): Long = MINUTE_MS - activeMillis % MINUTE_MS
 
 /**
  * The data and callbacks every section reads, gathered once per composition.

@@ -2,6 +2,7 @@ package com.nendo.argosy.data.diagnostics
 
 import android.os.Build
 import android.os.Environment
+import android.os.Process
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import com.nendo.argosy.BuildConfig
@@ -18,6 +19,7 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.withContext
+import java.io.IOException
 import java.io.OutputStream
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
@@ -32,8 +34,8 @@ sealed interface DiagnosticsExportResult {
 }
 
 /**
- * Writes one diagnostics zip to `Download/Argosy/` through [FileAccessLayer]: recent log files,
- * device build fields, the displays passed in, connected controllers, installed emulators, the
+ * Writes one diagnostics zip to `Download/Argosy/` through [FileAccessLayer]: recent log files, or
+ * Argosy's own logcat buffer when no log files exist, device build fields, the displays passed in, connected controllers, installed emulators, the
  * Argosy version and a settings dump. Logs and settings pass through [DiagnosticsRedactor].
  */
 @Singleton
@@ -64,7 +66,9 @@ class DiagnosticsExporter @Inject constructor(
                 zip.writeText(ENTRY_CONTROLLERS, controllersText(secrets))
                 zip.writeText(ENTRY_EMULATORS, emulatorsText())
                 zip.writeText(ENTRY_SETTINGS, settingsText(settings, secrets))
-                logFiles(logDirectory).forEach { log -> zip.writeLog(log, secrets) }
+                val logs = logFiles(logDirectory)
+                logs.forEach { log -> zip.writeLog(log, secrets) }
+                if (logs.isEmpty()) zip.writeLogcat(secrets)
             }
             DiagnosticsExportResult.Success(target)
         } catch (e: CancellationException) {
@@ -166,6 +170,31 @@ class DiagnosticsExporter @Inject constructor(
         closeEntry()
     }
 
+    private fun ZipOutputStream.writeLogcat(secrets: Set<String>) {
+        val process = try {
+            ProcessBuilder("logcat", "-d", "-v", "threadtime", "--pid=${Process.myPid()}")
+                .redirectErrorStream(true)
+                .start()
+        } catch (e: IOException) {
+            Logger.warn(TAG, "logcat unavailable for the diagnostics export", e)
+            return
+        }
+        try {
+            putNextEntry(ZipEntry("$LOG_FOLDER/$LOGCAT_ENTRY"))
+            val writer = bufferedWriterOf(this)
+            process.inputStream.bufferedReader().useLines { lines ->
+                lines.forEach { line ->
+                    writer.write(DiagnosticsRedactor.redactText(line, secrets))
+                    writer.write(LINE_SEPARATOR)
+                }
+            }
+            writer.flush()
+            closeEntry()
+        } finally {
+            process.destroy()
+        }
+    }
+
     private fun ZipOutputStream.writeText(name: String, text: String) {
         putNextEntry(ZipEntry(name))
         write(text.toByteArray(Charsets.UTF_8))
@@ -186,6 +215,7 @@ class DiagnosticsExporter @Inject constructor(
         const val FILE_SUFFIX = ".zip"
         const val LOG_FOLDER = "logs"
         const val LOG_EXTENSION = "log"
+        const val LOGCAT_ENTRY = "logcat.txt"
         const val LOG_FILE_LIMIT = 10
         const val LINE_SEPARATOR = "\n"
         const val BLOCK_SEPARATOR = "\n\n"

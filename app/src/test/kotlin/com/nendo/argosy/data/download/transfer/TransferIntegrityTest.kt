@@ -12,6 +12,8 @@ import okhttp3.OkHttpClient
 import okhttp3.mockwebserver.MockResponse
 import okhttp3.mockwebserver.MockWebServer
 import okio.Buffer
+import org.apache.commons.compress.archivers.zip.ZipArchiveEntry
+import org.apache.commons.compress.archivers.zip.ZipArchiveOutputStream
 import org.junit.After
 import org.junit.Assert.assertArrayEquals
 import org.junit.Assert.assertEquals
@@ -190,6 +192,26 @@ class TransferIntegrityTest {
             assertNull(checkpoint.validatedBytes)
             assertArrayEquals(bytes, file.readBytes())
         }
+    }
+
+    @Test fun zipRepeatingADirectoryEntryIsAccepted() = runBlocking {
+        val bytes = ByteArrayOutputStream().also { output ->
+            ZipArchiveOutputStream(output).use { zip ->
+                repeat(2) {
+                    zip.putArchiveEntry(ZipArchiveEntry("app/PCSB00273/sce_sys/"))
+                    zip.closeArchiveEntry()
+                }
+                zip.putArchiveEntry(ZipArchiveEntry("app/PCSB00273/eboot.bin"))
+                zip.write("locally generated archive fixture".toByteArray())
+                zip.closeArchiveEntry()
+            }
+        }.toByteArray()
+        val file = temporary.newFile()
+        var checkpoint = TransferCheckpoint()
+        server.enqueue(MockResponse().setBody(Buffer().write(bytes)))
+        assertEquals(TransferResult.Verified(bytes.size.toLong()), ResumableTransfer().attempt(file, checkpoint,
+            api::download, { checkpoint = it }, { _, _ -> }, requireZip = true))
+        assertEquals(bytes.size.toLong(), checkpoint.validatedBytes)
     }
 
     @Test fun zipStructureIsCheckedOnlyAtCompleteRepresentation() = runBlocking {

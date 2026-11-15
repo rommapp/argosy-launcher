@@ -8,8 +8,7 @@ import java.io.IOException
 import java.io.RandomAccessFile
 import java.net.ProtocolException
 import java.security.cert.CertificateException
-import java.util.zip.ZipFile
-import java.util.zip.ZipException
+import org.apache.commons.compress.archivers.zip.ZipFile
 import javax.net.ssl.SSLHandshakeException
 import javax.net.ssl.SSLPeerUnverifiedException
 import kotlinx.coroutines.CancellationException
@@ -211,14 +210,9 @@ class ResumableTransfer {
         if (checksumMismatch) return TransferResult.Permanent(DownloadFailureReason.IntegrityCheckFailed, "Checksum mismatch")
         val bytes = initial + received
         if (headers.total != null && bytes < headers.total) return TransferResult.Continue
-        if (requireZip && disk { ZipExtractor.detectRomFormatByMagic(file) } == null) disk {
-            try {
-                ZipFile(file).use { zip ->
-                    val entries = zip.entries()
-                    while (entries.hasMoreElements()) entries.nextElement()
-                }
-            } catch (e: ZipException) {
-                return TransferResult.Permanent(DownloadFailureReason.IntegrityCheckFailed, e.message ?: "Invalid ZIP archive")
+        if (requireZip && disk { ZipExtractor.detectRomFormatByMagic(file) } == null) {
+            zipFailure(file)?.let { message ->
+                return TransferResult.Permanent(DownloadFailureReason.IntegrityCheckFailed, message)
             }
         }
         disk { persist(metadata.copy(validatedBytes = bytes)) }
@@ -238,15 +232,8 @@ class ResumableTransfer {
             (checkpoint.totalBytes == null || checkpoint.totalBytes == total) &&
             checkpoint.representationChecksum == null
         if (!sameRepresentation) return TransferResult.RestartRequired
-        if (requireZip && disk { ZipExtractor.detectRomFormatByMagic(file) } == null) disk {
-            try {
-                ZipFile(file).use { zip ->
-                    val entries = zip.entries()
-                    while (entries.hasMoreElements()) entries.nextElement()
-                }
-            } catch (_: ZipException) {
-                return TransferResult.RestartRequired
-            }
+        if (requireZip && disk { ZipExtractor.detectRomFormatByMagic(file) } == null && zipFailure(file) != null) {
+            return TransferResult.RestartRequired
         }
         Logger.info("ResumableTransfer", "Response | completePrefix=$length")
         disk { persist(checkpoint.copy(totalBytes = length, validatedBytes = length)) }
@@ -259,6 +246,14 @@ class ResumableTransfer {
         return if (error is SSLPeerUnverifiedException || certificateFailure) {
             TransferResult.Permanent(DownloadFailureReason.TlsVerificationFailed, error.message ?: "TLS identity verification failed")
         } else TransferResult.Retryable(error.message ?: "Connection failure")
+    }
+
+    private suspend fun zipFailure(file: File): String? = withContext(Dispatchers.IO) {
+        try {
+            ZipFile.builder().setFile(file).get().use { null }
+        } catch (e: IOException) {
+            e.message ?: "Invalid ZIP archive"
+        }
     }
 
     private inline fun <T> disk(block: () -> T): T = try {

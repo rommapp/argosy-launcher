@@ -35,6 +35,7 @@
     <string name="dual_dashboard_state_just_now">À l\'instant</string>
     <string name="dual_dashboard_state_latest">Récent</string>
     <string name="dual_dashboard_total_play">%1$s au total</string>
+    <string name="dual_dashboard_session_play">%1$s cette session</string>
     <string name="dual_dashboard_manual_resume">Reprendre à la page %1$d</string>
     <string name="dual_dashboard_guide_progress">%1$d%% lu</string>
     <string name="dual_dashboard_document_open">Ouvrir</string>

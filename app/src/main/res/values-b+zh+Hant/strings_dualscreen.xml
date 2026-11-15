@@ -30,6 +30,7 @@
     <string name="dual_dashboard_state_just_now">剛剛</string>
     <string name="dual_dashboard_state_latest">最新</string>
     <string name="dual_dashboard_total_play">共 %1$s</string>
+    <string name="dual_dashboard_session_play">本次 %1$s</string>
     <string name="dual_dashboard_manual_resume">從第 %1$d 頁繼續</string>
     <string name="dual_dashboard_guide_progress">已讀 %1$d%%</string>
     <string name="dual_dashboard_document_open">開啟</string>

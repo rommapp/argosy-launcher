@@ -36,7 +36,7 @@ data class FlycastStandaloneConfig(val perGameVmu: Boolean, val vmuDir: String?)
          * absent `PerGameVmu` is on, and an empty `Dreamcast.VMUPath` leaves the VMUs in [dataDir].
          */
         fun parse(text: String, dataDir: String): FlycastStandaloneConfig {
-            val entries = sectionEntries(text, SECTION)
+            val entries = IniSections.entries(text, SECTION)
             val perGame = entries[PER_GAME_VMU]?.let { it.lowercase() in TRUE_VALUES } ?: true
             val vmuPath = entries[VMU_PATH].orEmpty()
             val vmuDir = if (vmuPath.isEmpty()) dataDir else pathOf(vmuPath)
@@ -55,30 +55,6 @@ data class FlycastStandaloneConfig(val perGameVmu: Boolean, val vmuDir: String?)
             val relative = treeId.substringAfter(':')
             val root = if (volume == PRIMARY_VOLUME) PRIMARY_ROOT else "/storage/$volume"
             return if (relative.isEmpty()) root else "$root/$relative"
-        }
-
-        private fun sectionEntries(text: String, wanted: String): Map<String, String> {
-            val entries = mutableMapOf<String, String>()
-            var section = ""
-            for (raw in text.lineSequence()) {
-                val line = raw.trimStart()
-                if (line.isEmpty() || line.startsWith(";")) continue
-                if (line.startsWith("[")) {
-                    section = line.substring(1).substringBefore(']', missingDelimiterValue = section)
-                    continue
-                }
-                val eq = line.indexOf('=').takeIf { it > 0 } ?: continue
-                if (section != wanted) continue
-                val key = line.substring(0, eq).trim(' ', '\t')
-                entries[key] = unquote(line.substring(eq + 1).removePrefix(" "))
-            }
-            return entries
-        }
-
-        private fun unquote(value: String): String {
-            if (!value.startsWith("\"")) return value
-            val end = value.lastIndexOf('"').takeIf { it > 0 } ?: value.length
-            return value.substring(1, end)
         }
     }
 }

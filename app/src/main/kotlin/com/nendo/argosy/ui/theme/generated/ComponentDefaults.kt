@@ -226,7 +226,7 @@ object ComponentDefaults {
         const val gradientAdvanced = false
         const val videoWallpaperEnabled = false
         const val videoWallpaperDelaySeconds = 3
-        const val videoWallpaperMuted = false
+        const val videoWallpaperMuted = true
     }
 
     object ScreenDimmer {
@@ -320,6 +320,13 @@ object ComponentDefaults {
 
     object CustomGrid {
         const val swipePageThresholdDp = 48
+        const val folderColumns = 4
+        const val folderColumnsSmall = 6
+        const val folderColumnsLarge = 3
+        const val folderMosaicCount = 4
+        const val stickerOutlineThinRatio = 0.015f
+        const val stickerOutlineMediumRatio = 0.03f
+        const val stickerOutlineThickRatio = 0.05f
     }
 
     object CollectionShowcase {
@@ -524,13 +531,34 @@ object ComponentDefaults {
     }
 
     object QuickMenuRandom {
-        const val coverHeightRatio = 0.66f
         const val coverWidthMaxRatio = 0.4f
+        const val portraitCoverWidthRatio = 0.5f
         const val coverAspectRatio = 0.75f
         const val backdropBlurDp = 32
         const val backdropScrimStartAlpha = 0.55f
         const val backdropScrimEndAlpha = 0.85f
         const val descriptionMaxLines = 3
+    }
+
+    object QuickMenu {
+        const val sheetHeightRatio = 0.82f
+        const val sheetScrimAlpha = 0.6f
+        const val listPaneRatio = 0.52f
+        const val dimmedTileAlpha = 0.35f
+        const val previewCoverWidthRatio = 0.26f
+        const val playStripHeightDp = 44
+        const val playStripRestAlpha = 0.45f
+        const val chipTintAlpha = 0.22f
+        const val historyTileAlpha = 0.5f
+        const val gridColumnsDualScreen = 5
+        const val gridColumnsLandscape = 8
+        const val gridColumnsPortrait = 3
+        const val swipeCommitRatio = 0.3f
+        const val dismissDragRatio = 0.25f
+        const val flingVelocityDp = 1200
+        const val dragHandleWidthDp = 36
+        const val dragHandleHeightDp = 4
+        const val groupLabelHeightDp = 24
     }
 
     object FrostedSurface {

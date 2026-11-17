@@ -1164,6 +1164,7 @@
     </plurals>
     <string name="settings_caches_pending_uploads_subtitle_online">Sincroniza ahora antes de vaciar las cachés de sincronización</string>
     <string name="settings_caches_pending_uploads_subtitle_offline">Vuelve a conectarte al servidor para sincronizar</string>
+    <string name="settings_caches_pending_uploads_search_label">Guardados pendientes de subir</string>
 
     <string name="settings_caches_save_cache_title">Restablecer caché de guardados</string>
     <string name="settings_caches_save_cache_busy">Restableciendo...</string>
@@ -2892,4 +2893,42 @@
     <string name="settings_romm_config_error_client_certificate_required">El servidor exige un certificado de cliente. Importa uno en Certificado de cliente o activa allí Usar para RomM.</string>
     <string name="settings_accounts_pairing_error_client_certificate_required">El servidor exige un certificado de cliente. Importa uno en Certificado de cliente o activa allí Usar para RomM.</string>
     <string name="settings_jellyfin_error_client_certificate_required">El servidor exige un certificado de cliente. Activa Usar para Jellyfin en Certificado de cliente.</string>
+    <string name="settings_search_row_title">Buscar en los ajustes</string>
+    <string name="settings_search_keyboard_label">Buscar en los ajustes</string>
+    <string name="settings_search_keyboard_submit">Listo</string>
+    <string name="settings_search_no_results">Ningún ajuste coincide con «%1$s»</string>
+    <string name="settings_search_crumb_displays">Pantallas</string>
+    <string name="settings_search_crumb_ambient_led">Control LED</string>
+    <string name="settings_search_crumb_audio">Audio</string>
+    <string name="settings_search_crumb_theme">Tema</string>
+    <string name="settings_search_crumb_platforms">Plataformas</string>
+    <string name="settings_search_crumb_builtin_emulator">Emulador integrado</string>
+    <string name="settings_search_crumb_core_options">Opciones del core</string>
+    <string name="settings_search_crumb_storage">Almacenamiento</string>
+    <string name="settings_search_crumb_storage_caches">Caché y sistema</string>
+    <string name="settings_search_crumb_bios">Archivos BIOS</string>
+    <string name="settings_search_crumb_sounds">Sonidos</string>
+    <string name="settings_search_crumb_music">Música</string>
+    <string name="settings_search_crumb_fonts">Fuentes</string>
+    <string name="settings_search_crumb_backdrop">Fondo</string>
+    <string name="settings_search_crumb_interface">Interfaz</string>
+    <string name="settings_search_crumb_box_art">Carátula</string>
+    <string name="settings_search_crumb_controller_grip">Agarre del mando</string>
+    <string name="settings_search_crumb_saves">Guardados</string>
+    <string name="settings_search_crumb_sync_settings">Ajustes de sincronización</string>
+    <string name="settings_search_crumb_social">Social</string>
+    <string name="settings_search_crumb_permissions">Permisos</string>
+    <string name="settings_search_crumb_about">Acerca de</string>
+    <string name="settings_search_label_jellyfin_account">Cuenta</string>
+    <string name="settings_search_label_social_account">Cuenta</string>
+    <string name="settings_search_label_about_changelog">Registro de cambios</string>
+    <string name="settings_search_crumb_home_screen">Pantalla de inicio</string>
+    <string name="settings_search_crumb_presentation">Presentación</string>
+    <string name="settings_search_crumb_library_view">Biblioteca</string>
+    <string name="settings_search_crumb_navigation">Navegación</string>
+    <string name="settings_search_crumb_builtin_video">A/V y rendimiento</string>
+    <string name="settings_search_crumb_builtin_controls">Controles</string>
+    <string name="settings_search_crumb_builtin_saves">Partidas guardadas</string>
+    <string name="settings_search_label_home_layout_selector">Diseño</string>
+    <string name="settings_search_label_platform_emulator">Emulador</string>
 </resources>

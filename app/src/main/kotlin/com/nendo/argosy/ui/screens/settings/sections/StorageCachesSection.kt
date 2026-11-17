@@ -1,5 +1,6 @@
 package com.nendo.argosy.ui.screens.settings.sections
 
+import androidx.annotation.StringRes
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -37,6 +38,7 @@ import com.nendo.argosy.ui.screens.settings.components.SectionHeader
 import com.nendo.argosy.ui.screens.settings.components.SectionPaneLayout
 import com.nendo.argosy.ui.screens.settings.delegates.SyncSettingsDelegate
 import com.nendo.argosy.ui.screens.settings.menu.SettingsLayout
+import com.nendo.argosy.ui.screens.settings.search.SearchableSetting
 import com.nendo.argosy.ui.theme.Dimens
 import com.nendo.argosy.ui.theme.LocalArgosyTheme
 import com.nendo.argosy.util.formatBytes
@@ -58,10 +60,7 @@ internal sealed class StorageCachesItem(
     val section: String,
     val visibleWhen: (StorageCachesLayoutState) -> Boolean = { true }
 ) {
-    val isFocusable: Boolean get() = when (this) {
-        is Header, is SectionSpacer, is InfoRow -> false
-        else -> true
-    }
+    val isFocusable: Boolean get() = this is SearchableSetting
 
     class Header(
         key: String,
@@ -82,27 +81,40 @@ internal sealed class StorageCachesItem(
         visibleWhen: (StorageCachesLayoutState) -> Boolean = { true }
     ) : StorageCachesItem(key, section, visibleWhen)
 
-    data object PendingUploads : StorageCachesItem(
-        "pendingUploads", "sync", { it.pendingUploadsVisible }
+    sealed class Row(
+        key: String,
+        section: String,
+        @StringRes override val labelRes: Int,
+        visibleWhen: (StorageCachesLayoutState) -> Boolean = { true }
+    ) : StorageCachesItem(key, section, visibleWhen), SearchableSetting
+
+    data object PendingUploads : Row(
+        "pendingUploads",
+        "sync",
+        R.string.settings_caches_pending_uploads_search_label,
+        { it.pendingUploadsVisible }
     )
-    data object SaveCacheClear : StorageCachesItem("saveCacheClear", "sync")
-    data object StateCacheClear : StorageCachesItem("stateCacheClear", "sync")
-    data object PathCacheClear : StorageCachesItem("pathCacheClear", "sync")
-    data object StateCacheToggle : StorageCachesItem("stateCacheToggle", "sync")
-    data object SaveCacheLimit : StorageCachesItem("cachesSaveCacheLimit", "sync")
+    data object SaveCacheClear : Row("saveCacheClear", "sync", R.string.settings_caches_save_cache_title)
+    data object StateCacheClear : Row("stateCacheClear", "sync", R.string.settings_caches_state_cache_title)
+    data object PathCacheClear : Row("pathCacheClear", "sync", R.string.settings_caches_path_cache_title)
+    data object StateCacheToggle : Row("stateCacheToggle", "sync", R.string.settings_caches_state_toggle_title)
+    data object SaveCacheLimit : Row("cachesSaveCacheLimit", "sync", R.string.settings_caches_save_limit_title)
 
-    data object ImageCacheClear : StorageCachesItem("imageCacheClear", "media")
-    data object ValidateImageCache : StorageCachesItem("validateImageCache", "media")
-    data object ScreenshotsToggle : StorageCachesItem("screenshotsToggle", "media")
-    data object BoxArtToggle : StorageCachesItem("boxArtToggle", "media")
-    data object RomExtractionClear : StorageCachesItem("romExtractionClear", "media")
-    data object RomStagingClear : StorageCachesItem("romStagingClear", "media")
-    data object SfxCacheClear : StorageCachesItem("sfxCacheClear", "media")
-    data object EmulatorApksClear : StorageCachesItem("emulatorApksClear", "media")
-    data object MiscDownloadsClear : StorageCachesItem("miscDownloadsClear", "media")
+    data object ImageCacheClear : Row("imageCacheClear", "media", R.string.settings_caches_image_cache_title)
+    data object ValidateImageCache : Row("validateImageCache", "media", R.string.settings_caches_validate_title)
+    data object ScreenshotsToggle : Row("screenshotsToggle", "media", R.string.settings_caches_screenshots_title)
+    data object BoxArtToggle : Row("boxArtToggle", "media", R.string.settings_caches_box_art_title)
+    data object RomExtractionClear :
+        Row("romExtractionClear", "media", R.string.settings_caches_rom_extraction_title)
+    data object RomStagingClear : Row("romStagingClear", "media", R.string.settings_caches_rom_staging_title)
+    data object SfxCacheClear : Row("sfxCacheClear", "media", R.string.settings_caches_sfx_title)
+    data object EmulatorApksClear :
+        Row("emulatorApksClear", "media", R.string.settings_caches_emulator_apks_title)
+    data object MiscDownloadsClear :
+        Row("miscDownloadsClear", "media", R.string.settings_caches_misc_downloads_title)
 
-    data object ShadersCatalogClear : StorageCachesItem("shadersCatalogClear", "system")
-    data object FramesClear : StorageCachesItem("framesClear", "system")
+    data object ShadersCatalogClear : Row("shadersCatalogClear", "system", R.string.settings_caches_shaders_title)
+    data object FramesClear : Row("framesClear", "system", R.string.settings_caches_frames_title)
 
     companion object {
         const val KEY_ARTWORK_CACHE_INFO = "artworkCacheInfo"
@@ -140,7 +152,7 @@ internal sealed class StorageCachesItem(
     }
 }
 
-private val storageCachesLayout = SettingsLayout<StorageCachesItem, StorageCachesLayoutState>(
+internal val storageCachesLayout = SettingsLayout<StorageCachesItem, StorageCachesLayoutState>(
     allItems = StorageCachesItem.ALL,
     isFocusable = { it.isFocusable },
     visibleWhen = { item, state -> item.visibleWhen(state) },
@@ -219,7 +231,7 @@ fun StorageCachesSection(uiState: SettingsUiState, viewModel: SettingsViewModel)
 
             is StorageCachesItem.InfoRow -> CachesInfoRow(item, uiState)
 
-            StorageCachesItem.PendingUploads -> ActionPreference(
+            is StorageCachesItem.PendingUploads -> ActionPreference(
                 icon = Icons.Default.Sync,
                 title = pluralStringResource(
                     R.plurals.settings_caches_pending_uploads_title,
@@ -236,11 +248,11 @@ fun StorageCachesSection(uiState: SettingsUiState, viewModel: SettingsViewModel)
                 onClick = { viewModel.requestSyncSaves() }
             )
 
-            StorageCachesItem.SaveCacheClear -> {
+            is StorageCachesItem.SaveCacheClear -> {
                 val totalCached = syncSettings.saveCacheCount + syncSettings.stateCacheCount
                 val pendingUploads = syncSettings.pendingUploadsCount
                 ActionPreference(
-                    title = stringResource(R.string.settings_caches_save_cache_title),
+                    title = stringResource(item.labelRes),
                     subtitle = when {
                         syncSettings.isResettingSaveCache ->
                             stringResource(R.string.settings_caches_save_cache_busy)
@@ -264,11 +276,11 @@ fun StorageCachesSection(uiState: SettingsUiState, viewModel: SettingsViewModel)
                 )
             }
 
-            StorageCachesItem.StateCacheClear -> {
+            is StorageCachesItem.StateCacheClear -> {
                 val stateCount = syncSettings.stateCacheCount
                 val pendingUploads = syncSettings.pendingUploadsCount
                 ActionPreference(
-                    title = stringResource(R.string.settings_caches_state_cache_title),
+                    title = stringResource(item.labelRes),
                     subtitle = when {
                         syncSettings.isClearingStateCache ->
                             stringResource(R.string.settings_caches_state_cache_busy)
@@ -291,11 +303,11 @@ fun StorageCachesSection(uiState: SettingsUiState, viewModel: SettingsViewModel)
                 )
             }
 
-            StorageCachesItem.PathCacheClear -> {
+            is StorageCachesItem.PathCacheClear -> {
                 val pathCount = syncSettings.pathCacheCount
                 val pendingUploads = syncSettings.pendingUploadsCount
                 ActionPreference(
-                    title = stringResource(R.string.settings_caches_path_cache_title),
+                    title = stringResource(item.labelRes),
                     subtitle = when {
                         syncSettings.isClearingPathCache ->
                             stringResource(R.string.settings_caches_path_cache_busy)
@@ -317,18 +329,18 @@ fun StorageCachesSection(uiState: SettingsUiState, viewModel: SettingsViewModel)
                 )
             }
 
-            StorageCachesItem.StateCacheToggle -> SwitchPreference(
-                title = stringResource(R.string.settings_caches_state_toggle_title),
+            is StorageCachesItem.StateCacheToggle -> SwitchPreference(
+                title = stringResource(item.labelRes),
                 subtitle = stringResource(R.string.settings_caches_state_toggle_subtitle),
                 isEnabled = syncSettings.stateCacheEnabled,
                 isFocused = isFocused(item),
                 onToggle = { viewModel.toggleStateCache() }
             )
 
-            StorageCachesItem.SaveCacheLimit -> {
+            is StorageCachesItem.SaveCacheLimit -> {
                 val limits = SyncSettingsDelegate.SAVE_CACHE_LIMIT_VALUES
                 CyclePreference(
-                    title = stringResource(R.string.settings_caches_save_limit_title),
+                    title = stringResource(item.labelRes),
                     value = pluralStringResource(
                         R.plurals.settings_caches_save_limit_value,
                         syncSettings.saveCacheLimit,
@@ -351,8 +363,8 @@ fun StorageCachesSection(uiState: SettingsUiState, viewModel: SettingsViewModel)
                 )
             }
 
-            StorageCachesItem.ImageCacheClear -> ActionPreference(
-                title = stringResource(R.string.settings_caches_image_cache_title),
+            is StorageCachesItem.ImageCacheClear -> ActionPreference(
+                title = stringResource(item.labelRes),
                 subtitle = if (isBusy(CachesClearTarget.IMAGE_CACHE)) {
                     stringResource(R.string.settings_caches_image_cache_busy)
                 } else {
@@ -370,8 +382,8 @@ fun StorageCachesSection(uiState: SettingsUiState, viewModel: SettingsViewModel)
                 onClick = { viewModel.requestCachesClear(CachesClearTarget.IMAGE_CACHE) }
             )
 
-            StorageCachesItem.ValidateImageCache -> ActionPreference(
-                title = stringResource(R.string.settings_caches_validate_title),
+            is StorageCachesItem.ValidateImageCache -> ActionPreference(
+                title = stringResource(item.labelRes),
                 subtitle = if (uiState.storage.isValidatingCache) {
                     stringResource(R.string.settings_caches_validate_busy)
                 } else {
@@ -382,24 +394,24 @@ fun StorageCachesSection(uiState: SettingsUiState, viewModel: SettingsViewModel)
                 onClick = { viewModel.validateImageCache() }
             )
 
-            StorageCachesItem.ScreenshotsToggle -> SwitchPreference(
-                title = stringResource(R.string.settings_caches_screenshots_title),
+            is StorageCachesItem.ScreenshotsToggle -> SwitchPreference(
+                title = stringResource(item.labelRes),
                 subtitle = stringResource(R.string.settings_caches_screenshots_subtitle),
                 isEnabled = uiState.server.syncScreenshotsEnabled,
                 isFocused = isFocused(item),
                 onToggle = { viewModel.toggleSyncScreenshots() }
             )
 
-            StorageCachesItem.BoxArtToggle -> SwitchPreference(
-                title = stringResource(R.string.settings_caches_box_art_title),
+            is StorageCachesItem.BoxArtToggle -> SwitchPreference(
+                title = stringResource(item.labelRes),
                 subtitle = stringResource(R.string.settings_caches_box_art_subtitle),
                 isEnabled = uiState.server.boxArtCacheEnabled,
                 isFocused = isFocused(item),
                 onToggle = { viewModel.toggleBoxArtCache() }
             )
 
-            StorageCachesItem.RomExtractionClear -> ActionPreference(
-                title = stringResource(R.string.settings_caches_rom_extraction_title),
+            is StorageCachesItem.RomExtractionClear -> ActionPreference(
+                title = stringResource(item.labelRes),
                 subtitle = if (isBusy(CachesClearTarget.ROM_EXTRACTION)) {
                     stringResource(R.string.settings_caches_rom_extraction_busy)
                 } else {
@@ -411,8 +423,8 @@ fun StorageCachesSection(uiState: SettingsUiState, viewModel: SettingsViewModel)
                 onClick = { viewModel.requestCachesClear(CachesClearTarget.ROM_EXTRACTION) }
             )
 
-            StorageCachesItem.RomStagingClear -> ActionPreference(
-                title = stringResource(R.string.settings_caches_rom_staging_title),
+            is StorageCachesItem.RomStagingClear -> ActionPreference(
+                title = stringResource(item.labelRes),
                 subtitle = if (isBusy(CachesClearTarget.ROM_STAGING)) {
                     stringResource(R.string.settings_caches_rom_staging_busy)
                 } else {
@@ -424,8 +436,8 @@ fun StorageCachesSection(uiState: SettingsUiState, viewModel: SettingsViewModel)
                 onClick = { viewModel.requestCachesClear(CachesClearTarget.ROM_STAGING) }
             )
 
-            StorageCachesItem.SfxCacheClear -> ActionPreference(
-                title = stringResource(R.string.settings_caches_sfx_title),
+            is StorageCachesItem.SfxCacheClear -> ActionPreference(
+                title = stringResource(item.labelRes),
                 subtitle = if (isBusy(CachesClearTarget.SFX_CACHE)) {
                     stringResource(R.string.settings_caches_sfx_busy)
                 } else {
@@ -437,8 +449,8 @@ fun StorageCachesSection(uiState: SettingsUiState, viewModel: SettingsViewModel)
                 onClick = { viewModel.requestCachesClear(CachesClearTarget.SFX_CACHE) }
             )
 
-            StorageCachesItem.EmulatorApksClear -> ActionPreference(
-                title = stringResource(R.string.settings_caches_emulator_apks_title),
+            is StorageCachesItem.EmulatorApksClear -> ActionPreference(
+                title = stringResource(item.labelRes),
                 subtitle = if (isBusy(CachesClearTarget.EMULATOR_APKS)) {
                     stringResource(R.string.settings_caches_emulator_apks_busy)
                 } else {
@@ -450,8 +462,8 @@ fun StorageCachesSection(uiState: SettingsUiState, viewModel: SettingsViewModel)
                 onClick = { viewModel.requestCachesClear(CachesClearTarget.EMULATOR_APKS) }
             )
 
-            StorageCachesItem.MiscDownloadsClear -> ActionPreference(
-                title = stringResource(R.string.settings_caches_misc_downloads_title),
+            is StorageCachesItem.MiscDownloadsClear -> ActionPreference(
+                title = stringResource(item.labelRes),
                 subtitle = if (isBusy(CachesClearTarget.MISC_DOWNLOADS)) {
                     stringResource(R.string.settings_caches_misc_downloads_busy)
                 } else {
@@ -463,8 +475,8 @@ fun StorageCachesSection(uiState: SettingsUiState, viewModel: SettingsViewModel)
                 onClick = { viewModel.requestCachesClear(CachesClearTarget.MISC_DOWNLOADS) }
             )
 
-            StorageCachesItem.ShadersCatalogClear -> ActionPreference(
-                title = stringResource(R.string.settings_caches_shaders_title),
+            is StorageCachesItem.ShadersCatalogClear -> ActionPreference(
+                title = stringResource(item.labelRes),
                 subtitle = if (isBusy(CachesClearTarget.SHADERS_CATALOG)) {
                     stringResource(R.string.settings_caches_shaders_busy)
                 } else {
@@ -476,8 +488,8 @@ fun StorageCachesSection(uiState: SettingsUiState, viewModel: SettingsViewModel)
                 onClick = { viewModel.requestCachesClear(CachesClearTarget.SHADERS_CATALOG) }
             )
 
-            StorageCachesItem.FramesClear -> ActionPreference(
-                title = stringResource(R.string.settings_caches_frames_title),
+            is StorageCachesItem.FramesClear -> ActionPreference(
+                title = stringResource(item.labelRes),
                 subtitle = if (isBusy(CachesClearTarget.FRAMES)) {
                     stringResource(R.string.settings_caches_frames_busy)
                 } else {

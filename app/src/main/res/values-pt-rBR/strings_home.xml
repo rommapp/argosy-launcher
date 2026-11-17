@@ -197,4 +197,20 @@
     <string name="home_title_running_in">Em execução no %1$s</string>
     <string name="home_title_saving">Salvando</string>
     <string name="home_title_running_with_time">Em execução há %1$s</string>
+    <string name="home_grid_picker_folder_title">Pasta</string>
+    <string name="home_grid_picker_folder_subtitle">Agrupa fichas de qualquer tipo sob uma só</string>
+    <string name="home_grid_picker_auto_folder_title">Pasta automática</string>
+    <string name="home_grid_picker_auto_folder_subtitle">Se enche com os jogos que uma regra seleciona</string>
+    <string name="home_grid_picker_image_title">Imagem</string>
+    <string name="home_grid_picker_image_subtitle">Uma imagem que preenche suas células</string>
+    <string name="home_grid_picker_sticker_title">Adesivo</string>
+    <string name="home_grid_picker_sticker_subtitle">Uma imagem recortada com contorno opcional</string>
+    <string name="home_grid_tile_image_label">Imagem</string>
+    <string name="home_grid_tile_sticker_label">Adesivo</string>
+    <plurals name="home_grid_tile_folder_count">
+        <item quantity="one">%d item</item>
+        <item quantity="many">%d itens</item>
+        <item quantity="other">%d itens</item>
+    </plurals>
+    <string name="home_tile_file_browser_decor_title">Escolha uma imagem</string>
 </resources>

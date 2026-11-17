@@ -1,5 +1,6 @@
 package com.nendo.argosy.ui.screens.settings.sections
 
+import androidx.annotation.StringRes
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
@@ -22,6 +23,7 @@ import com.nendo.argosy.ui.screens.settings.SettingsViewModel
 import com.nendo.argosy.ui.screens.settings.components.GripControllerModal
 import com.nendo.argosy.ui.screens.settings.components.SectionPaneLayout
 import com.nendo.argosy.ui.screens.settings.menu.SettingsLayout
+import com.nendo.argosy.ui.screens.settings.search.SearchableSetting
 import com.nendo.argosy.ui.theme.Dimens
 import com.nendo.argosy.ui.theme.GRIP_RESERVE_MAX_PERCENT
 import com.nendo.argosy.ui.theme.GRIP_RESERVE_MIN_PERCENT
@@ -32,13 +34,23 @@ internal sealed class ControllerGripItem(
     val key: String,
     val visibleWhen: (DisplayState) -> Boolean = { true }
 ) {
-    data object Mode : ControllerGripItem("gripMode")
-    data object Controllers : ControllerGripItem(
+    val isFocusable: Boolean get() = this is SearchableSetting
+
+    sealed class Row(
+        key: String,
+        @StringRes override val labelRes: Int,
+        visibleWhen: (DisplayState) -> Boolean = { true }
+    ) : ControllerGripItem(key, visibleWhen), SearchableSetting
+
+    data object Mode : Row("gripMode", R.string.settings_grip_mode_title)
+    data object Controllers : Row(
         "gripControllers",
+        R.string.settings_grip_controllers_title,
         visibleWhen = { it.gripReserveMode == GripReserveMode.AUTO }
     )
-    data object ReservedHeight : ControllerGripItem(
+    data object ReservedHeight : Row(
         "gripReservePercent",
+        R.string.settings_grip_reserved_height_title,
         visibleWhen = { it.gripReserveMode != GripReserveMode.OFF }
     )
 
@@ -48,9 +60,9 @@ internal sealed class ControllerGripItem(
     }
 }
 
-private val controllerGripLayout = SettingsLayout<ControllerGripItem, DisplayState>(
+internal val controllerGripLayout = SettingsLayout<ControllerGripItem, DisplayState>(
     allItems = ControllerGripItem.ALL,
-    isFocusable = { true },
+    isFocusable = { it.isFocusable },
     visibleWhen = { item, display -> item.visibleWhen(display) },
     sectionOf = { "grip" },
     sectionTitleRes = { null }
@@ -109,8 +121,8 @@ fun ControllerGripSection(uiState: SettingsUiState, viewModel: SettingsViewModel
         verticalArrangement = Arrangement.spacedBy(Dimens.spacingSm)
     ) { item ->
         when (item) {
-            ControllerGripItem.Mode -> SegmentedPreference(
-                title = stringResource(R.string.settings_grip_mode_title),
+            is ControllerGripItem.Mode -> SegmentedPreference(
+                title = stringResource(item.labelRes),
                 subtitle = when (display.gripReserveMode) {
                     GripReserveMode.OFF -> stringResource(R.string.settings_grip_mode_subtitle_off)
                     GripReserveMode.ON -> stringResource(R.string.settings_grip_mode_subtitle_on)
@@ -122,16 +134,16 @@ fun ControllerGripSection(uiState: SettingsUiState, viewModel: SettingsViewModel
                 onSelect = { index -> viewModel.setGripReserveMode(GripReserveMode.entries[index]) }
             )
 
-            ControllerGripItem.Controllers -> NavigationPreference(
+            is ControllerGripItem.Controllers -> NavigationPreference(
                 icon = Icons.Outlined.Gamepad,
-                title = stringResource(R.string.settings_grip_controllers_title),
+                title = stringResource(item.labelRes),
                 subtitle = gripAutoControllerSubtitle(display.gripAutoControllers.controllers),
                 isFocused = isFocused(item),
                 onClick = { viewModel.showGripControllerModal() }
             )
 
-            ControllerGripItem.ReservedHeight -> SliderPreference(
-                title = stringResource(R.string.settings_grip_reserved_height_title),
+            is ControllerGripItem.ReservedHeight -> SliderPreference(
+                title = stringResource(item.labelRes),
                 value = display.gripReservePercent,
                 minValue = GRIP_RESERVE_MIN_PERCENT,
                 maxValue = GRIP_RESERVE_MAX_PERCENT,

@@ -70,6 +70,10 @@ object ColorTokens {
         val difficulty = Color(0xFFE53935)
         val trophyAmber = Color(0xFFFFB300)
         val favoriteStar = Color(0xFFFFC107)
+        object StickerOutline {
+            val white = Color(0xFFFFFFFF)
+            val black = Color(0xFF000000)
+        }
         object AchievementTier {
             val hardcore = Color(0xFFFFD700)
             val softcore = Color(0xFFCD7F32)
@@ -181,6 +185,28 @@ object ColorTokens {
         object ArtChecker {
             val lightTile = Color(0xFFB4B6BE)
             val darkTile = Color(0xFF7A7C85)
+        }
+        object FolderAccent {
+            object Rose {
+                val dark = Color(0xFFF27BA0)
+                val light = Color(0xFFC2185B)
+            }
+            object Amber {
+                val dark = Color(0xFFFFC15E)
+                val light = Color(0xFFB26A00)
+            }
+            object Lime {
+                val dark = Color(0xFFA8D86A)
+                val light = Color(0xFF4D7C0F)
+            }
+            object Sky {
+                val dark = Color(0xFF6CB8F5)
+                val light = Color(0xFF1565C0)
+            }
+            object Violet {
+                val dark = Color(0xFFB39DF5)
+                val light = Color(0xFF5E35B1)
+            }
         }
     }
 

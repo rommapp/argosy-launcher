@@ -67,6 +67,7 @@ class N3dsExtdataUnitTest {
             unitSaveHandler = mockk(relaxed = true),
             sigilSaveHandler = mockk(relaxed = true),
             dreamcastSaveHandler = mockk(relaxed = true),
+            emulatorSaveConfigRepository = mockk(relaxed = true),
         )
         handler = registry.getFolderHandler("3ds") ?: error("3DS handler not registered")
         sdRoot = File(tempDir, "source/Nintendo 3DS").apply { mkdirs() }

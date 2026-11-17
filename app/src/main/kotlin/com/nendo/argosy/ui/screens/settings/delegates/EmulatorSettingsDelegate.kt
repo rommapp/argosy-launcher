@@ -1143,11 +1143,9 @@ class EmulatorSettingsDelegate @Inject constructor(
     ): List<com.nendo.argosy.data.sync.platform.MemcardInfo> {
         val canonicalId = com.nendo.argosy.data.emulator.SavePathRegistry
             .canonicalConfigId(emulatorId, emulatorPackage)
-        val basePathOverride = emulatorSaveConfigRepository.resolveEffectiveSavePath(canonicalId, null)
         return saveHandlerRegistry.listPs2FolderMemcardsForEmulator(
             emulatorId = canonicalId,
-            emulatorPackage = emulatorPackage,
-            basePathOverride = basePathOverride
+            emulatorPackage = emulatorPackage
         )
     }
 

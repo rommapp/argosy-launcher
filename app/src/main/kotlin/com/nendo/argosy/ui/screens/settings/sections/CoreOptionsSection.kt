@@ -100,6 +100,13 @@ internal fun coreOptionsMaxFocusIndex(state: CoreOptionsState): Int {
     return createCoreOptionsLayout(items, isInstalled).maxFocusIndex(Unit)
 }
 
+internal fun coreOptionsFocusIndexOfOption(state: CoreOptionsState, optionKey: String): Int {
+    val items = buildCoreOptionItems(state)
+    val isInstalled = state.selectedCore?.isInstalled == true
+    return createCoreOptionsLayout(items, isInstalled).focusableItems(Unit)
+        .indexOfFirst { it is CoreOptionItem.Option && it.optionKey == optionKey }
+}
+
 internal fun coreOptionsItemAtFocusIndex(index: Int, state: CoreOptionsState): CoreOptionItem? {
     val items = buildCoreOptionItems(state)
     val isInstalled = state.selectedCore?.isInstalled == true

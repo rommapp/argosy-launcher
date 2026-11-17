@@ -1087,6 +1087,7 @@
     </plurals>
     <string name="settings_caches_pending_uploads_subtitle_online">清除同步缓存前请先立即同步</string>
     <string name="settings_caches_pending_uploads_subtitle_offline">重新连接服务器以同步</string>
+    <string name="settings_caches_pending_uploads_search_label">等待上传的存档</string>
 
     <string name="settings_caches_save_cache_title">重置存档缓存</string>
     <string name="settings_caches_save_cache_busy">正在重置...</string>
@@ -2734,4 +2735,42 @@
     <string name="settings_romm_config_error_client_certificate_required">服务器需要客户端证书。请在“客户端证书”中导入，或在其中开启“用于 RomM”。</string>
     <string name="settings_accounts_pairing_error_client_certificate_required">服务器需要客户端证书。请在“客户端证书”中导入，或在其中开启“用于 RomM”。</string>
     <string name="settings_jellyfin_error_client_certificate_required">服务器需要客户端证书。请在“客户端证书”中开启“用于 Jellyfin”。</string>
+    <string name="settings_search_row_title">搜索设置</string>
+    <string name="settings_search_keyboard_label">搜索设置</string>
+    <string name="settings_search_keyboard_submit">完成</string>
+    <string name="settings_search_no_results">没有与“%1$s”匹配的设置</string>
+    <string name="settings_search_crumb_displays">显示屏</string>
+    <string name="settings_search_crumb_ambient_led">LED控制</string>
+    <string name="settings_search_crumb_audio">音频</string>
+    <string name="settings_search_crumb_theme">主题</string>
+    <string name="settings_search_crumb_platforms">平台</string>
+    <string name="settings_search_crumb_builtin_emulator">内置模拟器</string>
+    <string name="settings_search_crumb_core_options">核心选项</string>
+    <string name="settings_search_crumb_storage">存储</string>
+    <string name="settings_search_crumb_storage_caches">缓存与系统</string>
+    <string name="settings_search_crumb_bios">BIOS文件</string>
+    <string name="settings_search_crumb_sounds">音效</string>
+    <string name="settings_search_crumb_music">音乐</string>
+    <string name="settings_search_crumb_fonts">字体</string>
+    <string name="settings_search_crumb_backdrop">背景图案</string>
+    <string name="settings_search_crumb_interface">界面</string>
+    <string name="settings_search_crumb_box_art">封面</string>
+    <string name="settings_search_crumb_controller_grip">手柄夹持</string>
+    <string name="settings_search_crumb_saves">存档</string>
+    <string name="settings_search_crumb_sync_settings">同步设置</string>
+    <string name="settings_search_crumb_social">社交</string>
+    <string name="settings_search_crumb_permissions">权限</string>
+    <string name="settings_search_crumb_about">关于</string>
+    <string name="settings_search_label_jellyfin_account">账户</string>
+    <string name="settings_search_label_social_account">账户</string>
+    <string name="settings_search_label_about_changelog">更新日志</string>
+    <string name="settings_search_crumb_home_screen">主屏幕</string>
+    <string name="settings_search_crumb_presentation">展示</string>
+    <string name="settings_search_crumb_library_view">库</string>
+    <string name="settings_search_crumb_navigation">导航</string>
+    <string name="settings_search_crumb_builtin_video">音视频与性能</string>
+    <string name="settings_search_crumb_builtin_controls">控制</string>
+    <string name="settings_search_crumb_builtin_saves">存档</string>
+    <string name="settings_search_label_home_layout_selector">布局</string>
+    <string name="settings_search_label_platform_emulator">模拟器</string>
 </resources>

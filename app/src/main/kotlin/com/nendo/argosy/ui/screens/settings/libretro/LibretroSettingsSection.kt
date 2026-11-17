@@ -38,13 +38,15 @@ data class LibretroVisibilityState(
     val scope: LibretroSettingsScope = LibretroSettingsScope.VIDEO
 )
 
+internal fun isLibretroSettingShown(item: LibretroSettingDef, state: LibretroVisibilityState): Boolean {
+    val inScope = (item.section == SAVING_SECTION) == (state.scope == LibretroSettingsScope.SAVES)
+    return inScope && PlatformWeightRegistry.isSettingVisible(item, state.platformSlug, state.canEnableBFI)
+}
+
 private val libretroSettingsLayout = SettingsLayout<LibretroSettingDef, LibretroVisibilityState>(
     allItems = LibretroSettingDef.ALL,
     isFocusable = { true },
-    visibleWhen = { item, state ->
-        val inScope = (item.section == SAVING_SECTION) == (state.scope == LibretroSettingsScope.SAVES)
-        inScope && PlatformWeightRegistry.isSettingVisible(item, state.platformSlug, state.canEnableBFI)
-    },
+    visibleWhen = { item, state -> isLibretroSettingShown(item, state) },
     sectionOf = { it.section }
 )
 

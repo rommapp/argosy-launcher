@@ -75,6 +75,9 @@ import com.nendo.argosy.ui.filebrowser.FileBrowserScreen
 import com.nendo.argosy.ui.filebrowser.FileFilter
 import com.nendo.argosy.ui.input.LocalInputDispatcher
 import com.nendo.argosy.ui.navigation.Screen
+import com.nendo.argosy.ui.navigation.depthEntryMotion
+import com.nendo.argosy.ui.theme.LocalMotionTier
+import com.nendo.argosy.ui.theme.MotionTier
 import com.nendo.argosy.ui.primitives.ArgosyConfirmModal
 import com.nendo.argosy.ui.primitives.ArgosyConfirmModalHost
 import com.nendo.argosy.util.formatBytes
@@ -93,7 +96,7 @@ import com.nendo.argosy.ui.screens.settings.sections.BiosSection
 import com.nendo.argosy.ui.screens.settings.sections.BiosDownloadFailureModal
 import com.nendo.argosy.ui.screens.settings.sections.DistributeResultModal
 import com.nendo.argosy.ui.screens.settings.sections.RomMItem
-import com.nendo.argosy.ui.screens.settings.sections.buildRomMItemsFromState
+import com.nendo.argosy.ui.screens.settings.sections.RomMLayoutState
 import com.nendo.argosy.ui.screens.settings.sections.rommFocusIndexOf
 import com.nendo.argosy.ui.screens.settings.sections.DriversSection
 import com.nendo.argosy.ui.screens.settings.sections.AmbientLedSection
@@ -202,10 +205,9 @@ fun SettingsScreen(
                 kotlinx.coroutines.delay(300)
                 when (initialAction) {
                     "rommConfig" -> viewModel.startRommConfig()
-                    "syncLibrary" -> {
-                        val items = buildRomMItemsFromState(viewModel.uiState.value)
-                        viewModel.setFocusIndex(rommFocusIndexOf(RomMItem.SyncLibrary, items))
-                    }
+                    "syncLibrary" -> viewModel.setFocusIndex(
+                        rommFocusIndexOf(RomMItem.SyncLibrary, RomMLayoutState.from(viewModel.uiState.value))
+                    )
                 }
             }
         }
@@ -650,6 +652,11 @@ fun SettingsScreen(
                 Box(
                     modifier = Modifier
                         .weight(1f)
+                        .depthEntryMotion(
+                            key = uiState.currentSection,
+                            depth = uiState.backStack.size,
+                            reduced = LocalMotionTier.current == MotionTier.Reduced
+                        )
                         .observeTouchDown { viewModel.enterTouchMode() }
                 ) {
                     when (uiState.currentSection) {
@@ -1945,7 +1952,7 @@ private fun SettingsFooter(
             uiState.currentSection != SettingsSection.PLAY_TIME) {
             add(InputButton.DPAD to navigateHint)
         }
-        if (uiState.currentSection == SettingsSection.MAIN) {
+        if (uiState.currentSection == SettingsSection.MAIN && !uiState.settingsSearch.isActive) {
             add((if (uiState.controls.quickNavigation) InputButton.LT_RT else InputButton.LB_RB) to mainGroupHint)
         }
         if (uiState.currentSection == SettingsSection.SHADER_STACK &&

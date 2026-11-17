@@ -288,6 +288,14 @@ class SecondaryHomeActivity :
         }
     }
 
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        if (intent.hasCategory(Intent.CATEGORY_SECONDARY_HOME) || intent.hasCategory(Intent.CATEGORY_HOME)) {
+            gamepadInputHandler.emitHomeEvent()
+        }
+    }
+
     override fun onResume() {
         super.onResume()
         if (android.os.Build.VERSION.SDK_INT < android.os.Build.VERSION_CODES.Q) {
@@ -441,12 +449,7 @@ class SecondaryHomeActivity :
         if (::dsm.isInitialized && event.action == android.view.KeyEvent.ACTION_DOWN) {
             dsm.ambientAudioManager.resumeFromSuspend()
         }
-        if (HomeKeys.isHome(event)) {
-            if (event.action == android.view.KeyEvent.ACTION_DOWN) {
-                gamepadInputHandler.emitHomeEvent()
-            }
-            return true
-        }
+        if (HomeKeys.isHome(event)) return gamepadInputHandler.handleHomeKey(event)
         if (gamepadInputHandler.handleKeyEvent(event)) return true
         return super.dispatchKeyEvent(event)
     }

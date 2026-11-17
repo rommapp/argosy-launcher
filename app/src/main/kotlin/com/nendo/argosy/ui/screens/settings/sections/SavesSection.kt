@@ -1,5 +1,6 @@
 package com.nendo.argosy.ui.screens.settings.sections
 
+import androidx.annotation.StringRes
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -25,8 +26,8 @@ import com.nendo.argosy.ui.screens.settings.SettingsViewModel
 import com.nendo.argosy.ui.screens.settings.components.SectionHeader
 import com.nendo.argosy.ui.screens.settings.components.SectionPaneLayout
 import com.nendo.argosy.ui.screens.settings.delegates.SyncSettingsDelegate
-import com.nendo.argosy.ui.screens.settings.menu.DisabledBehavior
 import com.nendo.argosy.ui.screens.settings.menu.SettingsLayout
+import com.nendo.argosy.ui.screens.settings.search.SearchableSetting
 import com.nendo.argosy.ui.theme.Dimens
 
 internal data class SavesLayoutState(
@@ -47,60 +48,83 @@ internal sealed class SavesItem(
     val section: String,
     val visibleWhen: (SavesLayoutState) -> Boolean = { true }
 ) {
-    val isFocusable: Boolean get() = this !is Header
-
-    /**
-     * Rows that cannot do anything without a paired RomM server, so they render locked
-     * rather than vanishing and leaving an empty screen.
-     */
-    val isServerGated: Boolean get() = this is SaveSync || this is SecureSaves
+    val isFocusable: Boolean get() = this is SearchableSetting
 
     class Header(key: String, section: String, val titleRes: Int) : SavesItem(key, section)
 
-    data object SaveSync : SavesItem("saveSync", "policy")
-    data object SecureSaves : SavesItem("secureSaves", "policy", visibleWhen = { it.saveSyncEnabled })
-    data object SaveCacheLimit : SavesItem("saveCacheLimit", "policy")
-    data object ManageSaveSync : SavesItem("manageSaveSync", "manage")
-    data object SaveCaches : SavesItem("saveCaches", "manage")
+    class Locked(
+        key: String,
+        section: String,
+        @StringRes val titleRes: Int,
+        @StringRes val valueRes: Int,
+        @StringRes val subtitleRes: Int
+    ) : SavesItem(key, section, { !it.isConnected })
+
+    sealed class Row(
+        key: String,
+        section: String,
+        @StringRes override val labelRes: Int,
+        visibleWhen: (SavesLayoutState) -> Boolean = { true }
+    ) : SavesItem(key, section, visibleWhen), SearchableSetting
+
+    data object SaveSync : Row(
+        "saveSync", "policy", R.string.settings_saves_save_sync_title,
+        visibleWhen = { it.isConnected }
+    )
+    data object SecureSaves : Row(
+        "secureSaves", "policy", R.string.settings_saves_secure_saves_title,
+        visibleWhen = { it.isConnected && it.saveSyncEnabled }
+    )
+    data object SaveCacheLimit : Row("saveCacheLimit", "policy", R.string.settings_saves_cache_limit_title)
+    data object ManageSaveSync : Row("manageSaveSync", "manage", R.string.settings_saves_manage_sync_title)
+    data object SaveCaches : Row("saveCaches", "manage", R.string.settings_saves_caches_title)
 
     companion object {
         val ALL: List<SavesItem>
             get() = listOf(
                 Header("policyHeader", "policy", R.string.settings_saves_section_sync),
-                SaveSync, SecureSaves, SaveCacheLimit,
+                Locked(
+                    "saveSyncLocked", "policy",
+                    R.string.settings_saves_save_sync_title,
+                    R.string.settings_saves_save_sync_locked_value,
+                    R.string.settings_saves_save_sync_locked_subtitle
+                ),
+                SaveSync,
+                Locked(
+                    "secureSavesLocked", "policy",
+                    R.string.settings_saves_secure_saves_title,
+                    R.string.settings_saves_secure_saves_locked_value,
+                    R.string.settings_saves_secure_saves_locked_subtitle
+                ),
+                SecureSaves, SaveCacheLimit,
                 Header("manageHeader", "manage", R.string.settings_saves_section_manage),
                 ManageSaveSync, SaveCaches
             )
     }
 }
 
-internal fun createSavesLayout(state: SavesLayoutState) =
-    SettingsLayout<SavesItem, SavesLayoutState>(
-        allItems = SavesItem.ALL,
-        isFocusable = { it.isFocusable && !(it.isServerGated && !state.isConnected) },
-        visibleWhen = { item, s -> item.visibleWhen(s) },
-        disabledBehavior = { item ->
-            if (item.isServerGated && !state.isConnected) DisabledBehavior.LOCKED
-            else DisabledBehavior.HIDDEN
-        },
-        sectionOf = { it.section },
-        sectionTitleRes = {
-            when (it) {
-                "policy" -> R.string.settings_saves_section_sync
-                "manage" -> R.string.settings_saves_section_manage
-                else -> null
-            }
+internal val savesLayout = SettingsLayout<SavesItem, SavesLayoutState>(
+    allItems = SavesItem.ALL,
+    isFocusable = { it.isFocusable },
+    visibleWhen = { item, state -> item.visibleWhen(state) },
+    sectionOf = { it.section },
+    sectionTitleRes = {
+        when (it) {
+            "policy" -> R.string.settings_saves_section_sync
+            "manage" -> R.string.settings_saves_section_manage
+            else -> null
         }
-    )
+    }
+)
 
 internal fun savesItemAtFocusIndex(index: Int, state: SavesLayoutState): SavesItem? =
-    createSavesLayout(state).itemAtFocusIndex(index, state)
+    savesLayout.itemAtFocusIndex(index, state)
 
 internal fun savesMaxFocusIndex(state: SavesLayoutState): Int =
-    createSavesLayout(state).maxFocusIndex(state)
+    savesLayout.maxFocusIndex(state)
 
 internal fun savesSections(state: SavesLayoutState) =
-    createSavesLayout(state).buildSections(state)
+    savesLayout.buildSections(state)
 
 @Composable
 fun SavesSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
@@ -114,25 +138,22 @@ fun SavesSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
     }
 
     val context = LocalContext.current
-    val layout = remember(layoutState) { createSavesLayout(layoutState) }
-    val visibleItems = remember(layout) { layout.visibleItems(layoutState) }
-    val sections = remember(layout, context) { layout.buildSections(layoutState, context) }
+    val visibleItems = remember(layoutState) { savesLayout.visibleItems(layoutState) }
+    val sections = remember(layoutState, context) { savesLayout.buildSections(layoutState, context) }
 
     fun isFocused(item: SavesItem): Boolean =
-        uiState.focusedIndex == layout.focusIndexOf(item, layoutState)
+        uiState.focusedIndex == savesLayout.focusIndexOf(item, layoutState)
 
     fun openFrom(item: SavesItem, enter: () -> Unit) {
-        viewModel.setFocusIndex(layout.focusIndexOf(item, layoutState))
+        viewModel.setFocusIndex(savesLayout.focusIndexOf(item, layoutState))
         enter()
     }
-
-    val isLocked = !layoutState.isConnected
 
     SectionPaneLayout(
         items = visibleItems,
         sections = sections,
         focusedIndex = uiState.focusedIndex,
-        focusToListIndex = { layout.focusToListIndex(it, layoutState) },
+        focusToListIndex = { savesLayout.focusToListIndex(it, layoutState) },
         itemKey = { it.key },
         isNavItem = { false },
         isHeader = { it is SavesItem.Header },
@@ -148,48 +169,37 @@ fun SavesSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
                 SectionHeader(stringResource(item.titleRes))
             }
 
-            SavesItem.SaveSync -> if (isLocked) {
-                InfoPreference(
-                    title = stringResource(R.string.settings_saves_save_sync_title),
-                    value = stringResource(R.string.settings_saves_save_sync_locked_value),
-                    subtitle = stringResource(R.string.settings_saves_save_sync_locked_subtitle),
-                    isFocused = false
-                )
-            } else {
-                SwitchPreference(
-                    title = stringResource(R.string.settings_saves_save_sync_title),
-                    subtitle = stringResource(R.string.settings_saves_save_sync_subtitle),
-                    isEnabled = syncSettings.saveSyncEnabled,
-                    isFocused = isFocused(item),
-                    onToggle = { viewModel.toggleSaveSync() }
-                )
-            }
+            is SavesItem.Locked -> InfoPreference(
+                title = stringResource(item.titleRes),
+                value = stringResource(item.valueRes),
+                subtitle = stringResource(item.subtitleRes),
+                isFocused = false
+            )
 
-            SavesItem.SecureSaves -> if (isLocked) {
-                InfoPreference(
-                    title = stringResource(R.string.settings_saves_secure_saves_title),
-                    value = stringResource(R.string.settings_saves_secure_saves_locked_value),
-                    subtitle = stringResource(R.string.settings_saves_secure_saves_locked_subtitle),
-                    isFocused = false
-                )
-            } else {
-                SwitchPreference(
-                    title = stringResource(R.string.settings_saves_secure_saves_title),
-                    subtitle = if (syncSettings.secureSaves) {
-                        stringResource(R.string.settings_saves_secure_saves_subtitle_on)
-                    } else {
-                        stringResource(R.string.settings_saves_secure_saves_subtitle_off)
-                    },
-                    isEnabled = syncSettings.secureSaves,
-                    isFocused = isFocused(item),
-                    onToggle = { viewModel.toggleSecureSaves() }
-                )
-            }
+            is SavesItem.SaveSync -> SwitchPreference(
+                title = stringResource(item.labelRes),
+                subtitle = stringResource(R.string.settings_saves_save_sync_subtitle),
+                isEnabled = syncSettings.saveSyncEnabled,
+                isFocused = isFocused(item),
+                onToggle = { viewModel.toggleSaveSync() }
+            )
 
-            SavesItem.SaveCacheLimit -> {
+            is SavesItem.SecureSaves -> SwitchPreference(
+                title = stringResource(item.labelRes),
+                subtitle = if (syncSettings.secureSaves) {
+                    stringResource(R.string.settings_saves_secure_saves_subtitle_on)
+                } else {
+                    stringResource(R.string.settings_saves_secure_saves_subtitle_off)
+                },
+                isEnabled = syncSettings.secureSaves,
+                isFocused = isFocused(item),
+                onToggle = { viewModel.toggleSecureSaves() }
+            )
+
+            is SavesItem.SaveCacheLimit -> {
                 val limits = SyncSettingsDelegate.SAVE_CACHE_LIMIT_VALUES
                 CyclePreference(
-                    title = stringResource(R.string.settings_saves_cache_limit_title),
+                    title = stringResource(item.labelRes),
                     value = pluralStringResource(
                         R.plurals.settings_saves_cache_limit_value,
                         syncSettings.saveCacheLimit,
@@ -212,11 +222,11 @@ fun SavesSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
                 )
             }
 
-            SavesItem.ManageSaveSync -> {
+            is SavesItem.ManageSaveSync -> {
                 val pending = syncSettings.pendingUploadsCount
                 NavigationPreference(
                     icon = Icons.Default.CloudSync,
-                    title = stringResource(R.string.settings_saves_manage_sync_title),
+                    title = stringResource(item.labelRes),
                     subtitle = if (pending > 0) {
                         pluralStringResource(R.plurals.settings_saves_manage_sync_pending, pending, pending)
                     } else {
@@ -227,9 +237,9 @@ fun SavesSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
                 )
             }
 
-            SavesItem.SaveCaches -> NavigationPreference(
+            is SavesItem.SaveCaches -> NavigationPreference(
                 icon = Icons.Default.Cached,
-                title = stringResource(R.string.settings_saves_caches_title),
+                title = stringResource(item.labelRes),
                 subtitle = stringResource(R.string.settings_saves_caches_subtitle),
                 isFocused = isFocused(item),
                 onClick = { openFrom(item) { viewModel.navigateToStorageCaches() } }

@@ -1,5 +1,6 @@
 package com.nendo.argosy.ui.screens.settings.sections
 
+import androidx.annotation.StringRes
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
@@ -21,6 +22,7 @@ import com.nendo.argosy.ui.screens.settings.DisplayState
 import com.nendo.argosy.ui.screens.settings.SettingsUiState
 import com.nendo.argosy.ui.screens.settings.SettingsViewModel
 import com.nendo.argosy.ui.screens.settings.menu.SettingsLayout
+import com.nendo.argosy.ui.screens.settings.search.SearchableSetting
 import com.nendo.argosy.ui.theme.Dimens
 
 internal sealed class AmbientLedItem(
@@ -28,7 +30,7 @@ internal sealed class AmbientLedItem(
     val section: String,
     val visibleWhen: (DisplayState) -> Boolean = { true }
 ) {
-    val isFocusable: Boolean get() = this !is Header
+    val isFocusable: Boolean get() = this is SearchableSetting
 
     class Header(
         key: String,
@@ -37,33 +39,36 @@ internal sealed class AmbientLedItem(
         visibleWhen: (DisplayState) -> Boolean = { true }
     ) : AmbientLedItem(key, section, visibleWhen)
 
-    // General
-    data object Enable : AmbientLedItem("enable", "general")
-    data object Brightness : AmbientLedItem("brightness", "general",
+    sealed class Row(
+        key: String,
+        section: String,
+        @StringRes override val labelRes: Int,
+        visibleWhen: (DisplayState) -> Boolean = { true }
+    ) : AmbientLedItem(key, section, visibleWhen), SearchableSetting
+
+    data object Enable : Row("enable", "general", R.string.settings_led_enable_title)
+    data object Brightness : Row("brightness", "general", R.string.settings_led_brightness_title,
         visibleWhen = { it.ambientLedEnabled })
-    data object CustomColor : AmbientLedItem("customColor", "general",
+    data object CustomColor : Row("customColor", "general", R.string.settings_led_custom_color_title,
         visibleWhen = { it.ambientLedEnabled })
-    data object CustomColorHue : AmbientLedItem("customColorHue", "general",
+    data object CustomColorHue : Row("customColorHue", "general", R.string.settings_led_custom_color_hue_title,
         visibleWhen = { it.ambientLedEnabled && it.ambientLedCustomColor })
-    data object AchievementFlash : AmbientLedItem("achievementFlash", "general",
+    data object AchievementFlash : Row("achievementFlash", "general", R.string.settings_led_achievement_flash_title,
         visibleWhen = { it.ambientLedEnabled })
 
-    // Cover Art
-    data object CoverArtColors : AmbientLedItem("coverArtColors", "coverArt",
+    data object CoverArtColors : Row("coverArtColors", "coverArt", R.string.settings_led_cover_art_title,
         visibleWhen = { it.ambientLedEnabled })
-    data object TransitionSpeed : AmbientLedItem("transitionSpeed", "coverArt",
+    data object TransitionSpeed : Row("transitionSpeed", "coverArt", R.string.settings_led_transition_title,
         visibleWhen = { it.ambientLedEnabled && it.ambientLedCoverArtEnabled })
 
-    // Reactive Audio
-    data object AudioBrightness : AmbientLedItem("audioBrightness", "reactiveAudio",
+    data object AudioBrightness : Row("audioBrightness", "reactiveAudio", R.string.settings_led_audio_brightness_title,
         visibleWhen = { it.ambientLedEnabled })
-    data object AudioColors : AmbientLedItem("audioColors", "reactiveAudio",
+    data object AudioColors : Row("audioColors", "reactiveAudio", R.string.settings_led_audio_colors_title,
         visibleWhen = { it.ambientLedEnabled })
 
-    // Reactive Screen
-    data object ScreenColors : AmbientLedItem("screenColors", "reactiveScreen",
+    data object ScreenColors : Row("screenColors", "reactiveScreen", R.string.settings_led_screen_colors_title,
         visibleWhen = { it.ambientLedEnabled })
-    data object ScreenColorMode : AmbientLedItem("screenColorMode", "reactiveScreen",
+    data object ScreenColorMode : Row("screenColorMode", "reactiveScreen", R.string.settings_led_color_mode_title,
         visibleWhen = { it.ambientLedEnabled && it.ambientLedScreenEnabled })
 
     companion object {
@@ -90,7 +95,7 @@ internal sealed class AmbientLedItem(
     }
 }
 
-private val ambientLedLayout = SettingsLayout<AmbientLedItem, DisplayState>(
+internal val ambientLedLayout =SettingsLayout<AmbientLedItem, DisplayState>(
     allItems = AmbientLedItem.ALL,
     isFocusable = { it.isFocusable },
     visibleWhen = { item, state -> item.visibleWhen(state) },
@@ -174,24 +179,24 @@ fun AmbientLedSection(
             when (item) {
                 is AmbientLedItem.Header -> AmbientLedSectionHeader(stringResource(item.titleRes))
 
-                AmbientLedItem.Enable -> SwitchPreference(
-                    title = stringResource(R.string.settings_led_enable_title),
+                is AmbientLedItem.Enable -> SwitchPreference(
+                    title = stringResource(item.labelRes),
                     subtitle = stringResource(R.string.settings_led_enable_subtitle),
                     isEnabled = display.ambientLedEnabled,
                     isFocused = isFocused(item),
                     onToggle = { viewModel.setAmbientLedEnabled(!display.ambientLedEnabled) }
                 )
 
-                AmbientLedItem.Brightness -> TrackSliderPreference(
-                    title = stringResource(R.string.settings_led_brightness_title),
+                is AmbientLedItem.Brightness -> TrackSliderPreference(
+                    title = stringResource(item.labelRes),
                     value = display.ambientLedBrightness / 100f,
                     steps = 19,
                     isFocused = isFocused(item),
                     onValueChange = { viewModel.setAmbientLedBrightness((it * 100).toInt()) }
                 )
 
-                AmbientLedItem.CustomColor -> SwitchPreference(
-                    title = stringResource(R.string.settings_led_custom_color_title),
+                is AmbientLedItem.CustomColor -> SwitchPreference(
+                    title = stringResource(item.labelRes),
                     subtitle = if (display.ambientLedCustomColor) {
                         stringResource(R.string.settings_led_custom_color_subtitle_on)
                     } else {
@@ -202,8 +207,8 @@ fun AmbientLedSection(
                     onToggle = { viewModel.setAmbientLedCustomColor(!display.ambientLedCustomColor) }
                 )
 
-                AmbientLedItem.CustomColorHue -> HueSliderPreference(
-                    title = stringResource(R.string.settings_led_custom_color_hue_title),
+                is AmbientLedItem.CustomColorHue -> HueSliderPreference(
+                    title = stringResource(item.labelRes),
                     currentHue = display.ambientLedCustomColorHue.toFloat(),
                     isFocused = isFocused(item),
                     onHueChange = { hue ->
@@ -211,27 +216,27 @@ fun AmbientLedSection(
                     }
                 )
 
-                AmbientLedItem.AchievementFlash -> SwitchPreference(
-                    title = stringResource(R.string.settings_led_achievement_flash_title),
+                is AmbientLedItem.AchievementFlash -> SwitchPreference(
+                    title = stringResource(item.labelRes),
                     subtitle = stringResource(R.string.settings_led_achievement_flash_subtitle),
                     isEnabled = display.ambientLedAchievementFlash,
                     isFocused = isFocused(item),
                     onToggle = { viewModel.setAmbientLedAchievementFlash(!display.ambientLedAchievementFlash) }
                 )
 
-                AmbientLedItem.CoverArtColors -> SwitchPreference(
-                    title = stringResource(R.string.settings_led_cover_art_title),
+                is AmbientLedItem.CoverArtColors -> SwitchPreference(
+                    title = stringResource(item.labelRes),
                     subtitle = stringResource(R.string.settings_led_cover_art_subtitle),
                     isEnabled = display.ambientLedCoverArtEnabled,
                     isFocused = isFocused(item),
                     onToggle = { viewModel.setAmbientLedCoverArtEnabled(!display.ambientLedCoverArtEnabled) }
                 )
 
-                AmbientLedItem.TransitionSpeed -> {
+                is AmbientLedItem.TransitionSpeed -> {
                     val steps = remember { transitionLabels.keys.toList() }
                     val currentStep = steps.indexOf(display.ambientLedTransitionMs).coerceAtLeast(0)
                     CyclePreference(
-                        title = stringResource(R.string.settings_led_transition_title),
+                        title = stringResource(item.labelRes),
                         value = transitionLabels[display.ambientLedTransitionMs]
                             ?.let { stringResource(it) }
                             ?: stringResource(
@@ -249,30 +254,30 @@ fun AmbientLedSection(
                     )
                 }
 
-                AmbientLedItem.AudioBrightness -> SwitchPreference(
-                    title = stringResource(R.string.settings_led_audio_brightness_title),
+                is AmbientLedItem.AudioBrightness -> SwitchPreference(
+                    title = stringResource(item.labelRes),
                     subtitle = stringResource(R.string.settings_led_audio_brightness_subtitle),
                     isEnabled = display.ambientLedAudioBrightness,
                     isFocused = isFocused(item),
                     onToggle = { viewModel.setAmbientLedAudioBrightness(!display.ambientLedAudioBrightness) }
                 )
 
-                AmbientLedItem.AudioColors -> SwitchPreference(
-                    title = stringResource(R.string.settings_led_audio_colors_title),
+                is AmbientLedItem.AudioColors -> SwitchPreference(
+                    title = stringResource(item.labelRes),
                     subtitle = stringResource(R.string.settings_led_audio_colors_subtitle),
                     isEnabled = display.ambientLedAudioColors,
                     isFocused = isFocused(item),
                     onToggle = { viewModel.setAmbientLedAudioColors(!display.ambientLedAudioColors) }
                 )
 
-                AmbientLedItem.ScreenColors -> {
+                is AmbientLedItem.ScreenColors -> {
                     val subtitle = if (!display.hasScreenCapturePermission) {
                         stringResource(R.string.settings_led_screen_colors_subtitle_locked)
                     } else {
                         stringResource(R.string.settings_led_screen_colors_subtitle)
                     }
                     SwitchPreference(
-                        title = stringResource(R.string.settings_led_screen_colors_title),
+                        title = stringResource(item.labelRes),
                         subtitle = subtitle,
                         isEnabled = display.ambientLedScreenEnabled,
                         isFocused = isFocused(item),
@@ -285,8 +290,8 @@ fun AmbientLedSection(
                     )
                 }
 
-                AmbientLedItem.ScreenColorMode -> CyclePreference(
-                    title = stringResource(R.string.settings_led_color_mode_title),
+                is AmbientLedItem.ScreenColorMode -> CyclePreference(
+                    title = stringResource(item.labelRes),
                     value = stringResource(ambientLedColorModeLabelRes(display.ambientLedColorMode)),
                     isFocused = isFocused(item),
                     onClick = { viewModel.cycleAmbientLedColorMode() },

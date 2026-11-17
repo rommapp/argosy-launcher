@@ -34,6 +34,36 @@ private fun footerOverlapPx(): Int {
     return (if (footerVisible) footerPx else 0) + navBarPx
 }
 
+private fun farJumpSnapIndex(index: Int, visibleCount: Int, first: Int, last: Int): Int? {
+    val near = visibleCount.coerceAtLeast(1) * FAR_JUMP_VIEWPORTS
+    return when {
+        index > last + near -> (index - near).coerceAtLeast(0)
+        index < first - near -> index + near
+        else -> null
+    }
+}
+
+private suspend fun LazyListState.snapNearFarItem(index: Int) {
+    val visible = layoutInfo.visibleItemsInfo
+    val first = firstVisibleItemIndex
+    farJumpSnapIndex(index, visible.size, first, visible.lastOrNull()?.index ?: first)
+        ?.let { scrollToItem(it) }
+}
+
+private suspend fun LazyGridState.snapNearFarItem(index: Int) {
+    val visible = layoutInfo.visibleItemsInfo
+    val first = firstVisibleItemIndex
+    farJumpSnapIndex(index, visible.size, first, visible.lastOrNull()?.index ?: first)
+        ?.let { scrollToItem(it) }
+}
+
+private suspend fun LazyStaggeredGridState.snapNearFarItem(index: Int) {
+    val visible = layoutInfo.visibleItemsInfo
+    val first = firstVisibleItemIndex
+    farJumpSnapIndex(index, visible.size, first, visible.lastOrNull()?.index ?: first)
+        ?.let { scrollToItem(it) }
+}
+
 /**
  * Scrolls to [index] with animation, but pre-snaps to within a couple of
  * viewports of the target when it is far outside the visible window, so
@@ -41,102 +71,153 @@ private fun footerOverlapPx(): Int {
  * across the whole list.
  */
 suspend fun LazyListState.fastAnimateScrollToItem(index: Int, scrollOffset: Int = 0) {
-    val visible = layoutInfo.visibleItemsInfo
-    val near = visible.size.coerceAtLeast(1) * FAR_JUMP_VIEWPORTS
-    val first = firstVisibleItemIndex
-    val last = visible.lastOrNull()?.index ?: first
-    if (index > last + near) {
-        scrollToItem((index - near).coerceAtLeast(0))
-    } else if (index < first - near) {
-        scrollToItem(index + near)
-    }
+    snapNearFarItem(index)
     animateScrollToItem(index, scrollOffset)
 }
 
 suspend fun LazyGridState.fastAnimateScrollToItem(index: Int, scrollOffset: Int = 0) {
-    val visible = layoutInfo.visibleItemsInfo
-    val near = visible.size.coerceAtLeast(1) * FAR_JUMP_VIEWPORTS
-    val first = firstVisibleItemIndex
-    val last = visible.lastOrNull()?.index ?: first
-    if (index > last + near) {
-        scrollToItem((index - near).coerceAtLeast(0))
-    } else if (index < first - near) {
-        scrollToItem(index + near)
-    }
+    snapNearFarItem(index)
     animateScrollToItem(index, scrollOffset)
 }
 
 suspend fun LazyStaggeredGridState.fastAnimateScrollToItem(index: Int, scrollOffset: Int = 0) {
-    val visible = layoutInfo.visibleItemsInfo
-    val near = visible.size.coerceAtLeast(1) * FAR_JUMP_VIEWPORTS
-    val first = firstVisibleItemIndex
-    val last = visible.lastOrNull()?.index ?: first
-    if (index > last + near) {
-        scrollToItem((index - near).coerceAtLeast(0))
-    } else if (index < first - near) {
-        scrollToItem(index + near)
-    }
+    snapNearFarItem(index)
     animateScrollToItem(index, scrollOffset)
 }
 
+private suspend fun centerOnItem(
+    index: Int,
+    animate: Boolean,
+    snapFarJumps: Boolean,
+    topInsetPx: Int,
+    bottomInsetPx: Int,
+    totalItems: () -> Int,
+    canScroll: () -> Boolean,
+    viewportHeight: () -> Int,
+    visibleHeights: () -> List<Pair<Int, Int>>,
+    snapNear: suspend () -> Unit,
+    scrollTo: suspend (offset: Int, animate: Boolean) -> Unit
+) {
+    if (index < 0) return
+    if (totalItems() == 0) snapshotFlow { totalItems() }.first { it > 0 }
+    if (index >= totalItems()) return
+    if (!canScroll()) return
+    if (snapFarJumps && animate) snapNear()
+    val visible = visibleHeights()
+    if (visible.isEmpty()) {
+        scrollTo(0, animate)
+        return
+    }
+    val itemHeight = visible.firstOrNull { it.first == index }?.second
+        ?: (visible.sumOf { it.second } / visible.size)
+    val band = viewportHeight() - topInsetPx - bottomInsetPx
+    scrollTo(-((band - itemHeight) / 2), animate)
+}
+
 /**
- * Animates the list until the item at [index] sits vertically centred in the viewport,
- * the way menu focus follows the cursor. A negative or out-of-range index is a no-op.
- * An unmeasured list suspends until its first layout pass so an early call still lands.
- * A list that fits its viewport cannot centre and is left where it is. When the target
- * item is not yet laid out, its height is estimated from the average visible item, so
- * rows of differing heights settle within one estimate of true centre.
+ * Animates until the item at [index] sits centred in the band left after [topInsetPx] and
+ * [bottomInsetPx] of chrome; a top inset expects matching top content padding. An unmeasured
+ * list waits for its first layout, one that fits its viewport is left alone, and [snapFarJumps]
+ * pre-snaps near a far target as [fastAnimateScrollToItem] does.
  */
-suspend fun LazyListState.animateScrollToItemCentered(index: Int) = scrollToItemCentered(index, animate = true)
+suspend fun LazyListState.animateScrollToItemCentered(
+    index: Int,
+    topInsetPx: Int = 0,
+    bottomInsetPx: Int = 0,
+    snapFarJumps: Boolean = false
+) = scrollToItemCentered(index, animate = true, topInsetPx, bottomInsetPx, snapFarJumps)
 
 /**
  * [animateScrollToItemCentered] with the motion optional: [animate] false jumps straight to the
- * centred position, for reduced motion.
+ * centred position, for reduced motion and for restoring a position on first composition.
  */
-suspend fun LazyListState.scrollToItemCentered(index: Int, animate: Boolean) {
-    if (index < 0) return
-    if (layoutInfo.totalItemsCount == 0) {
-        snapshotFlow { layoutInfo.totalItemsCount }.first { it > 0 }
+suspend fun LazyListState.scrollToItemCentered(
+    index: Int,
+    animate: Boolean,
+    topInsetPx: Int = 0,
+    bottomInsetPx: Int = 0,
+    snapFarJumps: Boolean = false
+) = centerOnItem(
+    index = index,
+    animate = animate,
+    snapFarJumps = snapFarJumps,
+    topInsetPx = topInsetPx,
+    bottomInsetPx = bottomInsetPx,
+    totalItems = { layoutInfo.totalItemsCount },
+    canScroll = { canScrollForward || canScrollBackward },
+    viewportHeight = { layoutInfo.viewportEndOffset - layoutInfo.viewportStartOffset },
+    visibleHeights = { layoutInfo.visibleItemsInfo.map { it.index to it.size } },
+    snapNear = { snapNearFarItem(index) },
+    scrollTo = { offset, animated ->
+        if (animated) animateScrollToItem(index, offset) else scrollToItem(index, offset)
     }
-    val info = layoutInfo
-    if (index >= info.totalItemsCount) return
-    if (!canScrollForward && !canScrollBackward) return
-    val visible = info.visibleItemsInfo
-    if (visible.isEmpty()) {
-        if (animate) animateScrollToItem(index) else scrollToItem(index)
-        return
-    }
-    val viewportHeight = info.viewportEndOffset - info.viewportStartOffset
-    val itemHeight = visible.firstOrNull { it.index == index }?.size
-        ?: (visible.sumOf { it.size } / visible.size)
-    val centerOffset = (viewportHeight - itemHeight) / 2
-    if (animate) animateScrollToItem(index, -centerOffset) else scrollToItem(index, -centerOffset)
-}
+)
 
 /**
  * The grid form of [LazyListState.animateScrollToItemCentered]. A grid scrolls by rows, so this
- * centres the row the item at [index] sits in. Content padding is not discounted, which is why a
- * grid with chrome drawn over it wants [GridFocusedScroll] instead.
+ * centres the row the item at [index] sits in.
  */
-suspend fun LazyGridState.animateScrollToItemCentered(index: Int) {
-    if (index < 0) return
-    if (layoutInfo.totalItemsCount == 0) {
-        snapshotFlow { layoutInfo.totalItemsCount }.first { it > 0 }
+suspend fun LazyGridState.animateScrollToItemCentered(
+    index: Int,
+    topInsetPx: Int = 0,
+    bottomInsetPx: Int = 0,
+    snapFarJumps: Boolean = false
+) = scrollToItemCentered(index, animate = true, topInsetPx, bottomInsetPx, snapFarJumps)
+
+suspend fun LazyGridState.scrollToItemCentered(
+    index: Int,
+    animate: Boolean,
+    topInsetPx: Int = 0,
+    bottomInsetPx: Int = 0,
+    snapFarJumps: Boolean = false
+) = centerOnItem(
+    index = index,
+    animate = animate,
+    snapFarJumps = snapFarJumps,
+    topInsetPx = topInsetPx,
+    bottomInsetPx = bottomInsetPx,
+    totalItems = { layoutInfo.totalItemsCount },
+    canScroll = { canScrollForward || canScrollBackward },
+    viewportHeight = { layoutInfo.viewportEndOffset - layoutInfo.viewportStartOffset },
+    visibleHeights = { layoutInfo.visibleItemsInfo.map { it.index to it.size.height } },
+    snapNear = { snapNearFarItem(index) },
+    scrollTo = { offset, animated ->
+        if (animated) animateScrollToItem(index, offset) else scrollToItem(index, offset)
     }
-    val info = layoutInfo
-    if (index >= info.totalItemsCount) return
-    if (!canScrollForward && !canScrollBackward) return
-    val visible = info.visibleItemsInfo
-    if (visible.isEmpty()) {
-        animateScrollToItem(index)
-        return
+)
+
+/**
+ * The staggered-grid form of [LazyListState.animateScrollToItemCentered]; lanes of differing
+ * heights centre on the item's own height.
+ */
+suspend fun LazyStaggeredGridState.animateScrollToItemCentered(
+    index: Int,
+    topInsetPx: Int = 0,
+    bottomInsetPx: Int = 0,
+    snapFarJumps: Boolean = false
+) = scrollToItemCentered(index, animate = true, topInsetPx, bottomInsetPx, snapFarJumps)
+
+suspend fun LazyStaggeredGridState.scrollToItemCentered(
+    index: Int,
+    animate: Boolean,
+    topInsetPx: Int = 0,
+    bottomInsetPx: Int = 0,
+    snapFarJumps: Boolean = false
+) = centerOnItem(
+    index = index,
+    animate = animate,
+    snapFarJumps = snapFarJumps,
+    topInsetPx = topInsetPx,
+    bottomInsetPx = bottomInsetPx,
+    totalItems = { layoutInfo.totalItemsCount },
+    canScroll = { canScrollForward || canScrollBackward },
+    viewportHeight = { layoutInfo.viewportEndOffset - layoutInfo.viewportStartOffset },
+    visibleHeights = { layoutInfo.visibleItemsInfo.map { it.index to it.size.height } },
+    snapNear = { snapNearFarItem(index) },
+    scrollTo = { offset, animated ->
+        if (animated) animateScrollToItem(index, offset) else scrollToItem(index, offset)
     }
-    val viewportHeight = info.viewportEndOffset - info.viewportStartOffset
-    val itemHeight = visible.firstOrNull { it.index == index }?.size?.height
-        ?: (visible.sumOf { it.size.height } / visible.size)
-    val centerOffset = (viewportHeight - itemHeight) / 2
-    animateScrollToItem(index, -centerOffset)
-}
+)
 
 /**
  * Whether a focus-follow scroll moves the list. The first pass always places the list; after

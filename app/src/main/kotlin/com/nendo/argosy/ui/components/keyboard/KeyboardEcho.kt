@@ -131,9 +131,10 @@ internal fun KeyboardEcho(
         }
         InputGlyph(button = InputButton.RB, size = Dimens.iconMd)
         if (state.pasteAvailable) {
+            val pasteFocused = state.pasteFocused && !state.focusOutside
             KeySurface(
                 fill = theme.surfaceElevated,
-                focused = state.pasteFocused,
+                focused = pasteFocused,
                 enabled = state.enabled,
                 onTap = onPasteTap,
                 onLongPress = onPasteTap,
@@ -143,7 +144,7 @@ internal fun KeyboardEcho(
                 Text(
                     text = pasteLabel,
                     style = MaterialTheme.typography.labelMedium,
-                    color = if (state.pasteFocused) theme.focusAccent else theme.textPrimary,
+                    color = if (pasteFocused) theme.focusAccent else theme.textPrimary,
                     maxLines = 1,
                     modifier = Modifier.padding(start = Dimens.spacingXs)
                 )

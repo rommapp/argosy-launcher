@@ -45,6 +45,7 @@ class UserChosenSavePathTest {
             unitSaveHandler = mockk(relaxed = true),
             sigilSaveHandler = mockk(relaxed = true),
             dreamcastSaveHandler = mockk(relaxed = true),
+            emulatorSaveConfigRepository = mockk(relaxed = true),
         )
     }
 

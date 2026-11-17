@@ -90,7 +90,9 @@ import com.nendo.argosy.core.game.AchievementUi
 import com.nendo.argosy.ui.theme.ALauncherColors
 import com.nendo.argosy.ui.theme.Dimens
 import com.nendo.argosy.ui.theme.LocalBoxArtStyle
+import com.nendo.argosy.ui.theme.Motion
 import com.nendo.argosy.ui.components.GameCard
+import com.nendo.argosy.ui.components.animateScrollToItemCentered
 import com.nendo.argosy.ui.screens.home.HomeGameUi
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
@@ -275,7 +277,7 @@ fun ActionButtons(
         initialValue = 0f,
         targetValue = 360f,
         animationSpec = infiniteRepeatable(
-            animation = tween(2000, easing = LinearEasing),
+            animation = tween(Motion.durationShimmer, easing = LinearEasing),
             repeatMode = RepeatMode.Restart
         ),
         label = "rotation"
@@ -607,7 +609,7 @@ fun RelatedGamesSection(
 
     LaunchedEffect(focusedIndex, isActive) {
         if (isActive && games.isNotEmpty()) {
-            listState.animateScrollToItem(focusedIndex.coerceIn(0, games.size - 1))
+            listState.animateScrollToItemCentered(focusedIndex.coerceIn(0, games.size - 1))
         }
     }
 

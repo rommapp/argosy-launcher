@@ -49,6 +49,7 @@ import com.nendo.argosy.R
 import com.nendo.argosy.core.input.SoundType
 import com.nendo.argosy.ui.components.FooterHints
 import com.nendo.argosy.ui.components.InputButton
+import com.nendo.argosy.ui.components.animateScrollToItemCentered
 import com.nendo.argosy.ui.components.dragReorderContainer
 import com.nendo.argosy.ui.components.dragReorderItem
 import com.nendo.argosy.ui.components.liftedReorderHints
@@ -172,13 +173,7 @@ fun BgmPlaylistManagerScreen(
             uiState.focusedIndex < sourceCount -> 1 + uiState.focusedIndex
             else -> 2 + sourceCount + (uiState.focusedIndex - sourceCount)
         }
-        val viewportHeight = listState.layoutInfo.viewportEndOffset
-        val visibleItems = listState.layoutInfo.visibleItemsInfo
-        val avgItemHeight = if (visibleItems.isNotEmpty()) {
-            visibleItems.sumOf { it.size } / visibleItems.size
-        } else 64
-        val targetOffset = (viewportHeight / 2) - (avgItemHeight / 2)
-        listState.animateScrollToItem(lazyIndex, -targetOffset)
+        listState.animateScrollToItemCentered(lazyIndex)
     }
 
     Box(

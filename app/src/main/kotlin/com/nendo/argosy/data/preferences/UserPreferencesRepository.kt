@@ -1055,7 +1055,7 @@ data class UserPreferences(
     val customBiosPath: String? = null,
     val videoWallpaperEnabled: Boolean = false,
     val videoWallpaperDelaySeconds: Int = 3,
-    val videoWallpaperMuted: Boolean = false,
+    val videoWallpaperMuted: Boolean = com.nendo.argosy.ui.theme.generated.ComponentDefaults.Background.videoWallpaperMuted,
     val uiScale: Int = 100,
     val gripReserveMode: GripReserveMode = GripReserveMode.OFF,
     val gripReservePercent: Int = 35,

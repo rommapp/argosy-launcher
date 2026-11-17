@@ -49,6 +49,8 @@ object RootScriptRunner {
 
     fun reboot(): Boolean = RootShell.execute("svc power reboot || reboot").isSuccess
 
+    fun shutdown(): Boolean = RootShell.execute("svc power shutdown || reboot -p").isSuccess
+
     private fun runError(context: Context, script: RootScript, error: Throwable) = RootScriptResult.Error(
         script,
         error.message ?: context.getString(R.string.settings_root_script_run_failed),

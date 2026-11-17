@@ -27,7 +27,10 @@ fun ControllerKeyboardSession(
     error: String? = null,
     canSubmit: Boolean = true,
     enabled: Boolean = true,
-    onSystemKeyboard: (() -> Unit)? = null
+    onSystemKeyboard: (() -> Unit)? = null,
+    onTopEdge: (() -> Boolean)? = null,
+    focusOutside: Boolean = false,
+    accessory: (@Composable () -> Unit)? = null
 ) {
     val owner = remember { Any() }
     val currentText by rememberUpdatedState(text)
@@ -35,8 +38,18 @@ fun ControllerKeyboardSession(
     val currentOnSubmit by rememberUpdatedState(onSubmit)
     val currentOnClose by rememberUpdatedState(onClose)
     val currentOnSystemKeyboard by rememberUpdatedState(onSystemKeyboard)
+    val currentOnTopEdge by rememberUpdatedState(onTopEdge)
+    val currentAccessory by rememberUpdatedState(accessory)
     val handsOff = onSystemKeyboard != null
-    val props = ControllerKeyboardLiveProps(text = text, error = error, canSubmit = canSubmit, enabled = enabled)
+    val edgeAware = onTopEdge != null
+    val hasAccessory = accessory != null
+    val props = ControllerKeyboardLiveProps(
+        text = text,
+        error = error,
+        canSubmit = canSubmit,
+        enabled = enabled,
+        focusOutside = focusOutside
+    )
     val currentProps by rememberUpdatedState(props)
 
     LaunchedEffect(open, owner) {
@@ -53,7 +66,9 @@ fun ControllerKeyboardSession(
                     onTextChange = { currentOnTextChange(it) },
                     onSubmit = { currentOnSubmit() },
                     onClose = { currentOnClose() },
-                    onSystemKeyboard = if (handsOff) ({ currentOnSystemKeyboard?.invoke() }) else null
+                    onSystemKeyboard = if (handsOff) ({ currentOnSystemKeyboard?.invoke() }) else null,
+                    onTopEdge = if (edgeAware) ({ currentOnTopEdge?.invoke() == true }) else null,
+                    accessory = if (hasAccessory) ({ currentAccessory?.invoke() }) else null
                 ),
                 currentProps
             )

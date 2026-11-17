@@ -189,4 +189,18 @@
     <string name="home_title_running_in">正在 %1$s 中執行</string>
     <string name="home_title_saving">正在儲存</string>
     <string name="home_title_running_with_time">已執行 %1$s</string>
+    <string name="home_grid_picker_folder_title">資料夾</string>
+    <string name="home_grid_picker_folder_subtitle">把任何類型的圖塊收進一個圖塊</string>
+    <string name="home_grid_picker_auto_folder_title">自動資料夾</string>
+    <string name="home_grid_picker_auto_folder_subtitle">自動收錄符合規則的遊戲</string>
+    <string name="home_grid_picker_image_title">圖片</string>
+    <string name="home_grid_picker_image_subtitle">填滿所在格子的圖片</string>
+    <string name="home_grid_picker_sticker_title">貼紙</string>
+    <string name="home_grid_picker_sticker_subtitle">去背圖片，可加外框</string>
+    <string name="home_grid_tile_image_label">圖片</string>
+    <string name="home_grid_tile_sticker_label">貼紙</string>
+    <plurals name="home_grid_tile_folder_count">
+        <item quantity="other">%d 項</item>
+    </plurals>
+    <string name="home_tile_file_browser_decor_title">選擇圖片</string>
 </resources>

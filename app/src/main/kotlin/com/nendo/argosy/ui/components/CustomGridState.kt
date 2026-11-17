@@ -8,18 +8,26 @@ import com.nendo.argosy.data.repository.HomeTileRepository
 import com.nendo.argosy.domain.model.CustomGridLayout
 import com.nendo.argosy.domain.model.CustomGridShape
 import com.nendo.argosy.domain.model.FeatureTileKind
+import com.nendo.argosy.domain.model.FolderAppearance
+import com.nendo.argosy.domain.model.FolderBackdropStyle
+import com.nendo.argosy.domain.model.FolderCoverStyle
+import com.nendo.argosy.domain.model.FolderMemberSize
 import com.nendo.argosy.domain.model.GridCell
 import com.nendo.argosy.domain.model.HomeGridKind
 import com.nendo.argosy.domain.model.HomeScrollAxis
 import com.nendo.argosy.domain.model.HomeTile
 import com.nendo.argosy.domain.model.HomeTileTargetRef
+import com.nendo.argosy.domain.model.LibraryLinkFilters
 import com.nendo.argosy.domain.model.SCROLL_AXIS_BOUND
 import com.nendo.argosy.domain.model.TileCoverScale
 import com.nendo.argosy.domain.model.TilePlacement
 import com.nendo.argosy.domain.model.TileRect
+import com.nendo.argosy.domain.model.folderMembers
 import com.nendo.argosy.domain.model.gridKindFor
+import com.nendo.argosy.domain.model.isDecor
 import com.nendo.argosy.domain.model.placeScrollTiles
 import com.nendo.argosy.domain.model.placeTiles
+import com.nendo.argosy.ui.theme.generated.ComponentDefaults
 
 /**
  * Whether a tile of this target draws a game's cover, and so can choose how that cover sits in
@@ -28,6 +36,7 @@ import com.nendo.argosy.domain.model.placeTiles
 private fun HomeTileTargetRef.showsGameCover(): Boolean = when (this) {
     is HomeTileTargetRef.Game -> true
     is HomeTileTargetRef.Feature -> kind != FeatureTileKind.RA_SUMMARY
+    is HomeTileTargetRef.Folder -> true
     else -> false
 }
 
@@ -39,11 +48,20 @@ enum class CustomTileMenuAction {
     EDIT_FILTERS,
     EDIT_TILE,
     BROWSE_ACHIEVEMENTS,
+    MOVE_TO_FOLDER,
+    RENAME_FOLDER,
+    FOLDER_APPEARANCE,
+    STICKER_OUTLINE_ON,
+    STICKER_OUTLINE_OFF,
+    STICKER_OUTLINE_WIDTH,
+    STICKER_OUTLINE_COLOR,
     REMOVE,
     START_GAME_QUEUE,
     SET_FOCUS_GAME,
     ADVANCE_FOCUS_GAME,
     HIDDEN_TILES,
+    EDIT_DECOR,
+    FINISH_DECOR,
     PAGE_BACKDROP,
     PAGE_MUSIC,
     DELETE_PAGE;
@@ -58,11 +76,20 @@ enum class CustomTileMenuAction {
             EDIT_FILTERS -> R.string.custom_tile_menu_action_edit_filters
             EDIT_TILE -> R.string.custom_tile_menu_action_edit_tile
             BROWSE_ACHIEVEMENTS -> R.string.custom_tile_menu_action_browse_achievements
+            MOVE_TO_FOLDER -> R.string.custom_tile_menu_action_move_to_folder
+            RENAME_FOLDER -> R.string.custom_tile_menu_action_rename_folder
+            FOLDER_APPEARANCE -> R.string.custom_tile_menu_action_folder_appearance
+            STICKER_OUTLINE_ON -> R.string.custom_tile_menu_action_sticker_outline_on
+            STICKER_OUTLINE_OFF -> R.string.custom_tile_menu_action_sticker_outline_off
+            STICKER_OUTLINE_WIDTH -> R.string.custom_tile_menu_action_sticker_outline_width
+            STICKER_OUTLINE_COLOR -> R.string.custom_tile_menu_action_sticker_outline_color
             REMOVE -> R.string.custom_tile_menu_action_remove
             START_GAME_QUEUE -> R.string.custom_tile_menu_action_start_game_queue
             SET_FOCUS_GAME -> R.string.custom_tile_menu_action_set_focus_game
             ADVANCE_FOCUS_GAME -> R.string.custom_tile_menu_action_advance_focus_game
             HIDDEN_TILES -> R.string.custom_tile_menu_action_hidden_tiles
+            EDIT_DECOR -> R.string.custom_tile_menu_action_edit_decor
+            FINISH_DECOR -> R.string.custom_tile_menu_action_finish_decor
             PAGE_BACKDROP -> R.string.custom_tile_menu_action_page_backdrop
             PAGE_MUSIC -> R.string.custom_tile_menu_action_page_music
             DELETE_PAGE -> R.string.custom_tile_menu_action_delete_page
@@ -70,10 +97,84 @@ enum class CustomTileMenuAction {
 }
 
 /**
+ * A folder opened over the grid. [autoMembers] holds an auto-folder's matching games as tiles, and is
+ * null for a hand-filled folder, whose members are read from the grid's own tiles.
+ */
+data class FolderOverlayState(
+    val folderId: Long,
+    val focusIndex: Int = 0,
+    val autoMembers: List<HomeTile>? = null,
+    val isLoading: Boolean = false
+)
+
+/**
+ * Choosing which folder the tile [tileId] goes into. Row 0 creates a new folder; the rest are
+ * [CustomGridState.handFolders] in order.
+ */
+data class FolderChooserState(val tileId: Long, val focusIndex: Int = 0)
+
+/**
+ * Naming a folder. [folderId] null places a new folder holding [rule] on the cursor's cell, then
+ * moves [moveTileId] into it when one is waiting.
+ */
+data class FolderNamingState(
+    val folderId: Long?,
+    val initialName: String,
+    val rule: LibraryLinkFilters? = null,
+    val moveTileId: Long? = null
+)
+
+/**
+ * Which decoration a source chooser or file browser is choosing a picture for.
+ */
+enum class DecorKind { IMAGE, STICKER }
+
+/**
+ * Where a picture chosen through the decoration chooser lands: a new image or sticker tile on the
+ * cursor's cell, or one of a folder's two pictures.
+ */
+sealed interface PicturePurpose {
+    data class Decor(val kind: DecorKind) : PicturePurpose
+    data class FolderCover(val folderId: Long) : PicturePurpose
+    data class FolderBackdrop(val folderId: Long) : PicturePurpose
+}
+
+enum class FolderAppearanceRow {
+    COVER,
+    COVER_PICTURE,
+    COVER_OUTLINE,
+    SHOW_NAME,
+    BACKDROP,
+    BACKDROP_PICTURE,
+    ACCENT,
+    MEMBER_SIZE
+}
+
+fun folderAppearanceRows(appearance: FolderAppearance): List<FolderAppearanceRow> = buildList {
+    add(FolderAppearanceRow.COVER)
+    if (appearance.cover != FolderCoverStyle.MOSAIC) add(FolderAppearanceRow.COVER_PICTURE)
+    if (appearance.cover == FolderCoverStyle.STICKER) add(FolderAppearanceRow.COVER_OUTLINE)
+    add(FolderAppearanceRow.SHOW_NAME)
+    add(FolderAppearanceRow.BACKDROP)
+    if (appearance.backdrop == FolderBackdropStyle.IMAGE) add(FolderAppearanceRow.BACKDROP_PICTURE)
+    add(FolderAppearanceRow.ACCENT)
+    add(FolderAppearanceRow.MEMBER_SIZE)
+}
+
+val FolderMemberSize.columns: Int
+    get() = when (this) {
+        FolderMemberSize.SMALL -> ComponentDefaults.CustomGrid.folderColumnsSmall
+        FolderMemberSize.MEDIUM -> ComponentDefaults.CustomGrid.folderColumns
+        FolderMemberSize.LARGE -> ComponentDefaults.CustomGrid.folderColumnsLarge
+    }
+
+data class FolderAppearanceEditor(val folderId: Long, val focusIndex: Int = 0)
+
+/**
  * Which of a page's two decorations is being chosen. Both are picked the same way, so they share a
  * chooser rather than each growing their own.
  */
-enum class PageChooserKind { BACKDROP, MUSIC, FOCUS_GAME }
+enum class PageChooserKind { BACKDROP, MUSIC, FOCUS_GAME, DECOR }
 
 /**
  * What confirming a row in the page chooser does. Rows that lead somewhere are separate from rows
@@ -90,6 +191,7 @@ sealed interface PageChooserAction {
     data object UseTileAudio : PageChooserAction
     data object UseLauncherMusic : PageChooserAction
     data object ClearBackdrop : PageChooserAction
+    data class UseDecorArt(val slot: com.nendo.argosy.domain.model.TileArtSlot) : PageChooserAction
 }
 
 /**
@@ -125,15 +227,15 @@ data class PageChooserState(
         get() = gameTitle != null && gameId == null
 
     /**
-     * Null once a game has been opened, because the heading is then that game's own title, which
-     * [gameTitle] already carries.
+     * Null once a game has been opened: the heading is then [gameTitle].
      */
     @get:StringRes
     val titleRes: Int?
         get() = when {
             kind == PageChooserKind.FOCUS_GAME -> R.string.ui_page_chooser_title_focus_game
-            gameTitle != null -> null
+            gameId != null && !gameTitle.isNullOrBlank() -> null
             kind == PageChooserKind.BACKDROP -> R.string.ui_page_chooser_title_backdrop
+            kind == PageChooserKind.DECOR -> R.string.ui_page_chooser_title_decor
             else -> R.string.ui_page_chooser_title_music
         }
 
@@ -143,6 +245,7 @@ data class PageChooserState(
             kind == PageChooserKind.FOCUS_GAME -> R.string.ui_page_chooser_subtitle_focus_game
             gameId != null -> R.string.ui_page_chooser_subtitle_game_art
             kind == PageChooserKind.BACKDROP -> R.string.ui_page_chooser_subtitle_backdrop
+            kind == PageChooserKind.DECOR -> R.string.ui_page_chooser_subtitle_decor
             else -> R.string.ui_page_chooser_subtitle_music
         }
 }
@@ -241,6 +344,7 @@ data class CustomGridState(
      * the games the tile can follow, which the companion does not have.
      */
     val supportsRaTileSetup: Boolean = false,
+    val supportsFolderRules: Boolean = false,
     val raTile: RaTileStatus = RaTileStatus(),
     /**
      * The tile currently holding the d-pad, or null. An engaged tile plays with sound and takes
@@ -283,11 +387,96 @@ data class CustomGridState(
     val showFileBrowser: Boolean = false,
     val pendingAdd: TilePickerEntry? = null,
     val pendingAddFocusIndex: Int = 0,
-    val scrollAxis: HomeScrollAxis? = null
+    val scrollAxis: HomeScrollAxis? = null,
+    val folderOverlay: FolderOverlayState? = null,
+    val folderChooser: FolderChooserState? = null,
+    val folderNaming: FolderNamingState? = null,
+    /**
+     * Whether image and sticker tiles take the cursor. Outside this mode, and outside arranging a
+     * tile, the cursor steps over them and a tap on one does nothing.
+     */
+    val decorEditing: Boolean = false,
+    val pendingPicture: PicturePurpose? = null,
+    val folderAppearance: FolderAppearanceEditor? = null
 ) {
+
+    val appearanceFolder: HomeTile?
+        get() = folderAppearance?.let { editor -> tiles.firstOrNull { it.id == editor.folderId } }
+
+    val appearanceOfEditedFolder: FolderAppearance
+        get() = (appearanceFolder?.target as? HomeTileTargetRef.Folder)?.appearance ?: FolderAppearance()
+
+    val appearanceRows: List<FolderAppearanceRow>
+        get() = if (folderAppearance == null) emptyList() else folderAppearanceRows(appearanceOfEditedFolder)
+
+    val focusedAppearanceRow: FolderAppearanceRow?
+        get() = folderAppearance?.let { appearanceRows.getOrNull(it.focusIndex) }
+
+    /**
+     * Whether the appearance panel is what input reaches. It stands aside while its own picture is
+     * being chosen, and comes back once the chooser or file browser closes.
+     */
+    val isFolderAppearanceShown: Boolean
+        get() = appearanceFolder != null && pageChooser == null && !showFileBrowser
+
+    val openFolderAppearance: FolderAppearance
+        get() = (openFolder?.target as? HomeTileTargetRef.Folder)?.appearance ?: FolderAppearance()
+
+    val decorFocusable: Boolean
+        get() = decorEditing || isEditing
+
+    fun isFocusable(tile: HomeTile): Boolean = decorFocusable || !tile.target.isDecor
+
+    /**
+     * The hand-filled folders on the grid, in stored order: the folders a tile can be moved into.
+     */
+    val handFolders: List<HomeTile>
+        get() = tiles.filter { tile ->
+            val folder = tile.target as? HomeTileTargetRef.Folder
+            folder != null && folder.rule == null && !tile.isInFolder && tile.kind == kind
+        }
+
+    val openFolder: HomeTile?
+        get() = folderOverlay?.let { overlay -> tiles.firstOrNull { it.id == overlay.folderId } }
+
+    val openFolderMembers: List<HomeTile>
+        get() {
+            val overlay = folderOverlay ?: return emptyList()
+            return overlay.autoMembers ?: folderMembers(tiles, overlay.folderId)
+        }
+
+    val focusedFolderMember: HomeTile?
+        get() = folderOverlay?.let { openFolderMembers.getOrNull(it.focusIndex) }
+
+    val isOpenFolderAuto: Boolean
+        get() = (openFolder?.target as? HomeTileTargetRef.Folder)?.rule != null
+
+    /**
+     * Rows the folder chooser lists: a new folder first, then every hand-filled folder except the
+     * one the tile already sits in.
+     */
+    val folderChooserTargets: List<HomeTile>
+        get() {
+            val chooser = folderChooser ?: return emptyList()
+            val parent = tiles.firstOrNull { it.id == chooser.tileId }?.parentTileId
+            return handFolders.filter { it.id != chooser.tileId && it.id != parent }
+        }
+
+    /**
+     * Whether any image or sticker sits on the page being shown, which is what offers the menu row
+     * that lets the cursor reach them.
+     */
+    val pageHasDecor: Boolean
+        get() = tilesOnPage(page).any { it.target.isDecor }
 
     val isScrolling: Boolean
         get() = scrollAxis != null
+
+    val layout: CustomGridLayout
+        get() = CustomGridLayout(
+            shape = CustomGridShape(columns.coerceAtLeast(1), rows.coerceAtLeast(1)),
+            scrollAxis = scrollAxis
+        )
 
     val kind: HomeGridKind
         get() = gridKindFor(scrollAxis)
@@ -480,8 +669,14 @@ data class CustomGridState(
      */
     val focusedTile: HomeTile?
         get() = editingTile ?: tilesOnPage(page).firstOrNull {
-            it.rect.covers(cell.columnIndex, cell.rowIndex)
+            it.rect.covers(cell.columnIndex, cell.rowIndex) && isFocusable(it)
         }
+
+    /**
+     * Whether any tile, decoration included, covers the cursor's cell.
+     */
+    val isCellOccupied: Boolean
+        get() = tilesOnPage(page).any { it.rect.covers(cell.columnIndex, cell.rowIndex) }
 
     val currentPageSettings: GridPageSettings
         get() = if (isScrolling) GridPageSettings() else pageSettings[page] ?: GridPageSettings()
@@ -522,7 +717,7 @@ data class CustomGridState(
         get() = focusedTile?.target as? HomeTileTargetRef.Collection
 
     fun tileAt(target: GridCell): HomeTile? =
-        tilesOnPage(page).firstOrNull { it.rect.covers(target.columnIndex, target.rowIndex) }
+        tilesOnPage(page).firstOrNull { it.rect.covers(target.columnIndex, target.rowIndex) && isFocusable(it) }
 
     /**
      * The game under the cursor, which for a collection running as a queue is the game it would
@@ -570,8 +765,10 @@ data class CustomGridState(
                 raTile.browseCount > 0 -> R.string.ui_custom_grid_confirm_browse
                 else -> R.string.ui_custom_grid_confirm_library
             }
+            is HomeTileTargetRef.Folder -> R.string.ui_custom_grid_confirm_open
+            is HomeTileTargetRef.Image, is HomeTileTargetRef.Sticker -> null
             HomeTileTargetRef.Unresolvable -> null
-            null -> R.string.ui_custom_grid_confirm_add
+            null -> if (isCellOccupied) null else R.string.ui_custom_grid_confirm_add
         }
 
     /**
@@ -630,10 +827,32 @@ data class CustomGridState(
                         }
                     )
                 }
+                val folder = focused.target as? HomeTileTargetRef.Folder
+                if (folder != null) {
+                    add(CustomTileMenuAction.RENAME_FOLDER)
+                    add(CustomTileMenuAction.FOLDER_APPEARANCE)
+                    if (folder.rule != null && supportsFolderRules) add(CustomTileMenuAction.EDIT_FILTERS)
+                }
+                val sticker = focused.target as? HomeTileTargetRef.Sticker
+                if (sticker != null) {
+                    if (sticker.outline.enabled) {
+                        add(CustomTileMenuAction.STICKER_OUTLINE_WIDTH)
+                        add(CustomTileMenuAction.STICKER_OUTLINE_COLOR)
+                        add(CustomTileMenuAction.STICKER_OUTLINE_OFF)
+                    } else {
+                        add(CustomTileMenuAction.STICKER_OUTLINE_ON)
+                    }
+                }
                 add(CustomTileMenuAction.ARRANGE)
+                if (folder == null && !isEditing) add(CustomTileMenuAction.MOVE_TO_FOLDER)
             }
             if (!isOnAddPage) {
                 if (!isEditing && hiddenTiles.isNotEmpty()) add(CustomTileMenuAction.HIDDEN_TILES)
+                if (decorEditing) {
+                    add(CustomTileMenuAction.FINISH_DECOR)
+                } else if (!isEditing && pageHasDecor) {
+                    add(CustomTileMenuAction.EDIT_DECOR)
+                }
                 if (!isScrolling) {
                     add(CustomTileMenuAction.PAGE_BACKDROP)
                     add(CustomTileMenuAction.PAGE_MUSIC)

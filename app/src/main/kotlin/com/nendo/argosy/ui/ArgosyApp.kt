@@ -96,6 +96,7 @@ import com.nendo.argosy.ui.input.BackgroundConflictInputHandler
 import com.nendo.argosy.ui.input.CapturingInputHandler
 import com.nendo.argosy.ui.input.GamepadEvent
 import com.nendo.argosy.ui.input.HapticPattern
+import com.nendo.argosy.ui.input.HomePress
 import com.nendo.argosy.ui.input.InputDispatcher
 import com.nendo.argosy.ui.input.InputHandler
 import com.nendo.argosy.ui.input.InputResult
@@ -160,6 +161,7 @@ fun ArgosyApp(
     val quickSettingsFocusIndex by viewModel.quickSettings.focusIndex.collectAsState()
     val quickSettingsPage by viewModel.quickSettings.page.collectAsState()
     val quickSettingsState by viewModel.quickSettings.state.collectAsState()
+    val activityUnseen by viewModel.quickSettings.activity.hasUnseen.collectAsState()
     val quickFriendsState by viewModel.quickFriends.state.collectAsState()
     val quickConnectionsState by viewModel.quickConnections.state.collectAsState()
     val musicPlayerUiState by musicPlayerViewModel.uiState.collectAsState()
@@ -518,9 +520,17 @@ fun ArgosyApp(
         )
     }
 
+    val openQuickRoute: (String) -> Unit = remember(viewModel, inputDispatcher, navigateFromDrawer) {
+        { route ->
+            inputDispatcher.unsubscribeDrawer()
+            viewModel.quickSettings.setOpen(false)
+            navigateFromDrawer(route)
+        }
+    }
+
     val quickSettingsInputHandler = remember(
         viewModel, musicPlayerViewModel, inputDispatcher, openRommSignIn, openDeviceAccess, quickFriendsInputHandler,
-        quickConnectionsInputHandler
+        quickConnectionsInputHandler, openQuickRoute
     ) {
         QuickSettingsInputRouter(
             panelHandler = viewModel.quickSettings.createInputHandler(
@@ -528,7 +538,8 @@ fun ArgosyApp(
                     inputDispatcher.unsubscribeDrawer()
                     viewModel.quickSettings.setOpen(false)
                 },
-                onOpenDeviceAccess = openDeviceAccess
+                onOpenDeviceAccess = openDeviceAccess,
+                onOpenRoute = openQuickRoute
             ),
             pageHandlers = mapOf(
                 QuickSettingsPage.FRIENDS to quickFriendsInputHandler,
@@ -583,7 +594,16 @@ fun ArgosyApp(
         }
     }
 
-    val quickMenuInputHandler = remember(quickMenuViewModel, navController, closeQuickMenu, playFromQuickMenu) {
+    val searchFromQuickMenu: (String?) -> Unit = remember(navController, closeQuickMenu) {
+        { query ->
+            closeQuickMenu()
+            navController.navigate(Screen.Search.createRoute(query)) {
+                launchSingleTop = true
+            }
+        }
+    }
+
+    val quickMenuInputHandler = remember(quickMenuViewModel, navController, closeQuickMenu, playFromQuickMenu, searchFromQuickMenu) {
         QuickMenuInputHandler(
             viewModel = quickMenuViewModel,
             onGameSelect = { gameId ->
@@ -593,6 +613,7 @@ fun ArgosyApp(
                 }
             },
             onGamePlay = playFromQuickMenu,
+            onOpenSearch = searchFromQuickMenu,
             onDismiss = { closeQuickMenu() }
         )
     }
@@ -825,11 +846,6 @@ fun ArgosyApp(
         inputDispatcher.setCurrentRoute(currentRoute)
     }
 
-    LaunchedEffect(currentRoute) {
-        val isHome = currentRoute?.startsWith(Screen.Home.route) == true
-        viewModel.gamepadInputHandler.homeEventEnabled = !isHome
-    }
-
     LaunchedEffect(uiState.isLoading, uiState.setupIncomplete, currentRoute) {
         if (uiState.isLoading || !uiState.setupIncomplete) return@LaunchedEffect
         if (currentRoute == null || currentRoute == Screen.FirstRun.route) return@LaunchedEffect
@@ -1008,26 +1024,6 @@ fun ArgosyApp(
                             openQuickSettings()
                         }
                     }
-                    GamepadEvent.Home -> {
-                        if (isDrawerOpen) closeDrawer()
-                        if (isQuickSettingsOpen) closeQuickSettings()
-                        if (quickMenuState.isVisible) closeQuickMenu()
-                        val homeRoute = Screen.Home.route
-                        if (!setupActive && currentRoute != homeRoute) {
-                            navController.navigate(homeRoute) {
-                                popUpTo(homeRoute) { inclusive = true }
-                                launchSingleTop = true
-                            }
-                        }
-                    }
-                    GamepadEvent.LongHome -> {
-                        if (!setupActive) {
-                            if (isDrawerOpen) closeDrawer()
-                            if (isQuickSettingsOpen) closeQuickSettings()
-                            if (quickMenuState.isVisible) closeQuickMenu()
-                            navigateFromDrawer(Screen.Running.route)
-                        }
-                    }
                     else -> {}
                 }
             }
@@ -1082,17 +1078,18 @@ fun ArgosyApp(
     }
 
     LaunchedEffect(inputLifecycle) {
-        viewModel.gamepadInputHandler.homeEventFlow().flowWithLifecycle(inputLifecycle).collect {
-            if (isEmulatorRunning) {
-            } else {
-                if (navController.currentDestination != null && !setupActive) {
-                    if (isDrawerOpen) closeDrawer()
-                    if (isQuickSettingsOpen) closeQuickSettings()
-                    if (quickMenuState.isVisible) closeQuickMenu()
-                    navController.navigate(Screen.Home.route) {
-                        popUpTo(Screen.Home.route) { inclusive = true }
-                        launchSingleTop = true
-                    }
+        viewModel.gamepadInputHandler.homeEventFlow().flowWithLifecycle(inputLifecycle).collect { press ->
+            val route = navController.currentDestination?.route
+            if (route == null || setupActive) return@collect
+            if (isDrawerOpen) closeDrawer()
+            if (isQuickSettingsOpen) closeQuickSettings()
+            if (quickMenuState.isVisible) closeQuickMenu()
+            if (press == HomePress.HOLD && runningGamesUi.appCount > 0) {
+                navigateFromDrawer(Screen.Running.route)
+            } else if (!route.startsWith(Screen.Home.route)) {
+                navController.navigate(Screen.Home.route) {
+                    popUpTo(Screen.Home.route) { inclusive = true }
+                    launchSingleTop = true
                 }
             }
         }
@@ -1129,6 +1126,7 @@ fun ArgosyApp(
         LocalFrostedBackdrop provides frostedBackdrop,
         com.nendo.argosy.ui.common.LocalImageCacheManager provides viewModel.imageCacheManager,
         com.nendo.argosy.ui.components.LocalArtworkScraping provides isScrapingArtwork,
+        com.nendo.argosy.ui.components.LocalActivityUnseen provides activityUnseen,
         com.nendo.argosy.ui.components.LocalStatusBarItems provides
             com.nendo.argosy.ui.components.StatusBarItems(
                 clock = uiState.showStatusClock,
@@ -1287,7 +1285,7 @@ fun ArgosyApp(
                 val drawerBlur = (drawerBlurProgress * Motion.blurRadiusDrawer.value).dp
                 val quickMenuBlur by androidx.compose.animation.core.animateDpAsState(
                     targetValue = if (quickMenuState.isVisible) Motion.blurRadiusDrawer else 0.dp,
-                    animationSpec = androidx.compose.animation.core.tween(200),
+                    animationSpec = androidx.compose.animation.core.tween(Motion.durationSlide),
                     label = "quickMenuBlur"
                 )
                 val launchRecapBlur = com.nendo.argosy.ui.components.launchRecapBackdropBlur()
@@ -1420,6 +1418,7 @@ fun ArgosyApp(
                     }
                 },
                 onGamePlay = playFromQuickMenu,
+                onOpenSearch = searchFromQuickMenu,
                 closeQuickMenu = closeQuickMenu
             )
 
@@ -1439,6 +1438,7 @@ fun ArgosyApp(
                 focusedIndex = quickSettingsFocusIndex,
                 controller = viewModel.quickSettings,
                 onOpenDeviceAccess = openDeviceAccess,
+                onOpenRoute = openQuickRoute,
                 friendsPage = {
                     QuickSettingsFriendsPage(
                         state = quickFriendsState,
@@ -1476,6 +1476,8 @@ fun ArgosyApp(
             )
 
             QuickConnectionsModals(state = quickConnectionsState, controller = viewModel.quickConnections)
+
+            com.nendo.argosy.ui.components.power.QuickPowerModals(controller = viewModel.quickSettings.power)
 
             saveConflictInfo?.let { info ->
                 SaveConflictModal(

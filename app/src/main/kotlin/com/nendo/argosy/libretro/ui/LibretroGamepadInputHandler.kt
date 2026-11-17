@@ -3,12 +3,14 @@ package com.nendo.argosy.libretro.ui
 import android.view.KeyEvent
 import android.view.MotionEvent
 import com.nendo.argosy.ui.input.GamepadEvent
+import com.nendo.argosy.ui.input.GamepadInput
+import com.nendo.argosy.ui.input.InputDispatcher
 import com.nendo.argosy.ui.input.InputHandler
-import com.nendo.argosy.ui.input.InputResult
 import com.nendo.argosy.ui.input.RawInputInterceptor
 
 class LibretroGamepadInputHandler(
     private val menuInputHandler: LibretroMenuInputHandler,
+    private val dispatcher: InputDispatcher,
     private val getActiveHandler: () -> InputHandler?
 ) : RawInputInterceptor {
 
@@ -44,40 +46,17 @@ class LibretroGamepadInputHandler(
         if (event.action != KeyEvent.ACTION_DOWN) return false
 
         val gamepadEvent = menuInputHandler.mapKeyToEvent(event.keyCode) ?: return false
+        return dispatch(GamepadInput(gamepadEvent, isRepeat = event.repeatCount > 0))
+    }
+
+    fun dispatch(input: GamepadInput): Boolean {
         val handler = getActiveHandler() ?: return false
-        return dispatchToHandler(gamepadEvent, handler).handled
+        dispatcher.subscribeView(handler)
+        return dispatcher.dispatch(input).handled
     }
 
     fun handleMotionEvent(event: MotionEvent): Boolean {
         rawMotionEventListener?.let { return it(event) }
         return false
-    }
-
-    private fun dispatchToHandler(event: GamepadEvent, handler: InputHandler): InputResult {
-        return when (event) {
-            GamepadEvent.Up -> handler.onUp()
-            GamepadEvent.Down -> handler.onDown()
-            GamepadEvent.Left -> handler.onLeft()
-            GamepadEvent.Right -> handler.onRight()
-            GamepadEvent.Confirm -> handler.onConfirm()
-            GamepadEvent.Back -> handler.onBack()
-            GamepadEvent.SecondaryAction -> handler.onSecondaryAction()
-            GamepadEvent.ContextMenu -> handler.onContextMenu()
-            GamepadEvent.PrevSection -> handler.onPrevSection()
-            GamepadEvent.NextSection -> handler.onNextSection()
-            GamepadEvent.Menu -> handler.onMenu()
-            GamepadEvent.Select -> handler.onSelect()
-            GamepadEvent.PrevTrigger -> handler.onPrevTrigger()
-            GamepadEvent.NextTrigger -> handler.onNextTrigger()
-            GamepadEvent.LeftStickClick -> handler.onLeftStickClick()
-            GamepadEvent.RightStickClick -> handler.onRightStickClick()
-            GamepadEvent.RightStickUp -> handler.onRightStickUp()
-            GamepadEvent.RightStickDown -> handler.onRightStickDown()
-            GamepadEvent.RightStickLeft -> handler.onRightStickLeft()
-            GamepadEvent.RightStickRight -> handler.onRightStickRight()
-            GamepadEvent.Home, GamepadEvent.LongHome -> InputResult.UNHANDLED
-            GamepadEvent.LongConfirm -> handler.onLongConfirm()
-            GamepadEvent.LongSelect -> handler.onLongSelect()
-        }
     }
 }

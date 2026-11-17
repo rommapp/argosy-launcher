@@ -48,7 +48,8 @@ enum class MediaTilePlayMode {
         Index(value = ["ownerUserId", "pageIndex"]),
         Index(value = ["ownerUserId", "pageIndex", "columnIndex", "rowIndex"]),
         Index(value = ["pageId"]),
-        Index(value = ["ownerUserId", "gridKind", "pageIndex"])
+        Index(value = ["ownerUserId", "gridKind", "pageIndex"]),
+        Index(value = ["parentTileId"])
     ]
 )
 data class HomeTileEntity(
@@ -77,11 +78,12 @@ data class HomeTileEntity(
     val mediaFilePath: String? = null,
     val featureKind: String? = null,
     val featureConfig: String? = null,
-    val createdAt: Long = System.currentTimeMillis()
+    val createdAt: Long = System.currentTimeMillis(),
+    val parentTileId: Long? = null
 )
 
 /**
  * What a tile points at. Stored as a string so an unknown value from a newer build reads back as
  * unresolvable instead of throwing.
  */
-enum class HomeTileTarget { GAME, COLLECTION, VIRTUAL_COLLECTION, APP, MEDIA, FEATURE }
+enum class HomeTileTarget { GAME, COLLECTION, VIRTUAL_COLLECTION, APP, MEDIA, FEATURE, FOLDER, IMAGE, STICKER }

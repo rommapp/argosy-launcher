@@ -67,6 +67,7 @@ import com.nendo.argosy.domain.model.BatteryThresholds
 import com.nendo.argosy.hardware.toBatterySample
 import com.nendo.argosy.ui.theme.generated.ColorTokens
 import com.nendo.argosy.ui.theme.generated.ComponentDefaults
+import com.nendo.argosy.ui.theme.generated.MotionTokens
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextOverflow
@@ -117,6 +118,11 @@ fun rememberBatteryState(): State<BatteryState> {
  * what the main one shows.
  */
 val LocalArtworkScraping = androidx.compose.runtime.compositionLocalOf { false }
+
+/**
+ * Whether the Activity page holds entries the player has not opened it to see.
+ */
+val LocalActivityUnseen = androidx.compose.runtime.compositionLocalOf { false }
 
 data class StatusBarItems(
     val clock: Boolean = true,
@@ -251,13 +257,17 @@ fun SystemStatusBar(
 
     }
     val running = LocalRunningGames.current.takeIf { showsRunningSlots } ?: RunningGamesUi()
+    val activityUnseen = LocalActivityUnseen.current
     val indicators: @Composable (Modifier) -> Unit = { itemModifier ->
-        if (shown.network || shown.battery || running.isAnyRunning) {
+        if (shown.network || shown.battery || running.isAnyRunning || activityUnseen) {
             Row(
                 modifier = itemModifier,
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(Dimens.spacingSm)
             ) {
+                if (activityUnseen) {
+                    ActivityUnseenDot()
+                }
                 if (running.isAnyRunning) {
                     RunningSlotStrip(running = running, onOpen = LocalOpenRunningGames.current)
                 }
@@ -348,6 +358,18 @@ private fun RunningSlotStrip(running: RunningGamesUi, onOpen: () -> Unit) {
 }
 
 @Composable
+private fun ActivityUnseenDot() {
+    val description = stringResource(R.string.ui_status_bar_activity_unseen_desc)
+    Box(
+        modifier = Modifier
+            .size(Dimens.dotSm)
+            .clip(androidx.compose.foundation.shape.CircleShape)
+            .background(LocalArgosyTheme.current.focusAccent)
+            .semantics { contentDescription = description }
+    )
+}
+
+@Composable
 private fun StripUnit(width: Dp, color: Color, shape: RoundedCornerShape, closingBase: Color? = null) {
     Box(
         modifier = Modifier
@@ -392,7 +414,7 @@ private fun ArtworkScrapeIndicator(color: Color, modifier: Modifier = Modifier) 
         initialValue = 0.35f,
         targetValue = 1f,
         animationSpec = infiniteRepeatable(
-            animation = tween(900, easing = LinearEasing),
+            animation = tween(MotionTokens.Tween.pulseMs, easing = LinearEasing),
             repeatMode = RepeatMode.Reverse
         ),
         label = "artworkScrapeAlpha"

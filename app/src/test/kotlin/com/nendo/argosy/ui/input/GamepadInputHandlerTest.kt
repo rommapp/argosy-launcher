@@ -5,6 +5,7 @@ import android.view.KeyEvent
 import android.view.MotionEvent
 import com.nendo.argosy.core.input.ConnectedControllerTracker
 import com.nendo.argosy.data.preferences.UserPreferencesRepository
+import com.nendo.argosy.hardware.SystemHotkeyDetector
 import io.mockk.every
 import io.mockk.mockk
 import kotlinx.coroutines.CoroutineScope
@@ -325,6 +326,99 @@ class GamepadInputHandlerTest {
 
         assertFalse(handler.handleKeyEvent(keyDown(KeyEvent.KEYCODE_DPAD_RIGHT)))
         scheduler.runCurrent()
+
+        assertTrue(emitted.isEmpty())
+    }
+
+    private fun keyUp(code: Int): KeyEvent = mockk(relaxed = true) {
+        every { keyCode } returns code
+        every { action } returns KeyEvent.ACTION_UP
+        every { repeatCount } returns 0
+        every { deviceId } returns PAD_A
+        every { device } returns null
+    }
+
+    private fun collectHomePresses(): MutableList<HomePress> {
+        val presses = mutableListOf<HomePress>()
+        collectorScope.launch { handler.homeEventFlow().collect { presses += it } }
+        scheduler.runCurrent()
+        return presses
+    }
+
+    @Test
+    fun `a Home key released before the hold time is a tap`() {
+        val presses = collectHomePresses()
+
+        assertTrue(handler.handleKeyEvent(keyDown(KeyEvent.KEYCODE_MOVE_HOME)))
+        scheduler.advanceTimeBy(SystemHotkeyDetector.GUIDE_HOLD_MS - 1)
+        assertTrue(handler.handleKeyEvent(keyUp(KeyEvent.KEYCODE_MOVE_HOME)))
+        scheduler.advanceTimeBy(SystemHotkeyDetector.GUIDE_HOLD_MS)
+
+        assertEquals(listOf(HomePress.TAP), presses)
+    }
+
+    @Test
+    fun `a Home key still down at the hold time is a hold and its release sends nothing`() {
+        val presses = collectHomePresses()
+
+        handler.handleKeyEvent(keyDown(KeyEvent.KEYCODE_MOVE_HOME))
+        scheduler.advanceTimeBy(SystemHotkeyDetector.GUIDE_HOLD_MS + 1)
+        handler.handleKeyEvent(keyUp(KeyEvent.KEYCODE_MOVE_HOME))
+        scheduler.runCurrent()
+
+        assertEquals(listOf(HomePress.HOLD), presses)
+    }
+
+    @Test
+    fun `the guide button and the system Home key share the tap and hold rule`() {
+        val presses = collectHomePresses()
+
+        handler.handleKeyEvent(keyDown(KeyEvent.KEYCODE_BUTTON_MODE))
+        handler.handleKeyEvent(keyUp(KeyEvent.KEYCODE_BUTTON_MODE))
+        handler.handleKeyEvent(keyDown(KeyEvent.KEYCODE_HOME))
+        scheduler.advanceTimeBy(SystemHotkeyDetector.GUIDE_HOLD_MS + 1)
+        handler.handleKeyEvent(keyUp(KeyEvent.KEYCODE_HOME))
+        scheduler.runCurrent()
+
+        assertEquals(listOf(HomePress.TAP, HomePress.HOLD), presses)
+    }
+
+    @Test
+    fun `a Home key repeat does not restart the hold`() {
+        val presses = collectHomePresses()
+        val repeat = mockk<KeyEvent>(relaxed = true) {
+            every { keyCode } returns KeyEvent.KEYCODE_MOVE_HOME
+            every { action } returns KeyEvent.ACTION_DOWN
+            every { repeatCount } returns 1
+            every { deviceId } returns PAD_A
+            every { device } returns null
+        }
+
+        handler.handleHomeKey(keyDown(KeyEvent.KEYCODE_MOVE_HOME))
+        scheduler.advanceTimeBy(SystemHotkeyDetector.GUIDE_HOLD_MS / 2)
+        handler.handleHomeKey(repeat)
+        scheduler.advanceTimeBy(SystemHotkeyDetector.GUIDE_HOLD_MS / 2 + 1)
+
+        assertEquals(listOf(HomePress.HOLD), presses)
+    }
+
+    @Test
+    fun `a Home release without its press sends nothing`() {
+        val presses = collectHomePresses()
+
+        handler.handleHomeKey(keyUp(KeyEvent.KEYCODE_MOVE_HOME))
+        scheduler.advanceTimeBy(SystemHotkeyDetector.GUIDE_HOLD_MS * 2)
+
+        assertTrue(presses.isEmpty())
+    }
+
+    @Test
+    fun `a Home key never reaches the gamepad event flow`() {
+        collectEmitted()
+
+        handler.handleKeyEvent(keyDown(KeyEvent.KEYCODE_HOME))
+        handler.handleKeyEvent(keyUp(KeyEvent.KEYCODE_HOME))
+        scheduler.advanceTimeBy(SystemHotkeyDetector.GUIDE_HOLD_MS * 2)
 
         assertTrue(emitted.isEmpty())
     }

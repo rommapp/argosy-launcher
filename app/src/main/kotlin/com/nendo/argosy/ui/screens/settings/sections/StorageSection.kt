@@ -1,5 +1,6 @@
 package com.nendo.argosy.ui.screens.settings.sections
 
+import androidx.annotation.StringRes
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
@@ -68,8 +69,8 @@ import com.nendo.argosy.ui.screens.settings.SettingsUiState
 import com.nendo.argosy.ui.screens.settings.SettingsViewModel
 import com.nendo.argosy.ui.screens.settings.components.SectionHeader
 import com.nendo.argosy.ui.screens.settings.components.SectionPaneLayout
-import com.nendo.argosy.ui.screens.settings.menu.DisabledBehavior
 import com.nendo.argosy.ui.screens.settings.menu.SettingsLayout
+import com.nendo.argosy.ui.screens.settings.search.SearchableSetting
 import com.nendo.argosy.ui.theme.Dimens
 import com.nendo.argosy.ui.theme.LocalArgosyTheme
 import com.nendo.argosy.ui.util.clickableNoFocus
@@ -113,38 +114,56 @@ internal sealed class StorageItem(
     val section: String,
     val visibleWhen: (StorageLayoutState) -> Boolean = { true }
 ) {
-    val isFocusable: Boolean get() = when (this) {
-        is Header, is SectionSpacer, VolumeHero -> false
-        else -> true
-    }
+    val isFocusable: Boolean get() = this is SearchableSetting
 
     class Header(key: String, section: String, val titleRes: Int) : StorageItem(key, section)
     class SectionSpacer(key: String, section: String) : StorageItem(key, section)
 
+    sealed class Row(
+        key: String,
+        section: String,
+        @StringRes override val labelRes: Int,
+        visibleWhen: (StorageLayoutState) -> Boolean = { true }
+    ) : StorageItem(key, section, visibleWhen), SearchableSetting
+
     data object VolumeHero : StorageItem("volumeHero", "overview")
-    data object RecomputeRow : StorageItem("recomputeRow", "overview")
-    data object GamesTile : StorageItem("gamesTile", "overview")
-    data object MusicTile : StorageItem("musicTile", "overview")
-    data object MediaTile : StorageItem("mediaTile", "overview", { it.mediaVisible })
-    data object CachesTile : StorageItem("cachesTile", "overview")
-    data object SteamTile : StorageItem("steamTile", "overview", { it.steamVisible })
+    data object RecomputeRow : Row("recomputeRow", "overview", R.string.settings_storage_recompute_title)
+    data object GamesTile : Row("gamesTile", "overview", R.string.settings_storage_games_tile_title)
+    data object MusicTile : Row("musicTile", "overview", R.string.settings_storage_music_tile_title)
+    data object MediaTile :
+        Row("mediaTile", "overview", R.string.settings_storage_media_tile_title, { it.mediaVisible })
+    data object CachesTile : Row("cachesTile", "overview", R.string.settings_storage_caches_tile_title)
+    data object SteamTile :
+        Row("steamTile", "overview", R.string.settings_storage_steam_tile_title, { it.steamVisible })
 
-    data object GlobalRomPath : StorageItem("globalRomPath", "locations")
-    data object ImageCache : StorageItem("imageCache", "locations")
-    data object MusicLocation : StorageItem("musicLocation", "locations")
-    data object BiosFolder : StorageItem("biosFolder", "locations")
-    data object BuiltinSavePath : StorageItem("builtinSavePath", "locations")
-    data object BuiltinStatePath : StorageItem("builtinStatePath", "locations")
+    data object GlobalRomPath : Row("globalRomPath", "locations", R.string.settings_storage_rom_path_title)
+    data object ImageCache : Row("imageCache", "locations", R.string.settings_storage_image_cache_title)
+    data object MusicLocation : Row("musicLocation", "locations", R.string.settings_storage_music_location_title)
+    data object BiosFolder : Row("biosFolder", "locations", R.string.settings_storage_bios_folder_title)
+    data object BuiltinSavePath :
+        Row("builtinSavePath", "locations", R.string.settings_storage_builtin_save_path_title)
+    data object BuiltinStatePath :
+        Row("builtinStatePath", "locations", R.string.settings_storage_builtin_state_path_title)
 
-    data object MaxDownloads : StorageItem("maxDownloads", "downloads")
-    data object RemoteInstalls : StorageItem("remoteInstalls", "downloads")
-    data object AutoStartDownloads : StorageItem("autoStartDownloads", "downloads")
-    data object Threshold : StorageItem("threshold", "downloads")
-    data object InternalStaging : StorageItem("internalStaging", "downloads")
-    data object FolderNameFromRom : StorageItem("folderNameFromRom", "downloads")
+    data object MaxDownloads : Row("maxDownloads", "downloads", R.string.settings_storage_max_downloads_title)
+    data object RemoteInstalls : Row(
+        "remoteInstalls",
+        "downloads",
+        R.string.settings_storage_remote_installs_title,
+        { !it.remoteInstallsLocked }
+    )
+    data object RemoteInstallsLocked :
+        StorageItem("remoteInstallsLocked", "downloads", { it.remoteInstallsLocked })
+    data object AutoStartDownloads :
+        Row("autoStartDownloads", "downloads", R.string.settings_storage_auto_start_title)
+    data object Threshold : Row("threshold", "downloads", R.string.settings_storage_threshold_title)
+    data object InternalStaging :
+        Row("internalStaging", "downloads", R.string.settings_storage_internal_staging_title)
+    data object FolderNameFromRom :
+        Row("folderNameFromRom", "downloads", R.string.settings_storage_folder_name_from_rom_title)
 
-    data object ResetLibrary : StorageItem("resetLibrary", "danger")
-    data object HardReset : StorageItem("hardReset", "danger")
+    data object ResetLibrary : Row("resetLibrary", "danger", R.string.settings_storage_reset_library_title)
+    data object HardReset : Row("hardReset", "danger", R.string.settings_storage_hard_reset_title)
 
     companion object {
         private val LocationsSpacer = SectionSpacer("locationsSpacer", "locations")
@@ -161,7 +180,8 @@ internal sealed class StorageItem(
                 VolumeHero, RecomputeRow, GamesTile, MediaTile, MusicTile, CachesTile, SteamTile,
                 LocationsSpacer, LocationsHeader,
                 GlobalRomPath, ImageCache, MusicLocation, BiosFolder, BuiltinSavePath, BuiltinStatePath,
-                DownloadsSpacer, DownloadsHeader, MaxDownloads, RemoteInstalls, AutoStartDownloads,
+                DownloadsSpacer, DownloadsHeader, MaxDownloads, RemoteInstalls, RemoteInstallsLocked,
+                AutoStartDownloads,
                 Threshold, InternalStaging,
                 FolderNameFromRom,
                 DangerSpacer, DangerHeader, ResetLibrary, HardReset
@@ -169,14 +189,10 @@ internal sealed class StorageItem(
     }
 }
 
-private fun createStorageLayout(state: StorageLayoutState) = SettingsLayout<StorageItem, StorageLayoutState>(
+internal val storageLayout = SettingsLayout<StorageItem, StorageLayoutState>(
     allItems = StorageItem.ALL,
-    isFocusable = { it.isFocusable && !(it == StorageItem.RemoteInstalls && state.remoteInstallsLocked) },
-    visibleWhen = { item, s -> item.visibleWhen(s) },
-    disabledBehavior = { item ->
-        if (item == StorageItem.RemoteInstalls && state.remoteInstallsLocked) DisabledBehavior.LOCKED
-        else DisabledBehavior.HIDDEN
-    },
+    isFocusable = { it.isFocusable },
+    visibleWhen = { item, state -> item.visibleWhen(state) },
     sectionOf = { it.section },
     sectionTitleRes = {
         when (it) {
@@ -194,10 +210,8 @@ internal data class StorageLayoutInfo(
     val state: StorageLayoutState
 )
 
-internal fun createStorageLayoutInfo(state: SettingsUiState): StorageLayoutInfo {
-    val layoutState = StorageLayoutState.from(state)
-    return StorageLayoutInfo(createStorageLayout(layoutState), layoutState)
-}
+internal fun createStorageLayoutInfo(state: SettingsUiState): StorageLayoutInfo =
+    StorageLayoutInfo(storageLayout, StorageLayoutState.from(state))
 
 internal fun storageItemAtFocusIndex(index: Int, info: StorageLayoutInfo): StorageItem? =
     info.layout.itemAtFocusIndex(index, info.state)
@@ -367,9 +381,8 @@ fun StorageSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
     val layoutState = remember(steamVisible, mediaVisible, remoteInstallsLocked) {
         StorageLayoutState(steamVisible, mediaVisible, remoteInstallsLocked)
     }
-    val storageLayout = remember(layoutState) { createStorageLayout(layoutState) }
-    val visibleItems = remember(storageLayout) { storageLayout.visibleItems(layoutState) }
-    val sections = remember(storageLayout, context) { storageLayout.buildSections(layoutState, context) }
+    val visibleItems = remember(layoutState) { storageLayout.visibleItems(layoutState) }
+    val sections = remember(layoutState, context) { storageLayout.buildSections(layoutState, context) }
 
     val gamesBytes = remember(snapshot, walkProgress) {
         displayBytes(snapshot, walkProgress[StorageCategory.GAMES], setOf(StorageCategory.GAMES))
@@ -489,7 +502,7 @@ fun StorageSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
                 modifier = Modifier.padding(bottom = Dimens.spacingSm)
             )
 
-            StorageItem.RecomputeRow -> RecomputeRow(
+            is StorageItem.RecomputeRow -> RecomputeRow(
                 label = storageComputedLabel(snapshot?.computedAt, attribution.isRefreshing),
                 isRefreshing = attribution.isRefreshing,
                 isFocused = isFocused(item),
@@ -497,8 +510,8 @@ fun StorageSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
                 onDeepRescan = { viewModel.refreshStorageAttribution(deep = true) }
             )
 
-            StorageItem.GamesTile -> CategoryTile(
-                title = stringResource(R.string.settings_storage_games_tile_title),
+            is StorageItem.GamesTile -> CategoryTile(
+                title = stringResource(item.labelRes),
                 icon = Icons.Default.SportsEsports,
                 primaryStat = formatBytes(gamesBytes),
                 secondaryStat = pluralStringResource(
@@ -511,8 +524,8 @@ fun StorageSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
                 onClick = { openFrom(item) { viewModel.navigateToStorageGames() } }
             )
 
-            StorageItem.MediaTile -> CategoryTile(
-                title = stringResource(R.string.settings_storage_media_tile_title),
+            is StorageItem.MediaTile -> CategoryTile(
+                title = stringResource(item.labelRes),
                 icon = Icons.Outlined.Movie,
                 primaryStat = formatBytes(mediaBytes),
                 secondaryStat = pluralStringResource(
@@ -525,8 +538,8 @@ fun StorageSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
                 onClick = { openFrom(item) { viewModel.navigateToStorageMedia() } }
             )
 
-            StorageItem.MusicTile -> CategoryTile(
-                title = stringResource(R.string.settings_storage_music_tile_title),
+            is StorageItem.MusicTile -> CategoryTile(
+                title = stringResource(item.labelRes),
                 icon = Icons.Outlined.MusicNote,
                 primaryStat = formatBytes(musicBytes),
                 secondaryStat = stringResource(R.string.settings_storage_music_tile_action),
@@ -535,8 +548,8 @@ fun StorageSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
                 onClick = { openFrom(item) { viewModel.navigateToThemeMusic() } }
             )
 
-            StorageItem.CachesTile -> CategoryTile(
-                title = stringResource(R.string.settings_storage_caches_tile_title),
+            is StorageItem.CachesTile -> CategoryTile(
+                title = stringResource(item.labelRes),
                 icon = Icons.Default.Cached,
                 primaryStat = formatBytes(cachesBytes),
                 secondaryStat = pluralStringResource(
@@ -549,8 +562,8 @@ fun StorageSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
                 onClick = { openFrom(item) { viewModel.navigateToStorageCaches() } }
             )
 
-            StorageItem.SteamTile -> CategoryTile(
-                title = stringResource(R.string.settings_storage_steam_tile_title),
+            is StorageItem.SteamTile -> CategoryTile(
+                title = stringResource(item.labelRes),
                 icon = Icons.Default.CloudQueue,
                 primaryStat = formatBytes(steamBytes),
                 secondaryStat = stringResource(R.string.settings_storage_steam_tile_subtitle),
@@ -559,9 +572,9 @@ fun StorageSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
                 onClick = { openFrom(item) { viewModel.navigateToSection(SettingsSection.STEAM_SETTINGS) } }
             )
 
-            StorageItem.GlobalRomPath -> ActionPreference(
+            is StorageItem.GlobalRomPath -> ActionPreference(
                 icon = Icons.Default.Folder,
-                title = stringResource(R.string.settings_storage_rom_path_title),
+                title = stringResource(item.labelRes),
                 subtitle = formatStoragePath(storage.romStoragePath),
                 isFocused = isFocused(item),
                 trailingText = stringResource(
@@ -571,7 +584,7 @@ fun StorageSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
                 onClick = { viewModel.openFolderPicker() }
             )
 
-            StorageItem.ImageCache -> {
+            is StorageItem.ImageCache -> {
                 val cachePath = syncSettings.imageCachePath
                 val displayPath = if (cachePath != null) {
                     "${cachePath.substringAfterLast("/")}/argosy_images"
@@ -580,7 +593,7 @@ fun StorageSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
                 }
                 ActionPreference(
                     icon = Icons.Default.Image,
-                    title = stringResource(R.string.settings_storage_image_cache_title),
+                    title = stringResource(item.labelRes),
                     subtitle = if (syncSettings.isImageCacheMigrating) {
                         stringResource(R.string.settings_storage_image_cache_migrating)
                     } else {
@@ -594,9 +607,9 @@ fun StorageSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
                 )
             }
 
-            StorageItem.MusicLocation -> ActionPreference(
+            is StorageItem.MusicLocation -> ActionPreference(
                 icon = Icons.Outlined.LibraryMusic,
-                title = stringResource(R.string.settings_storage_music_location_title),
+                title = stringResource(item.labelRes),
                 subtitle = uiState.ambientAudio.musicDirPath?.let { formatStoragePath(it) }
                     ?: stringResource(R.string.settings_storage_music_location_default),
                 isFocused = isFocused(item),
@@ -605,9 +618,9 @@ fun StorageSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
                 onReset = { resetStorageFolder(item, viewModel) }
             )
 
-            StorageItem.BiosFolder -> ActionPreference(
+            is StorageItem.BiosFolder -> ActionPreference(
                 icon = Icons.Default.Memory,
-                title = stringResource(R.string.settings_storage_bios_folder_title),
+                title = stringResource(item.labelRes),
                 subtitle = if (uiState.bios.isBiosMigrating) {
                     stringResource(R.string.settings_storage_bios_folder_migrating)
                 } else {
@@ -621,9 +634,9 @@ fun StorageSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
                 onReset = { resetStorageFolder(item, viewModel) }
             )
 
-            StorageItem.BuiltinSavePath -> ActionPreference(
+            is StorageItem.BuiltinSavePath -> ActionPreference(
                 icon = Icons.Default.Save,
-                title = stringResource(R.string.settings_storage_builtin_save_path_title),
+                title = stringResource(item.labelRes),
                 subtitle = if (uiState.builtinVideo.isCustomSavePath) {
                     formatStoragePath(uiState.builtinVideo.savePath)
                 } else {
@@ -635,9 +648,9 @@ fun StorageSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
                 onReset = { resetStorageFolder(item, viewModel) }
             )
 
-            StorageItem.BuiltinStatePath -> ActionPreference(
+            is StorageItem.BuiltinStatePath -> ActionPreference(
                 icon = Icons.Default.History,
-                title = stringResource(R.string.settings_storage_builtin_state_path_title),
+                title = stringResource(item.labelRes),
                 subtitle = if (uiState.builtinVideo.isCustomStatePath) {
                     formatStoragePath(uiState.builtinVideo.statePath)
                 } else {
@@ -649,8 +662,8 @@ fun StorageSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
                 onReset = { resetStorageFolder(item, viewModel) }
             )
 
-            StorageItem.MaxDownloads -> SliderPreference(
-                title = stringResource(R.string.settings_storage_max_downloads_title),
+            is StorageItem.MaxDownloads -> SliderPreference(
+                title = stringResource(item.labelRes),
                 value = storage.maxConcurrentDownloads,
                 minValue = 1,
                 maxValue = 5,
@@ -658,39 +671,37 @@ fun StorageSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
                 onAdjust = { viewModel.adjustMaxConcurrentDownloads(it) }
             )
 
-            StorageItem.RemoteInstalls -> if (remoteInstallsLocked) {
-                InfoPreference(
-                    title = stringResource(R.string.settings_storage_remote_installs_title),
-                    value = stringResource(R.string.settings_storage_remote_installs_locked_value),
-                    subtitle = stringResource(
-                        R.string.settings_storage_remote_installs_locked_subtitle,
-                        RomMCapabilities.DEVICE_INSTALL_MIN_VERSION
-                    ),
-                    isFocused = false
-                )
-            } else {
-                SwitchPreference(
-                    title = stringResource(R.string.settings_storage_remote_installs_title),
-                    subtitle = stringResource(R.string.settings_storage_remote_installs_subtitle),
-                    isEnabled = storage.allowRemoteInstalls,
-                    isFocused = isFocused(item),
-                    onToggle = { viewModel.toggleAllowRemoteInstalls() }
-                )
-            }
+            StorageItem.RemoteInstallsLocked -> InfoPreference(
+                title = stringResource(R.string.settings_storage_remote_installs_title),
+                value = stringResource(R.string.settings_storage_remote_installs_locked_value),
+                subtitle = stringResource(
+                    R.string.settings_storage_remote_installs_locked_subtitle,
+                    RomMCapabilities.DEVICE_INSTALL_MIN_VERSION
+                ),
+                isFocused = false
+            )
 
-            StorageItem.AutoStartDownloads -> SwitchPreference(
-                title = stringResource(R.string.settings_storage_auto_start_title),
+            is StorageItem.RemoteInstalls -> SwitchPreference(
+                title = stringResource(item.labelRes),
+                subtitle = stringResource(R.string.settings_storage_remote_installs_subtitle),
+                isEnabled = storage.allowRemoteInstalls,
+                isFocused = isFocused(item),
+                onToggle = { viewModel.toggleAllowRemoteInstalls() }
+            )
+
+            is StorageItem.AutoStartDownloads -> SwitchPreference(
+                title = stringResource(item.labelRes),
                 subtitle = stringResource(R.string.settings_storage_auto_start_subtitle),
                 isEnabled = storage.autoStartDownloads,
                 isFocused = isFocused(item),
                 onToggle = { viewModel.toggleAutoStartDownloads() }
             )
 
-            StorageItem.Threshold -> {
+            is StorageItem.Threshold -> {
                 val thresholds = remember { listOf(50, 100, 250, 500) }
                 val currentIndex = thresholds.indexOf(storage.instantDownloadThresholdMb).coerceAtLeast(0)
                 CyclePreference(
-                    title = stringResource(R.string.settings_storage_threshold_title),
+                    title = stringResource(item.labelRes),
                     value = stringResource(
                         R.string.settings_storage_threshold_value,
                         storage.instantDownloadThresholdMb
@@ -707,26 +718,26 @@ fun StorageSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
                 )
             }
 
-            StorageItem.InternalStaging -> SwitchPreference(
-                title = stringResource(R.string.settings_storage_internal_staging_title),
+            is StorageItem.InternalStaging -> SwitchPreference(
+                title = stringResource(item.labelRes),
                 subtitle = stringResource(R.string.settings_storage_internal_staging_subtitle),
                 isEnabled = storage.stageDownloadsInternally,
                 isFocused = isFocused(item),
                 onToggle = { viewModel.toggleStageDownloadsInternally() }
             )
 
-            StorageItem.FolderNameFromRom -> SwitchPreference(
-                title = stringResource(R.string.settings_storage_folder_name_from_rom_title),
+            is StorageItem.FolderNameFromRom -> SwitchPreference(
+                title = stringResource(item.labelRes),
                 subtitle = stringResource(R.string.settings_storage_folder_name_from_rom_subtitle),
                 isEnabled = storage.folderNameFromRom,
                 isFocused = isFocused(item),
                 onToggle = { viewModel.toggleFolderNameFromRom() }
             )
 
-            StorageItem.ResetLibrary -> {
+            is StorageItem.ResetLibrary -> {
                 val isPurging = storage.isPurgingAll
                 ActionPreference(
-                    title = stringResource(R.string.settings_storage_reset_library_title),
+                    title = stringResource(item.labelRes),
                     subtitle = if (isPurging) {
                         stringResource(R.string.settings_storage_reset_library_busy)
                     } else {
@@ -739,8 +750,8 @@ fun StorageSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
                 )
             }
 
-            StorageItem.HardReset -> ActionPreference(
-                title = stringResource(R.string.settings_storage_hard_reset_title),
+            is StorageItem.HardReset -> ActionPreference(
+                title = stringResource(item.labelRes),
                 subtitle = if (storage.isHardResetting) {
                     stringResource(R.string.settings_storage_hard_reset_busy)
                 } else {

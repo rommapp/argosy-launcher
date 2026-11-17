@@ -197,4 +197,13 @@
 
     <string name="reorder_hint_done">完成</string>
 
+    <string name="custom_tile_menu_action_move_to_folder">移到資料夾</string>
+    <string name="custom_tile_menu_action_rename_folder">重新命名資料夾</string>
+    <string name="custom_tile_menu_action_folder_appearance">外觀</string>
+    <string name="custom_tile_menu_action_sticker_outline_on">加上外框</string>
+    <string name="custom_tile_menu_action_sticker_outline_off">移除外框</string>
+    <string name="custom_tile_menu_action_sticker_outline_width">變更外框粗細</string>
+    <string name="custom_tile_menu_action_sticker_outline_color">變更外框顏色</string>
+    <string name="custom_tile_menu_action_edit_decor">編輯裝飾</string>
+    <string name="custom_tile_menu_action_finish_decor">完成裝飾編輯</string>
 </resources>

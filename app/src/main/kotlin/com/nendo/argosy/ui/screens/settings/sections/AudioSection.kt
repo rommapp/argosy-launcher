@@ -1,5 +1,6 @@
 package com.nendo.argosy.ui.screens.settings.sections
 
+import androidx.annotation.StringRes
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
@@ -16,11 +17,16 @@ import com.nendo.argosy.ui.screens.settings.SettingsUiState
 import com.nendo.argosy.ui.screens.settings.SettingsViewModel
 import com.nendo.argosy.ui.screens.settings.components.SectionPaneLayout
 import com.nendo.argosy.ui.screens.settings.menu.SettingsLayout
+import com.nendo.argosy.ui.screens.settings.search.SearchableSetting
 import com.nendo.argosy.ui.theme.Dimens
 
-internal sealed class AudioItem(val key: String, val section: String) {
-    data object Sounds : AudioItem("sounds", "audio")
-    data object Music : AudioItem("music", "audio")
+internal sealed class AudioItem(
+    val key: String,
+    val section: String,
+    @StringRes override val labelRes: Int
+) : SearchableSetting {
+    data object Sounds : AudioItem("sounds", "audio", R.string.settings_audio_sounds_title)
+    data object Music : AudioItem("music", "audio", R.string.settings_audio_music_title)
 
     companion object {
         val ALL: List<AudioItem>
@@ -28,7 +34,7 @@ internal sealed class AudioItem(val key: String, val section: String) {
     }
 }
 
-private val audioLayout = SettingsLayout<AudioItem, Unit>(
+internal val audioLayout = SettingsLayout<AudioItem, Unit>(
     allItems = AudioItem.ALL,
     isFocusable = { true },
     visibleWhen = { _, _ -> true },
@@ -69,9 +75,9 @@ fun AudioSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
         verticalArrangement = Arrangement.spacedBy(Dimens.spacingSm)
     ) { item ->
         when (item) {
-            AudioItem.Sounds -> NavigationPreference(
+            is AudioItem.Sounds -> NavigationPreference(
                 icon = Icons.Outlined.MusicNote,
-                title = stringResource(R.string.settings_audio_sounds_title),
+                title = stringResource(item.labelRes),
                 subtitle = if (uiState.sounds.enabled) {
                     stringResource(R.string.settings_audio_sounds_subtitle_on, uiState.sounds.volume)
                 } else {
@@ -81,9 +87,9 @@ fun AudioSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
                 onClick = { openFrom(item) { viewModel.navigateToThemeSounds() } }
             )
 
-            AudioItem.Music -> NavigationPreference(
+            is AudioItem.Music -> NavigationPreference(
                 icon = Icons.Outlined.LibraryMusic,
-                title = stringResource(R.string.settings_audio_music_title),
+                title = stringResource(item.labelRes),
                 subtitle = if (uiState.ambientAudio.enabled) {
                     stringResource(R.string.settings_audio_music_subtitle_on, uiState.ambientAudio.volume)
                 } else {

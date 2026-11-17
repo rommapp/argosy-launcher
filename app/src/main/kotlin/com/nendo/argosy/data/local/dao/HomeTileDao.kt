@@ -92,4 +92,21 @@ interface HomeTileDao {
 
     @Query("DELETE FROM home_tiles WHERE targetType = 'GAME' AND gameId NOT IN (SELECT id FROM games)")
     suspend fun deleteTilesForMissingGames()
+
+    @Query("SELECT * FROM home_tiles WHERE parentTileId = :folderId ORDER BY columnIndex ASC, id ASC")
+    suspend fun getFolderMembers(folderId: Long): List<HomeTileEntity>
+
+    @Query(
+        "DELETE FROM home_tile_episodes WHERE tileId IN (SELECT id FROM home_tiles WHERE parentTileId IN " +
+            "(SELECT id FROM home_tiles WHERE (ownerUserId = :ownerUserId OR ownerUserId IS NULL) " +
+            "AND gridKind = :gridKind AND pageIndex = :pageIndex))"
+    )
+    suspend fun deleteFolderMemberEpisodesForPage(ownerUserId: Long?, gridKind: String, pageIndex: Int)
+
+    @Query(
+        "DELETE FROM home_tiles WHERE parentTileId IN (SELECT id FROM home_tiles " +
+            "WHERE (ownerUserId = :ownerUserId OR ownerUserId IS NULL) AND gridKind = :gridKind " +
+            "AND pageIndex = :pageIndex)"
+    )
+    suspend fun deleteFolderMembersForPage(ownerUserId: Long?, gridKind: String, pageIndex: Int)
 }

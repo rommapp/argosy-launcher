@@ -10,11 +10,9 @@ import com.nendo.argosy.data.local.entity.SigilSyncStateEntity
 import com.nendo.argosy.data.preferences.SyncPreferencesRepository
 import com.nendo.argosy.data.sync.SaveUnitResolver
 import com.nendo.argosy.util.AppPaths
-import com.nendo.argosy.data.emulator.SavePathConfig
 import com.nendo.argosy.data.emulator.SavePathRegistry
 import com.nendo.argosy.data.emulator.SwitchProfileParser
 import com.nendo.argosy.data.emulator.savepath.FlycastStandaloneConfig
-import com.nendo.argosy.data.emulator.savepath.PpssppMemoryStick
 import com.nendo.argosy.data.local.dao.EmulatorConfigDao
 import com.nendo.argosy.data.local.dao.GameDao
 import com.nendo.argosy.data.local.entity.GameEntity
@@ -202,7 +200,7 @@ class SigilSaveHandler @Inject constructor(
 
         private const val PCSX2_LAYOUT = "pcsx2"
         private const val PCSX2_MEMCARD_DIR = "pcsx2/memcards"
-        private const val PCSX2_STANDALONE_LAYOUT = "pcsx2_standalone"
+        const val PCSX2_STANDALONE_LAYOUT = "pcsx2_standalone"
         private const val PCSX2_STANDALONE_CARD_DIR = "memcards"
         private const val PCSX2_DEFAULT_CARD = "Mcd001.ps2"
         private const val PS2_CARD_SUFFIX = ".ps2"
@@ -211,7 +209,7 @@ class SigilSaveHandler @Inject constructor(
         private const val FLYCAST_PER_CONTENT_VMUS = "reicast_per_content_vmus"
         private val FLYCAST_PER_GAME_VALUES = setOf("VMU A1", "All VMUs")
         private const val FLYCAST_SHARED_DIR = "dc"
-        private const val FLYCAST_STANDALONE_LAYOUT = "flycast_standalone"
+        const val FLYCAST_STANDALONE_LAYOUT = "flycast_standalone"
 
         private const val PCSX2_SLOT1_OPTION = "Slot1_Filename"
 
@@ -401,6 +399,8 @@ class SigilSaveHandler @Inject constructor(
 
     private val fileAccess = FalSigilFileAccess(fal)
 
+    private val saveRoots = EmulatorSaveRoots(context, fal, emulatorSaveConfigRepository)
+
     /**
      * Whether every routed save travels as a Sigil unit: on a RomM 5.5+ server, and while
      * disconnected from a server last seen at 5.5+. Older servers, and a server never reached,
@@ -482,7 +482,7 @@ class SigilSaveHandler @Inject constructor(
             ?: emulatorPackage?.let { SavePathRegistry.getConfigForPlatformByPackage(it, game.platformSlug) }
             ?: return@withContext null
         val layout = layoutFor(config.emulatorId, game.platformSlug) ?: return@withContext null
-        val found = rootFor(game, config, layout, emulatorPackage) ?: return@withContext null
+        val found = saveRoots.rootFor(config, game.platformSlug, layout, emulatorPackage) ?: return@withContext null
         if (layout == FLYCAST_STANDALONE_LAYOUT) return@withContext flycastStandaloneRoute(found, emulatorPackage)
         SigilRoute(
             layout = layout,
@@ -562,28 +562,6 @@ class SigilSaveHandler @Inject constructor(
         val name = card?.trimEnd('/')?.substringAfterLast('/')?.takeIf { it.isNotBlank() }
             ?: return emptyMap()
         return mapOf(PCSX2_SLOT1_OPTION to name)
-    }
-
-    private suspend fun rootFor(game: GameEntity, config: SavePathConfig, layout: String, pkg: String?): String? {
-        val registered = SavePathRegistry.resolvePathWithPackage(
-            config, pkg, context.filesDir.absolutePath, fal.externalStorageRoots()
-        )
-        val chosen = emulatorSaveConfigRepository.resolveUserSavePath(config.emulatorId, game.platformSlug)
-            ?.takeIf { it.isNotBlank() }
-            ?: PpssppMemoryStick.liveSaveData(config, registered, fal)
-            ?: emulatorSaveConfigRepository.resolveEvaluatedSavePath(config.emulatorId)
-        val candidates = listOfNotNull(chosen) + registered
-        val roots = candidates.mapNotNull {
-            if (layout == FLYCAST_STANDALONE_LAYOUT) {
-                it.trimEnd('/')
-            } else {
-                rootFor(it, layout) ?: rootAbove(it, layout, fal::isDirectory)
-            }
-        }.distinct()
-        if (roots.isEmpty()) {
-            Logger.warn(TAG, "[SaveSync] SIGIL | no root for layout=$layout in ${candidates.firstOrNull()}")
-        }
-        return roots.firstOrNull { fal.isDirectory(it) } ?: roots.firstOrNull()
     }
 
     private fun accessPaths(route: SigilRoute): Array<String> = saveLocator.accessPaths(route).toTypedArray()

@@ -60,6 +60,7 @@ import com.nendo.argosy.ui.common.rememberFileImageModel
 import com.nendo.argosy.ui.components.FooterHints
 import com.nendo.argosy.ui.components.collection.CollectionCell
 import com.nendo.argosy.ui.components.InputButton
+import com.nendo.argosy.ui.components.animateScrollToItemCentered
 import com.nendo.argosy.ui.components.withNavBarClearance
 import com.nendo.argosy.ui.input.LocalInputDispatcher
 import com.nendo.argosy.ui.navigation.Screen
@@ -113,15 +114,7 @@ fun CollectionsScreen(
             CollectionSection.MY_COLLECTIONS -> uiState.focusedIndex + 1
             CollectionSection.BROWSE_BY -> uiState.collections.size + 3 + uiState.focusedIndex
         }
-        if (targetIndex >= 0) {
-            val visibleItems = listState.layoutInfo.visibleItemsInfo
-            val viewportHeight = listState.layoutInfo.viewportEndOffset
-            val avgItemHeight = if (visibleItems.isNotEmpty()) {
-                visibleItems.sumOf { it.size } / visibleItems.size
-            } else 80
-            val targetOffset = (viewportHeight / 2) - (avgItemHeight / 2)
-            listState.animateScrollToItem(targetIndex, -targetOffset)
-        }
+        listState.animateScrollToItemCentered(targetIndex)
     }
 
     PullToRefreshBox(

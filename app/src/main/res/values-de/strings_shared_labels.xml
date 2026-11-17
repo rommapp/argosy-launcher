@@ -187,4 +187,13 @@
 
     <string name="reorder_hint_done">Fertig</string>
 
+    <string name="custom_tile_menu_action_move_to_folder">In Ordner verschieben</string>
+    <string name="custom_tile_menu_action_rename_folder">Ordner umbenennen</string>
+    <string name="custom_tile_menu_action_folder_appearance">Darstellung</string>
+    <string name="custom_tile_menu_action_sticker_outline_on">Umriss hinzufügen</string>
+    <string name="custom_tile_menu_action_sticker_outline_off">Umriss entfernen</string>
+    <string name="custom_tile_menu_action_sticker_outline_width">Umrissbreite ändern</string>
+    <string name="custom_tile_menu_action_sticker_outline_color">Umrissfarbe ändern</string>
+    <string name="custom_tile_menu_action_edit_decor">Dekorationen bearbeiten</string>
+    <string name="custom_tile_menu_action_finish_decor">Dekorationen fertig bearbeiten</string>
 </resources>

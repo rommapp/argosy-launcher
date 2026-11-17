@@ -7,13 +7,13 @@ object GridUtils {
     private const val WIDE_SCREEN_THRESHOLD_DP = 900
     private const val WIDE_SCREEN_MULTIPLIER = 1.5f
 
-    fun getGameGridColumns(density: GridDensity, screenWidthDp: Int): Int {
-        val baseColumns = when (density) {
-            GridDensity.COMPACT -> 8
-            GridDensity.NORMAL -> 6
-            GridDensity.SPACIOUS -> 5
-        }
-        return applyWideScreenMultiplier(baseColumns, screenWidthDp)
+    fun getGameGridColumns(density: GridDensity, screenWidthDp: Int): Int =
+        applyWideScreenMultiplier(getPresentationGameColumns(density), screenWidthDp)
+
+    fun getPresentationGameColumns(density: GridDensity): Int = when (density) {
+        GridDensity.COMPACT -> 8
+        GridDensity.NORMAL -> 6
+        GridDensity.SPACIOUS -> 5
     }
 
     fun getAppGridColumns(density: GridDensity, screenWidthDp: Int): Int {

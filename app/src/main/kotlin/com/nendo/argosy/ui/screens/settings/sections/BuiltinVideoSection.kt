@@ -1,5 +1,6 @@
 package com.nendo.argosy.ui.screens.settings.sections
 
+import androidx.annotation.StringRes
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.lazy.rememberLazyListState
@@ -10,6 +11,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import com.nendo.argosy.R
+import com.nendo.argosy.data.local.entity.PlatformLibretroSettingsEntity
 import com.nendo.argosy.ui.screens.gamedetail.components.OptionItem
 import com.nendo.argosy.ui.screens.settings.BuiltinVideoState
 import com.nendo.argosy.ui.screens.settings.SettingsUiState
@@ -20,7 +22,62 @@ import com.nendo.argosy.ui.screens.settings.libretro.LibretroSettingsSection
 import com.nendo.argosy.ui.screens.settings.libretro.PlatformLibretroSettingsAccessor
 import com.nendo.argosy.ui.screens.settings.libretro.libretroSettingsItemAtFocusIndex
 import com.nendo.argosy.ui.screens.settings.libretro.libretroSettingsMaxFocusIndex
+import com.nendo.argosy.ui.screens.settings.libretro.LibretroVisibilityState
+import com.nendo.argosy.ui.screens.settings.libretro.isLibretroSettingShown
+import com.nendo.argosy.ui.screens.settings.menu.SettingsLayout
+import com.nendo.argosy.ui.screens.settings.search.SearchableSetting
 import com.nendo.argosy.ui.theme.Dimens
+
+internal data class BuiltinVideoLayoutState(
+    val visibility: LibretroVisibilityState,
+    val graphicsRows: List<BuiltinGraphicsRow>,
+    val showsResetAll: Boolean
+) {
+    companion object {
+        fun from(
+            state: BuiltinVideoState,
+            platformSettings: Map<Long, PlatformLibretroSettingsEntity>
+        ) = BuiltinVideoLayoutState(
+            visibility = LibretroVisibilityState(
+                platformSlug = state.currentPlatformContext?.platformSlug,
+                canEnableBFI = state.canEnableBlackFrameInsertion
+            ),
+            graphicsRows = builtinGraphicsRows(state),
+            showsResetAll = builtinVideoShowsResetAll(state, platformSettings)
+        )
+
+        fun global(state: BuiltinVideoState) = from(state.copy(platformContextIndex = 0), emptyMap())
+    }
+}
+
+internal sealed class BuiltinVideoItem(
+    val key: String,
+    @StringRes override val labelRes: Int
+) : SearchableSetting {
+    data class Graphics(val row: BuiltinGraphicsRow) : BuiltinVideoItem("graphics_${row.name}", row.titleRes)
+    data class Setting(val def: LibretroSettingDef) : BuiltinVideoItem(def.key, def.title)
+    data object ResetAll :
+        BuiltinVideoItem("resetAllToGlobal", R.string.settings_shell_builtinvideo_reset_all_to_global)
+
+    companion object {
+        val ALL: List<BuiltinVideoItem>
+            get() = BuiltinGraphicsRow.entries.map { Graphics(it) } +
+                LibretroSettingDef.ALL.map { Setting(it) } +
+                ResetAll
+    }
+}
+
+internal val builtinVideoLayout = SettingsLayout<BuiltinVideoItem, BuiltinVideoLayoutState>(
+    allItems = BuiltinVideoItem.ALL,
+    isFocusable = { true },
+    visibleWhen = { item, state ->
+        when (item) {
+            is BuiltinVideoItem.Graphics -> item.row in state.graphicsRows
+            is BuiltinVideoItem.Setting -> isLibretroSettingShown(item.def, state.visibility)
+            is BuiltinVideoItem.ResetAll -> state.showsResetAll
+        }
+    }
+)
 
 @Composable
 fun BuiltinVideoSection(
@@ -120,7 +177,7 @@ fun BuiltinVideoSection(
                 HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
                 Spacer(modifier = Modifier.height(Dimens.spacingSm))
                 OptionItem(
-                    label = stringResource(R.string.settings_shell_builtinvideo_reset_all_to_global),
+                    label = stringResource(BuiltinVideoItem.ResetAll.labelRes),
                     isFocused = uiState.focusedIndex == resetAllFocusIndex,
                     isDangerous = true,
                     onClick = { viewModel.resetAllPlatformLibretroSettings() }

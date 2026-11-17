@@ -10,6 +10,10 @@ import com.nendo.argosy.hardware.BrightnessController
 import com.nendo.argosy.hardware.DisplayBrightness
 import com.nendo.argosy.hardware.DisplayVolume
 import com.nendo.argosy.hardware.VolumeController
+import com.nendo.argosy.ui.components.activity.QuickActivityController
+import com.nendo.argosy.ui.components.activity.QuickActivityState
+import com.nendo.argosy.ui.components.power.QuickPowerController
+import com.nendo.argosy.ui.components.power.QuickPowerState
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
@@ -54,6 +58,12 @@ class QuickSettingsDeviceDispatcherTest {
         hapticManager = mockk(relaxed = true),
         soundManager = mockk(relaxed = true),
         quickFriends = mockk(relaxed = true),
+        power = mockk<QuickPowerController>(relaxed = true) {
+            every { state } returns MutableStateFlow(QuickPowerState())
+        },
+        activity = mockk<QuickActivityController>(relaxed = true) {
+            every { state } returns MutableStateFlow(QuickActivityState())
+        },
         wrapMode = { MenuWrapMode.HARD_STOP },
         scope = backgroundScope,
         deviceDispatcher = deviceDispatcher

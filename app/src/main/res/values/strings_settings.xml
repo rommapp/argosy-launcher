@@ -2159,6 +2159,8 @@
     <string name="settings_caches_pending_uploads_subtitle_online">Sync now before clearing sync caches</string>
     <!-- Second line of that row while it cannot. -->
     <string name="settings_caches_pending_uploads_subtitle_offline">Reconnect to the server to sync</string>
+    <!-- Settings search result for that row, without the count. "Saves" are game save files. -->
+    <string name="settings_caches_pending_uploads_search_label">Saves waiting to upload</string>
 
     <!-- Row that empties the stored save copies. Verb phrase. -->
     <string name="settings_caches_save_cache_title">Reset Save Cache</string>
@@ -5409,4 +5411,91 @@
     <string name="settings_accounts_pairing_error_client_certificate_required">The server requires a client certificate. Import one under Client Certificate, or turn on Use for RomM there.</string>
     <!-- Sign-in error when the Jellyfin server demanded a client certificate this app did not present. Names the remedy in the Client Certificate menu. -->
     <string name="settings_jellyfin_error_client_certificate_required">The server requires a client certificate. Turn on Use for Jellyfin under Client Certificate.</string>
+
+    <!-- ===== Settings search ===== -->
+
+    <!-- Top row of the settings list; selecting it opens the keyboard to search every setting. Shown as the placeholder while the query is empty. Verb phrase. -->
+    <string name="settings_search_row_title">Search settings</string>
+    <!-- Heading of the on-screen keyboard while the settings search is being typed. Verb phrase. -->
+    <string name="settings_search_keyboard_label">Search settings</string>
+    <!-- Keyboard key that closes the keyboard and keeps the typed search. -->
+    <string name="settings_search_keyboard_submit">Done</string>
+    <!-- Shown under the search row when nothing matches. %1$s is the typed text. -->
+    <string name="settings_search_no_results">No settings match \"%1$s\"</string>
+    <!-- Path step above a search result, naming the settings screen it lives in. Noun: the screens and monitors. -->
+    <string name="settings_search_crumb_displays">Displays</string>
+    <!-- Path step above a search result, naming the LED settings screen. -->
+    <string name="settings_search_crumb_ambient_led">LED Control</string>
+    <!-- Path step above a search result, naming the sound settings screen. Noun. -->
+    <string name="settings_search_crumb_audio">Audio</string>
+    <!-- Path step above a search result, naming the colour and font settings screen. Noun. -->
+    <string name="settings_search_crumb_theme">Theme</string>
+    <!-- Path step above a search result, naming the list of game platforms. Noun, plural. -->
+    <string name="settings_search_crumb_platforms">Platforms</string>
+    <!-- Path step above a search result, naming the emulator that runs inside Argosy. -->
+    <string name="settings_search_crumb_builtin_emulator">Built-in Emulator</string>
+    <!-- Path step above a search result, naming the per-core options screen. "Core" is an emulator core. -->
+    <string name="settings_search_crumb_core_options">Core Options</string>
+    <!-- Path step above a search result, naming the storage settings screen. Noun: disk space. -->
+    <string name="settings_search_crumb_storage">Storage</string>
+    <!-- Path step above a search result, naming the screen that lists caches and system files. -->
+    <string name="settings_search_crumb_storage_caches">Caches &amp; System</string>
+    <!-- Path step above a search result, naming the BIOS files screen. -->
+    <string name="settings_search_crumb_bios">BIOS Files</string>
+    <!-- Path step above a search result, naming the interface sound effects screen. Noun, plural. -->
+    <string name="settings_search_crumb_sounds">Sounds</string>
+    <!-- Path step above a search result, naming the background music screen. Noun. -->
+    <string name="settings_search_crumb_music">Music</string>
+    <!-- Path step above a search result, naming the typeface settings screen. Noun, plural. -->
+    <string name="settings_search_crumb_fonts">Fonts</string>
+    <!-- Path step above a search result, naming the screen for the pattern drawn behind menus. Noun. -->
+    <string name="settings_search_crumb_backdrop">Backdrop</string>
+    <!-- Path step above a search result, naming the interface settings screen. Noun. -->
+    <string name="settings_search_crumb_interface">Interface</string>
+    <!-- Path step above a search result, naming the game cover styling screen. Noun. -->
+    <string name="settings_search_crumb_box_art">Box Art</string>
+    <!-- Path step above a search result, naming the screen for space kept free for a clip-on controller grip. -->
+    <string name="settings_search_crumb_controller_grip">Controller Grip</string>
+    <!-- Path step above a search result, naming the RomM server settings screen. RomM is a product name. -->
+    <string name="settings_search_crumb_romm" translatable="false">RomM</string>
+    <!-- Path step above a search result, naming the save sync settings screen. Noun: saved game data. -->
+    <string name="settings_search_crumb_saves">Saves</string>
+    <!-- Path step above a search result, naming the RomM library sync settings screen. -->
+    <string name="settings_search_crumb_sync_settings">Sync Settings</string>
+    <!-- Path step above a search result, naming the Jellyfin settings screen. Jellyfin is a product name. -->
+    <string name="settings_search_crumb_jellyfin" translatable="false">Jellyfin</string>
+    <!-- Path step above a search result, naming the RetroAchievements settings screen. Product name. -->
+    <string name="settings_search_crumb_retroachievements" translatable="false">RetroAchievements</string>
+    <!-- Path step above a search result, naming the friends and presence settings screen. -->
+    <string name="settings_search_crumb_social">Social</string>
+    <!-- Path step above a search result, naming the Android permissions screen. Noun, plural. -->
+    <string name="settings_search_crumb_permissions">Permissions</string>
+    <!-- Path step above a search result, naming the version and app information screen. -->
+    <string name="settings_search_crumb_about">About</string>
+    <!-- Search result for the Jellyfin row that signs in to or out of the server. Noun: the user's account. -->
+    <string name="settings_search_label_jellyfin_account">Account</string>
+    <!-- Search result for the card showing the linked social account. Noun: the user's account. -->
+    <string name="settings_search_label_social_account">Account</string>
+    <!-- Search result for the preview of the latest release notes. Noun. -->
+    <string name="settings_search_label_about_changelog">Changelog</string>
+    <!-- Search result for the row granting root or Shizuku access. Both are product names. -->
+    <string name="settings_search_label_privileged_access" translatable="false">Magisk / Shizuku</string>
+    <!-- Path step above a search result, naming the home screen layout settings screen. -->
+    <string name="settings_search_crumb_home_screen">Home Screen</string>
+    <!-- Path step above a search result, naming the second-screen game presentation settings screen. Noun. -->
+    <string name="settings_search_crumb_presentation">Presentation</string>
+    <!-- Path step above a search result, naming the game library view settings screen. Noun. -->
+    <string name="settings_search_crumb_library_view">Library</string>
+    <!-- Path step above a search result, naming the controller and menu navigation settings screen. Noun. -->
+    <string name="settings_search_crumb_navigation">Navigation</string>
+    <!-- Path step above a search result, naming the built-in emulator's audio, video and performance screen. -->
+    <string name="settings_search_crumb_builtin_video">A/V &amp; Performance</string>
+    <!-- Path step above a search result, naming the built-in emulator's controls screen. Noun, plural. -->
+    <string name="settings_search_crumb_builtin_controls">Controls</string>
+    <!-- Path step above a search result, naming the built-in emulator's save files and save states screen. Noun, plural. -->
+    <string name="settings_search_crumb_builtin_saves">Saves</string>
+    <!-- Search result for the row that picks the home screen layout (carousel or grid). Noun. -->
+    <string name="settings_search_label_home_layout_selector">Layout</string>
+    <!-- Search result for the platform row that picks which emulator app launches its games. Noun. -->
+    <string name="settings_search_label_platform_emulator">Emulator</string>
 </resources>

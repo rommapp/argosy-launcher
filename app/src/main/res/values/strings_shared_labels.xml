@@ -214,4 +214,16 @@
     <!-- Footer hint on every reorderable list while an item is lifted: drops the lifted item where it is and keeps the new order. Not the save-sync noun. -->
     <string name="reorder_hint_done">Done</string>
 
+    <string name="custom_tile_menu_action_move_to_folder">Move to folder</string>
+    <string name="custom_tile_menu_action_rename_folder">Rename folder</string>
+    <!-- Opens the settings for how a folder looks: cover, backdrop, colors. -->
+    <string name="custom_tile_menu_action_folder_appearance">Appearance</string>
+    <!-- A sticker is a cut-out picture placed on the home grid; the outline is traced around its shape. -->
+    <string name="custom_tile_menu_action_sticker_outline_on">Add outline</string>
+    <string name="custom_tile_menu_action_sticker_outline_off">Remove outline</string>
+    <string name="custom_tile_menu_action_sticker_outline_width">Change outline width</string>
+    <string name="custom_tile_menu_action_sticker_outline_color">Change outline color</string>
+    <!-- Decorations are the image and sticker tiles on the home grid. -->
+    <string name="custom_tile_menu_action_edit_decor">Edit decorations</string>
+    <string name="custom_tile_menu_action_finish_decor">Finish editing decorations</string>
 </resources>

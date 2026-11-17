@@ -18,6 +18,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
+import com.nendo.argosy.ui.theme.Motion
 import kotlinx.coroutines.delay
 
 /**
@@ -58,8 +59,8 @@ fun ScreenDimmerOverlay(
 
         AnimatedVisibility(
             visible = isDimmed,
-            enter = fadeIn(tween(500)),
-            exit = fadeOut(tween(300))
+            enter = fadeIn(tween(Motion.durationMedium)),
+            exit = fadeOut(tween(Motion.durationOverlay))
         ) {
             Box(
                 modifier = Modifier

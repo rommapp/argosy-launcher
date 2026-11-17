@@ -51,6 +51,7 @@ class WiiUFolderHandlerTest {
             unitSaveHandler = mockk(relaxed = true),
             sigilSaveHandler = mockk(relaxed = true),
             dreamcastSaveHandler = mockk(relaxed = true),
+            emulatorSaveConfigRepository = mockk(relaxed = true),
         )
         handler = registry.getFolderHandler("wiiu") ?: error("Wii U handler not registered")
     }

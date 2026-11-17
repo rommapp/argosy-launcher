@@ -104,7 +104,8 @@ class SaveUploader @Inject constructor(
         val serverEmulator = EmulatorRegistry.toServerEmulator(resolvedEmulatorId, preferredCore)
 
         val cachedPath = syncEntity?.localSavePath?.takeIf { path ->
-            saveHandlerRegistry.isValidCachedSavePath(game.platformSlug, path) && fal.exists(path)
+            saveHandlerRegistry.isValidCachedSavePath(game.platformSlug, path) && fal.exists(path) &&
+                !savePathResolver.isOffLegacyPcsx2Cards(resolvedEmulatorId, game.platformSlug, emulatorPackage, gameId, path)
         }
         if (syncEntity?.localSavePath != null && cachedPath == null) {
             Logger.debug(TAG, "[SaveSync] UPLOAD gameId=$gameId | Cached path no longer valid on disk, re-discovering | stalePath=${syncEntity.localSavePath}")

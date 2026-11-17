@@ -53,6 +53,7 @@ import androidx.compose.ui.unit.dp
 import com.nendo.argosy.R
 import com.nendo.argosy.ui.components.friends.SocialAvatar
 import com.nendo.argosy.ui.theme.Dimens
+import com.nendo.argosy.ui.theme.Motion
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
@@ -97,10 +98,10 @@ fun QuayPassArrivalOverlay(
             AnimatedVisibility(
                 visible = cardVisible,
                 enter = slideInHorizontally(initialOffsetX = { it }) +
-                    fadeIn(tween(200)) +
+                    fadeIn(tween(Motion.durationSlide)) +
                     scaleIn(initialScale = 0.92f, animationSpec = spring(dampingRatio = 0.7f, stiffness = 400f)),
                 exit = slideOutHorizontally(targetOffsetX = { it / 3 }) +
-                    fadeOut(tween(150)) +
+                    fadeOut(tween(Motion.durationMicro)) +
                     scaleOut(targetScale = 0.95f)
             ) {
                 ArrivalCard(name = name, greeting = greeting, avatarBitmap = avatarBitmap)

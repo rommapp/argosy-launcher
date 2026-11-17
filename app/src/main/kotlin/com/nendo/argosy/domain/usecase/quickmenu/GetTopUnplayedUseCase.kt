@@ -9,21 +9,35 @@ import java.time.Duration
 import java.time.Instant
 import javax.inject.Inject
 
+/**
+ * An unplayed game ranked for the player. [matchedGenre] and [matchedPlatformId] name the parts of
+ * the player's history that raised its score; both are null when the ranking fell back to rating
+ * or date added.
+ */
+data class TopUnplayedPick(
+    val game: GameEntity,
+    val matchedGenre: String? = null,
+    val matchedPlatformId: Long? = null
+)
+
 class GetTopUnplayedUseCase @Inject constructor(
     private val gameDao: GameDao,
     private val syncPreferencesRepository: SyncPreferencesRepository
 ) {
-    operator fun invoke(limit: Int = 20): Flow<List<GameEntity>> = flow {
+    operator fun invoke(limit: Int = 20, excludedIds: Set<Long> = emptySet()): Flow<List<TopUnplayedPick>> = flow {
         val ownerUserId = syncPreferencesRepository.getRommUserId()
         val playedGames = gameDao.getPlayedGames(ownerUserId)
+        val unplayedGames = (gameDao.getUnplayedInstalledGames(ownerUserId) +
+            gameDao.getUnplayedUndownloadedGames(ownerUserId))
+            .filter { it.id !in excludedIds }
 
         if (playedGames.isEmpty()) {
-            val unplayedByRating = (gameDao.getUnplayedInstalledGames(ownerUserId) +
-                gameDao.getUnplayedUndownloadedGames(ownerUserId))
-                .filter { it.rating != null }
-                .sortedByDescending { it.rating }
-                .take(limit)
-            emit(unplayedByRating)
+            emit(fallbackRanking(unplayedGames, limit))
+            return@flow
+        }
+
+        if (unplayedGames.isEmpty()) {
+            emit(emptyList())
             return@flow
         }
 
@@ -31,24 +45,27 @@ class GetTopUnplayedUseCase @Inject constructor(
         val platformWeights = calculatePlatformWeights(playedGames)
         val playTimeBoost = calculatePlayTimeBoost(playedGames)
 
-        val unplayedGames = gameDao.getUnplayedInstalledGames(ownerUserId) +
-            gameDao.getUnplayedUndownloadedGames(ownerUserId)
-
-        if (unplayedGames.isEmpty()) {
-            emit(emptyList())
-            return@flow
-        }
-
-        val scored = unplayedGames.map { game ->
-            game to calculatePreferenceScore(game, genreWeights, platformWeights, playTimeBoost)
-        }
-
-        val topUnplayed = scored
+        val topUnplayed = unplayedGames
+            .map { game -> game to calculatePreferenceScore(game, genreWeights, platformWeights, playTimeBoost) }
             .sortedByDescending { it.second }
             .take(limit)
-            .map { it.first }
+            .map { (game, _) ->
+                TopUnplayedPick(
+                    game = game,
+                    matchedGenre = game.genre?.takeIf { (genreWeights[it] ?: 0.0) > 0.0 },
+                    matchedPlatformId = game.platformId.takeIf { (platformWeights[it] ?: 0.0) > 0.0 }
+                )
+            }
 
         emit(topUnplayed)
+    }
+
+    private fun fallbackRanking(unplayedGames: List<GameEntity>, limit: Int): List<TopUnplayedPick> {
+        val byRating = unplayedGames
+            .filter { it.rating != null }
+            .sortedByDescending { it.rating }
+        val ranked = byRating.ifEmpty { unplayedGames.sortedByDescending { it.addedAt } }
+        return ranked.take(limit).map { TopUnplayedPick(game = it) }
     }
 
     private fun calculateRecencyFactor(lastPlayed: Instant?): Double {

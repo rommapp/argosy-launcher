@@ -48,6 +48,7 @@ class CustomTileMenuOrderTest {
             listOf(
                 CustomTileMenuAction.FIT_COVER,
                 CustomTileMenuAction.ARRANGE,
+                CustomTileMenuAction.MOVE_TO_FOLDER,
                 CustomTileMenuAction.PAGE_BACKDROP,
                 CustomTileMenuAction.PAGE_MUSIC,
                 CustomTileMenuAction.REMOVE,
@@ -99,6 +100,21 @@ class CustomTileMenuOrderTest {
         val actions = stateWith(target, supportsRaTileSetup = false).menuActions
 
         assertTrue(CustomTileMenuAction.EDIT_TILE !in actions)
+    }
+
+    @Test
+    fun `a folder offers its appearance right after renaming it`() {
+        val actions = stateWith(HomeTileTargetRef.Folder(name = "RPGs")).menuActions
+
+        assertEquals(
+            actions.indexOf(CustomTileMenuAction.RENAME_FOLDER) + 1,
+            actions.indexOf(CustomTileMenuAction.FOLDER_APPEARANCE)
+        )
+    }
+
+    @Test
+    fun `appearance is never offered on a tile that is not a folder`() {
+        assertTrue(CustomTileMenuAction.FOLDER_APPEARANCE !in stateWith(game).menuActions)
     }
 
     @Test
@@ -180,6 +196,7 @@ class CustomTileMenuOrderTest {
             listOf(
                 CustomTileMenuAction.FIT_COVER,
                 CustomTileMenuAction.ARRANGE,
+                CustomTileMenuAction.MOVE_TO_FOLDER,
                 CustomTileMenuAction.HIDDEN_TILES,
                 CustomTileMenuAction.PAGE_BACKDROP,
                 CustomTileMenuAction.PAGE_MUSIC,

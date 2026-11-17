@@ -1,5 +1,6 @@
 package com.nendo.argosy.ui.screens.settings.sections
 
+import androidx.annotation.StringRes
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -43,6 +44,7 @@ import com.nendo.argosy.ui.screens.settings.components.ShortcutCaptureModal
 import com.nendo.argosy.ui.screens.settings.components.SystemComboCaptureModal
 import com.nendo.argosy.ui.screens.settings.delegates.ControlsSettingsDelegate
 import com.nendo.argosy.ui.screens.settings.menu.SettingsLayout
+import com.nendo.argosy.ui.screens.settings.search.SearchableSetting
 import com.nendo.argosy.ui.theme.Dimens
 import com.nendo.argosy.ui.theme.LocalLauncherTheme
 import kotlin.math.roundToInt
@@ -52,10 +54,7 @@ internal sealed class NavigationItem(
     val section: String,
     val visibleWhen: (ControlsState) -> Boolean = { true }
 ) {
-    val isFocusable: Boolean get() = when (this) {
-        is Header, is SectionSpacer -> false
-        else -> true
-    }
+    val isFocusable: Boolean get() = this is SearchableSetting
 
     class Header(
         key: String,
@@ -67,56 +66,85 @@ internal sealed class NavigationItem(
     class SectionSpacer(key: String, section: String, visibleWhen: (ControlsState) -> Boolean = { true })
         : NavigationItem(key, section, visibleWhen)
 
-    data object ControllerLayout : NavigationItem("layout", "controller")
-    data object SwapAB : NavigationItem("swapAB", "controller")
-    data object SwapXY : NavigationItem("swapXY", "controller")
-    data object SwapStartSelect : NavigationItem("swapStartSelect", "controller")
-    data object CheckButtons : NavigationItem("checkButtons", "controller")
-    data object IgnoreControllerTouchpad : NavigationItem("ignoreControllerTouchpad", "controller")
+    sealed class Row(
+        key: String,
+        section: String,
+        @StringRes override val labelRes: Int,
+        visibleWhen: (ControlsState) -> Boolean = { true }
+    ) : NavigationItem(key, section, visibleWhen), SearchableSetting
 
-    data object HapticFeedback : NavigationItem("haptic", "feedback")
-    data object VibrationStrength : NavigationItem(
+    data object ControllerLayout :
+        Row("layout", "controller", R.string.settings_navigation_controller_layout_title)
+    data object SwapAB : Row("swapAB", "controller", R.string.settings_navigation_swap_ab_title)
+    data object SwapXY : Row("swapXY", "controller", R.string.settings_navigation_swap_xy_title)
+    data object SwapStartSelect :
+        Row("swapStartSelect", "controller", R.string.settings_navigation_swap_start_select_title)
+    data object CheckButtons :
+        Row("checkButtons", "controller", R.string.settings_navigation_check_buttons_title)
+    data object IgnoreControllerTouchpad : Row(
+        "ignoreControllerTouchpad",
+        "controller",
+        R.string.settings_navigation_ignore_controller_touchpad_title
+    )
+
+    data object HapticFeedback : Row("haptic", "feedback", R.string.settings_navigation_haptic_title)
+    data object VibrationStrength : Row(
         key = "vibration",
         section = "feedback",
+        labelRes = R.string.settings_navigation_vibration_title,
         visibleWhen = { it.hapticEnabled }
     )
 
-    data object MenuWrap : NavigationItem("menuWrap", "menus")
-    data object SelectLCombo : NavigationItem("selectLCombo", "menus")
-    data object SelectRCombo : NavigationItem("selectRCombo", "menus")
-    data object SelectSwap : NavigationItem(
+    data object MenuWrap : Row("menuWrap", "menus", R.string.settings_navigation_menu_wrap_title)
+    data object SelectLCombo :
+        Row("selectLCombo", "menus", R.string.settings_navigation_select_l_combo_title)
+    data object SelectRCombo :
+        Row("selectRCombo", "menus", R.string.settings_navigation_select_r_combo_title)
+    data object SelectSwap : Row(
         key = "selectSwap",
         section = "menus",
+        labelRes = R.string.settings_navigation_select_swap_title,
         visibleWhen = { it.hasSecondaryDisplay }
     )
 
-    data object QuickNavigation : NavigationItem("quickNavigation", "navbar")
-    data object NavBarAutoHide : NavigationItem(
+    data object QuickNavigation :
+        Row("quickNavigation", "navbar", R.string.settings_navigation_quick_navigation_title)
+    data object NavBarAutoHide : Row(
         key = "navBarAutoHide",
         section = "navbar",
+        labelRes = R.string.settings_navigation_nav_bar_auto_hide_title,
         visibleWhen = { it.quickNavigation }
     )
-    data object NavBarPages : NavigationItem(
+    data object NavBarPages : Row(
         key = "navBarPages",
         section = "navbar",
+        labelRes = R.string.settings_navigation_nav_bar_pages_title,
         visibleWhen = { it.quickNavigation }
     )
 
-    data object OpenNavigationShortcut : NavigationItem("openNavigationKey", "shortcuts")
-    data object OpenQuickPanelShortcut : NavigationItem("openQuickPanelKey", "shortcuts")
+    data object OpenNavigationShortcut :
+        Row("openNavigationKey", "shortcuts", R.string.settings_navigation_open_navigation_title)
+    data object OpenQuickPanelShortcut :
+        Row("openQuickPanelKey", "shortcuts", R.string.settings_navigation_open_quick_panel_title)
 
-    data object SystemHotkeysAccess : NavigationItem("systemHotkeysAccess", "system")
-    data object HomeButtonInGames : NavigationItem("homeButtonInGames", "system")
-    data object QuickPanelInEmulators : NavigationItem("quickPanelInEmulators", "system")
-    data object SystemHotkeys : NavigationItem("systemHotkeys", "system")
-    data object SystemHomeCombo : NavigationItem(
+    data object SystemHotkeysAccess :
+        Row("systemHotkeysAccess", "system", R.string.settings_navigation_system_hotkeys_access_title)
+    data object HomeButtonInGames :
+        Row("homeButtonInGames", "system", R.string.settings_navigation_home_button_in_games_title)
+    data object QuickPanelInEmulators :
+        Row("quickPanelInEmulators", "system", R.string.settings_interface_quick_panel_in_emulators_title)
+    data object SystemHotkeys :
+        Row("systemHotkeys", "system", R.string.settings_navigation_system_hotkeys_title)
+    data object SystemHomeCombo : Row(
         key = "systemHomeCombo",
         section = "system",
+        labelRes = R.string.settings_navigation_system_home_title,
         visibleWhen = { it.systemHotkeysEnabled }
     )
-    data object SystemBackCombo : NavigationItem(
+    data object SystemBackCombo : Row(
         key = "systemBackCombo",
         section = "system",
+        labelRes = R.string.settings_navigation_system_back_title,
         visibleWhen = { it.systemHotkeysEnabled }
     )
 
@@ -168,7 +196,7 @@ internal sealed class NavigationItem(
     }
 }
 
-private val navigationLayout = SettingsLayout<NavigationItem, ControlsState>(
+internal val navigationLayout = SettingsLayout<NavigationItem, ControlsState>(
     allItems = NavigationItem.ALL,
     isFocusable = { it.isFocusable },
     visibleWhen = { item, state -> item.visibleWhen(state) },
@@ -235,7 +263,7 @@ fun NavigationSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
             is NavigationItem.Header -> NavigationSectionHeader(stringResource(item.titleRes))
             is NavigationItem.SectionSpacer -> Spacer(modifier = Modifier.height(Dimens.spacingMd))
 
-            NavigationItem.ControllerLayout -> {
+            is NavigationItem.ControllerLayout -> {
                 val detected = controls.detectedLayout
                 val device = controls.detectedDeviceName
                 val subtitle = when {
@@ -246,7 +274,7 @@ fun NavigationSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
                     else -> stringResource(R.string.settings_navigation_controller_layout_undetected)
                 }
                 SegmentedPreference(
-                    title = stringResource(R.string.settings_navigation_controller_layout_title),
+                    title = stringResource(item.labelRes),
                     subtitle = subtitle,
                     options = ControlsSettingsDelegate.LAYOUT_OPTIONS.map {
                         stringResource(ControlsSettingsDelegate.layoutDisplayNameRes(it))
@@ -257,71 +285,71 @@ fun NavigationSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
                 )
             }
 
-            NavigationItem.SwapAB -> SwitchPreference(
-                title = stringResource(R.string.settings_navigation_swap_ab_title),
+            is NavigationItem.SwapAB -> SwitchPreference(
+                title = stringResource(item.labelRes),
                 subtitle = stringResource(R.string.settings_navigation_swap_ab_subtitle),
                 isEnabled = controls.swapAB,
                 isFocused = isFocused(item),
                 onToggle = { viewModel.setSwapAB(it) }
             )
 
-            NavigationItem.SwapXY -> SwitchPreference(
-                title = stringResource(R.string.settings_navigation_swap_xy_title),
+            is NavigationItem.SwapXY -> SwitchPreference(
+                title = stringResource(item.labelRes),
                 subtitle = stringResource(R.string.settings_navigation_swap_xy_subtitle),
                 isEnabled = controls.swapXY,
                 isFocused = isFocused(item),
                 onToggle = { viewModel.setSwapXY(it) }
             )
 
-            NavigationItem.SwapStartSelect -> SwitchPreference(
-                title = stringResource(R.string.settings_navigation_swap_start_select_title),
+            is NavigationItem.SwapStartSelect -> SwitchPreference(
+                title = stringResource(item.labelRes),
                 subtitle = stringResource(R.string.settings_navigation_swap_start_select_subtitle),
                 isEnabled = controls.swapStartSelect,
                 isFocused = isFocused(item),
                 onToggle = { viewModel.setSwapStartSelect(it) }
             )
 
-            NavigationItem.CheckButtons -> NavigationPreference(
+            is NavigationItem.CheckButtons -> NavigationPreference(
                 icon = Icons.Default.SportsEsports,
-                title = stringResource(R.string.settings_navigation_check_buttons_title),
+                title = stringResource(item.labelRes),
                 subtitle = stringResource(R.string.settings_navigation_check_buttons_subtitle),
                 isFocused = isFocused(item),
                 onClick = { viewModel.openButtonCheck() }
             )
 
-            NavigationItem.IgnoreControllerTouchpad -> SwitchPreference(
-                title = stringResource(R.string.settings_navigation_ignore_controller_touchpad_title),
+            is NavigationItem.IgnoreControllerTouchpad -> SwitchPreference(
+                title = stringResource(item.labelRes),
                 subtitle = stringResource(R.string.settings_navigation_ignore_controller_touchpad_subtitle),
                 isEnabled = controls.ignoreControllerTouchpad,
                 isFocused = isFocused(item),
                 onToggle = { viewModel.setIgnoreControllerTouchpad(it) }
             )
 
-            NavigationItem.QuickNavigation -> SwitchPreference(
-                title = stringResource(R.string.settings_navigation_quick_navigation_title),
+            is NavigationItem.QuickNavigation -> SwitchPreference(
+                title = stringResource(item.labelRes),
                 subtitle = stringResource(R.string.settings_navigation_quick_navigation_subtitle),
                 isEnabled = controls.quickNavigation,
                 isFocused = isFocused(item),
                 onToggle = { viewModel.setQuickNavigation(it) }
             )
 
-            NavigationItem.NavBarAutoHide -> SwitchPreference(
-                title = stringResource(R.string.settings_navigation_nav_bar_auto_hide_title),
+            is NavigationItem.NavBarAutoHide -> SwitchPreference(
+                title = stringResource(item.labelRes),
                 subtitle = stringResource(R.string.settings_navigation_nav_bar_auto_hide_subtitle),
                 isEnabled = controls.navBarAutoHide,
                 isFocused = isFocused(item),
                 onToggle = { viewModel.setNavBarAutoHide(it) }
             )
 
-            NavigationItem.HapticFeedback -> SwitchPreference(
-                title = stringResource(R.string.settings_navigation_haptic_title),
+            is NavigationItem.HapticFeedback -> SwitchPreference(
+                title = stringResource(item.labelRes),
                 isEnabled = controls.hapticEnabled,
                 isFocused = isFocused(item),
                 onToggle = { viewModel.setHapticEnabled(it) }
             )
 
-            NavigationItem.VibrationStrength -> SliderPreference(
-                title = stringResource(R.string.settings_navigation_vibration_title),
+            is NavigationItem.VibrationStrength -> SliderPreference(
+                title = stringResource(item.labelRes),
                 value = (controls.vibrationStrength * ControlsPreferences.HAPTIC_STRENGTH_STEPS).roundToInt() + 1,
                 minValue = 1,
                 maxValue = ControlsPreferences.HAPTIC_STRENGTH_STEPS + 1,
@@ -333,8 +361,8 @@ fun NavigationSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
                 }
             )
 
-            NavigationItem.MenuWrap -> SegmentedPreference(
-                title = stringResource(R.string.settings_navigation_menu_wrap_title),
+            is NavigationItem.MenuWrap -> SegmentedPreference(
+                title = stringResource(item.labelRes),
                 subtitle = stringResource(R.string.settings_navigation_menu_wrap_subtitle),
                 options = MenuWrapMode.entries.map { stringResource(menuWrapLabelRes(it)) },
                 selectedIndex = MenuWrapMode.entries.indexOf(controls.menuWrapMode),
@@ -342,8 +370,8 @@ fun NavigationSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
                 onSelect = { viewModel.setMenuWrapMode(MenuWrapMode.entries[it]) }
             )
 
-            NavigationItem.SelectLCombo -> SegmentedPreference(
-                title = stringResource(R.string.settings_navigation_select_l_combo_title),
+            is NavigationItem.SelectLCombo -> SegmentedPreference(
+                title = stringResource(item.labelRes),
                 subtitle = stringResource(R.string.settings_navigation_select_l_combo_subtitle),
                 options = ControlsSettingsDelegate.COMBO_OPTIONS.map {
                     stringResource(ControlsSettingsDelegate.comboDisplayNameRes(it))
@@ -353,8 +381,8 @@ fun NavigationSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
                 onSelect = { viewModel.setSelectLCombo(ControlsSettingsDelegate.COMBO_OPTIONS[it]) }
             )
 
-            NavigationItem.SelectRCombo -> SegmentedPreference(
-                title = stringResource(R.string.settings_navigation_select_r_combo_title),
+            is NavigationItem.SelectRCombo -> SegmentedPreference(
+                title = stringResource(item.labelRes),
                 subtitle = stringResource(R.string.settings_navigation_select_r_combo_subtitle),
                 options = ControlsSettingsDelegate.COMBO_OPTIONS.map {
                     stringResource(ControlsSettingsDelegate.comboDisplayNameRes(it))
@@ -364,8 +392,8 @@ fun NavigationSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
                 onSelect = { viewModel.setSelectRCombo(ControlsSettingsDelegate.COMBO_OPTIONS[it]) }
             )
 
-            NavigationItem.SelectSwap -> SegmentedPreference(
-                title = stringResource(R.string.settings_navigation_select_swap_title),
+            is NavigationItem.SelectSwap -> SegmentedPreference(
+                title = stringResource(item.labelRes),
                 subtitle = stringResource(R.string.settings_navigation_select_swap_subtitle),
                 options = SelectSwapMode.entries.map { stringResource(it.labelRes) },
                 selectedIndex = SelectSwapMode.entries.indexOf(controls.selectSwapMode),
@@ -373,8 +401,8 @@ fun NavigationSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
                 onSelect = { viewModel.setSelectSwapMode(SelectSwapMode.entries[it]) }
             )
 
-            NavigationItem.NavBarPages -> ActionPreference(
-                title = stringResource(R.string.settings_navigation_nav_bar_pages_title),
+            is NavigationItem.NavBarPages -> ActionPreference(
+                title = stringResource(item.labelRes),
                 subtitle = stringResource(R.string.settings_navigation_nav_bar_pages_subtitle),
                 isFocused = isFocused(item),
                 trailingText = stringResource(
@@ -385,43 +413,43 @@ fun NavigationSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
                 onClick = { viewModel.showNavRingModal() }
             )
 
-            NavigationItem.OpenNavigationShortcut -> ShortcutKeyPreference(
-                title = stringResource(R.string.settings_navigation_open_navigation_title),
+            is NavigationItem.OpenNavigationShortcut -> ShortcutKeyPreference(
+                title = stringResource(item.labelRes),
                 subtitle = stringResource(R.string.settings_navigation_open_navigation_subtitle),
                 keyCode = controls.openNavigationKey,
                 isFocused = isFocused(item),
                 onClick = { viewModel.startShortcutCapture(UiShortcut.OPEN_NAVIGATION) }
             )
 
-            NavigationItem.OpenQuickPanelShortcut -> ShortcutKeyPreference(
-                title = stringResource(R.string.settings_navigation_open_quick_panel_title),
+            is NavigationItem.OpenQuickPanelShortcut -> ShortcutKeyPreference(
+                title = stringResource(item.labelRes),
                 subtitle = stringResource(R.string.settings_navigation_open_quick_panel_subtitle),
                 keyCode = controls.openQuickPanelKey,
                 isFocused = isFocused(item),
                 onClick = { viewModel.startShortcutCapture(UiShortcut.OPEN_QUICK_PANEL) }
             )
 
-            NavigationItem.SystemHotkeys -> SwitchPreference(
-                title = stringResource(R.string.settings_navigation_system_hotkeys_title),
+            is NavigationItem.SystemHotkeys -> SwitchPreference(
+                title = stringResource(item.labelRes),
                 subtitle = stringResource(R.string.settings_navigation_system_hotkeys_subtitle),
                 isEnabled = controls.systemHotkeysEnabled,
                 isFocused = isFocused(item),
                 onToggle = { viewModel.setSystemHotkeysEnabled(it) }
             )
 
-            NavigationItem.HomeButtonInGames -> SwitchPreference(
-                title = stringResource(R.string.settings_navigation_home_button_in_games_title),
+            is NavigationItem.HomeButtonInGames -> SwitchPreference(
+                title = stringResource(item.labelRes),
                 subtitle = stringResource(R.string.settings_navigation_home_button_in_games_subtitle),
                 isEnabled = controls.homeButtonInGames,
                 isFocused = isFocused(item),
                 onToggle = { viewModel.setHomeButtonInGames(it) }
             )
 
-            NavigationItem.QuickPanelInEmulators -> {
+            is NavigationItem.QuickPanelInEmulators -> {
                 val serviceOff = uiState.display.quickPanelInEmulators &&
                     !uiState.permissions.snapshot.isGranted(ArgosyPermission.ACCESSIBILITY)
                 SwitchPreference(
-                    title = stringResource(R.string.settings_interface_quick_panel_in_emulators_title),
+                    title = stringResource(item.labelRes),
                     subtitle = if (serviceOff) {
                         stringResource(R.string.settings_interface_quick_panel_in_emulators_service_off)
                     } else {
@@ -434,8 +462,8 @@ fun NavigationSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
                 )
             }
 
-            NavigationItem.SystemHotkeysAccess -> ActionPreference(
-                title = stringResource(R.string.settings_navigation_system_hotkeys_access_title),
+            is NavigationItem.SystemHotkeysAccess -> ActionPreference(
+                title = stringResource(item.labelRes),
                 subtitle = stringResource(R.string.settings_navigation_system_hotkeys_access_subtitle),
                 isFocused = isFocused(item),
                 trailingText = if (uiState.permissions.snapshot.isGranted(ArgosyPermission.ACCESSIBILITY)) {
@@ -446,8 +474,8 @@ fun NavigationSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
                 onClick = { viewModel.openAccessibilitySettings() }
             )
 
-            NavigationItem.SystemHomeCombo -> SystemComboPreference(
-                title = stringResource(R.string.settings_navigation_system_home_title),
+            is NavigationItem.SystemHomeCombo -> SystemComboPreference(
+                title = stringResource(item.labelRes),
                 subtitle = stringResource(R.string.settings_navigation_system_home_subtitle),
                 action = SystemHotkeyAction.HOME,
                 controls = controls,
@@ -455,8 +483,8 @@ fun NavigationSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
                 viewModel = viewModel
             )
 
-            NavigationItem.SystemBackCombo -> SystemComboPreference(
-                title = stringResource(R.string.settings_navigation_system_back_title),
+            is NavigationItem.SystemBackCombo -> SystemComboPreference(
+                title = stringResource(item.labelRes),
                 subtitle = stringResource(R.string.settings_navigation_system_back_subtitle),
                 action = SystemHotkeyAction.BACK,
                 controls = controls,

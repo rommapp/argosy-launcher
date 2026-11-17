@@ -444,4 +444,20 @@
     <string name="home_grid_tile_ra_points_label">Points</string>
     <!-- Stat label beside how many achievements have been earned. Noun. -->
     <string name="home_grid_tile_ra_unlocks_label">Unlocks</string>
+    <string name="home_grid_picker_folder_title">Folder</string>
+    <string name="home_grid_picker_folder_subtitle">Group tiles of any kind under one tile</string>
+    <string name="home_grid_picker_auto_folder_title">Auto folder</string>
+    <string name="home_grid_picker_auto_folder_subtitle">Fills itself with the games a rule matches</string>
+    <string name="home_grid_picker_image_title">Image</string>
+    <string name="home_grid_picker_image_subtitle">A picture that fills its cells</string>
+    <!-- A sticker is a cut-out picture placed on the home grid. -->
+    <string name="home_grid_picker_sticker_title">Sticker</string>
+    <string name="home_grid_picker_sticker_subtitle">A cut-out picture with an optional outline</string>
+    <string name="home_grid_tile_image_label">Image</string>
+    <string name="home_grid_tile_sticker_label">Sticker</string>
+    <plurals name="home_grid_tile_folder_count">
+        <item quantity="one">%d item</item>
+        <item quantity="other">%d items</item>
+    </plurals>
+    <string name="home_tile_file_browser_decor_title">Choose a picture</string>
 </resources>

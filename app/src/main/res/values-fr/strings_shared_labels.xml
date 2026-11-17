@@ -192,4 +192,13 @@
 
     <string name="reorder_hint_done">Terminé</string>
 
+    <string name="custom_tile_menu_action_move_to_folder">Déplacer dans un dossier</string>
+    <string name="custom_tile_menu_action_rename_folder">Renommer le dossier</string>
+    <string name="custom_tile_menu_action_folder_appearance">Apparence</string>
+    <string name="custom_tile_menu_action_sticker_outline_on">Ajouter un contour</string>
+    <string name="custom_tile_menu_action_sticker_outline_off">Retirer le contour</string>
+    <string name="custom_tile_menu_action_sticker_outline_width">Changer l\'épaisseur du contour</string>
+    <string name="custom_tile_menu_action_sticker_outline_color">Changer la couleur du contour</string>
+    <string name="custom_tile_menu_action_edit_decor">Modifier les décorations</string>
+    <string name="custom_tile_menu_action_finish_decor">Terminer les décorations</string>
 </resources>

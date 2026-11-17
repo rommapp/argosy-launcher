@@ -158,6 +158,9 @@ class HomeViewModel @Inject constructor(
 
     val streamLauncher = streamLaunch.create(viewModelScope)
 
+    private var launchingGameId: Long? = null
+    private var returningGameId: Long? = null
+
     private val selectDoubleTap = com.nendo.argosy.ui.screens.home.delegates.SelectDoubleTap(
         scope = viewModelScope,
         windowMs = com.nendo.argosy.ui.theme.generated.InputTokens.Debounce.selectDoubleTapMs,
@@ -245,11 +248,13 @@ class HomeViewModel @Inject constructor(
             com.nendo.argosy.ui.components.FeatureFilterOptions(
                 platforms = libraryDelegate.platformOptionsForTiles(),
                 genres = gameRepository.getDistinctGenres(oneEntryPerGroup = false),
-                series = collectionRepository.getNamesWithGamesByType(CollectionType.SERIES)
+                series = collectionRepository.getNamesWithGamesByType(CollectionType.SERIES),
+                developers = gameRepository.getDistinctDevelopers()
             )
         },
         raGamePickerEntries = { query -> libraryDelegate.searchRaCompatibleForTiles(query) },
         onOpenOnScreen = { target, screen -> openTileOnScreen(target, screen) },
+        autoFolderGames = { rule -> resolveAutoFolderGames(rule) },
         read = { _uiState.value.customGrid },
         write = { transform -> _uiState.update { it.copy(customGrid = transform(it.customGrid)) } }
     )
@@ -491,6 +496,7 @@ class HomeViewModel @Inject constructor(
             tileCollections = tiles.tileCollections,
             tileApps = tiles.tileApps,
             tileLibraryLinks = tiles.tileLibraryLinks,
+            tileFolders = tiles.tileFolders,
             tileShowcases = tiles.tileShowcases,
             continueGameId = tiles.continueGameId,
             raTileSummary = tiles.raTileSummary
@@ -638,6 +644,8 @@ class HomeViewModel @Inject constructor(
             FeatureTileKind.RA_SUMMARY -> raTileDetail(state)
             FeatureTileKind.LIBRARY_LINK -> state.tileShowcases[tile.id]
         }
+        is HomeTileTargetRef.Folder -> state.tileShowcases[tile.id]
+        is HomeTileTargetRef.Image, is HomeTileTargetRef.Sticker -> null
         HomeTileTargetRef.Unresolvable -> null
     }
 
@@ -1199,17 +1207,16 @@ class HomeViewModel @Inject constructor(
         val shown = shownTiles(tiles)
         val feature = featureTileContent(shown)
         val libraryLinks = resolveLibraryLinks(shown)
+        val folders = resolveFolders(shown)
         val games = libraryDelegate.resolveTileGames(
             (
-                shown.mapNotNull {
-                    when (val target = it.target) {
-                        is HomeTileTargetRef.Game -> target.gameId
-                        is HomeTileTargetRef.Collection -> target.focusGameId
-                        is HomeTileTargetRef.Feature -> target.pickedGameId
-                        else -> null
+                shown.mapNotNull { tileGameId(it.target) } +
+                    listOfNotNull(feature.continueGameId, feature.raSummary?.groundGameId) +
+                    libraryLinks.values.mapNotNull { it.coverGameId } +
+                    shown.flatMap { pictureGameIds(it.target) } +
+                    folders.values.flatMap {
+                        it.gameIds.take(com.nendo.argosy.ui.theme.generated.ComponentDefaults.CustomGrid.folderMosaicCount)
                     }
-                } + listOfNotNull(feature.continueGameId, feature.raSummary?.groundGameId) +
-                    libraryLinks.values.mapNotNull { it.coverGameId }
             ).distinct()
         )
         val collections = libraryDelegate.resolveTileCollections(
@@ -1218,7 +1225,7 @@ class HomeViewModel @Inject constructor(
         val apps = libraryDelegate.resolveTileApps(
             shown.mapNotNull { (it.target as? HomeTileTargetRef.App)?.packageName }.distinct()
         )
-        val showcases = resolveTileShowcases(shown, libraryLinks, collections)
+        val showcases = resolveTileShowcases(shown, libraryLinks, collections, folders)
         mediaDelegate.selectTileItems(
             shown.mapNotNull { (it.target as? HomeTileTargetRef.Media)?.itemId }.distinct()
         )
@@ -1231,6 +1238,7 @@ class HomeViewModel @Inject constructor(
                 tileCollections = collections,
                 tileApps = apps,
                 tileLibraryLinks = libraryLinks,
+                tileFolders = folders,
                 tileShowcases = showcases,
                 continueGameId = feature.continueGameId,
                 raTileSummary = feature.raSummary
@@ -1251,6 +1259,7 @@ class HomeViewModel @Inject constructor(
             tileCollections = state.tileCollections,
             tileApps = state.tileApps,
             tileLibraryLinks = state.tileLibraryLinks,
+            tileFolders = state.tileFolders,
             tileShowcases = state.tileShowcases,
             continueGameId = state.continueGameId,
             raTileSummary = state.raTileSummary
@@ -1335,12 +1344,7 @@ class HomeViewModel @Inject constructor(
         val platformNames = libraryDelegate.platformOptionsForTiles()
             .associate { it.id to it.shortLabel }
         return links.associate { (tileId, filters) ->
-            val seriesGameIds = filters.series.takeIf { it.isNotEmpty() }?.let { names ->
-                collectionRepository.observeGameIdsByTypeAndNames(CollectionType.SERIES, names.toList())
-                    .first()
-                    .toSet()
-            }
-            val summary = gameRepository.summarizeLibraryLink(filters, seriesGameIds)
+            val summary = gameRepository.summarizeLibraryLink(filters, seriesGameIdsFor(filters))
             tileId to LibraryLinkTileUi(
                 gameCount = summary.gameCount,
                 coverGameId = summary.coverGameId,
@@ -1354,13 +1358,69 @@ class HomeViewModel @Inject constructor(
         }
     }
 
+    private suspend fun seriesGameIdsFor(filters: com.nendo.argosy.domain.model.LibraryLinkFilters): Set<Long>? =
+        filters.series.takeIf { it.isNotEmpty() }?.let { names ->
+            collectionRepository.observeGameIdsByTypeAndNames(CollectionType.SERIES, names.toList())
+                .first()
+                .toSet()
+        }
+
+    private suspend fun autoFolderGameIds(rule: com.nendo.argosy.domain.model.LibraryLinkFilters): List<Long> =
+        gameRepository.summarizeLibraryLink(rule, seriesGameIdsFor(rule), collapseSiblings = true).gameIds
+
+    private suspend fun resolveAutoFolderGames(rule: com.nendo.argosy.domain.model.LibraryLinkFilters): List<Long> {
+        val ids = autoFolderGameIds(rule)
+        val known = _uiState.value.tileGames.keys
+        val resolved = libraryDelegate.resolveTileGames(ids.filterNot { it in known })
+        val gradients = gradientExtractionDelegate.gradients.value
+        _uiState.update { state ->
+            state.copy(tileGames = state.tileGames + resolved.mapValues { (_, game) -> game.applyGradient(gradients) })
+        }
+        return ids
+    }
+
+    private suspend fun resolveFolders(
+        tiles: List<com.nendo.argosy.domain.model.HomeTile>
+    ): Map<Long, FolderTileUi> = tiles.mapNotNull { tile ->
+        val folder = tile.target as? HomeTileTargetRef.Folder ?: return@mapNotNull null
+        if (tile.isInFolder) return@mapNotNull null
+        val rule = folder.rule
+        val ui = if (rule == null) {
+            val members = com.nendo.argosy.domain.model.folderMembers(tiles, tile.id)
+            FolderTileUi(memberCount = members.size, gameIds = members.mapNotNull { tileGameId(it.target) })
+        } else {
+            val ids = autoFolderGameIds(rule)
+            FolderTileUi(memberCount = ids.size, gameIds = ids)
+        }
+        tile.id to ui
+    }.toMap()
+
+    private fun pictureGameIds(target: HomeTileTargetRef): List<Long> {
+        val sources = when (target) {
+            is HomeTileTargetRef.Image -> listOf(target.source)
+            is HomeTileTargetRef.Sticker -> listOf(target.source)
+            is HomeTileTargetRef.Folder -> target.appearance.pictureSources
+            else -> return emptyList()
+        }
+        return sources.mapNotNull { (it as? com.nendo.argosy.domain.model.TileImageSource.GameArt)?.gameId }
+    }
+
+    private fun tileGameId(target: HomeTileTargetRef): Long? = when (target) {
+        is HomeTileTargetRef.Game -> target.gameId
+        is HomeTileTargetRef.Collection -> target.focusGameId
+        is HomeTileTargetRef.Feature -> target.pickedGameId
+        else -> null
+    }
+
     private suspend fun resolveTileShowcases(
         tiles: List<com.nendo.argosy.domain.model.HomeTile>,
         links: Map<Long, LibraryLinkTileUi>,
-        collections: Map<Long, com.nendo.argosy.ui.components.TileCollectionUi>
+        collections: Map<Long, com.nendo.argosy.ui.components.TileCollectionUi>,
+        folders: Map<Long, FolderTileUi>
     ): Map<Long, com.nendo.argosy.ui.dualscreen.PresentationSlot.PlatformShowcase> =
         tiles.mapNotNull { tile ->
             val named = when (val target = tile.target) {
+                is HomeTileTargetRef.Folder -> folders[tile.id]?.let { target.name to it.gameIds }
                 is HomeTileTargetRef.Collection -> if (target.focusGameId != null) {
                     null
                 } else {
@@ -1573,6 +1633,49 @@ class HomeViewModel @Inject constructor(
     override fun openTilePicker() = customGrid.openPicker()
 
     override fun closeTilePicker() = customGrid.closePicker()
+
+    override fun openFolder(tile: com.nendo.argosy.domain.model.HomeTile) = customGrid.openFolder(tile)
+
+    override fun closeFolder(): Boolean = customGrid.closeFolder()
+
+    override fun moveFolderFocus(direction: com.nendo.argosy.domain.model.GridDirection2D): Boolean =
+        customGrid.moveFolderFocus(direction)
+
+    override fun removeFocusedFolderMember(): Boolean = customGrid.removeFocusedFolderMember()
+
+    fun focusFolderMember(index: Int) = customGrid.focusFolderMember(index)
+
+    override fun moveFolderChooserFocus(delta: Int) = customGrid.moveFolderChooserFocus(delta)
+
+    override fun confirmFolderChooser() = customGrid.confirmFolderChooser()
+
+    fun confirmFolderChooserAt(index: Int) = customGrid.confirmFolderChooser(index)
+
+    override fun closeFolderChooser() = customGrid.closeFolderChooser()
+
+    override fun finishDecorEditing() = customGrid.setDecorEditing(false)
+
+    override fun closeFolderAppearance(): Boolean = customGrid.closeFolderAppearance()
+
+    override fun moveFolderAppearanceFocus(delta: Int) = customGrid.moveFolderAppearanceFocus(delta)
+
+    override fun cycleFolderAppearance(delta: Int): Boolean = customGrid.cycleFolderAppearance(delta)
+
+    override fun confirmFolderAppearance(): Boolean = customGrid.confirmFolderAppearance()
+
+    fun focusFolderAppearanceRow(index: Int) = customGrid.focusFolderAppearanceRow(index)
+
+    fun cycleFolderAppearanceRow(row: com.nendo.argosy.ui.components.FolderAppearanceRow, delta: Int) {
+        customGrid.cycleFolderAppearanceRow(row, delta)
+    }
+
+    fun activateFolderAppearanceRow(row: com.nendo.argosy.ui.components.FolderAppearanceRow) {
+        customGrid.activateFolderAppearanceRow(row)
+    }
+
+    fun submitFolderName(name: String) = customGrid.submitFolderName(name)
+
+    fun cancelFolderNaming() = customGrid.cancelFolderNaming()
 
     override fun backOutOfPickerLibrary(): Boolean = customGrid.backOutOfPickerLibrary()
 
@@ -2025,6 +2128,7 @@ class HomeViewModel @Inject constructor(
     override fun launchGame(gameId: Long, channelName: String?) {
         videoPreviewDelegate.deactivateVideoPreview()
         saveCurrentState()
+        launchingGameId = gameId
         gameLaunchDelegate.launchGame(
             scope = viewModelScope,
             gameId = gameId,
@@ -2038,6 +2142,7 @@ class HomeViewModel @Inject constructor(
         videoPreviewDelegate.deactivateVideoPreview()
         saveCurrentState()
         rememberGameScreen(gameId, displayId)
+        launchingGameId = gameId
         gameLaunchDelegate.launchGame(
             scope = viewModelScope,
             gameId = gameId,
@@ -2047,7 +2152,18 @@ class HomeViewModel @Inject constructor(
     }
 
     private fun showLaunchFailed() {
+        launchingGameId = null
         notificationManager.showError(NotificationText.Res(R.string.notif_gamelaunch_launch_failed))
+    }
+
+    /**
+     * Called when Home's activity stops. True when a game launched from Home is what covered it,
+     * which arms the return moment for the next resume.
+     */
+    fun onHomeStopped(): Boolean {
+        returningGameId = launchingGameId
+        launchingGameId = null
+        return returningGameId != null
     }
 
     private fun rememberGameScreen(gameId: Long, displayId: Int) {
@@ -2371,13 +2487,19 @@ class HomeViewModel @Inject constructor(
     // --- Public API: Disc Picker ---
 
     fun selectDisc(discPath: String) = gameLaunchDelegate.selectDisc(viewModelScope, discPath)
-    fun dismissDiscPicker() = gameLaunchDelegate.dismissDiscPicker()
+    fun dismissDiscPicker() {
+        launchingGameId = null
+        gameLaunchDelegate.dismissDiscPicker()
+    }
     val menuWrapMode get() = preferencesRepository.menuWrapMode
 
     fun setDiscPickerFocusIndex(index: Int) { _uiState.update { it.copy(discPickerFocusIndex = index) } }
 
     fun selectMemcard(cardPath: String) = gameLaunchDelegate.selectMemcard(viewModelScope, cardPath)
-    fun dismissMemcardPicker() = gameLaunchDelegate.dismissMemcardPicker()
+    fun dismissMemcardPicker() {
+        launchingGameId = null
+        gameLaunchDelegate.dismissMemcardPicker()
+    }
     fun setMemcardPickerFocusIndex(index: Int) { _uiState.update { it.copy(memcardPickerFocusIndex = index) } }
 
     // --- Public API: Sync & Changelog ---
@@ -2415,10 +2537,12 @@ class HomeViewModel @Inject constructor(
     // --- Public API: Lifecycle ---
 
     fun onResume() {
+        val returnedGameId = returningGameId
+        returningGameId = null
         libraryDelegate.invalidateRecentGamesCache()
         refreshTileGamesAndFeatures()
         mediaDelegate.refresh(viewModelScope)
-        viewModelScope.launch { refreshCurrentRowInternal() }
+        viewModelScope.launch { refreshCurrentRowInternal(anchorGameId = returnedGameId) }
         syncDelegate.refreshFavoritesIfConnected(viewModelScope) {
             libraryDelegate.loadFavorites()
         }
@@ -2438,7 +2562,7 @@ class HomeViewModel @Inject constructor(
         onDrawerToggle: () -> Unit,
         onScrollOverflow: ((Int) -> Boolean)? = null,
         dockIsRtl: Boolean = false
-    ): InputHandler = HomeInputHandler(
+    ): HomeInputHandler = HomeInputHandler(
         actions = this,
         isDefaultView = isDefaultView,
         onGameSelect = onGameSelect,

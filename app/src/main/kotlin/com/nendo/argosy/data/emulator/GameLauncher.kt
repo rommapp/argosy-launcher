@@ -898,11 +898,9 @@ class GameLauncher @Inject constructor(
         ) ?: return null
         val userConfig = emulatorSaveConfigRepository.getByEmulator(emulatorId)
         if (userConfig?.selectedMemcardPath != null) return null
-        val basePathOverride = emulatorSaveConfigRepository.resolveEffectiveSavePath(emulatorId, game.platformSlug)
         val cards = saveHandlerRegistry.listPs2FolderMemcardsForEmulator(
             emulatorId = emulatorId,
-            emulatorPackage = emulator.packageName,
-            basePathOverride = basePathOverride
+            emulatorPackage = emulator.packageName
         )
         if (cards.size <= 1) return null
         Logger.info(TAG, "[Launch] PS2 memcard gate triggered | gameId=$gameId, cards=${cards.size}")

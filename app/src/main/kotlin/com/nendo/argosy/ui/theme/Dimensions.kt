@@ -57,6 +57,7 @@ object Dimens {
     val mediaSimilarTileHeight: Dp @Composable get() = DimensionTokens.Layout.mediaSimilarTileHeight.dp * scale
     val mediaMenuRailWidth: Dp @Composable get() = DimensionTokens.Layout.mediaMenuRailWidth.dp * scale
     val searchResultArtwork: Dp @Composable get() = DimensionTokens.Layout.searchResultArtwork.dp * scale
+    val searchPreviewCoverHeight: Dp @Composable get() = DimensionTokens.Layout.searchPreviewCoverHeight.dp * scale
     val saveSyncRowCover: Dp @Composable get() = DimensionTokens.Layout.saveSyncRowCover.dp * scale
     val saveSyncAttentionCover: Dp @Composable get() = DimensionTokens.Layout.saveSyncAttentionCover.dp * scale
     val screenMapCardWidth: Dp @Composable get() =DimensionTokens.Layout.screenMapCardWidth.dp * scale

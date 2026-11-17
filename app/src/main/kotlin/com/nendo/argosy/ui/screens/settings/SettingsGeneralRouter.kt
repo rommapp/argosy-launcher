@@ -23,6 +23,9 @@ import com.nendo.argosy.core.notification.showError
 import com.nendo.argosy.ui.screens.settings.delegates.VolumeLevels
 import com.nendo.argosy.ui.screens.settings.delegates.levelIndexIn
 import com.nendo.argosy.ui.screens.settings.sections.BiosItem
+import com.nendo.argosy.ui.screens.settings.sections.RAItem
+import com.nendo.argosy.ui.screens.settings.sections.RALayoutState
+import com.nendo.argosy.ui.screens.settings.sections.raFocusIndexOf
 import com.nendo.argosy.ui.screens.settings.sections.biosItemAtFocusIndex
 import com.nendo.argosy.ui.screens.settings.sections.SteamItem
 import com.nendo.argosy.ui.screens.settings.sections.StorageItem
@@ -1075,7 +1078,7 @@ internal fun routeSetRAProxyEnabled(vm: SettingsViewModel, enabled: Boolean) {
     vm.raDelegate.setProxyEnabled(vm.viewModelScope, enabled)
     if (!enabled) {
         vm._uiState.update {
-            val proxyToggleIndex = if (it.retroAchievements.isLoggedIn) RA_LOGGED_IN_PROXY_TOGGLE_INDEX else RA_PROXY_TOGGLE_INDEX
+            val proxyToggleIndex = raFocusIndexOf(RAItem.ProxyToggle, RALayoutState.from(it))
             if (it.focusedIndex > proxyToggleIndex) it.copy(focusedIndex = proxyToggleIndex) else it
         }
     }

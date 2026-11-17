@@ -32,6 +32,7 @@ import androidx.compose.ui.zIndex
 import com.nendo.argosy.data.preferences.NewBadgePlacement
 import com.nendo.argosy.ui.common.coverSizeWithin
 import com.nendo.argosy.ui.common.rememberGameArtAspectRatio
+import com.nendo.argosy.ui.navigation.navTransitionOrigin
 import com.nendo.argosy.ui.screens.home.GameDownloadIndicator
 import com.nendo.argosy.ui.screens.home.HomeGameUi
 import com.nendo.argosy.ui.screens.home.HomeMediaUi
@@ -429,7 +430,7 @@ fun CarouselRail(
                         useBoxArt = useBoxArt,
                         onCoverLoadFailed = onCoverLoadFailed,
                         onCoverLoaded = onCoverLoaded,
-                        modifier = placementModifier,
+                        modifier = placementModifier.navTransitionOrigin(item.game.id, isFocused),
                         interactionModifier = tapModifier
                     )
                 }

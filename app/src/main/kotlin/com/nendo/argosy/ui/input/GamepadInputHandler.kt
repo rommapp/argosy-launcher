@@ -5,6 +5,7 @@ import android.view.InputEvent
 import android.view.KeyEvent
 import android.view.MotionEvent
 import com.nendo.argosy.core.input.ConnectedControllerTracker
+import com.nendo.argosy.core.input.HomeKeys
 import com.nendo.argosy.core.input.VirtualPad
 import com.nendo.argosy.data.preferences.UserPreferencesRepository
 import com.nendo.argosy.hardware.SystemHotkeyDetector
@@ -63,10 +64,15 @@ sealed interface GamepadEvent {
     data object RightStickLeft : GamepadEvent
     data object RightStickRight : GamepadEvent
     data object Home : GamepadEvent
-    data object LongHome : GamepadEvent
     data object LongConfirm : GamepadEvent
     data object LongSelect : GamepadEvent
 }
+
+/**
+ * A Home key press as Argosy's own screens read it: [TAP] is released before
+ * [SystemHotkeyDetector.GUIDE_HOLD_MS], [HOLD] is still down when that time passes.
+ */
+enum class HomePress { TAP, HOLD }
 
 @Singleton
 class GamepadInputHandler @Inject constructor(
@@ -75,11 +81,9 @@ class GamepadInputHandler @Inject constructor(
 ) : RawInputInterceptor {
 
     private val _events = MutableSharedFlow<GamepadInput>(extraBufferCapacity = 16)
-    private val _homeEvents = Channel<Unit>(Channel.BUFFERED)
+    private val _homeEvents = Channel<HomePress>(Channel.BUFFERED)
     private val _shortcutEvents = Channel<UiShortcut>(Channel.BUFFERED)
     private val scope = SafeCoroutineScope(Dispatchers.Main.immediate, "GamepadInputHandler")
-
-    var homeEventEnabled: Boolean = true
 
     private var swapAB = false
     private var swapXY = false
@@ -110,7 +114,7 @@ class GamepadInputHandler @Inject constructor(
     }
 
     fun eventFlow(): Flow<GamepadInput> = _events.asSharedFlow()
-    fun homeEventFlow(): Flow<Unit> = _homeEvents.receiveAsFlow()
+    fun homeEventFlow(): Flow<HomePress> = _homeEvents.receiveAsFlow()
     fun shortcutEventFlow(): Flow<UiShortcut> = _shortcutEvents.receiveAsFlow()
 
     fun attachShortcutGate(gate: UiShortcutGate) {
@@ -143,9 +147,25 @@ class GamepadInputHandler @Inject constructor(
     }
 
     fun emitHomeEvent() {
-        if (homeEventEnabled) {
-            _homeEvents.trySend(Unit)
+        _homeEvents.trySend(HomePress.TAP)
+    }
+
+    /**
+     * Reads a key [HomeKeys.isHome] accepts as a tap or a hold on [homeEventFlow]: a release
+     * before [SystemHotkeyDetector.GUIDE_HOLD_MS] sends [HomePress.TAP], reaching that time while
+     * down sends [HomePress.HOLD] and its release sends nothing. Every Home key it is given is
+     * consumed.
+     */
+    fun handleHomeKey(event: KeyEvent): Boolean {
+        when (event.action) {
+            KeyEvent.ACTION_DOWN -> if (event.repeatCount == 0) deferHomePress()
+            KeyEvent.ACTION_UP -> {
+                val tapped = homeDeferred
+                releaseHomePress()
+                if (tapped) _homeEvents.trySend(HomePress.TAP)
+            }
         }
+        return true
     }
 
     override fun setRawKeyEventListener(listener: ((KeyEvent) -> Boolean)?) {
@@ -163,7 +183,7 @@ class GamepadInputHandler @Inject constructor(
             selectHoldJob?.cancel()
             selectModifier.reset()
             releaseBackPress()
-            releaseGuidePress()
+            releaseHomePress()
             claimedShortcutKey = null
         }
     }
@@ -181,8 +201,8 @@ class GamepadInputHandler @Inject constructor(
     private var backPressClaimed = false
     private var backDeferred = false
     private var backDeferJob: Job? = null
-    private var guideDeferred = false
-    private var guideDeferJob: Job? = null
+    private var homeDeferred = false
+    private var homeDeferJob: Job? = null
     private val longPressThresholdMs = LONG_PRESS_THRESHOLD_MS
 
     private val padDirections = mutableMapOf<Int, AxisDirectionTracker>()
@@ -326,11 +346,11 @@ class GamepadInputHandler @Inject constructor(
         }
 
         if (claimShortcutKey(event)) return true
+        if (HomeKeys.isHome(event)) return handleHomeKey(event)
 
         val gamepadEvent = mapKeyToEvent(event.keyCode) ?: return false
 
         if (gamepadEvent == GamepadEvent.Back && handleBackPress(event)) return true
-        if (event.keyCode == KeyEvent.KEYCODE_BUTTON_MODE) return handleGuidePress(event)
 
         if (gamepadEvent == GamepadEvent.Confirm && event.action == KeyEvent.ACTION_DOWN) {
             if (event.repeatCount == 0) {
@@ -459,33 +479,21 @@ class GamepadInputHandler @Inject constructor(
         backDeferred = false
     }
 
-    private fun handleGuidePress(event: KeyEvent): Boolean {
-        when (event.action) {
-            KeyEvent.ACTION_DOWN -> if (event.repeatCount == 0) deferGuidePress()
-            KeyEvent.ACTION_UP -> {
-                val shortPress = guideDeferred
-                releaseGuidePress()
-                if (shortPress) emitWithDebounce(GamepadEvent.Home)
-            }
-        }
-        return true
-    }
-
-    private fun deferGuidePress() {
-        guideDeferJob?.cancel()
-        guideDeferred = true
-        guideDeferJob = scope.launch {
+    private fun deferHomePress() {
+        homeDeferJob?.cancel()
+        homeDeferred = true
+        homeDeferJob = scope.launch {
             delay(SystemHotkeyDetector.GUIDE_HOLD_MS)
-            if (!guideDeferred) return@launch
-            guideDeferred = false
-            emitWithDebounce(GamepadEvent.LongHome)
+            if (!homeDeferred) return@launch
+            homeDeferred = false
+            _homeEvents.trySend(HomePress.HOLD)
         }
     }
 
-    private fun releaseGuidePress() {
-        guideDeferJob?.cancel()
-        guideDeferJob = null
-        guideDeferred = false
+    private fun releaseHomePress() {
+        homeDeferJob?.cancel()
+        homeDeferJob = null
+        homeDeferred = false
     }
 
     private fun trackSelectHold(action: Int, isRepeat: Boolean, holdArmed: Boolean) {

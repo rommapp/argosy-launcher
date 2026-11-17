@@ -1,11 +1,13 @@
 package com.nendo.argosy.ui.navigation
 
-import androidx.compose.animation.core.tween
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.layout.boundsInWindow
+import androidx.compose.ui.layout.onGloballyPositioned
+import com.nendo.argosy.ui.theme.LocalMotionTier
+import com.nendo.argosy.ui.theme.MotionTier
 import androidx.navigation.NavHostController
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
@@ -54,14 +56,17 @@ fun NavGraph(
             }
         }
     }
+    val transitionOrigin = remember { NavTransitionOrigin() }
+    val reducedMotion = LocalMotionTier.current == MotionTier.Reduced
+    CompositionLocalProvider(LocalNavTransitionOrigin provides transitionOrigin) {
     NavHost(
-        modifier = modifier,
+        modifier = modifier.onGloballyPositioned { transitionOrigin.updateHost(it.boundsInWindow()) },
         navController = navController,
         startDestination = startDestination,
-        enterTransition = { fadeIn(animationSpec = tween(150)) },
-        exitTransition = { fadeOut(animationSpec = tween(150)) },
-        popEnterTransition = { fadeIn(animationSpec = tween(150)) },
-        popExitTransition = { fadeOut(animationSpec = tween(150)) }
+        enterTransition = { navEnter(transitionOrigin, reducedMotion) },
+        exitTransition = { navExit(transitionOrigin, reducedMotion) },
+        popEnterTransition = { navPopEnter(transitionOrigin, reducedMotion) },
+        popExitTransition = { navPopExit(transitionOrigin, reducedMotion) }
     ) {
         composable(Screen.FirstRun.route) {
             SetupScreen(
@@ -346,15 +351,25 @@ fun NavGraph(
             )
         }
 
-        composable(Screen.Search.route) {
+        composable(
+            route = Screen.Search.ROUTE_WITH_ARGS,
+            arguments = listOf(
+                navArgument(Screen.Search.ARG_QUERY) {
+                    type = NavType.StringType
+                    nullable = true
+                    defaultValue = null
+                }
+            )
+        ) { backStackEntry ->
             SearchScreen(
+                initialQuery = backStackEntry.arguments?.getString(Screen.Search.ARG_QUERY),
                 onGameSelect = { gameId ->
                     navController.navigate(Screen.GameDetail.createRoute(gameId))
                 },
                 onMediaSelect = { itemId ->
                     navController.navigate(Screen.MediaDetail.createRoute(itemId))
                 },
-                onBack = navigateToDefault
+                onBack = { navController.popBackStack() }
             )
         }
 
@@ -486,5 +501,6 @@ fun NavGraph(
         composable(Screen.QuayPass.route) {
             QuayPassCheckInScreen(onBack = navigateToDefault)
         }
+    }
     }
 }

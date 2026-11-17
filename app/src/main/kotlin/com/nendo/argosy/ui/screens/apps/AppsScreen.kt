@@ -78,6 +78,7 @@ import com.nendo.argosy.ui.components.AppMenuRow
 import com.nendo.argosy.ui.components.FooterHints
 import com.nendo.argosy.ui.components.FooterSpacer
 import com.nendo.argosy.ui.components.InputButton
+import com.nendo.argosy.ui.components.animateScrollToItemCentered
 import com.nendo.argosy.ui.components.liftedReorderHints
 import com.nendo.argosy.ui.primitives.InputGlyph
 import androidx.compose.ui.graphics.lerp
@@ -135,12 +136,9 @@ fun AppsScreen(
 
     LaunchedEffect(uiState.focusedIndex) {
         if (uiState.apps.isNotEmpty()) {
-            val cols = uiState.columnsCount
-            val focusedRow = uiState.focusedIndex / cols
-            val targetIndex = (focusedRow * cols).coerceIn(0, uiState.apps.lastIndex)
             isProgrammaticScroll = true
             scope.launch {
-                gridState.animateScrollToItem(targetIndex)
+                gridState.animateScrollToItemCentered(uiState.focusedIndex.coerceIn(0, uiState.apps.lastIndex))
                 isProgrammaticScroll = false
             }
         }

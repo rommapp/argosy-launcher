@@ -197,4 +197,20 @@
     <string name="home_title_running_in">En ejecución en %1$s</string>
     <string name="home_title_saving">Guardando</string>
     <string name="home_title_running_with_time">En ejecución desde hace %1$s</string>
+    <string name="home_grid_picker_folder_title">Carpeta</string>
+    <string name="home_grid_picker_folder_subtitle">Agrupa mosaicos de cualquier tipo bajo uno solo</string>
+    <string name="home_grid_picker_auto_folder_title">Carpeta automática</string>
+    <string name="home_grid_picker_auto_folder_subtitle">Se llena con los juegos que cumplen una regla</string>
+    <string name="home_grid_picker_image_title">Imagen</string>
+    <string name="home_grid_picker_image_subtitle">Una imagen que llena sus celdas</string>
+    <string name="home_grid_picker_sticker_title">Pegatina</string>
+    <string name="home_grid_picker_sticker_subtitle">Una imagen recortada con contorno opcional</string>
+    <string name="home_grid_tile_image_label">Imagen</string>
+    <string name="home_grid_tile_sticker_label">Pegatina</string>
+    <plurals name="home_grid_tile_folder_count">
+        <item quantity="one">%d elemento</item>
+        <item quantity="many">%d elementos</item>
+        <item quantity="other">%d elementos</item>
+    </plurals>
+    <string name="home_tile_file_browser_decor_title">Elige una imagen</string>
 </resources>

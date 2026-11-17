@@ -14,6 +14,10 @@ import com.nendo.argosy.hardware.DisplayVolume
 import com.nendo.argosy.hardware.PerformanceMode
 import com.nendo.argosy.hardware.PerformanceModeStore
 import com.nendo.argosy.hardware.VolumeController
+import com.nendo.argosy.ui.components.activity.QuickActivityController
+import com.nendo.argosy.ui.components.activity.QuickActivityState
+import com.nendo.argosy.ui.components.power.QuickPowerController
+import com.nendo.argosy.ui.components.power.QuickPowerState
 import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
@@ -93,6 +97,12 @@ class QuickSettingsRootAccessTest {
             hapticManager = mockk(relaxed = true),
             soundManager = mockk(relaxed = true),
             quickFriends = mockk(relaxed = true),
+            power = mockk<QuickPowerController>(relaxed = true) {
+                every { state } returns MutableStateFlow(QuickPowerState())
+            },
+            activity = mockk<QuickActivityController>(relaxed = true) {
+                every { state } returns MutableStateFlow(QuickActivityState())
+            },
             wrapMode = { MenuWrapMode.HARD_STOP },
             scope = backgroundScope,
             deviceDispatcher = StandardTestDispatcher(testScheduler)
@@ -103,7 +113,7 @@ class QuickSettingsRootAccessTest {
         runCurrent()
         controller.selectPage(QuickSettingsPage.PERFORMANCE)
         controller.focusItem(QuickSettingsItem.RootAccess)
-        controller.createInputHandler(onDismiss = {}, onOpenDeviceAccess = null).onConfirm()
+        controller.createInputHandler(onDismiss = {}, onOpenDeviceAccess = null, onOpenRoute = null).onConfirm()
         runCurrent()
 
         coVerify(exactly = 1) { store.requestAccess(backend) }

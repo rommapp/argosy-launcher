@@ -87,6 +87,20 @@ class KeyboardEngine(
         return KeyboardFeedback.NAVIGATE
     }
 
+    /**
+     * True when Up has nothing above it inside the keyboard: the paste chip while it shows, else the
+     * top key row. An open accent strip or a disabled keyboard is never at the edge.
+     */
+    fun isAtTopEdge(): Boolean {
+        val current = _state.value
+        if (!current.enabled || current.accentStrip != null) return false
+        return current.pasteFocused || (current.focus.row == 0 && !current.pasteAvailable)
+    }
+
+    fun setFocusOutside(outside: Boolean) {
+        _state.update { if (it.focusOutside == outside) it else it.copy(focusOutside = outside) }
+    }
+
     fun activate(): KeyboardFeedback {
         val current = _state.value
         if (!current.enabled) return KeyboardFeedback.NONE

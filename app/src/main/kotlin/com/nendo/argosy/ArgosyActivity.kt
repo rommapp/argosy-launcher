@@ -587,10 +587,7 @@ class ArgosyActivity : ComponentActivity() {
         if (gamepadInputHandler.handleKeyEvent(event)) {
             return true
         }
-        if (HomeKeys.isHome(event)) {
-            if (event.action == KeyEvent.ACTION_DOWN) gamepadInputHandler.emitHomeEvent()
-            return true
-        }
+        if (HomeKeys.isHome(event)) return gamepadInputHandler.handleHomeKey(event)
         return super.dispatchKeyEvent(event)
     }
 

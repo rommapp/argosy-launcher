@@ -976,6 +976,15 @@ interface GameDao {
     suspend fun getDistinctGenres(ownerUserId: Long?, oneEntryPerGroup: Boolean): List<String>
 
     @Query("""
+        SELECT DISTINCT developer FROM games
+        WHERE developer IS NOT NULL AND developer != ''
+        AND isGroupVisible = 1
+        AND NOT EXISTS (SELECT 1 FROM user_roms_hidden h WHERE h.gameId = games.id AND (h.ownerUserId IS NULL OR h.ownerUserId IS :ownerUserId))
+        ORDER BY developer COLLATE NOCASE ASC
+    """)
+    suspend fun getDistinctDevelopers(ownerUserId: Long?): List<String>
+
+    @Query("""
         SELECT DISTINCT franchises FROM games
         WHERE franchises IS NOT NULL
         AND NOT EXISTS (SELECT 1 FROM user_roms_hidden h WHERE h.gameId = games.id AND (h.ownerUserId IS NULL OR h.ownerUserId IS :ownerUserId))
@@ -1258,11 +1267,13 @@ interface GameDao {
     ): List<RandomCandidate>
 
     @Query("""
-        SELECT games.id, genre, players, $RESOLVED_ART_SQL AS coverPath FROM games
+        SELECT games.id, genre, players, developer, releaseYear, status, addedAt, achievementCount,
+            earnedAchievementCount, $RESOLVED_ART_SQL AS coverPath FROM games
         $COVER_ART_JOIN
         WHERE (
             (:source = 'HIDDEN') = EXISTS (SELECT 1 FROM user_roms_hidden h WHERE h.gameId = games.id AND (h.ownerUserId IS NULL OR h.ownerUserId IS :ownerUserId))
         )
+        AND (:collapseSiblings = 0 OR isGroupVisible = 1)
         AND (:platformCount = 0 OR platformId IN (:platformIds))
         AND (:source != 'FAVORITES' OR isFavorite = 1)
         AND (
@@ -1278,7 +1289,8 @@ interface GameDao {
         ownerUserId: Long?,
         platformCount: Int,
         platformIds: List<Long>,
-        source: String
+        source: String,
+        collapseSiblings: Boolean = false
     ): List<LibraryLinkCandidate>
 
     @Query("""
@@ -1519,7 +1531,13 @@ data class LibraryLinkCandidate(
     val id: Long,
     val genre: String?,
     val players: String?,
-    val coverPath: String?
+    val coverPath: String?,
+    val developer: String? = null,
+    val releaseYear: Int? = null,
+    val status: String? = null,
+    val addedAt: Long = 0L,
+    val achievementCount: Int = 0,
+    val earnedAchievementCount: Int = 0
 )
 
 data class GameStorageInfo(

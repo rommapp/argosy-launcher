@@ -1,5 +1,6 @@
 package com.nendo.argosy.ui.screens.settings.sections
 
+import androidx.annotation.StringRes
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -61,69 +62,91 @@ import com.nendo.argosy.data.update.BuildChannel
 import com.nendo.argosy.ui.screens.settings.components.SectionHeader
 import com.nendo.argosy.ui.screens.settings.dialogs.LicensesDialog
 import com.nendo.argosy.ui.screens.settings.menu.SettingsLayout
+import com.nendo.argosy.ui.screens.settings.search.SearchableSetting
 import com.nendo.argosy.ui.theme.Dimens
 import com.nendo.argosy.util.LogLevel
 
-internal data class AboutLayoutState(val hasLogPath: Boolean, val hasChangelog: Boolean)
+internal data class AboutLayoutState(val hasLogPath: Boolean, val hasChangelog: Boolean) {
+    companion object {
+        fun from(state: SettingsUiState) = AboutLayoutState(
+            hasLogPath = state.fileLoggingPath != null,
+            hasChangelog = aboutHasChangelog(state.updateCheck)
+        )
+    }
+}
 
 internal sealed class AboutItem(
     val key: String,
     val section: String,
     val visibleWhen: (AboutLayoutState) -> Boolean = { true }
 ) {
-    val isFocusable: Boolean get() = when (this) {
-        is Header, VersionInfo, SectionSpacer, SystemSpacer, BackupSpacer -> false
-        else -> true
-    }
+    val isFocusable: Boolean get() = this is SearchableSetting
 
     class Header(key: String, section: String, val titleRes: Int) : AboutItem(key, section)
+
+    sealed class Row(
+        key: String,
+        section: String,
+        @StringRes override val labelRes: Int,
+        visibleWhen: (AboutLayoutState) -> Boolean = { true }
+    ) : AboutItem(key, section, visibleWhen), SearchableSetting
+
     data object VersionInfo : AboutItem("versionInfo", "version")
-    data object CheckUpdates : AboutItem("checkUpdates", "version")
-    data object ChangelogPreview : AboutItem(
+    data object CheckUpdates :
+        Row("checkUpdates", "version", R.string.settings_about_update_title_check)
+    data object ChangelogPreview : Row(
         key = "changelogPreview",
         section = "version",
+        labelRes = R.string.settings_search_label_about_changelog,
         visibleWhen = { it.hasChangelog }
     )
-    data object BetaUpdates : AboutItem("betaUpdates", "version")
+    data object BetaUpdates : Row("betaUpdates", "version", R.string.settings_about_beta_updates_title)
     data object BackupSpacer : AboutItem("backupSpacer", "backup")
-    data object ExportSettings : AboutItem("exportSettings", "backup")
-    data object ImportSettings : AboutItem("importSettings", "backup")
+    data object ExportSettings : Row("exportSettings", "backup", R.string.settings_about_export_title)
+    data object ImportSettings : Row("importSettings", "backup", R.string.settings_about_import_title)
     data object SystemSpacer : AboutItem("systemSpacer", "system")
-    data object SystemizeHelper : AboutItem("systemizeHelper", "system")
-    data object RestartApp : AboutItem("restartApp", "system")
+    data object SystemizeHelper :
+        Row("systemizeHelper", "system", R.string.settings_about_systemize_title)
+    data object RestartApp : Row("restartApp", "system", R.string.settings_about_restart_title)
     data object SectionSpacer : AboutItem("spacer", "debug")
-    data object ControllerTest : AboutItem("controllerTest", "debug")
-    data object DisplayInfo : AboutItem("displayInfo", "debug")
-    data object ExportDiagnostics : AboutItem("exportDiagnostics", "debug")
-    data object RunSetupAgain : AboutItem(
+    data object ControllerTest : Row("controllerTest", "debug", R.string.about_tools_controller_title)
+    data object DisplayInfo : Row("displayInfo", "debug", R.string.about_tools_display_title)
+    data object ExportDiagnostics : Row("exportDiagnostics", "debug", R.string.about_tools_export_title)
+    data object RunSetupAgain : Row(
         key = "runSetupAgain",
         section = "debug",
+        labelRes = R.string.about_tools_setup_title,
         visibleWhen = { BuildChannel.isPrereleaseBuild }
     )
-    data object ShowUpdatePrompt : AboutItem(
+    data object ShowUpdatePrompt : Row(
         key = "showUpdatePrompt",
         section = "debug",
+        labelRes = R.string.about_tools_prompt_title,
         visibleWhen = { BuildChannel.isPrereleaseBuild }
     )
-    data object ResetNotices : AboutItem(
+    data object ResetNotices : Row(
         key = "resetNotices",
         section = "debug",
+        labelRes = R.string.about_tools_reset_title,
         visibleWhen = { BuildChannel.isPrereleaseBuild }
     )
-    data object DebugUpdateChecks : AboutItem(
+    data object DebugUpdateChecks : Row(
         key = "debugUpdateChecks",
         section = "debug",
+        labelRes = R.string.settings_about_debug_update_checks_title,
         visibleWhen = { com.nendo.argosy.BuildConfig.DEBUG }
     )
-    data object FileLogging : AboutItem("fileLogging", "debug")
-    data object LogLevel : AboutItem(
+    data object FileLogging : Row("fileLogging", "debug", R.string.settings_about_file_logging_title)
+    data object LogLevel : Row(
         key = "logLevel",
         section = "debug",
+        labelRes = R.string.settings_about_log_level_title,
         visibleWhen = { it.hasLogPath }
     )
-    data object SaveDebugLogging : AboutItem(
+    data object SaveDebugLogging : Row(
         key = "saveDebugLogging",
         section = "debug",
+        labelRes = R.string.settings_about_save_debug_title,
         visibleWhen = { it.hasLogPath }
     )
 
@@ -145,7 +168,7 @@ internal sealed class AboutItem(
     }
 }
 
-private val aboutLayout = SettingsLayout<AboutItem, AboutLayoutState>(
+internal val aboutLayout = SettingsLayout<AboutItem, AboutLayoutState>(
     allItems = AboutItem.ALL,
     isFocusable = { it.isFocusable },
     visibleWhen = { item, state -> item.visibleWhen(state) },
@@ -228,14 +251,14 @@ fun AboutSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
             when (item) {
                 is AboutItem.Header -> SectionHeader(stringResource(item.titleRes))
 
-                AboutItem.VersionInfo -> VersionInfoRow(
+                is AboutItem.VersionInfo -> VersionInfoRow(
                     argosyVersion = uiState.appVersion,
                     rommVersion = uiState.server.rommVersion,
                     onLicensesClick = { showLicensesDialog = true }
                 )
 
-                AboutItem.CheckUpdates -> {
-                    val checkTitle = stringResource(R.string.settings_about_update_title_check)
+                is AboutItem.CheckUpdates -> {
+                    val checkTitle = stringResource(item.labelRes)
                     val latestVersion = updateCheck.latest?.displayVersion.orEmpty()
                     val (title, subtitle) = when {
                         isDebug && !updateCheck.updateAvailable -> checkTitle to
@@ -300,15 +323,15 @@ fun AboutSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
                     )
                 }
 
-                AboutItem.ChangelogPreview -> ChangelogPreviewRow(
+                is AboutItem.ChangelogPreview -> ChangelogPreviewRow(
                     version = updateCheck.latest?.tag.orEmpty(),
                     body = updateCheck.latest?.notes.orEmpty(),
                     isFocused = isFocused(item),
                     onClick = { viewModel.openChangelog() }
                 )
 
-                AboutItem.BetaUpdates -> SwitchPreference(
-                    title = stringResource(R.string.settings_about_beta_updates_title),
+                is AboutItem.BetaUpdates -> SwitchPreference(
+                    title = stringResource(item.labelRes),
                     subtitle = if (uiState.betaUpdatesEnabled) {
                         stringResource(R.string.settings_about_beta_updates_subtitle_on)
                     } else {
@@ -319,11 +342,11 @@ fun AboutSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
                     onToggle = { viewModel.setBetaUpdatesEnabled(it) }
                 )
 
-                AboutItem.BackupSpacer -> Spacer(modifier = Modifier.height(Dimens.spacingMd))
+                is AboutItem.BackupSpacer -> Spacer(modifier = Modifier.height(Dimens.spacingMd))
 
-                AboutItem.ExportSettings -> ActionPreference(
+                is AboutItem.ExportSettings -> ActionPreference(
                     icon = Icons.Outlined.Upload,
-                    title = stringResource(R.string.settings_about_export_title),
+                    title = stringResource(item.labelRes),
                     subtitle = stringResource(
                         R.string.settings_about_export_subtitle,
                         SettingsBackupRepository.FILE_NAME
@@ -332,53 +355,53 @@ fun AboutSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
                     onClick = { viewModel.exportSettings() }
                 )
 
-                AboutItem.ImportSettings -> ActionPreference(
+                is AboutItem.ImportSettings -> ActionPreference(
                     icon = Icons.Outlined.Download,
-                    title = stringResource(R.string.settings_about_import_title),
+                    title = stringResource(item.labelRes),
                     subtitle = stringResource(R.string.settings_about_import_subtitle),
                     isFocused = isFocused(item),
                     onClick = { viewModel.requestImportSettings() }
                 )
 
-                AboutItem.SystemSpacer -> Spacer(modifier = Modifier.height(Dimens.spacingMd))
+                is AboutItem.SystemSpacer -> Spacer(modifier = Modifier.height(Dimens.spacingMd))
 
-                AboutItem.SystemizeHelper -> ActionPreference(
+                is AboutItem.SystemizeHelper -> ActionPreference(
                     icon = Icons.Default.HealthAndSafety,
-                    title = stringResource(R.string.settings_about_systemize_title),
+                    title = stringResource(item.labelRes),
                     subtitle = stringResource(R.string.settings_about_systemize_subtitle),
                     isFocused = isFocused(item),
                     onClick = { viewModel.applyRootScript(com.nendo.argosy.data.model.RootScript.SYSTEMIZE) }
                 )
 
-                AboutItem.RestartApp -> ActionPreference(
+                is AboutItem.RestartApp -> ActionPreference(
                     icon = Icons.Outlined.RestartAlt,
-                    title = stringResource(R.string.settings_about_restart_title),
+                    title = stringResource(item.labelRes),
                     subtitle = stringResource(R.string.settings_about_restart_subtitle),
                     isFocused = isFocused(item),
                     onClick = { viewModel.restartApp() }
                 )
 
-                AboutItem.SectionSpacer -> Spacer(modifier = Modifier.height(Dimens.spacingMd))
+                is AboutItem.SectionSpacer -> Spacer(modifier = Modifier.height(Dimens.spacingMd))
 
-                AboutItem.ControllerTest -> ActionPreference(
+                is AboutItem.ControllerTest -> ActionPreference(
                     icon = Icons.Default.SportsEsports,
-                    title = stringResource(R.string.about_tools_controller_title),
+                    title = stringResource(item.labelRes),
                     subtitle = stringResource(R.string.about_tools_controller_subtitle),
                     isFocused = isFocused(item),
                     onClick = { viewModel.aboutTools.openControllerTest() }
                 )
 
-                AboutItem.DisplayInfo -> ActionPreference(
+                is AboutItem.DisplayInfo -> ActionPreference(
                     icon = Icons.Outlined.Monitor,
-                    title = stringResource(R.string.about_tools_display_title),
+                    title = stringResource(item.labelRes),
                     subtitle = stringResource(R.string.about_tools_display_subtitle),
                     isFocused = isFocused(item),
                     onClick = { viewModel.aboutTools.openDisplayInfo() }
                 )
 
-                AboutItem.ExportDiagnostics -> ActionPreference(
+                is AboutItem.ExportDiagnostics -> ActionPreference(
                     icon = Icons.Default.Share,
-                    title = stringResource(R.string.about_tools_export_title),
+                    title = stringResource(item.labelRes),
                     subtitle = if (tools.exporting) {
                         stringResource(R.string.about_tools_export_subtitle_busy)
                     } else {
@@ -388,17 +411,17 @@ fun AboutSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
                     onClick = { viewModel.aboutTools.exportDiagnostics() }
                 )
 
-                AboutItem.RunSetupAgain -> ActionPreference(
+                is AboutItem.RunSetupAgain -> ActionPreference(
                     icon = Icons.Default.Replay,
-                    title = stringResource(R.string.about_tools_setup_title),
+                    title = stringResource(item.labelRes),
                     subtitle = stringResource(R.string.about_tools_setup_subtitle),
                     isFocused = isFocused(item),
                     onClick = { viewModel.runSetupAgain() }
                 )
 
-                AboutItem.ShowUpdatePrompt -> ActionPreference(
+                is AboutItem.ShowUpdatePrompt -> ActionPreference(
                     icon = Icons.Default.SystemUpdate,
-                    title = stringResource(R.string.about_tools_prompt_title),
+                    title = stringResource(item.labelRes),
                     subtitle = if (tools.promptLoading) {
                         stringResource(R.string.about_tools_prompt_subtitle_busy)
                     } else {
@@ -408,16 +431,16 @@ fun AboutSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
                     onClick = { viewModel.aboutTools.showUpdatePromptNow() }
                 )
 
-                AboutItem.ResetNotices -> ActionPreference(
+                is AboutItem.ResetNotices -> ActionPreference(
                     icon = Icons.Default.Restore,
-                    title = stringResource(R.string.about_tools_reset_title),
+                    title = stringResource(item.labelRes),
                     subtitle = stringResource(R.string.about_tools_reset_subtitle),
                     isFocused = isFocused(item),
                     onClick = { viewModel.aboutTools.requestResetNotices() }
                 )
 
-                AboutItem.DebugUpdateChecks -> SwitchPreference(
-                    title = stringResource(R.string.settings_about_debug_update_checks_title),
+                is AboutItem.DebugUpdateChecks -> SwitchPreference(
+                    title = stringResource(item.labelRes),
                     subtitle = if (uiState.debugUpdateChecksEnabled) {
                         stringResource(R.string.settings_about_debug_update_checks_subtitle_on)
                     } else {
@@ -428,11 +451,11 @@ fun AboutSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
                     onToggle = { viewModel.setDebugUpdateChecksEnabled(it) }
                 )
 
-                AboutItem.FileLogging -> {
+                is AboutItem.FileLogging -> {
                     if (uiState.fileLoggingPath != null) {
                         SwitchPreference(
                             icon = Icons.Default.Description,
-                            title = stringResource(R.string.settings_about_file_logging_title),
+                            title = stringResource(item.labelRes),
                             subtitle = formatLoggingPath(context, uiState.fileLoggingPath),
                             isEnabled = uiState.fileLoggingEnabled,
                             isFocused = isFocused(item),
@@ -450,16 +473,16 @@ fun AboutSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
                     }
                 }
 
-                AboutItem.LogLevel -> SegmentedPreference(
-                    title = stringResource(R.string.settings_about_log_level_title),
+                is AboutItem.LogLevel -> SegmentedPreference(
+                    title = stringResource(item.labelRes),
                     options = LogLevel.entries.map { stringResource(it.labelRes) },
                     selectedIndex = LogLevel.entries.indexOf(uiState.fileLogLevel),
                     isFocused = isFocused(item),
                     onSelect = { viewModel.setFileLogLevel(LogLevel.entries[it]) }
                 )
 
-                AboutItem.SaveDebugLogging -> SwitchPreference(
-                    title = stringResource(R.string.settings_about_save_debug_title),
+                is AboutItem.SaveDebugLogging -> SwitchPreference(
+                    title = stringResource(item.labelRes),
                     subtitle = if (uiState.saveDebugLoggingEnabled) {
                         stringResource(R.string.settings_about_save_debug_subtitle_on)
                     } else {

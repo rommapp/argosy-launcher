@@ -44,6 +44,7 @@ class PspFolderHandlerRoundTripTest {
             unitSaveHandler = mockk(relaxed = true),
             sigilSaveHandler = mockk(relaxed = true),
             dreamcastSaveHandler = mockk(relaxed = true),
+            emulatorSaveConfigRepository = mockk(relaxed = true),
         )
         handler = registry.getFolderHandler("psp")
             ?: error("PSP folder handler not registered")

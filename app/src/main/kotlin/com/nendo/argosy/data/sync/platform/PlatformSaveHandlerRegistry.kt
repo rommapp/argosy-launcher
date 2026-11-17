@@ -4,10 +4,13 @@ import android.content.Context
 import com.nendo.argosy.data.emulator.EmulatorRegistry
 import com.nendo.argosy.data.emulator.SavePathConfig
 import com.nendo.argosy.data.emulator.SavePathRegistry
+import com.nendo.argosy.data.emulator.savepath.Pcsx2CardBase
 import com.nendo.argosy.data.platform.PlatformDefinitions
+import com.nendo.argosy.data.repository.EmulatorSaveConfigRepository
 import com.nendo.argosy.data.storage.FileAccessLayer
 import com.nendo.argosy.data.storage.FileInfo
 import com.nendo.argosy.data.sync.ArchiveRoot
+import com.nendo.argosy.data.sync.Pcsx2LegacyCards
 import com.nendo.argosy.data.sync.SaveArchiver
 import com.nendo.argosy.util.Logger
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -33,8 +36,15 @@ class PlatformSaveHandlerRegistry @Inject constructor(
     private val dreamcastSaveHandler: DreamcastSaveHandler,
     private val defaultSaveHandler: DefaultSaveHandler,
     private val unitSaveHandler: UnitSaveHandler,
-    private val sigilSaveHandler: SigilSaveHandler
+    private val sigilSaveHandler: SigilSaveHandler,
+    emulatorSaveConfigRepository: EmulatorSaveConfigRepository
 ) {
+    private val pcsx2Cards = Pcsx2LegacyCards(
+        fal,
+        emulatorSaveConfigRepository,
+        EmulatorSaveRoots(context, fal, emulatorSaveConfigRepository)
+    )
+
     /**
      * Folder-bundle handlers keyed by canonical platform slug. Adding a new platform: drop a
      * line here. Special-cases (PSP prefix match, PS2 BA-prefix normalization, 3DS id0/id1
@@ -172,19 +182,24 @@ class PlatformSaveHandlerRegistry @Inject constructor(
         return handler.listFolderMemcards(basePath)
     }
 
-    fun listPs2FolderMemcardsForEmulator(
-        emulatorId: String,
-        emulatorPackage: String?,
-        basePathOverride: String? = null
-    ): List<MemcardInfo> {
-        val config = emulatorPackage?.let { SavePathRegistry.getConfigByPackage(it) }
-            ?: SavePathRegistry.getConfig(emulatorId)
-            ?: return emptyList()
-        val basePath = basePathOverride?.takeIf { it.isNotBlank() }
-            ?: SavePathRegistry.resolvePathWithPackage(config, emulatorPackage, context.filesDir.absolutePath).firstOrNull()
-            ?: return emptyList()
-        return listPs2FolderMemcards(basePath)
-    }
+    /**
+     * The cards a standalone PCSX2-family emulator uses on PS2, resolved by the rule save sync
+     * places and discovers its saves by: the user's chosen path, else the live data folder on any
+     * storage volume, else the evaluated default. Null for an emulator with no PCSX2-family layout.
+     */
+    suspend fun ps2CardBaseForEmulator(emulatorId: String, emulatorPackage: String?): Pcsx2CardBase? =
+        withContext(Dispatchers.IO) {
+            val config = emulatorPackage?.let { SavePathRegistry.getConfigForPlatformByPackage(it, PS2_SLUG) }
+                ?: SavePathRegistry.getConfigForPlatform(emulatorId, PS2_SLUG)
+                ?: return@withContext null
+            pcsx2Cards.baseFor(config, PS2_SLUG, emulatorPackage)
+        }
+
+    suspend fun listPs2FolderMemcardsForEmulator(emulatorId: String, emulatorPackage: String?): List<MemcardInfo> =
+        withContext(Dispatchers.IO) {
+            val base = ps2CardBaseForEmulator(emulatorId, emulatorPackage) ?: return@withContext emptyList()
+            listPs2FolderMemcards(base.cardsDir)
+        }
 
     companion object {
         private const val TAG = "PlatformSaveHandlerRegistry"
@@ -192,6 +207,7 @@ class PlatformSaveHandlerRegistry @Inject constructor(
         val UNIT_EMULATOR_IDS = RETROARCH_EMULATOR_IDS + EmulatorRegistry.BUILTIN_ID + EmulatorRegistry.LEGACY_BUILTIN_ID
         private const val FLYCAST_STANDALONE_ID = "flycast"
         private const val GAMECUBE_SLUG = "gc"
+        private const val PS2_SLUG = "ps2"
     }
 }
 
@@ -1005,8 +1021,9 @@ private class Ps2FolderHandler(
     }
 
     /**
-     * Restores land in the card itself; the archive carries the emulator's own entry names,
-     * so nothing here invents one.
+     * Restores land in a card already on disk: [baseDir] itself when it is a card, else the one
+     * card under it, else the most recently written of several. Null when it holds no card; the
+     * archive carries the emulator's own entry names, and no card is invented to hold them.
      */
     override fun constructSavePath(baseDir: String, saveId: String): String? {
         if (isFolderCard(baseDir)) {
@@ -1015,7 +1032,10 @@ private class Ps2FolderHandler(
 
         val folderCards = listCardDirsIn(baseDir)
         val cardDir = when (folderCards.size) {
-            0 -> "$baseDir/Shared.ps2"
+            0 -> {
+                Logger.warn(TAG, "constructSavePath: $baseDir holds no folder memory card; not creating one")
+                null
+            }
             1 -> folderCards[0].path
             else -> {
                 val active = listFolderMemcards(baseDir).firstOrNull()?.path ?: folderCards[0].path

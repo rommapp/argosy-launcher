@@ -1896,46 +1896,27 @@
     <string name="ui_quick_menu_orb_recent">Recent</string>
     <!-- Quick menu orb listing the games marked as favourites. Noun, plural. -->
     <string name="ui_quick_menu_orb_favorites">Favorites</string>
-    <!-- Shown under the most-played orb when nothing has been played. -->
-    <string name="ui_quick_menu_empty_most_played">No games played yet</string>
-    <!-- Shown under the top-new orb when no game carries a rating. -->
-    <string name="ui_quick_menu_empty_top_unplayed">No rated games found</string>
-    <!-- Shown under the recent orb when nothing has been played. -->
-    <string name="ui_quick_menu_empty_recent">No recent games</string>
-    <!-- Shown under the favourites orb when nothing is marked. -->
-    <string name="ui_quick_menu_empty_favorites">No favorites yet</string>
-    <!-- Shown under the random orb when the library is empty. -->
-    <string name="ui_quick_menu_empty_random">No games available</string>
-    <!-- Placeholder in the quick menu's search field. -->
-    <string name="ui_quick_menu_search_placeholder">Search games...</string>
-    <!-- Enter key of the on-screen controller keyboard while typing in the quick menu search. Verb. -->
-    <string name="ui_quick_menu_search_keyboard_submit">Search</string>
-    <!-- Shown under an almost-empty search field, saying how much to type. -->
-    <string name="ui_quick_menu_search_prompt">Type at least 2 characters to search</string>
-    <!-- Shown when a search matches nothing. %1$s is what was typed. -->
-    <string name="ui_quick_menu_search_no_results">No games found for \"%1$s\"</string>
-    <!-- Heading over the searches the reader made before. Noun, plural. -->
-    <string name="ui_quick_menu_recent_searches_heading">Recent Searches</string>
+    <!-- Shown in the most-played section when nothing has been played. -->
+    <string name="ui_quick_menu_empty_most_played">Games you play show up here, ranked by time.</string>
+    <!-- Shown in the top-new section when every game in the library has been started. -->
+    <string name="ui_quick_menu_empty_top_unplayed">You have started every game in your library.</string>
+    <!-- Shown in the recent section when nothing has been played. -->
+    <string name="ui_quick_menu_empty_recent">Games you launch show up here.</string>
+    <!-- Shown in the favourites section when nothing is marked. "Star" is a verb: mark as favourite. -->
+    <string name="ui_quick_menu_empty_favorites">Star games to keep them here.</string>
+    <!-- Shown in the random section when the library is empty. -->
+    <string name="ui_quick_menu_empty_random">Nothing to pick from yet. Sync a platform to fill your library.</string>
     <!-- Stands in for the platform name on a quick menu list row, when the platform is no longer
          in the library. Adjective. -->
     <string name="ui_quick_menu_row_platform_unknown">Unknown</string>
-    <!-- Icon description on the tick shown on a quick menu list row when the game is on the
-         device. Adjective describing the game. -->
-    <string name="ui_quick_menu_row_downloaded">Downloaded</string>
-    <!-- Line on a quick menu list row for a game still running in the background. -->
-    <string name="ui_quick_menu_row_running">Running</string>
-    <!-- Same line for a game another emulator app holds. %1$s is the emulator name. -->
-    <string name="ui_quick_menu_row_running_in">Running in %1$s</string>
-    <!-- Same line while the running game saves and closes. Verb in progress. -->
-    <string name="ui_quick_menu_row_saving">Saving</string>
     <!-- Stands in for the platform name on the random game card, when the platform is no longer
          in the library. Adjective. -->
     <string name="ui_quick_menu_random_platform_unknown">Unknown</string>
-    <!-- Icon description on the tick shown on the random game card when the game is on the
-         device. Adjective describing the game. -->
+    <!-- Chip on the random game card when the game is on the device. Adjective describing the
+         game. -->
     <string name="ui_quick_menu_random_downloaded">Downloaded</string>
     <!-- Action on the random game card that swaps the shown game for another random pick. Verb. -->
-    <string name="ui_quick_menu_random_action_reroll">Re-roll</string>
+    <string name="ui_quick_menu_random_action_reroll">Roll again</string>
     <!-- Action on the random game card that starts the game. Verb, as in play a game. -->
     <string name="ui_quick_menu_random_action_play">Play</string>
     <!-- Action on the random game card when the game is still running in the background. Verb,
@@ -1949,10 +1930,165 @@
     <string name="ui_quick_menu_random_action_details">Details</string>
     <!-- Action on the random game card that marks the game as a favourite. Verb. -->
     <string name="ui_quick_menu_random_action_favorite">Favorite</string>
-    <!-- Action on the random game card that removes the game from favourites. Verb. -->
-    <string name="ui_quick_menu_random_action_unfavorite">Unfavorite</string>
-    <!-- Shown on the random game card while a game is being picked. -->
-    <string name="ui_quick_menu_random_loading">Picking a game...</string>
+    <!-- Label on the random game card's favorite button once the game is a favourite. Adjective,
+         as in already marked favourite. -->
+    <string name="ui_quick_menu_random_action_favorited">Favorited</string>
+    <!-- Small heading above the random game on the presentation screen. -->
+    <string name="ui_quick_menu_random_eyebrow">Random pick</string>
+    <!-- Which roll of the session the shown random game is. %1$d is the roll number. Noun, as in a dice roll. -->
+    <string name="ui_quick_menu_random_roll">Roll %1$d</string>
+    <!-- Heading above the strip of games rolled before. Noun, as in dice rolls. -->
+    <string name="ui_quick_menu_random_history">Rolls this session</string>
+    <!-- Rank number at the start of a most-played row. %1$d is the rank. -->
+    <string name="ui_quick_menu_most_played_rank_short">%1$d</string>
+    <!-- Small heading above the focused most-played game. %1$d is its rank. -->
+    <string name="ui_quick_menu_most_played_eyebrow">Most played, #%1$d</string>
+    <!-- Label under the total play time of the focused game. Noun. -->
+    <string name="ui_quick_menu_preview_total">Total</string>
+    <!-- Label under the number of play sessions of the focused game. Noun, plural. -->
+    <string name="ui_quick_menu_preview_sessions">Sessions</string>
+    <!-- Label under when the focused most-played game was last played. -->
+    <string name="ui_quick_menu_preview_last_played">Last played</string>
+    <!-- Caption under the weekly play strip. %1$s is the week's first day, %2$s the time played that week. -->
+    <string name="ui_quick_menu_preview_busiest_week">Busiest week %1$s, %2$s</string>
+    <!-- Chip on the focused game when it is on the device. Adjective. -->
+    <string name="ui_quick_menu_preview_installed">Installed</string>
+    <!-- Chip on the focused game when it is not on the device yet. -->
+    <string name="ui_quick_menu_preview_not_downloaded">Not downloaded</string>
+    <!-- Community rating of the focused game. %1$d is a number from 0 to 100. -->
+    <string name="ui_quick_menu_preview_rating">%1$d%%</string>
+    <!-- Small heading above the focused top-new game. -->
+    <string name="ui_quick_menu_top_new_eyebrow">Never played</string>
+    <!-- Why a game ranks in top new. %1$s is a genre, %2$s a platform. -->
+    <string name="ui_quick_menu_top_new_reason_both">Because you play %1$s games on %2$s</string>
+    <!-- Why a game ranks in top new. %1$s is a genre. -->
+    <string name="ui_quick_menu_top_new_reason_genre">Because you play %1$s games</string>
+    <!-- Why a game ranks in top new. %1$s is a platform. -->
+    <string name="ui_quick_menu_top_new_reason_platform">Because you play %1$s games</string>
+    <!-- Footer hint that hides the focused game from top new. -->
+    <string name="ui_quick_menu_top_new_hint_not_interested">Not interested</string>
+    <!-- Footer hint that brings back a game marked not interested. Verb. -->
+    <string name="ui_quick_menu_top_new_hint_restore">Restore</string>
+    <!-- Label on a top-new tile marked not interested. -->
+    <string name="ui_quick_menu_top_new_dismissed">Not interested</string>
+    <!-- Recent list group heading. -->
+    <string name="ui_quick_menu_recent_group_today">Today</string>
+    <!-- Recent list group heading. -->
+    <string name="ui_quick_menu_recent_group_yesterday">Yesterday</string>
+    <!-- Recent list group heading. -->
+    <string name="ui_quick_menu_recent_group_this_week">This week</string>
+    <!-- Recent list group heading for anything older than a week. -->
+    <string name="ui_quick_menu_recent_group_earlier">Earlier</string>
+    <!-- Chip on a recent game still running in the background. Adjective. -->
+    <string name="ui_quick_menu_recent_running_chip">Running</string>
+    <!-- Small heading above the focused recent game. -->
+    <string name="ui_quick_menu_recent_eyebrow">Where you stopped</string>
+    <!-- When the focused recent game was last played. %1$s is a relative time such as 2 h ago. -->
+    <string name="ui_quick_menu_recent_last_played">Last played %1$s</string>
+    <!-- Save status of the focused recent game. %1$s is a relative time. "Saved" refers to the game save. -->
+    <string name="ui_quick_menu_recent_saved_synced">Saved %1$s, synced</string>
+    <!-- Save status when the newest save has not reached the server yet. %1$s is a relative time. -->
+    <string name="ui_quick_menu_recent_saved_pending">Saved %1$s, waiting to sync</string>
+    <!-- Save status when the save is kept on this device only. %1$s is a relative time. -->
+    <string name="ui_quick_menu_recent_saved_local">Saved %1$s on this device</string>
+    <!-- Button that brings a running recent game back. Verb. -->
+    <string name="ui_quick_menu_recent_action_resume">Resume</string>
+    <!-- Button that starts the focused recent game. Verb, as in play a game. -->
+    <string name="ui_quick_menu_recent_action_play">Play</string>
+    <!-- Footer hint that opens the focused recent game's detail page. Noun, plural. -->
+    <string name="ui_quick_menu_recent_hint_details">Details</string>
+    <!-- Favorites sort option: newest games in the library first. -->
+    <string name="ui_quick_menu_favorites_sort_recently_added">Recently added</string>
+    <!-- Favorites sort option: alphabetical by title. -->
+    <string name="ui_quick_menu_favorites_sort_title">A to Z</string>
+    <!-- Favorites sort option: grouped by platform. Noun. -->
+    <string name="ui_quick_menu_favorites_sort_platform">Platform</string>
+    <!-- Favorites sort option: most recently played first. -->
+    <string name="ui_quick_menu_favorites_sort_last_played">Last played</string>
+    <!-- Header at the top of the quick menu favorites grid on the control screen: how many games
+         are favorited. -->
+    <plurals name="ui_quick_menu_favorites_header_count">
+        <item quantity="one">%1$d favorite</item>
+        <item quantity="other">%1$d favorites</item>
+    </plurals>
+    <!-- Label on a favorite tile unfavorited while the menu is open. Adjective. -->
+    <string name="ui_quick_menu_favorites_removed">Removed</string>
+    <!-- Label under the play time of the focused favorite. Verb, past participle. -->
+    <string name="ui_quick_menu_favorites_played">Played</string>
+    <!-- Label under when the focused favorite was last played. -->
+    <string name="ui_quick_menu_favorites_last_played">Last played</string>
+    <!-- Content description of the mark on a quick menu game that is not on the device yet. -->
+    <string name="ui_quick_menu_row_not_downloaded_cd">Not downloaded</string>
+    <!-- Joins two facts on a Recent row or card. %1$s is how long ago the game was played, such as
+         2 h ago; %2$s is the last session's length or the save status. Keep the dot separator. -->
+    <string name="ui_quick_menu_recent_row_meta">%1$s · %2$s</string>
+    <!-- Save status on the Recent card of the phone layout. "Saved" refers to the game save. -->
+    <string name="ui_quick_menu_recent_hero_saved_synced">Saved, synced</string>
+    <!-- Save status on the Recent card when the newest save has not reached the server yet. -->
+    <string name="ui_quick_menu_recent_hero_saved_pending">Saved, waiting to sync</string>
+    <!-- Save status on the Recent card when the save is kept on this device only. -->
+    <string name="ui_quick_menu_recent_hero_saved_local">Saved on this device</string>
+    <!-- Joins two facts under the random pick, such as "Roll 5" and "1,204 games in pool". Keep
+         the dot separator. -->
+    <string name="ui_quick_menu_random_roll_meta">%1$s · %2$s</string>
+    <!-- How many games the random pool holds. %1$s is the number, already formatted. -->
+    <plurals name="ui_quick_menu_random_pool_count">
+        <item quantity="one">%1$s game in pool</item>
+        <item quantity="other">%1$s games in pool</item>
+    </plurals>
+    <!-- Label of the row that picks which platform the random roll draws from. Noun. -->
+    <string name="ui_quick_menu_random_platform_label">Platform</string>
+    <!-- Value of the random platform row when the roll draws from every platform. -->
+    <string name="ui_quick_menu_random_platform_all">All platforms</string>
+    <!-- Title of the list that picks the random roll's platform. Noun. -->
+    <string name="ui_quick_menu_random_platform_picker_title">Platform</string>
+    <!-- Toggle that limits the random roll to games on the device. Adjective phrase. -->
+    <string name="ui_quick_menu_random_installed_only">Installed only</string>
+    <!-- Random section message when the chosen platform and Installed only leave nothing to pick.
+         "Installed only" names the toggle above. -->
+    <string name="ui_quick_menu_empty_random_pool">No games match. Turn off Installed only or pick another platform.</string>
+    <!-- Label beside the control that picks how most-played games are ranked. -->
+    <string name="ui_quick_menu_most_played_header">Ranked by</string>
+    <!-- Most-played ranking: all recorded play time. -->
+    <string name="ui_quick_menu_most_played_range_all_time">All time</string>
+    <!-- Most-played ranking: play time in the last 30 days only. -->
+    <string name="ui_quick_menu_most_played_range_last_30">Last 30 days</string>
+    <!-- Title of the list that picks the most-played ranking. Verb phrase. -->
+    <string name="ui_quick_menu_most_played_picker_title">Rank by</string>
+    <!-- Shown in the most-played section when nothing was played in the last 30 days. -->
+    <string name="ui_quick_menu_empty_most_played_last_30">Nothing played in the last 30 days.</string>
+    <!-- Title of the list that picks how favorites are sorted. Verb phrase. -->
+    <string name="ui_quick_menu_favorites_picker_title">Sort favorites</string>
+    <!-- Guide bar hint that removes the focused game from favorites. Verb. -->
+    <string name="ui_quick_menu_favorites_hint_remove">Remove</string>
+    <!-- Guide bar hint that puts a removed game back in favorites. Verb. -->
+    <string name="ui_quick_menu_favorites_hint_restore">Restore</string>
+    <!-- Guide bar hint that marks the focused game as a favourite. Verb. -->
+    <string name="ui_quick_menu_hint_favorite">Favorite</string>
+    <!-- Guide bar hint that removes the focused game from favourites. Verb. -->
+    <string name="ui_quick_menu_hint_unfavorite">Unfavorite</string>
+    <!-- Chip on the focused game when it has no play time and no last played date. -->
+    <string name="ui_quick_menu_preview_never_played">Never played</string>
+    <!-- Button on the quick menu search tab that opens the search screen. -->
+    <string name="ui_quick_menu_search_field">Search your library</string>
+    <!-- Heading above the queries searched before. -->
+    <string name="ui_quick_menu_search_recent_heading">Recent searches</string>
+    <!-- Heading above the newest games in the library, shown when nothing was searched yet. -->
+    <string name="ui_quick_menu_search_recently_added_heading">Recently added</string>
+    <!-- How many games a recent search finds. %1$d is the count. -->
+    <plurals name="ui_quick_menu_search_result_count">
+        <item quantity="one">%1$d game</item>
+        <item quantity="other">%1$d games</item>
+    </plurals>
+    <!-- Heading over a recent search's results. %1$d is the count, %2$s the query. -->
+    <plurals name="ui_quick_menu_search_results_heading">
+        <item quantity="one">%1$d result for \"%2$s\"</item>
+        <item quantity="other">%1$d results for \"%2$s\"</item>
+    </plurals>
+    <!-- Why a game ranks in top new when nothing has been played yet. -->
+    <string name="ui_quick_menu_top_new_reason_top_rated">Top rated in your library</string>
+    <!-- Game actions menu row that hides the game from top new, or brings it back. -->
+    <string name="ui_quick_menu_actions_not_interested">Not interested</string>
 
     <!-- File browser (ui/filebrowser) -->
 
@@ -2390,4 +2526,182 @@
     <string name="ui_client_cert_password_error_expired">This certificate has expired.</string>
     <!-- Error: the device keystore refused the key. RSA and EC are key algorithm names, do not translate. -->
     <string name="ui_client_cert_password_error_unsupported_key">This device cannot store this key type. Use an RSA or EC key.</string>
+
+    <!-- Quick panel Power page (ui/components/QuickPowerRows.kt) -->
+    <!-- Title of the quick panel page with sleep, restart and power off. Noun. -->
+    <string name="ui_quick_settings_page_power">Power</string>
+    <!-- Section heading on the Power page over sleep, restart and power off. Noun. Shown in capitals. -->
+    <string name="ui_quick_settings_group_power_actions">Power</string>
+    <!-- Section heading on the Power page over the list of games still running. Shown in capitals. -->
+    <string name="ui_quick_settings_group_open_games">Open games</string>
+    <!-- Row that puts the device to sleep (screen off). Verb. -->
+    <string name="ui_quick_settings_power_sleep">Sleep</string>
+    <!-- Row that restarts the device. Verb. -->
+    <string name="ui_quick_settings_power_restart">Restart</string>
+    <!-- Row that shuts the device down. Verb phrase. -->
+    <string name="ui_quick_settings_power_off">Power off</string>
+    <!-- Row that opens the system power menu, where the player picks restart or power off. -->
+    <string name="ui_quick_settings_power_menu">Restart or power off</string>
+    <!-- Button on that row that opens the system power menu outside Argosy. Noun. -->
+    <string name="ui_quick_settings_power_menu_open">Power menu</string>
+    <!-- Notice on the Power page when Argosy has neither root nor its accessibility service. -->
+    <string name="ui_quick_settings_power_access_notice">Argosy needs its accessibility service to sleep, restart or power off this device.</string>
+    <!-- Button beside that notice that opens the Android accessibility settings. Verb phrase. -->
+    <string name="ui_quick_settings_power_access_allow">Turn on</string>
+    <!-- Shown under the open games heading when no game is running. -->
+    <string name="ui_quick_settings_power_open_games_empty">No games open</string>
+    <!-- Beside a running game: it runs in Argosy's own emulator rather than an external app. -->
+    <string name="ui_quick_settings_power_open_game_builtin">Built-in</string>
+    <!-- Title of the confirm before restarting the device. -->
+    <string name="ui_quick_settings_power_restart_title">Restart this device?</string>
+    <!-- Body of that confirm. Games left running are neither saved nor closed before the restart. -->
+    <string name="ui_quick_settings_power_restart_message">Open games are not saved or closed first. Progress you have not saved in an open game is lost.</string>
+    <!-- Body of the restart confirm when no games are open. -->
+    <string name="ui_quick_settings_power_restart_message_idle">The device turns off and starts again.</string>
+    <!-- Confirm button of that modal. Verb. -->
+    <string name="ui_quick_settings_power_restart_confirm">Restart</string>
+    <!-- Title of the confirm before shutting the device down. -->
+    <string name="ui_quick_settings_power_off_title">Power off this device?</string>
+    <!-- Body of that confirm. Games left running are neither saved nor closed before the shutdown. -->
+    <string name="ui_quick_settings_power_off_message">Open games are not saved or closed first. Progress you have not saved in an open game is lost.</string>
+    <!-- Body of the power off confirm when no games are open. -->
+    <string name="ui_quick_settings_power_off_message_idle">The device turns off.</string>
+    <!-- Confirm button of that modal. Verb phrase. -->
+    <string name="ui_quick_settings_power_off_confirm">Power off</string>
+    <!-- Shown in place of the buttons while waiting saves upload before the restart. -->
+    <string name="ui_quick_settings_power_working_restart">Uploading saves, then restarting</string>
+    <!-- Shown in place of the buttons while waiting saves upload before the shutdown. -->
+    <string name="ui_quick_settings_power_working_off">Uploading saves, then powering off</string>
+    <!-- Error notice: the sleep request failed. -->
+    <string name="ui_quick_settings_power_failed_sleep">The device did not go to sleep</string>
+    <!-- Error notice: the restart command failed. -->
+    <string name="ui_quick_settings_power_failed_restart">The device did not restart</string>
+    <!-- Error notice: the power off command failed. -->
+    <string name="ui_quick_settings_power_failed_off">The device did not power off</string>
+    <!-- Error notice: the system power menu could not be opened. -->
+    <string name="ui_quick_settings_power_failed_menu">The power menu did not open</string>
+
+    <!-- Quick panel Activity page (ui/components/QuickActivityRows.kt) -->
+    <!-- Title of the quick panel page with downloads, save sync and recent notices. Noun. -->
+    <string name="ui_quick_settings_page_activity">Activity</string>
+    <!-- Section heading over what is in progress right now. Shown in capitals. -->
+    <string name="ui_quick_settings_group_activity_now">Now</string>
+    <!-- Section heading over notices posted earlier in this session. Adjective used as a noun. Shown in capitals. -->
+    <string name="ui_quick_settings_group_activity_recent">Recent</string>
+    <!-- Shown under the Now heading when no download or save sync is running. -->
+    <string name="ui_quick_settings_activity_idle">Nothing in progress</string>
+    <!-- Row label while save files sync with the server. "Saves" is a noun: save files. -->
+    <string name="ui_quick_settings_activity_syncing">Syncing saves</string>
+    <!-- Shown under the Recent heading when nothing has happened yet this session. -->
+    <string name="ui_quick_settings_activity_recent_empty">No recent activity</string>
+    <!-- Downloads waiting behind the ones in progress. -->
+    <plurals name="ui_quick_settings_activity_downloads_queued">
+        <item quantity="one">%d more queued</item>
+        <item quantity="other">%d more queued</item>
+    </plurals>
+    <!-- Save sync operations not finished yet. -->
+    <plurals name="ui_quick_settings_activity_sync_remaining">
+        <item quantity="one">%d left</item>
+        <item quantity="other">%d left</item>
+    </plurals>
+    <!-- Recent line: save files uploaded this session. "Save" is a noun: a save file. -->
+    <plurals name="ui_quick_settings_activity_saves_synced">
+        <item quantity="one">%d save synced</item>
+        <item quantity="other">%d saves synced</item>
+    </plurals>
+    <!-- Recent line: save files uploaded this session, then the title of the game synced last. -->
+    <plurals name="ui_quick_settings_activity_saves_synced_latest">
+        <item quantity="one">%1$d save synced, latest %2$s</item>
+        <item quantity="other">%1$d saves synced, latest %2$s</item>
+    </plurals>
+    <!-- Recent line: games downloaded this session. -->
+    <plurals name="ui_quick_settings_activity_downloads_finished">
+        <item quantity="one">%d download finished</item>
+        <item quantity="other">%d downloads finished</item>
+    </plurals>
+    <!-- Accessibility description of the dot in the status bar that marks new activity. -->
+    <string name="ui_status_bar_activity_unseen_desc">New activity</string>
+    <string name="ui_folder_default_name">Folder</string>
+    <string name="ui_folder_overlay_hint_remove">Remove from folder</string>
+    <string name="ui_folder_overlay_loading">Finding games</string>
+    <string name="ui_folder_overlay_empty">This folder is empty</string>
+    <string name="ui_folder_overlay_empty_auto">No games match this folder</string>
+    <string name="ui_folder_chooser_title">Move to folder</string>
+    <string name="ui_folder_chooser_new">New folder</string>
+    <string name="ui_folder_name_title_new">New folder</string>
+    <string name="ui_folder_name_title_rename">Rename folder</string>
+    <string name="ui_folder_name_label">Folder name</string>
+    <!-- Verb: stores the folder name. -->
+    <string name="ui_folder_name_confirm">Save</string>
+    <string name="ui_folder_name_cancel">Cancel</string>
+    <string name="ui_folder_appearance_title">Folder appearance</string>
+    <!-- Noun: the picture on the face of a folder tile. -->
+    <string name="ui_folder_appearance_cover">Cover</string>
+    <!-- A grid of the first members' covers drawn on the folder tile. -->
+    <string name="ui_folder_appearance_cover_mosaic">Mosaic</string>
+    <string name="ui_folder_appearance_cover_image">Image</string>
+    <!-- A picture with transparency drawn without a tile frame. -->
+    <string name="ui_folder_appearance_cover_sticker">Sticker</string>
+    <string name="ui_folder_appearance_cover_picture">Cover picture</string>
+    <string name="ui_folder_appearance_picture_none">None chosen</string>
+    <string name="ui_folder_appearance_picture_chosen">Picture chosen</string>
+    <string name="ui_folder_appearance_outline">Outline</string>
+    <string name="ui_folder_appearance_outline_off">Off</string>
+    <string name="ui_folder_appearance_outline_white">White</string>
+    <string name="ui_folder_appearance_outline_black">Black</string>
+    <!-- The launcher's accent color, used for the sticker outline. -->
+    <string name="ui_folder_appearance_outline_accent">Accent</string>
+    <string name="ui_folder_appearance_show_name">Show name</string>
+    <!-- Noun: what fills the screen behind an open folder. -->
+    <string name="ui_folder_appearance_backdrop">Backdrop</string>
+    <string name="ui_folder_appearance_backdrop_none">None</string>
+    <string name="ui_folder_appearance_backdrop_cover">Cover, blurred</string>
+    <string name="ui_folder_appearance_backdrop_image">Image</string>
+    <string name="ui_folder_appearance_backdrop_picture">Backdrop picture</string>
+    <string name="ui_folder_appearance_accent">Accent color</string>
+    <!-- The launcher theme's own accent color. -->
+    <string name="ui_folder_appearance_accent_theme">Theme</string>
+    <string name="ui_folder_appearance_accent_rose">Rose</string>
+    <string name="ui_folder_appearance_accent_amber">Amber</string>
+    <string name="ui_folder_appearance_accent_lime">Lime</string>
+    <string name="ui_folder_appearance_accent_sky">Sky</string>
+    <string name="ui_folder_appearance_accent_violet">Violet</string>
+    <!-- How large the tiles inside an open folder are drawn. -->
+    <string name="ui_folder_appearance_member_size">Tile size</string>
+    <string name="ui_folder_appearance_size_small">Small</string>
+    <string name="ui_folder_appearance_size_medium">Medium</string>
+    <string name="ui_folder_appearance_size_large">Large</string>
+    <string name="ui_feature_setup_title_auto_folder">Auto folder</string>
+    <string name="ui_feature_setup_step_auto_folder">Which games this folder holds</string>
+    <string name="ui_feature_setup_step_developers">Developers</string>
+    <string name="ui_feature_setup_step_release_year">Release year</string>
+    <!-- Completion status of a game: playing, beaten, retired and so on. -->
+    <string name="ui_feature_setup_step_play_status">Play status</string>
+    <string name="ui_feature_setup_developers">Developers</string>
+    <string name="ui_feature_setup_release_year">Release year</string>
+    <string name="ui_feature_setup_play_status">Play status</string>
+    <string name="ui_feature_setup_recently_added">Recently added</string>
+    <string name="ui_feature_setup_ra_progress">Achievement progress</string>
+    <plurals name="ui_feature_setup_recently_added_days">
+        <item quantity="one">Last %d day</item>
+        <item quantity="other">Last %d days</item>
+    </plurals>
+    <string name="ui_feature_setup_year_any">Any year</string>
+    <string name="ui_feature_setup_year_before_1990">Before 1990</string>
+    <string name="ui_feature_setup_year_1990s">1990s</string>
+    <string name="ui_feature_setup_year_2000s">2000s</string>
+    <string name="ui_feature_setup_year_2010s">2010s</string>
+    <string name="ui_feature_setup_year_since_2020">2020 and later</string>
+    <string name="ui_feature_setup_ra_progress_not_started">Not started</string>
+    <string name="ui_feature_setup_ra_progress_in_progress">In progress</string>
+    <string name="ui_feature_setup_ra_progress_mastered">Mastered</string>
+    <string name="ui_page_chooser_title_decor">Picture</string>
+    <string name="ui_page_chooser_subtitle_decor">Where the picture comes from</string>
+    <string name="ui_page_chooser_decor_source_game_art">Game art</string>
+    <string name="ui_page_chooser_decor_source_game_art_subtitle">A logo, cover or background Argosy already has</string>
+    <string name="ui_page_chooser_decor_source_file">Image file</string>
+    <string name="ui_page_chooser_decor_source_file_subtitle">A PNG or WebP on this device, transparency kept</string>
+    <string name="ui_page_chooser_art_logo">Logo</string>
+    <string name="ui_page_chooser_decor_art_cover">Cover</string>
+    <string name="ui_page_chooser_decor_art_background">Background</string>
 </resources>

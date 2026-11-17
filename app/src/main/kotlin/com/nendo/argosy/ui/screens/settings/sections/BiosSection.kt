@@ -1,5 +1,6 @@
 package com.nendo.argosy.ui.screens.settings.sections
 
+import androidx.annotation.StringRes
 import androidx.compose.foundation.background
 import com.nendo.argosy.ui.util.clickableNoFocus
 import androidx.compose.foundation.gestures.animateScrollBy
@@ -66,18 +67,20 @@ import com.nendo.argosy.ui.primitives.ModalScaffold
 import com.nendo.argosy.ui.screens.settings.components.LocalSettingsTouchFocus
 import com.nendo.argosy.ui.screens.settings.components.settingsRowItems
 import com.nendo.argosy.ui.screens.settings.menu.SettingsLayout
+import com.nendo.argosy.ui.screens.settings.search.SearchableSetting
 import com.nendo.argosy.ui.theme.Dimens
 import com.nendo.argosy.ui.theme.LocalArgosyTheme
 import com.nendo.argosy.ui.theme.LocalLauncherTheme
 import kotlinx.coroutines.launch
 
-// --- Item definitions ---
-
 internal sealed class BiosItem(val key: String, val section: String) {
-    val isFocusable: Boolean get() = this !is PlatformsHeader && this !is EmptyNotice && this !is FooterNote
+    val isFocusable: Boolean get() = this is SearchableSetting || this is Platform || this is FirmwareFile
 
-    data object Summary : BiosItem("summary", "actions")
-    data object BiosPath : BiosItem("biosPath", "actions")
+    sealed class Row(key: String, section: String, @StringRes override val labelRes: Int) :
+        BiosItem(key, section), SearchableSetting
+
+    data object Summary : Row("summary", "actions", R.string.settings_bios_summary_title)
+    data object BiosPath : Row("biosPath", "actions", R.string.settings_bios_path_title)
     data object PlatformsHeader : BiosItem("platformsHeader", "platforms")
     data object EmptyNotice : BiosItem("emptyNotice", "platforms")
     data class Platform(val group: BiosPlatformGroup, val index: Int) : BiosItem("platform_${group.platformSlug}", "platforms")
@@ -117,6 +120,8 @@ internal fun createBiosLayout(items: List<BiosItem>) =
         visibleWhen = { _, _ -> true },
         sectionOf = { it.section }
     )
+
+internal val biosSettingsLayout = createBiosLayout(buildBiosItems(emptyList(), -1))
 
 internal data class BiosLayoutInfo(
     val layout: SettingsLayout<BiosItem, Unit>,
@@ -190,7 +195,7 @@ fun BiosSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
             focusIndexOf = { layout.focusIndexOf(it, Unit) }
         ) { item ->
             when (item) {
-                BiosItem.Summary -> BiosSummaryCard(
+                is BiosItem.Summary -> BiosSummaryCard(
                     totalFiles = bios.totalFiles,
                     downloadedFiles = bios.downloadedFiles,
                     isDownloading = bios.isDownloading,
@@ -207,7 +212,7 @@ fun BiosSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
                     onDistributeAll = { viewModel.distributeAllBios() }
                 )
 
-                BiosItem.BiosPath -> {
+                is BiosItem.BiosPath -> {
                     val pathDisplay = bios.customBiosPath?.let { path ->
                         val folderName = path.substringAfterLast("/")
                         if (folderName.equals("bios", ignoreCase = true)) {
@@ -218,7 +223,7 @@ fun BiosSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
                     } ?: stringResource(R.string.settings_bios_path_internal)
 
                     ImageCachePreference(
-                        title = stringResource(R.string.settings_bios_path_title),
+                        title = stringResource(item.labelRes),
                         displayPath = pathDisplay,
                         hasCustomPath = bios.customBiosPath != null,
                         isFocused = isFocused(item),

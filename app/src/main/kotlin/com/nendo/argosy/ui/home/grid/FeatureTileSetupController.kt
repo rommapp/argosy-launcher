@@ -3,17 +3,21 @@ package com.nendo.argosy.ui.home.grid
 import com.nendo.argosy.data.model.ActiveSort
 import com.nendo.argosy.data.model.SortOption
 import com.nendo.argosy.data.model.SourceFilter
+import com.nendo.argosy.domain.model.CompletionStatus
 import com.nendo.argosy.domain.model.FeatureTileKind
 import com.nendo.argosy.domain.model.HomeTile
 import com.nendo.argosy.domain.model.HomeTileTargetRef
 import com.nendo.argosy.domain.model.LibraryLinkFilters
 import com.nendo.argosy.domain.model.PlayerCountBucket
+import com.nendo.argosy.domain.model.RaProgressFilter
 import com.nendo.argosy.domain.model.RandomTileFilters
 import com.nendo.argosy.ui.components.CustomGridState
 import com.nendo.argosy.ui.components.FeatureFilterOptions
 import com.nendo.argosy.ui.components.FeatureSetupRow
 import com.nendo.argosy.ui.components.FeatureSetupStep
 import com.nendo.argosy.ui.components.FeatureTileSetup
+import com.nendo.argosy.ui.components.RECENTLY_ADDED_DAYS
+import com.nendo.argosy.ui.components.ReleaseYearPreset
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 
@@ -33,9 +37,36 @@ class FeatureTileSetupController(
     private val write: ((CustomGridState) -> CustomGridState) -> Unit,
     private val onPlace: (HomeTileTargetRef.Feature) -> Unit,
     private val onEdit: (Long, HomeTileTargetRef.Feature) -> Unit,
-    private val onTrackGame: () -> Unit = {}
+    private val onTrackGame: () -> Unit = {},
+    private val onFolderRule: (Long?, LibraryLinkFilters) -> Unit = { _, _ -> }
 ) {
     private val setup: FeatureTileSetup? get() = read().featureSetup
+
+    /**
+     * Asks an auto-folder's rule. [existing] is the folder being edited, or null when the answer
+     * becomes a new folder.
+     */
+    fun beginFolderRule(existing: HomeTile? = null) {
+        val rule = (existing?.target as? HomeTileTargetRef.Folder)?.rule ?: LibraryLinkFilters()
+        scope.launch {
+            val options = filterOptions()
+            write {
+                it.copy(
+                    featureSetup = FeatureTileSetup(
+                        kind = FeatureTileKind.LIBRARY_LINK,
+                        editingTileId = existing?.id,
+                        filters = RandomTileFilters(),
+                        platforms = options.platforms,
+                        genres = options.genres,
+                        series = options.series,
+                        developers = options.developers,
+                        libraryLink = rule,
+                        forFolder = true
+                    )
+                )
+            }
+        }
+    }
 
     fun begin(existing: HomeTile? = null, kind: FeatureTileKind = FeatureTileKind.RANDOM_GAME) {
         val target = existing?.target as? HomeTileTargetRef.Feature
@@ -116,6 +147,15 @@ class FeatureTileSetupController(
             FeatureSetupStep.PLAYERS -> updateLink {
                 it.copy(players = PlayerCountBucket.entries.getOrNull(row - 1))
             }
+            FeatureSetupStep.DEVELOPERS -> current.developers.getOrNull(row)?.let { name ->
+                updateLink { it.copy(developers = it.developers.toggled(name)) }
+            }
+            FeatureSetupStep.RELEASE_YEAR -> ReleaseYearPreset.entries.getOrNull(row)?.let { preset ->
+                updateLink { it.copy(releaseYearFrom = preset.from, releaseYearTo = preset.to) }
+            }
+            FeatureSetupStep.PLAY_STATUS -> CompletionStatus.entries.getOrNull(row)?.let { status ->
+                updateLink { it.copy(playStatuses = it.playStatuses.toggled(status.apiValue)) }
+            }
             FeatureSetupStep.SORT -> SortOption.entries.getOrNull(row)?.let { option ->
                 updateLink {
                     val flip = it.sort.option == option
@@ -144,6 +184,9 @@ class FeatureTileSetupController(
             FeatureSetupStep.SERIES -> current.indexOf(FeatureSetupRow.SERIES)
             FeatureSetupStep.PLAYERS -> current.indexOf(FeatureSetupRow.PLAYERS)
             FeatureSetupStep.SORT -> current.indexOf(FeatureSetupRow.SORT)
+            FeatureSetupStep.DEVELOPERS -> current.indexOf(FeatureSetupRow.DEVELOPERS)
+            FeatureSetupStep.RELEASE_YEAR -> current.indexOf(FeatureSetupRow.RELEASE_YEAR)
+            FeatureSetupStep.PLAY_STATUS -> current.indexOf(FeatureSetupRow.PLAY_STATUS)
         }
         update { it.copy(step = FeatureSetupStep.FILTERS, focusIndex = returnRow) }
         return true
@@ -186,7 +229,24 @@ class FeatureTileSetupController(
                 update { it.copy(step = FeatureSetupStep.PLAYERS, focusIndex = 0) }
             FeatureSetupRow.SORT ->
                 update { it.copy(step = FeatureSetupStep.SORT, focusIndex = 0) }
+            FeatureSetupRow.DEVELOPERS ->
+                update { it.copy(step = FeatureSetupStep.DEVELOPERS, focusIndex = 0) }
+            FeatureSetupRow.RELEASE_YEAR ->
+                update { it.copy(step = FeatureSetupStep.RELEASE_YEAR, focusIndex = 0) }
+            FeatureSetupRow.PLAY_STATUS ->
+                update { it.copy(step = FeatureSetupStep.PLAY_STATUS, focusIndex = 0) }
+            FeatureSetupRow.RECENTLY_ADDED -> updateLink {
+                it.copy(addedWithinDays = RECENTLY_ADDED_DAYS.next(it.addedWithinDays))
+            }
+            FeatureSetupRow.RA_PROGRESS -> updateLink {
+                it.copy(raProgress = RA_PROGRESS_STEPS.next(it.raProgress))
+            }
             FeatureSetupRow.DONE -> setup?.let { current ->
+                if (current.forFolder) {
+                    onFolderRule(current.editingTileId, current.libraryLink)
+                    close()
+                    return
+                }
                 settle(
                     HomeTileTargetRef.Feature(
                         kind = current.kind,
@@ -222,4 +282,8 @@ class FeatureTileSetupController(
 
     private fun <T> List<T>.next(current: T): T =
         getOrNull((indexOf(current) + 1).mod(size)) ?: current
+
+    private companion object {
+        val RA_PROGRESS_STEPS: List<RaProgressFilter?> = listOf(null) + RaProgressFilter.entries
+    }
 }

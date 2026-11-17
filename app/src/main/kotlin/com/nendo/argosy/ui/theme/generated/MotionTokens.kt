@@ -58,6 +58,24 @@ object MotionTokens {
         val noticeProgress: AnimationSpec<Float> = tween(durationMillis = noticeProgressMs)
         const val breathMs = 4000
         val breath: AnimationSpec<Float> = tween(durationMillis = breathMs)
+        const val overlayMs = 300
+        val overlay: AnimationSpec<Float> = tween(durationMillis = overlayMs)
+        const val lingerMs = 400
+        val linger: AnimationSpec<Float> = tween(durationMillis = lingerMs)
+        const val pulseMs = 900
+        val pulse: AnimationSpec<Float> = tween(durationMillis = pulseMs)
+        const val spinMs = 1000
+        val spin: AnimationSpec<Float> = tween(durationMillis = spinMs)
+        const val waterLevelMs = 2000
+        val waterLevel: AnimationSpec<Float> = tween(durationMillis = waterLevelMs)
+        const val wavePhaseAMs = 3000
+        val wavePhaseA: AnimationSpec<Float> = tween(durationMillis = wavePhaseAMs)
+        const val wavePhaseBMs = 4700
+        val wavePhaseB: AnimationSpec<Float> = tween(durationMillis = wavePhaseBMs)
+        const val waveSwellAMs = 2200
+        val waveSwellA: AnimationSpec<Float> = tween(durationMillis = waveSwellAMs)
+        const val waveSwellBMs = 3100
+        val waveSwellB: AnimationSpec<Float> = tween(durationMillis = waveSwellBMs)
     }
 
 }

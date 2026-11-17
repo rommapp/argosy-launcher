@@ -98,6 +98,7 @@ fun ControllerKeyboardHost() {
 
     LaunchedEffect(keyboard, current.props) {
         keyboard.updateSession(current.props.error, current.props.canSubmit, current.props.enabled)
+        keyboard.setFocusOutside(current.props.focusOutside)
         current.props.text?.let(keyboard::syncText)
     }
 
@@ -135,7 +136,7 @@ fun ControllerKeyboardHost() {
         onDispose { clipboard?.removePrimaryClipChangedListener(listener) }
     }
     val handler = remember(keyboard) {
-        ControllerKeyboardInputHandler(keyboard, onFeedback, cycleLayout)
+        ControllerKeyboardInputHandler(keyboard, onFeedback, cycleLayout, request.onTopEdge)
     }
     ModalPresenceEffect()
     ModalInputEffect(active = true, handler = handler)
@@ -150,7 +151,8 @@ fun ControllerKeyboardHost() {
         onDismissTap = { ControllerKeyboard.dismissActive() },
         onCaretTap = { index -> keyboard.setCaret(index) },
         onPasteTap = { onFeedback(keyboard.pasteClipboard()) },
-        modifier = Modifier.fillMaxSize()
+        modifier = Modifier.fillMaxSize(),
+        accessory = request.accessory
     )
 }
 

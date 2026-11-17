@@ -201,4 +201,21 @@
     <string name="home_title_running_in">Запущена в %1$s</string>
     <string name="home_title_saving">Сохранение</string>
     <string name="home_title_running_with_time">В игре %1$s</string>
+    <string name="home_grid_picker_folder_title">Папка</string>
+    <string name="home_grid_picker_folder_subtitle">Собирает плитки любого типа под одной плиткой</string>
+    <string name="home_grid_picker_auto_folder_title">Автопапка</string>
+    <string name="home_grid_picker_auto_folder_subtitle">Сама наполняется играми, подходящими под правило</string>
+    <string name="home_grid_picker_image_title">Картинка</string>
+    <string name="home_grid_picker_image_subtitle">Изображение, заполняющее свои ячейки</string>
+    <string name="home_grid_picker_sticker_title">Стикер</string>
+    <string name="home_grid_picker_sticker_subtitle">Вырезанное изображение с контуром по желанию</string>
+    <string name="home_grid_tile_image_label">Картинка</string>
+    <string name="home_grid_tile_sticker_label">Стикер</string>
+    <plurals name="home_grid_tile_folder_count">
+        <item quantity="one">%d элемент</item>
+        <item quantity="few">%d элемента</item>
+        <item quantity="many">%d элементов</item>
+        <item quantity="other">%d элемента</item>
+    </plurals>
+    <string name="home_tile_file_browser_decor_title">Выберите картинку</string>
 </resources>

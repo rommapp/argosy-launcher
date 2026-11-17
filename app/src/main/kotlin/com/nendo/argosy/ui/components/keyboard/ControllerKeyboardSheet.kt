@@ -36,7 +36,8 @@ import com.nendo.argosy.ui.util.clickableNoFocus
 
 /**
  * The controller keyboard, sized from the space it is given. Place it in a box that fills the
- * window: a docked sheet sits at the bottom center and the space above it reports onDismissTap;
+ * window: a docked sheet sits at the bottom center and the space above it reports onDismissTap,
+ * except for [accessory], which sits directly on top of a docked sheet and takes its own taps;
  * a window too short for a docked sheet, or FULL_SCREEN placement, fills the whole box.
  */
 @Composable
@@ -49,7 +50,8 @@ fun ControllerKeyboardSheet(
     onDismissTap: () -> Unit,
     onCaretTap: (Int) -> Unit,
     modifier: Modifier = Modifier,
-    onPasteTap: () -> Unit = {}
+    onPasteTap: () -> Unit = {},
+    accessory: (@Composable () -> Unit)? = null
 ) {
     val scale = LocalUiScale.current.scale
     BoxWithConstraints(modifier = modifier.fillMaxSize()) {
@@ -73,8 +75,11 @@ fun ControllerKeyboardSheet(
                     modifier = Modifier
                         .weight(1f)
                         .fillMaxWidth()
-                        .clickableNoFocus(onClick = onDismissTap)
-                )
+                        .clickableNoFocus(onClick = onDismissTap),
+                    contentAlignment = Alignment.BottomCenter
+                ) {
+                    accessory?.invoke()
+                }
             }
             KeyboardSurface(
                 state = state,

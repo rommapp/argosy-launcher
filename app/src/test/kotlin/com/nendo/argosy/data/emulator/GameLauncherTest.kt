@@ -1168,7 +1168,7 @@ class GameLauncherTest {
     fun `PS2 on the built-in core never raises the memory card picker`() = runTest {
         bindPs2ToBuiltin(coreSupportsPs2 = true)
         every { biosRepository.getLibretroSystemDir() } returns tempFolder.newFolder("system-cards")
-        every { saveHandlerRegistry.listPs2FolderMemcardsForEmulator(any(), any(), any()) } returns listOf(
+        coEvery { saveHandlerRegistry.listPs2FolderMemcardsForEmulator(any(), any()) } returns listOf(
             mockk(relaxed = true),
             mockk(relaxed = true)
         )
@@ -1176,7 +1176,7 @@ class GameLauncherTest {
         val result = launcher.launch(1L)
 
         assertTrue("got ${result::class.simpleName}", result !is LaunchResult.SelectMemcard)
-        verify(exactly = 0) { saveHandlerRegistry.listPs2FolderMemcardsForEmulator(any(), any(), any()) }
+        coVerify(exactly = 0) { saveHandlerRegistry.listPs2FolderMemcardsForEmulator(any(), any()) }
     }
 
     // -----------------------------------------------------------------------

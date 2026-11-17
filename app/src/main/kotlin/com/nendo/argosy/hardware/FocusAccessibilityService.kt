@@ -67,6 +67,15 @@ class FocusAccessibilityService : AccessibilityService() {
         homeHoldFired = true
         openRunningScreen()
     }
+    private var homeTakenFromArgosy = false
+    private var argosyHomeHoldFired = false
+    private val argosyHomeHold = Runnable {
+        argosyHomeHoldFired = true
+        scope.launch {
+            val running = runCatching { backgroundGames.refresh() }.getOrDefault(emptyList())
+            if (running.isEmpty() || !startArgosy(openRunning = true)) performGlobalAction(GLOBAL_ACTION_HOME)
+        }
+    }
     private val foreground by lazy {
         ForegroundAppTracker(
             ownPackage = packageName,
@@ -148,6 +157,7 @@ class FocusAccessibilityService : AccessibilityService() {
     override fun onDestroy() {
         instance = null
         handler.removeCallbacks(homeHold)
+        handler.removeCallbacks(argosyHomeHold)
         keyFilter.reset()
         scope.cancel()
         Logger.info(TAG, "Accessibility service destroyed in $packageName")
@@ -165,6 +175,7 @@ class FocusAccessibilityService : AccessibilityService() {
             systemHome && closesResumeOverlay(event) -> "resumeOverlay"
             systemHome && routesHomeToGame(event) -> "builtInGame"
             systemHome && takesHomeFromExternalGame(event) -> "externalGame"
+            systemHome && takesHomeFromArgosy(event) -> "argosy"
             keyFilter.onKey(event.keyCode, event.action, event.repeatCount) -> "keyFilter"
             else -> null
         }
@@ -216,10 +227,34 @@ class FocusAccessibilityService : AccessibilityService() {
         else -> false
     }
 
+    private fun takesHomeFromArgosy(event: KeyEvent): Boolean = when (event.action) {
+        KeyEvent.ACTION_DOWN -> {
+            if (event.repeatCount == 0) {
+                homeTakenFromArgosy = argosyHoldsHome()
+                argosyHomeHoldFired = false
+                handler.removeCallbacks(argosyHomeHold)
+                if (homeTakenFromArgosy) handler.postDelayed(argosyHomeHold, SystemHotkeyDetector.GUIDE_HOLD_MS)
+            }
+            homeTakenFromArgosy
+        }
+        KeyEvent.ACTION_UP -> homeTakenFromArgosy.also { taken ->
+            handler.removeCallbacks(argosyHomeHold)
+            if (taken && !argosyHomeHoldFired) performGlobalAction(GLOBAL_ACTION_HOME)
+            homeTakenFromArgosy = false
+            argosyHomeHoldFired = false
+        }
+        else -> false
+    }
+
+    private fun argosyHoldsHome(): Boolean {
+        if (foreground.otherAppInFront) return false
+        if (getSystemService(KeyguardManager::class.java)?.isKeyguardLocked != false) return false
+        return SecondaryHomeComponent.isDefaultHome(this)
+    }
+
     private fun externalGameHoldsHome(): Boolean {
         if (!homeButtonInGames || !RootShell.isAvailable) return false
         if (!foreground.otherAppInFront || !externalSessionInFront()) return false
-        if (gameDisplayId() != Display.DEFAULT_DISPLAY) return false
         if (getSystemService(KeyguardManager::class.java)?.isKeyguardLocked != false) return false
         return SecondaryHomeComponent.isDefaultHome(this)
     }
@@ -250,7 +285,9 @@ class FocusAccessibilityService : AccessibilityService() {
 
     private fun routesHomeToGame(event: KeyEvent): Boolean = when (event.action) {
         KeyEvent.ACTION_DOWN -> {
-            if (event.repeatCount == 0) homeRoutedToGame = ResumedGameRouter.deliverGuideKey(pressed = true)
+            if (event.repeatCount == 0) {
+                homeRoutedToGame = ResumedGameRouter.deliverGuideKey(pressed = true)
+            }
             homeRoutedToGame
         }
         KeyEvent.ACTION_UP -> homeRoutedToGame.also { routed ->

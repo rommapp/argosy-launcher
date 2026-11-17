@@ -11,7 +11,7 @@ data class VideoPreviewState(
     val isVideoPreviewActive: Boolean = false,
     val videoPreviewId: String? = null,
     val isVideoPreviewLoading: Boolean = false,
-    val muteVideoPreview: Boolean = false,
+    val muteVideoPreview: Boolean = com.nendo.argosy.ui.theme.generated.ComponentDefaults.Background.videoWallpaperMuted,
     val videoWallpaperEnabled: Boolean = false,
     val videoWallpaperDelayMs: Long = 3000L
 )

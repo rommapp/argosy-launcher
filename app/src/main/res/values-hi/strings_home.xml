@@ -193,4 +193,19 @@
     <string name="home_title_running_in">%1$s में चल रहा है</string>
     <string name="home_title_saving">सेव हो रहा है</string>
     <string name="home_title_running_with_time">%1$s से चल रहा है</string>
+    <string name="home_grid_picker_folder_title">फ़ोल्डर</string>
+    <string name="home_grid_picker_folder_subtitle">किसी भी तरह की टाइलों को एक टाइल में रखें</string>
+    <string name="home_grid_picker_auto_folder_title">ऑटो फ़ोल्डर</string>
+    <string name="home_grid_picker_auto_folder_subtitle">नियम से मेल खाने वाले गेम अपने आप भरता है</string>
+    <string name="home_grid_picker_image_title">इमेज</string>
+    <string name="home_grid_picker_image_subtitle">एक चित्र जो अपने सेल भर देता है</string>
+    <string name="home_grid_picker_sticker_title">स्टिकर</string>
+    <string name="home_grid_picker_sticker_subtitle">कटा हुआ चित्र, चाहें तो आउटलाइन के साथ</string>
+    <string name="home_grid_tile_image_label">इमेज</string>
+    <string name="home_grid_tile_sticker_label">स्टिकर</string>
+    <plurals name="home_grid_tile_folder_count">
+        <item quantity="one">%d आइटम</item>
+        <item quantity="other">%d आइटम</item>
+    </plurals>
+    <string name="home_tile_file_browser_decor_title">चित्र चुनें</string>
 </resources>

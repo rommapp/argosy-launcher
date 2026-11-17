@@ -63,6 +63,7 @@ import com.nendo.argosy.ui.components.Modal
 import com.nendo.argosy.ui.theme.Dimens
 import com.nendo.argosy.ui.theme.LocalArgosyTheme
 import com.nendo.argosy.ui.theme.LocalLauncherTheme
+import com.nendo.argosy.ui.theme.Motion
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
@@ -651,7 +652,7 @@ internal fun RecordingContent(
 
     val animatedProgress by animateFloatAsState(
         targetValue = holdProgress,
-        animationSpec = tween(durationMillis = 100),
+        animationSpec = tween(durationMillis = Motion.durationFast),
         label = "progress"
     )
 

@@ -1,5 +1,6 @@
 package com.nendo.argosy.ui.screens.settings.sections
 
+import androidx.annotation.StringRes
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -52,20 +53,14 @@ import com.nendo.argosy.ui.components.SwitchPreference
 import com.nendo.argosy.ui.components.keyboard.ControllerKeyboardSession
 import com.nendo.argosy.ui.components.keyboard.ControllerKeyboardTapTarget
 import com.nendo.argosy.ui.components.keyboard.KeyboardFieldType
-import com.nendo.argosy.ui.screens.settings.RA_LOGGED_IN_LOGOUT_INDEX
-import com.nendo.argosy.ui.screens.settings.RA_LOGGED_IN_PLAY_MODE_INDEX
-import com.nendo.argosy.ui.screens.settings.RA_LOGGED_IN_PROXY_FIELD_INDEX
-import com.nendo.argosy.ui.screens.settings.RA_LOGGED_IN_PROXY_TOGGLE_INDEX
-import com.nendo.argosy.ui.screens.settings.RA_LOGGED_IN_WEB_API_KEY_INDEX
-import com.nendo.argosy.ui.screens.settings.RA_PROXY_FIELD_INDEX
-import com.nendo.argosy.ui.screens.settings.RA_PROXY_TOGGLE_INDEX
 import com.nendo.argosy.ui.screens.settings.RASettingsState
-import com.nendo.argosy.ui.screens.settings.raLoggedInPushIndex
 import com.nendo.argosy.ui.screens.settings.SettingsUiState
 import com.nendo.argosy.ui.screens.settings.SettingsViewModel
 import com.nendo.argosy.ui.screens.settings.components.LocalSettingsTouchFocus
 import com.nendo.argosy.ui.screens.settings.components.SectionHeader
 import com.nendo.argosy.ui.screens.settings.components.settingsRowItem
+import com.nendo.argosy.ui.screens.settings.menu.SettingsLayout
+import com.nendo.argosy.ui.screens.settings.search.SearchableSetting
 import com.nendo.argosy.ui.theme.ALauncherColors
 import com.nendo.argosy.ui.theme.Dimens
 import com.nendo.argosy.ui.theme.LocalArgosyTheme
@@ -73,6 +68,57 @@ import com.nendo.argosy.ui.theme.LocalLauncherTheme
 
 private const val RA_LOGIN_USERNAME_FIELD = 0
 private const val RA_LOGIN_PASSWORD_FIELD = 1
+
+internal data class RALayoutState(
+    val isLoggedIn: Boolean,
+    val proxyEnabled: Boolean,
+    val canPushToRetroArch: Boolean
+) {
+    companion object {
+        fun from(state: SettingsUiState): RALayoutState = from(state.retroAchievements)
+
+        fun from(ra: RASettingsState): RALayoutState = RALayoutState(
+            isLoggedIn = ra.isLoggedIn,
+            proxyEnabled = ra.proxyEnabled,
+            canPushToRetroArch = ra.canPushToRetroArch
+        )
+    }
+}
+
+internal sealed class RAItem(
+    val key: String,
+    @StringRes override val labelRes: Int,
+    val visibleWhen: (RALayoutState) -> Boolean
+) : SearchableSetting {
+    data object Login : RAItem("raLogin", R.string.settings_ra_login_row_title, { !it.isLoggedIn })
+    data object Logout : RAItem("raLogout", R.string.settings_ra_logout_title, { it.isLoggedIn })
+    data object WebApiKey : RAItem("raWebApiKey", R.string.settings_ra_web_api_key_title, { it.isLoggedIn })
+    data object PlayMode : RAItem("raPlayMode", R.string.settings_ra_play_mode_title, { it.isLoggedIn })
+    data object ProxyToggle : RAItem("raProxyToggle", R.string.settings_ra_proxy_title, { true })
+    data object ProxyField : RAItem("raProxyField", R.string.settings_ra_proxy_address_label, { it.proxyEnabled })
+    data object PushToRetroArch : RAItem(
+        "raPushToRetroArch", R.string.settings_ra_push_retroarch_title,
+        { it.isLoggedIn && it.canPushToRetroArch }
+    )
+
+    companion object {
+        val ALL: List<RAItem>
+            get() = listOf(Login, Logout, WebApiKey, PlayMode, ProxyToggle, ProxyField, PushToRetroArch)
+    }
+}
+
+internal val raLayout = SettingsLayout<RAItem, RALayoutState>(
+    allItems = RAItem.ALL,
+    isFocusable = { true },
+    visibleWhen = { item, state -> item.visibleWhen(state) }
+)
+
+internal fun raItemAtFocusIndex(index: Int, state: RALayoutState): RAItem? =
+    raLayout.itemAtFocusIndex(index, state)
+
+internal fun raMaxFocusIndex(state: RALayoutState): Int = raLayout.maxFocusIndex(state)
+
+internal fun raFocusIndexOf(item: RAItem, state: RALayoutState): Int = raLayout.focusIndexOf(item, state)
 
 @Composable
 fun RASettingsSection(
@@ -122,6 +168,10 @@ private fun RALoggedInContent(
     listState: androidx.compose.foundation.lazy.LazyListState,
     secureSaves: Boolean
 ) {
+    val layoutState = RALayoutState.from(raState)
+    val logoutIndex = raFocusIndexOf(RAItem.Logout, layoutState)
+    val webApiKeyIndex = raFocusIndexOf(RAItem.WebApiKey, layoutState)
+    val playModeIndex = raFocusIndexOf(RAItem.PlayMode, layoutState)
     LazyColumn(
         state = listState,
         modifier = Modifier
@@ -201,23 +251,23 @@ private fun RALoggedInContent(
             Spacer(modifier = Modifier.height(Dimens.spacingMd))
             SectionHeader(stringResource(R.string.settings_ra_section_account))
         }
-        settingsRowItem(focusIndex = RA_LOGGED_IN_LOGOUT_INDEX) {
+        settingsRowItem(focusIndex = logoutIndex) {
             ActionPreference(
                 icon = Icons.AutoMirrored.Filled.Logout,
                 title = if (raState.isLoggingOut) {
                     stringResource(R.string.settings_ra_logout_title_busy)
                 } else {
-                    stringResource(R.string.settings_ra_logout_title)
+                    stringResource(RAItem.Logout.labelRes)
                 },
                 subtitle = stringResource(R.string.settings_ra_logout_subtitle),
-                isFocused = focusedIndex == RA_LOGGED_IN_LOGOUT_INDEX,
+                isFocused = focusedIndex == logoutIndex,
                 onClick = { viewModel.logoutFromRA() }
             )
         }
-        settingsRowItem(focusIndex = RA_LOGGED_IN_WEB_API_KEY_INDEX) {
+        settingsRowItem(focusIndex = webApiKeyIndex) {
             ActionPreference(
                 icon = Icons.Default.Key,
-                title = stringResource(R.string.settings_ra_web_api_key_title),
+                title = stringResource(RAItem.WebApiKey.labelRes),
                 subtitle = stringResource(R.string.settings_ra_web_api_key_subtitle),
                 trailingText = when {
                     !raState.hasWebApiKey -> stringResource(R.string.settings_ra_web_api_key_value_not_set)
@@ -226,17 +276,17 @@ private fun RALoggedInContent(
                         stringResource(R.string.settings_ra_web_api_key_value_saved, raState.webApiKeySuffix)
                     else -> stringResource(R.string.settings_ra_web_api_key_value_saved_short)
                 },
-                isFocused = focusedIndex == RA_LOGGED_IN_WEB_API_KEY_INDEX,
+                isFocused = focusedIndex == webApiKeyIndex,
                 onClick = { viewModel.openRAWebApiKeyEditor() }
             )
         }
 
-        settingsRowItem(focusIndex = RA_LOGGED_IN_PLAY_MODE_INDEX) {
+        settingsRowItem(focusIndex = playModeIndex) {
             if (!secureSaves) {
                 ActionPreference(
-                    title = stringResource(R.string.settings_ra_play_mode_title),
+                    title = stringResource(RAItem.PlayMode.labelRes),
                     subtitle = stringResource(R.string.settings_ra_play_mode_subtitle_locked),
-                    isFocused = focusedIndex == RA_LOGGED_IN_PLAY_MODE_INDEX,
+                    isFocused = focusedIndex == playModeIndex,
                     isEnabled = false,
                     onClick = {}
                 )
@@ -253,9 +303,9 @@ private fun RALoggedInContent(
                     else -> cycleOptions[0]
                 }
                 CyclePreference(
-                    title = stringResource(R.string.settings_ra_play_mode_title),
+                    title = stringResource(RAItem.PlayMode.labelRes),
                     value = currentLabel,
-                    isFocused = focusedIndex == RA_LOGGED_IN_PLAY_MODE_INDEX,
+                    isFocused = focusedIndex == playModeIndex,
                     onClick = { viewModel.cycleRADefaultMode(1) },
                     onPrev = { viewModel.cycleRADefaultMode(-1) },
                     options = cycleOptions,
@@ -273,24 +323,18 @@ private fun RALoggedInContent(
             }
         }
 
-        raProxyItems(
-            raState,
-            focusedIndex,
-            viewModel,
-            proxyToggleIndex = RA_LOGGED_IN_PROXY_TOGGLE_INDEX,
-            proxyFieldIndex = RA_LOGGED_IN_PROXY_FIELD_INDEX
-        )
+        raProxyItems(raState, focusedIndex, viewModel, layoutState)
 
         if (raState.canPushToRetroArch) {
             item {
                 Spacer(modifier = Modifier.height(Dimens.spacingMd))
                 SectionHeader(stringResource(R.string.settings_ra_section_retroarch))
             }
-            val pushIndex = raLoggedInPushIndex(raState.proxyEnabled)
+            val pushIndex = raFocusIndexOf(RAItem.PushToRetroArch, layoutState)
             settingsRowItem(focusIndex = pushIndex) {
                 ActionPreference(
                     icon = Icons.Default.Sync,
-                    title = stringResource(R.string.settings_ra_push_retroarch_title),
+                    title = stringResource(RAItem.PushToRetroArch.labelRes),
                     subtitle = stringResource(R.string.settings_ra_push_retroarch_subtitle),
                     isFocused = focusedIndex == pushIndex,
                     onClick = { viewModel.pushRACredentialsToRetroArch() }
@@ -307,6 +351,8 @@ private fun RALoggedOutContent(
     viewModel: SettingsViewModel,
     listState: androidx.compose.foundation.lazy.LazyListState
 ) {
+    val layoutState = RALayoutState.from(raState)
+    val loginIndex = raFocusIndexOf(RAItem.Login, layoutState)
     LazyColumn(
         state = listState,
         modifier = Modifier
@@ -349,17 +395,17 @@ private fun RALoggedOutContent(
         item {
             Spacer(modifier = Modifier.height(Dimens.spacingMd))
         }
-        settingsRowItem(focusIndex = 0) {
+        settingsRowItem(focusIndex = loginIndex) {
             ActionPreference(
                 icon = Icons.AutoMirrored.Filled.Login,
-                title = stringResource(R.string.settings_ra_login_row_title),
+                title = stringResource(RAItem.Login.labelRes),
                 subtitle = stringResource(R.string.settings_ra_login_row_subtitle),
-                isFocused = focusedIndex == 0,
+                isFocused = focusedIndex == loginIndex,
                 onClick = { viewModel.showRALoginForm() }
             )
         }
 
-        raProxyItems(raState, focusedIndex, viewModel, proxyToggleIndex = 1, proxyFieldIndex = 2)
+        raProxyItems(raState, focusedIndex, viewModel, layoutState)
     }
 }
 
@@ -367,16 +413,17 @@ private fun LazyListScope.raProxyItems(
     raState: RASettingsState,
     focusedIndex: Int,
     viewModel: SettingsViewModel,
-    proxyToggleIndex: Int,
-    proxyFieldIndex: Int
+    layoutState: RALayoutState
 ) {
+    val proxyToggleIndex = raFocusIndexOf(RAItem.ProxyToggle, layoutState)
+    val proxyFieldIndex = raFocusIndexOf(RAItem.ProxyField, layoutState)
     item {
         Spacer(modifier = Modifier.height(Dimens.spacingMd))
         SectionHeader(stringResource(R.string.settings_ra_section_offline_proxy))
     }
     settingsRowItem(focusIndex = proxyToggleIndex) {
         SwitchPreference(
-            title = stringResource(R.string.settings_ra_proxy_title),
+            title = stringResource(RAItem.ProxyToggle.labelRes),
             subtitle = stringResource(R.string.settings_ra_proxy_subtitle),
             isEnabled = raState.proxyEnabled,
             isFocused = focusedIndex == proxyToggleIndex,

@@ -61,7 +61,16 @@ sealed class Screen(val route: String) {
     data object MediaDetail : Screen("media_item/{itemId}") {
         fun createRoute(itemId: String) = "media_item/$itemId"
     }
-    data object Search : Screen("search")
+    /**
+     * The search screen. [route] stays the bare path so routes compare by it; [ROUTE_WITH_ARGS] is
+     * what the graph declares, with an optional query to open on.
+     */
+    data object Search : Screen("search") {
+        const val ROUTE_WITH_ARGS = "search?query={query}"
+        const val ARG_QUERY = "query"
+        fun createRoute(query: String?): String =
+            if (query.isNullOrEmpty()) route else "search?query=${android.net.Uri.encode(query)}"
+    }
     data object ManagePins : Screen("manage_pins")
     data object Social : Screen("social")
     data object SocialEventDetail : Screen("social/event/{eventId}") {

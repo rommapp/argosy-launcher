@@ -155,7 +155,14 @@
     <string name="library_search_no_results">没有找到“%1$s”的相关结果</string>
     <string name="library_search_heading_games">游戏</string>
     <string name="library_search_heading_media">媒体</string>
-    <string name="library_search_result_platform_unknown">未知</string>
+    <string name="library_search_heading_recent_searches">最近搜索</string>
+    <string name="library_search_heading_recently_played">最近玩过</string>
+    <plurals name="library_search_presentation_min_query_hint">
+        <item quantity="other">请至少输入%d个字符以搜索</item>
+    </plurals>
+    <string name="library_search_presentation_no_results">没有找到“%1$s”的相关结果</string>
+    <string name="library_search_presentation_heading_recently_played">最近玩过</string>
+    <string name="library_search_history_heading">最近搜索</string>
     <string name="library_search_result_kind_series">剧集</string>
     <string name="library_search_result_kind_movie">电影</string>
     <string name="library_search_hint_group_jump">游戏/媒体</string>
@@ -180,7 +187,4 @@
     <string name="library_quickmenu_resume_game">继续游戏</string>
     <string name="library_quickmenu_close_game">关闭游戏</string>
     <string name="library_quickmenu_move_to_display">移到显示器 %1$d</string>
-    <string name="library_search_result_running">运行中</string>
-    <string name="library_search_result_running_in">正在 %1$s 中运行</string>
-    <string name="library_search_result_saving">正在保存</string>
 </resources>

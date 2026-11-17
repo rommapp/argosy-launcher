@@ -1,5 +1,6 @@
 package com.nendo.argosy.ui.screens.settings.sections
 
+import androidx.annotation.StringRes
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
@@ -33,6 +34,7 @@ import com.nendo.argosy.ui.components.HomeLayoutSettingRow
 import com.nendo.argosy.ui.components.homeLayoutFieldsFor
 import com.nendo.argosy.ui.components.isHomeLayoutFieldShown
 import com.nendo.argosy.ui.components.homeRailFields
+import com.nendo.argosy.ui.components.titleRes
 import com.nendo.argosy.ui.components.toggleHomeLayoutField
 import com.nendo.argosy.ui.components.SegmentedPreference
 import com.nendo.argosy.ui.components.SliderPreference
@@ -44,6 +46,7 @@ import com.nendo.argosy.ui.screens.settings.SettingsUiState
 import com.nendo.argosy.ui.screens.settings.SettingsViewModel
 import com.nendo.argosy.ui.screens.settings.delegates.DisplaySettingsDelegate
 import com.nendo.argosy.ui.screens.settings.menu.SettingsLayout
+import com.nendo.argosy.ui.screens.settings.search.SearchableSetting
 import com.nendo.argosy.ui.theme.Dimens
 import com.nendo.argosy.ui.theme.generated.ComponentDefaults
 
@@ -52,52 +55,70 @@ internal sealed class HomeScreenItem(
     val section: String,
     val visibleWhen: (DisplayState) -> Boolean = { true }
 ) {
-    val isFocusable: Boolean get() = this !is Header && this !is LayoutPreview
+    val isFocusable: Boolean get() = this is SearchableSetting
 
     class Header(key: String, section: String, val titleRes: Int) : HomeScreenItem(key, section)
 
-    data object Background : HomeScreenItem(
+    sealed class Row(
+        key: String,
+        section: String,
+        @StringRes override val labelRes: Int,
+        visibleWhen: (DisplayState) -> Boolean = { true }
+    ) : HomeScreenItem(key, section, visibleWhen), SearchableSetting
+
+    data object Background : Row(
         key = "homeBackgroundMode",
         section = "background",
+        labelRes = R.string.settings_home_screen_background_title,
         visibleWhen = { it.surfaceBackdrop.enabled && drawsBackgroundArt(it) }
     )
-    data object GameArtwork : HomeScreenItem(
+    data object GameArtwork : Row(
         key = "gameArtwork",
         section = "background",
+        labelRes = R.string.settings_home_screen_game_artwork_title,
         visibleWhen = { showsArtLayer(it) }
     )
-    data object CustomImage : HomeScreenItem(
+    data object CustomImage : Row(
         key = "customImage",
         section = "background",
+        labelRes = R.string.settings_home_screen_custom_image_title,
         visibleWhen = { showsArtLayer(it) && !it.useGameBackground }
     )
-    data object Blur : HomeScreenItem("blur", "background", { showsArtLayer(it) })
-    data object Saturation : HomeScreenItem("saturation", "background", { showsArtLayer(it) })
-    data object Opacity : HomeScreenItem("opacity", "background", { showsArtLayer(it) })
+    data object Blur :
+        Row("blur", "background", R.string.settings_home_screen_blur_title, { showsArtLayer(it) })
+    data object Saturation :
+        Row("saturation", "background", R.string.settings_home_screen_saturation_title, { showsArtLayer(it) })
+    data object Opacity :
+        Row("opacity", "background", R.string.settings_home_screen_opacity_title, { showsArtLayer(it) })
 
-    data object VideoWallpaper : HomeScreenItem(
+    data object VideoWallpaper : Row(
         key = "videoWallpaper",
         section = "video",
+        labelRes = R.string.settings_home_screen_video_wallpaper_title,
         visibleWhen = { playsVideo(it) }
     )
-    data object VideoDelay : HomeScreenItem(
+    data object VideoDelay : Row(
         key = "videoDelay",
         section = "video",
+        labelRes = R.string.settings_home_screen_video_delay_title,
         visibleWhen = { it.videoWallpaperEnabled && playsVideo(it) }
     )
-    data object VideoMuted : HomeScreenItem(
+    data object VideoMuted : Row(
         key = "videoMuted",
         section = "video",
+        labelRes = R.string.settings_home_screen_video_muted_title,
         visibleWhen = { it.videoWallpaperEnabled && playsVideo(it) }
     )
 
     data object LayoutPreview : HomeScreenItem("layoutPreview", "layout")
 
-    data object LayoutSelector : HomeScreenItem("layoutSelector", "layout")
+    data object LayoutSelector :
+        Row("layoutSelector", "layout", R.string.settings_search_label_home_layout_selector)
 
-    data object BoxArt : HomeScreenItem(
+    data object BoxArt : Row(
         key = "homeBoxArt",
         section = "layout",
+        labelRes = R.string.settings_home_screen_box_art_title,
         visibleWhen = { it.box3dCapableGames > 0 || it.homeLayout.boxArt3d }
     )
 
@@ -107,9 +128,10 @@ internal sealed class HomeScreenItem(
      * fixed: everything else follows the selected layout, and a rail follows whether the selected
      * layout draws rows at all.
      */
-    data class LayoutField(val field: HomeLayoutSettingField) : HomeScreenItem(
+    data class LayoutField(val field: HomeLayoutSettingField) : Row(
         key = "layoutField_${field.name}",
         section = if (field in homeRailFields()) "content" else "layout",
+        labelRes = field.titleRes,
         visibleWhen = {
             if (field in homeRailFields()) {
                 it.homeLayout.selected != HomeLayoutKind.CUSTOM_GRID
@@ -117,23 +139,29 @@ internal sealed class HomeScreenItem(
                 isHomeLayoutFieldShown(it.homeLayout, field)
             }
         }
-    )
+    ) {
+        override val keywordsRes: Int?
+            get() = if (this.field == HomeLayoutSettingField.AUTO_GRID_LANES) R.string.ui_home_layout_lanes_rows else null
+    }
 
-    data object InstalledOnly : HomeScreenItem(
+    data object InstalledOnly : Row(
         key = "installedOnly",
         section = "content",
+        labelRes = R.string.settings_home_screen_installed_only_title,
         visibleWhen = { it.homeLayout.selected != HomeLayoutKind.CUSTOM_GRID }
     )
 
-    data object RecentNewGames : HomeScreenItem(
+    data object RecentNewGames : Row(
         key = "recentNewGames",
         section = "content",
+        labelRes = R.string.settings_home_screen_recent_new_games_title,
         visibleWhen = { it.homeLayout.selected != HomeLayoutKind.CUSTOM_GRID }
     )
 
-    data object NewBadge : HomeScreenItem(
+    data object NewBadge : Row(
         key = "newBadge",
         section = "content",
+        labelRes = R.string.settings_home_screen_new_badge_title,
         visibleWhen = { it.homeLayout.selected == HomeLayoutKind.CAROUSEL }
     )
 
@@ -186,7 +214,7 @@ internal sealed class HomeScreenItem(
     }
 }
 
-private val homeScreenLayout = SettingsLayout<HomeScreenItem, DisplayState>(
+internal val homeScreenLayout = SettingsLayout<HomeScreenItem, DisplayState>(
     allItems = HomeScreenItem.ALL,
     isFocusable = { it.isFocusable },
     visibleWhen = { item, state -> item.visibleWhen(state) },
@@ -283,8 +311,8 @@ fun HomeScreenSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
             when (item) {
                 is HomeScreenItem.Header -> HomeScreenSectionHeader(stringResource(item.titleRes))
 
-                HomeScreenItem.Background -> SegmentedPreference(
-                    title = stringResource(R.string.settings_home_screen_background_title),
+                is HomeScreenItem.Background -> SegmentedPreference(
+                    title = stringResource(item.labelRes),
                     subtitle = stringResource(R.string.settings_home_screen_background_subtitle),
                     options = HomeBackgroundMode.entries.map { stringResource(homeBackgroundModeLabelRes(it)) },
                     selectedIndex = HomeBackgroundMode.entries.indexOf(display.homeBackgroundMode),
@@ -292,15 +320,15 @@ fun HomeScreenSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
                     onSelect = { index -> viewModel.setHomeBackgroundMode(HomeBackgroundMode.entries[index]) }
                 )
 
-                HomeScreenItem.GameArtwork -> SwitchPreference(
-                    title = stringResource(R.string.settings_home_screen_game_artwork_title),
+                is HomeScreenItem.GameArtwork -> SwitchPreference(
+                    title = stringResource(item.labelRes),
                     subtitle = stringResource(R.string.settings_home_screen_game_artwork_subtitle),
                     isEnabled = display.useGameBackground,
                     isFocused = isFocused(item),
                     onToggle = { viewModel.setUseGameBackground(it) }
                 )
 
-                HomeScreenItem.CustomImage -> {
+                is HomeScreenItem.CustomImage -> {
                     val subtitle = if (display.customBackgroundPath != null) {
                         stringResource(R.string.settings_home_screen_custom_image_subtitle_set)
                     } else {
@@ -308,15 +336,15 @@ fun HomeScreenSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
                     }
                     ActionPreference(
                         icon = Icons.Outlined.PhotoLibrary,
-                        title = stringResource(R.string.settings_home_screen_custom_image_title),
+                        title = stringResource(item.labelRes),
                         subtitle = subtitle,
                         isFocused = isFocused(item),
                         onClick = { viewModel.openBackgroundPicker() }
                     )
                 }
 
-                HomeScreenItem.Blur -> SliderPreference(
-                    title = stringResource(R.string.settings_home_screen_blur_title),
+                is HomeScreenItem.Blur -> SliderPreference(
+                    title = stringResource(item.labelRes),
                     value = display.backgroundBlur / 10,
                     minValue = 0,
                     maxValue = 10,
@@ -324,8 +352,8 @@ fun HomeScreenSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
                     onAdjust = { viewModel.adjustBackgroundBlur(it * SettingsInputHandler.SLIDER_STEP) }
                 )
 
-                HomeScreenItem.Saturation -> SliderPreference(
-                    title = stringResource(R.string.settings_home_screen_saturation_title),
+                is HomeScreenItem.Saturation -> SliderPreference(
+                    title = stringResource(item.labelRes),
                     value = display.backgroundSaturation / 10,
                     minValue = 0,
                     maxValue = 10,
@@ -333,8 +361,8 @@ fun HomeScreenSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
                     onAdjust = { viewModel.adjustBackgroundSaturation(it * SettingsInputHandler.SLIDER_STEP) }
                 )
 
-                HomeScreenItem.Opacity -> SliderPreference(
-                    title = stringResource(R.string.settings_home_screen_opacity_title),
+                is HomeScreenItem.Opacity -> SliderPreference(
+                    title = stringResource(item.labelRes),
                     value = display.backgroundOpacity / 10,
                     minValue = 0,
                     maxValue = 10,
@@ -342,18 +370,18 @@ fun HomeScreenSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
                     onAdjust = { viewModel.adjustBackgroundOpacity(it * SettingsInputHandler.SLIDER_STEP) }
                 )
 
-                HomeScreenItem.VideoWallpaper -> SwitchPreference(
-                    title = stringResource(R.string.settings_home_screen_video_wallpaper_title),
+                is HomeScreenItem.VideoWallpaper -> SwitchPreference(
+                    title = stringResource(item.labelRes),
                     subtitle = stringResource(R.string.settings_home_screen_video_wallpaper_subtitle),
                     isEnabled = display.videoWallpaperEnabled,
                     isFocused = isFocused(item),
                     onToggle = { viewModel.setVideoWallpaperEnabled(!display.videoWallpaperEnabled) }
                 )
 
-                HomeScreenItem.VideoDelay -> {
+                is HomeScreenItem.VideoDelay -> {
                     val delayText = videoDelayLabel(context, display.videoWallpaperDelaySeconds)
                     CyclePreference(
-                        title = stringResource(R.string.settings_home_screen_video_delay_title),
+                        title = stringResource(item.labelRes),
                         value = delayText,
                         isFocused = isFocused(item),
                         onClick = { viewModel.cycleVideoWallpaperDelay() },
@@ -370,9 +398,9 @@ fun HomeScreenSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
                     )
                 }
 
-                HomeScreenItem.VideoMuted -> {
+                is HomeScreenItem.VideoMuted -> {
                     SwitchPreference(
-                        title = stringResource(R.string.settings_home_screen_video_muted_title),
+                        title = stringResource(item.labelRes),
                         subtitle = stringResource(R.string.settings_home_screen_video_muted_subtitle),
                         isEnabled = display.videoWallpaperMuted,
                         isFocused = isFocused(item),
@@ -380,7 +408,7 @@ fun HomeScreenSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
                     )
                 }
 
-                HomeScreenItem.LayoutPreview -> if (presentsPreview) Unit else Box(
+                is HomeScreenItem.LayoutPreview -> if (presentsPreview) Unit else Box(
                     modifier = Modifier.fillMaxWidth(),
                     contentAlignment = Alignment.Center
                 ) {
@@ -393,7 +421,7 @@ fun HomeScreenSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
                     )
                 }
 
-                HomeScreenItem.LayoutSelector -> HomeLayoutSelectorRow(
+                is HomeScreenItem.LayoutSelector -> HomeLayoutSelectorRow(
                     selected = display.homeLayout.selected,
                     isFocused = isFocused(item),
                     onSelect = { kind ->
@@ -416,8 +444,8 @@ fun HomeScreenSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
                     }
                 )
 
-                HomeScreenItem.BoxArt -> SegmentedPreference(
-                    title = stringResource(R.string.settings_home_screen_box_art_title),
+                is HomeScreenItem.BoxArt -> SegmentedPreference(
+                    title = stringResource(item.labelRes),
                     subtitle = stringResource(R.string.settings_home_screen_box_art_subtitle),
                     options = listOf(
                         stringResource(R.string.settings_home_screen_box_art_option_2d),
@@ -428,16 +456,16 @@ fun HomeScreenSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
                     onSelect = { viewModel.setHomeBoxArt3d(it == 1) }
                 )
 
-                HomeScreenItem.InstalledOnly -> SwitchPreference(
-                    title = stringResource(R.string.settings_home_screen_installed_only_title),
+                is HomeScreenItem.InstalledOnly -> SwitchPreference(
+                    title = stringResource(item.labelRes),
                     subtitle = stringResource(R.string.settings_home_screen_installed_only_subtitle),
                     isEnabled = display.installedOnlyHome,
                     isFocused = isFocused(item),
                     onToggle = { viewModel.setInstalledOnlyHome(it) }
                 )
 
-                HomeScreenItem.RecentNewGames -> CyclePreference(
-                    title = stringResource(R.string.settings_home_screen_recent_new_games_title),
+                is HomeScreenItem.RecentNewGames -> CyclePreference(
+                    title = stringResource(item.labelRes),
                     subtitle = stringResource(R.string.settings_home_screen_recent_new_games_subtitle),
                     value = recentNewGamesLabel(context, display.recentNewGamesLimit),
                     isFocused = isFocused(item),
@@ -454,8 +482,8 @@ fun HomeScreenSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
                     pickerRequestToken = pickerToken(item)
                 )
 
-                HomeScreenItem.NewBadge -> SegmentedPreference(
-                    title = stringResource(R.string.settings_home_screen_new_badge_title),
+                is HomeScreenItem.NewBadge -> SegmentedPreference(
+                    title = stringResource(item.labelRes),
                     subtitle = stringResource(R.string.settings_home_screen_new_badge_subtitle),
                     options = NewBadgePlacement.entries.map { stringResource(newBadgePlacementLabelRes(it)) },
                     selectedIndex = NewBadgePlacement.entries.indexOf(display.newBadgePlacement),

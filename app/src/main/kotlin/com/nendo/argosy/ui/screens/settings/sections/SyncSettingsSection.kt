@@ -1,5 +1,6 @@
 package com.nendo.argosy.ui.screens.settings.sections
 
+import androidx.annotation.StringRes
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -50,6 +51,7 @@ import com.nendo.argosy.ui.screens.settings.components.RegionPriorityPopup
 import com.nendo.argosy.ui.screens.settings.components.SectionHeader
 import com.nendo.argosy.ui.screens.settings.components.SyncFiltersModal
 import com.nendo.argosy.ui.screens.settings.menu.SettingsLayout
+import com.nendo.argosy.ui.screens.settings.search.SearchableSetting
 import androidx.compose.ui.unit.dp
 import com.nendo.argosy.ui.theme.Dimens
 import com.nendo.argosy.ui.theme.Motion
@@ -57,21 +59,28 @@ import com.nendo.argosy.ui.theme.Motion
 // --- Item definitions ---
 
 internal sealed class SyncSettingsItem(val key: String, val section: String) {
-    val isFocusable: Boolean get() =
-        this !is MediaHeader && this !is ImageCacheProgressIndicator && this !is DownloadDefaultsHeader
+    val isFocusable: Boolean get() = this is SearchableSetting
 
-    data object PlatformFilters : SyncSettingsItem("platformFilters", "filters")
-    data object MetadataFilters : SyncSettingsItem("metadataFilters", "filters")
-    data object RegionPriority : SyncSettingsItem("regionPriority", "filters")
+    sealed class Row(
+        key: String,
+        section: String,
+        @StringRes override val labelRes: Int
+    ) : SyncSettingsItem(key, section), SearchableSetting
+
+    data object PlatformFilters : Row("platformFilters", "filters", R.string.settings_sync_platform_filters_title)
+    data object MetadataFilters : Row("metadataFilters", "filters", R.string.settings_sync_metadata_filters_title)
+    data object RegionPriority : Row("regionPriority", "filters", R.string.settings_sync_region_priority_title)
     data object MediaHeader : SyncSettingsItem("mediaHeader", "media")
-    data object CacheScreenshots : SyncSettingsItem("cacheScreenshots", "media")
-    data object CacheBoxArt : SyncSettingsItem("cacheBoxArt", "media")
-    data object UploadScreenshots : SyncSettingsItem("uploadScreenshots", "media")
-    data object ImageCacheLocation : SyncSettingsItem("imageCacheLocation", "media")
+    data object CacheScreenshots :
+        Row("cacheScreenshots", "media", R.string.settings_sync_cache_screenshots_title)
+    data object CacheBoxArt : Row("cacheBoxArt", "media", R.string.settings_sync_cache_box_art_title)
+    data object UploadScreenshots :
+        Row("uploadScreenshots", "media", R.string.settings_sync_upload_screenshots_title)
+    data object ImageCacheLocation : Row("imageCacheLocation", "media", R.string.settings_sync_image_cache_title)
     data object ImageCacheProgressIndicator : SyncSettingsItem("imageCacheProgress", "media")
     data object DownloadDefaultsHeader : SyncSettingsItem("downloadDefaultsHeader", "downloads")
     class CategoryDefault(val categoryKey: String) :
-        SyncSettingsItem("dl_$categoryKey", "downloads")
+        Row("dl_$categoryKey", "downloads", downloadCategoryLabelRes(categoryKey))
 
     companion object {
         val CATEGORY_DEFAULTS: List<CategoryDefault> =
@@ -81,14 +90,18 @@ internal sealed class SyncSettingsItem(val key: String, val section: String) {
 
 private const val REGION_PRIORITY_PREVIEW_COUNT = 3
 
-internal fun downloadCategoryLabel(context: android.content.Context, key: String): String =
+@StringRes
+private fun downloadCategoryLabelRes(key: String): Int =
     if (key == DownloadDefaults.OTHER_KEY) {
-        context.getString(R.string.settings_sync_download_category_other)
+        R.string.settings_sync_download_category_other
     } else {
-        context.getString(VariantCategory.fromKey(key).labelRes)
+        VariantCategory.fromKey(key).labelRes
     }
 
-private val syncSettingsLayout = SettingsLayout<SyncSettingsItem, Boolean>(
+internal fun downloadCategoryLabel(context: android.content.Context, key: String): String =
+    context.getString(downloadCategoryLabelRes(key))
+
+internal val syncSettingsLayout = SettingsLayout<SyncSettingsItem, Boolean>(
     allItems = listOf(
         SyncSettingsItem.PlatformFilters,
         SyncSettingsItem.MetadataFilters,
@@ -165,7 +178,7 @@ fun SyncSettingsSection(
             verticalArrangement = Arrangement.spacedBy(Dimens.spacingSm)
         ) { item ->
                 when (item) {
-                    SyncSettingsItem.PlatformFilters -> {
+                    is SyncSettingsItem.PlatformFilters -> {
                         val enabledCount = uiState.syncSettings.enabledPlatformCount
                         val totalCount = uiState.syncSettings.totalPlatforms
                         val subtitle = if (totalCount > 0) {
@@ -179,58 +192,58 @@ fun SyncSettingsSection(
                         }
                         ActionPreference(
                             icon = Icons.Default.FilterList,
-                            title = stringResource(R.string.settings_sync_platform_filters_title),
+                            title = stringResource(item.labelRes),
                             subtitle = subtitle,
                             isFocused = isFocused(item),
                             onClick = { viewModel.showPlatformFiltersModal() }
                         )
                     }
-                    SyncSettingsItem.MetadataFilters -> {
+                    is SyncSettingsItem.MetadataFilters -> {
                         val filtersSubtitle = buildFiltersSubtitle(context, uiState.syncSettings.syncFilters)
                         ActionPreference(
                             icon = Icons.Default.Tune,
-                            title = stringResource(R.string.settings_sync_metadata_filters_title),
+                            title = stringResource(item.labelRes),
                             subtitle = filtersSubtitle,
                             isFocused = isFocused(item),
                             onClick = { viewModel.showSyncFiltersModal() }
                         )
                     }
-                    SyncSettingsItem.RegionPriority -> {
+                    is SyncSettingsItem.RegionPriority -> {
                         val regionPriority = uiState.syncSettings.regionPriority
                         val regionPreview = remember(regionPriority) {
                             regionPriority.take(REGION_PRIORITY_PREVIEW_COUNT).joinToString(", ")
                         }
                         ActionPreference(
                             icon = Icons.Default.SwapVert,
-                            title = stringResource(R.string.settings_sync_region_priority_title),
+                            title = stringResource(item.labelRes),
                             subtitle = stringResource(R.string.settings_sync_region_priority_subtitle, regionPreview),
                             isFocused = isFocused(item),
                             onClick = { viewModel.showRegionPriority() }
                         )
                     }
-                    SyncSettingsItem.MediaHeader -> {
+                    is SyncSettingsItem.MediaHeader -> {
                         Spacer(modifier = Modifier.height(Dimens.spacingMd))
                         SectionHeader(stringResource(R.string.settings_sync_section_media))
                     }
-                    SyncSettingsItem.CacheScreenshots -> {
+                    is SyncSettingsItem.CacheScreenshots -> {
                         SwitchPreference(
-                            title = stringResource(R.string.settings_sync_cache_screenshots_title),
+                            title = stringResource(item.labelRes),
                             subtitle = stringResource(R.string.settings_sync_cache_screenshots_subtitle),
                             isEnabled = uiState.server.syncScreenshotsEnabled,
                             isFocused = isFocused(item),
                             onToggle = { viewModel.toggleSyncScreenshots() }
                         )
                     }
-                    SyncSettingsItem.CacheBoxArt -> {
+                    is SyncSettingsItem.CacheBoxArt -> {
                         SwitchPreference(
-                            title = stringResource(R.string.settings_sync_cache_box_art_title),
+                            title = stringResource(item.labelRes),
                             subtitle = stringResource(R.string.settings_sync_cache_box_art_subtitle),
                             isEnabled = uiState.server.boxArtCacheEnabled,
                             isFocused = isFocused(item),
                             onToggle = { viewModel.toggleBoxArtCache() }
                         )
                     }
-                    SyncSettingsItem.UploadScreenshots -> {
+                    is SyncSettingsItem.UploadScreenshots -> {
                         val supported = uiState.server.screenshotUploadSupported
                         val subtitle = if (supported) {
                             stringResource(R.string.settings_sync_upload_screenshots_subtitle)
@@ -239,7 +252,7 @@ fun SyncSettingsSection(
                         }
                         Box(modifier = Modifier.alpha(if (supported) 1f else 0.45f)) {
                             SwitchPreference(
-                                title = stringResource(R.string.settings_sync_upload_screenshots_title),
+                                title = stringResource(item.labelRes),
                                 subtitle = subtitle,
                                 isEnabled = supported && uiState.server.uploadScreenshotsEnabled,
                                 isFocused = isFocused(item),
@@ -247,7 +260,7 @@ fun SyncSettingsSection(
                             )
                         }
                     }
-                    SyncSettingsItem.ImageCacheLocation -> {
+                    is SyncSettingsItem.ImageCacheLocation -> {
                         val cachePath = uiState.syncSettings.imageCachePath
                         val displayPath = if (cachePath != null) {
                             "${cachePath.substringAfterLast("/")}/argosy_images"
@@ -255,7 +268,7 @@ fun SyncSettingsSection(
                             stringResource(R.string.settings_sync_image_cache_path_internal)
                         }
                         ImageCachePreference(
-                            title = stringResource(R.string.settings_sync_image_cache_title),
+                            title = stringResource(item.labelRes),
                             displayPath = displayPath,
                             hasCustomPath = cachePath != null,
                             isFocused = isFocused(item),
@@ -265,22 +278,23 @@ fun SyncSettingsSection(
                             onReset = { viewModel.resetImageCacheToDefault() }
                         )
                     }
-                    SyncSettingsItem.ImageCacheProgressIndicator -> {
+                    is SyncSettingsItem.ImageCacheProgressIndicator -> {
                         Spacer(modifier = Modifier.height(Dimens.spacingMd))
                         ImageCacheProgressItem(imageCacheProgress)
                     }
-                    SyncSettingsItem.DownloadDefaultsHeader -> {
+                    is SyncSettingsItem.DownloadDefaultsHeader -> {
                         Spacer(modifier = Modifier.height(Dimens.spacingMd))
                         SectionHeader(stringResource(R.string.settings_sync_section_download_defaults))
                     }
                     is SyncSettingsItem.CategoryDefault -> {
                         val included = uiState.syncSettings.downloadDefaults[item.categoryKey]
                             ?: (DownloadDefaults.FACTORY[item.categoryKey] ?: false)
+                        val label = stringResource(item.labelRes)
                         SwitchPreference(
-                            title = downloadCategoryLabel(context, item.categoryKey),
+                            title = label,
                             subtitle = stringResource(
                                 R.string.settings_sync_download_category_subtitle,
-                                downloadCategoryLabel(context, item.categoryKey).lowercase()
+                                label.lowercase()
                             ),
                             isEnabled = included,
                             isFocused = isFocused(item),

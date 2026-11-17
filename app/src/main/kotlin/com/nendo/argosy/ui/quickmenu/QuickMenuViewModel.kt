@@ -1,444 +1,361 @@
 package com.nendo.argosy.ui.quickmenu
 
-import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.nendo.argosy.data.local.dao.SearchCandidate
-import com.nendo.argosy.data.repository.DownloadFileStatusRepository
-import com.nendo.argosy.data.repository.GameRepository
-import com.nendo.argosy.data.repository.PlatformRepository
-import com.nendo.argosy.data.local.entity.GameEntity
-import com.nendo.argosy.data.preferences.UserPreferencesRepository
-import com.nendo.argosy.domain.usecase.quickmenu.GetTopUnplayedUseCase
-import com.nendo.argosy.ui.common.displayTitleId
-import com.nendo.argosy.ui.common.needsAndroidInstall
-import com.nendo.argosy.ui.common.resolveDownloaded
+import com.nendo.argosy.ui.screens.common.DownloadIndicatorSource
 import com.nendo.argosy.ui.screens.common.GameActionsDelegate
-import com.nendo.argosy.ui.screens.common.LibrarySyncBus
-import com.nendo.argosy.util.FuzzySearch
-import com.nendo.argosy.util.formatPlayTime
-import com.nendo.argosy.util.formatRelativeTime
+import com.nendo.argosy.ui.screens.home.GameDownloadIndicator
 import dagger.hilt.android.lifecycle.HiltViewModel
-import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Job
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
-enum class QuickMenuOrb {
-    SEARCH, RANDOM, MOST_PLAYED, TOP_UNPLAYED, RECENT, FAVORITES
-}
-
-enum class MetadataType {
-    NONE, RATING, PLAY_TIME, RELATIVE_TIME
-}
-
-data class GameRowUi(
-    val id: Long,
-    val title: String,
-    val platformName: String?,
-    val coverPath: String?,
-    val metadata: String,
-    val metadataType: MetadataType = MetadataType.NONE,
-    val isDownloaded: Boolean,
-    val titleId: String? = null
-)
-
-data class GameCardUi(
-    val id: Long,
-    val title: String,
-    val platformName: String?,
-    val coverPath: String?,
-    val backdropPath: String?,
-    val backdropIsScreenshotOrArt: Boolean,
-    val year: Int?,
-    val developer: String?,
-    val rating: Float?,
-    val genre: String?,
-    val description: String?,
-    val isDownloaded: Boolean,
-    val needsInstall: Boolean,
-    val isFavorite: Boolean
-)
-
-data class QuickMenuUiState(
-    val isVisible: Boolean = false,
-    val selectedOrb: QuickMenuOrb = QuickMenuOrb.MOST_PLAYED,
-    val contentFocused: Boolean = false,
-    val focusedContentIndex: Int = 0,
-    val searchQuery: String = "",
-    val searchResults: List<GameRowUi> = emptyList(),
-    val recentSearches: List<String> = emptyList(),
-    val searchInputFocused: Boolean = true,
-    val searchKeyboardOpen: Boolean = false,
-    val randomGame: GameCardUi? = null,
-    val isRandomResolved: Boolean = false,
-    val mostPlayedGames: List<GameRowUi> = emptyList(),
-    val topUnplayedGames: List<GameRowUi> = emptyList(),
-    val recentGames: List<GameRowUi> = emptyList(),
-    val favoriteGames: List<GameRowUi> = emptyList(),
-    val isLoading: Boolean = false
-)
-
-private const val LIST_LIMIT = 20
-
 @HiltViewModel
 class QuickMenuViewModel @Inject constructor(
-    @ApplicationContext private val context: Context,
-    private val gameRepository: GameRepository,
-    private val platformRepository: PlatformRepository,
-    private val getTopUnplayedUseCase: GetTopUnplayedUseCase,
-    private val librarySyncBus: LibrarySyncBus,
-    private val preferencesRepository: UserPreferencesRepository,
+    private val loader: QuickMenuLoader,
     private val gameActions: GameActionsDelegate,
-    private val downloadStatus: DownloadFileStatusRepository
+    downloadIndicatorSource: DownloadIndicatorSource
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(QuickMenuUiState())
     val uiState: StateFlow<QuickMenuUiState> = _uiState.asStateFlow()
 
-    private var searchJob: Job? = null
-    private var randomJob: Job? = null
-    private val platformCache = mutableMapOf<Long, String>()
-    private var searchCandidates: List<SearchCandidate>? = null
+    val downloadIndicators: StateFlow<Map<Long, GameDownloadIndicator>> = downloadIndicatorSource.indicators
+
+    private var hasOpened = false
+    private var loadJob: Job? = null
+    private var rollJob: Job? = null
 
     init {
+        observeExtras()
+        observeSearchResults()
+        observePoolSize()
+    }
+
+    private fun observeExtras() {
         viewModelScope.launch {
-            librarySyncBus.syncCompleted.collect {
-                invalidateSearchCache()
-            }
+            _uiState
+                .map { state -> if (state.isVisible) state.selectedOrb to state.focusedGame()?.id else null }
+                .distinctUntilChanged()
+                .collectLatest { key ->
+                    val (section, gameId) = key ?: return@collectLatest
+                    if (gameId == null) return@collectLatest
+                    val extras = loader.extras(section, gameId) ?: return@collectLatest
+                    _uiState.update { it.copy(extras = extras) }
+                }
+        }
+    }
+
+    private fun observeSearchResults() {
+        viewModelScope.launch {
+            _uiState
+                .map { state ->
+                    if (state.isVisible && state.selectedOrb == QuickMenuOrb.SEARCH) state.focusedSearch?.query else null
+                }
+                .distinctUntilChanged()
+                .collectLatest { query ->
+                    if (query == null) {
+                        _uiState.update { it.copy(searchResults = null) }
+                        return@collectLatest
+                    }
+                    _uiState.update { it.copy(searchResults = SearchResultsPreview(query, null)) }
+                    val games = loader.searchResults(query)
+                    _uiState.update { state ->
+                        if (state.searchResults?.query != query) state
+                        else state.copy(searchResults = SearchResultsPreview(query, games))
+                    }
+                }
+        }
+    }
+
+    private fun observePoolSize() {
+        viewModelScope.launch {
+            _uiState
+                .map { state -> if (state.isVisible) state.random.filters else null }
+                .distinctUntilChanged()
+                .collectLatest { filters ->
+                    if (filters == null) return@collectLatest
+                    val size = loader.poolSize(filters)
+                    _uiState.update { state ->
+                        if (state.random.filters != filters) state
+                        else state.copy(random = state.random.copy(poolSize = size))
+                    }
+                }
         }
     }
 
     fun show() {
-        _uiState.update {
-            QuickMenuUiState(
-                isVisible = true,
-                selectedOrb = QuickMenuOrb.MOST_PLAYED,
-                contentFocused = false,
-                focusedContentIndex = 0
-            )
-        }
-        loadAllData()
+        val firstOpen = !hasOpened
+        hasOpened = true
+        _uiState.update { it.opened(firstOpen) }
+        loadAll(firstOpen)
     }
 
     fun hide() {
-        _uiState.update { it.copy(isVisible = false, searchKeyboardOpen = false) }
+        val dismissed = _uiState.value.topNew.dismissedIds
+        _uiState.update { it.copy(isVisible = false, picker = null, actionsMenu = null) }
+        if (dismissed.isNotEmpty()) {
+            viewModelScope.launch { loader.saveNotInterested(dismissed) }
+        }
     }
 
-    fun toggle() {
-        if (_uiState.value.isVisible) hide() else show()
+    fun setFormFactor(formFactor: QuickMenuFormFactor) {
+        _uiState.update { if (it.formFactor == formFactor) it else it.copy(formFactor = formFactor) }
+    }
+
+    fun enterTouchMode() {
+        _uiState.update { if (it.isTouchMode) it else it.copy(isTouchMode = true) }
+    }
+
+    fun exitTouchMode() {
+        _uiState.update { if (it.isTouchMode) it.copy(isTouchMode = false) else it }
     }
 
     fun selectOrb(orb: QuickMenuOrb) {
-        _uiState.update {
-            it.copy(
-                selectedOrb = orb,
-                focusedContentIndex = 0,
-                searchKeyboardOpen = false
-            )
-        }
+        _uiState.update { if (it.selectedOrb == orb) it else it.entering(orb) }
     }
 
-    fun moveOrbLeft() {
-        val orbs = QuickMenuOrb.entries
-        val currentIndex = orbs.indexOf(_uiState.value.selectedOrb)
-        val newIndex = if (currentIndex > 0) currentIndex - 1 else orbs.lastIndex
-        selectOrb(orbs[newIndex])
+    fun moveSection(delta: Int) {
+        _uiState.update { it.movingSection(delta) }
     }
 
-    fun moveOrbRight() {
-        val orbs = QuickMenuOrb.entries
-        val currentIndex = orbs.indexOf(_uiState.value.selectedOrb)
-        val newIndex = if (currentIndex < orbs.lastIndex) currentIndex + 1 else 0
-        selectOrb(orbs[newIndex])
-    }
-
-    fun enterContent() {
-        val isSearch = _uiState.value.selectedOrb == QuickMenuOrb.SEARCH
-        _uiState.update {
-            it.copy(
-                contentFocused = true,
-                focusedContentIndex = 0,
-                searchInputFocused = isSearch
-            )
-        }
-    }
-
-    fun exitContent() {
-        _uiState.update { it.copy(contentFocused = false, searchInputFocused = true, searchKeyboardOpen = false) }
-    }
-
-    fun isOnSearchInput(): Boolean {
-        val state = _uiState.value
-        return state.selectedOrb == QuickMenuOrb.SEARCH && state.contentFocused && state.searchInputFocused
-    }
-
-    fun openSearchKeyboard() {
-        _uiState.update { it.copy(contentFocused = true, searchInputFocused = true, searchKeyboardOpen = true) }
-    }
-
-    fun closeSearchKeyboard() {
-        _uiState.update { it.copy(searchKeyboardOpen = false) }
-    }
-
-    fun moveContentUp() {
+    /**
+     * Moves the cursor inside the selected section. False when the press goes nowhere.
+     */
+    fun step(direction: FocusStep): Boolean {
+        var moved = false
         _uiState.update { state ->
-            if (state.selectedOrb == QuickMenuOrb.SEARCH && !state.searchInputFocused && state.focusedContentIndex == 0) {
-                state.copy(searchInputFocused = true)
-            } else {
-                val newIndex = (state.focusedContentIndex - 1).coerceAtLeast(0)
-                state.copy(focusedContentIndex = newIndex)
-            }
+            val next = state.stepped(direction)
+            moved = next != null
+            next ?: state
         }
+        return moved
     }
 
-    fun moveContentDown() {
+    fun focusAt(index: Int) {
         _uiState.update { state ->
-            if (state.selectedOrb == QuickMenuOrb.SEARCH && state.searchInputFocused) {
-                val hasItems = if (state.searchQuery.length < 2) {
-                    state.recentSearches.isNotEmpty()
-                } else {
-                    state.searchResults.isNotEmpty()
-                }
-                if (hasItems) {
-                    state.copy(searchInputFocused = false, focusedContentIndex = 0)
-                } else {
-                    state
-                }
-            } else {
-                val maxIndex = getCurrentContentSize() - 1
-                val newIndex = (state.focusedContentIndex + 1).coerceAtMost(maxIndex.coerceAtLeast(0))
-                state.copy(focusedContentIndex = newIndex)
+            val orb = state.selectedOrb
+            val size = if (orb == QuickMenuOrb.SEARCH) state.search.rowCount + 1 else state.gamesOf(orb).size
+            if (index !in 0 until size) state else state.withFocusIndex(orb, index)
+        }
+    }
+
+    fun focusHeader() {
+        _uiState.update { state ->
+            if (!state.selectedOrb.hasHeaderControl) state else state.withHeaderFocus(state.selectedOrb)
+        }
+    }
+
+    fun focusRandom(stop: RandomStop) {
+        _uiState.update { state ->
+            if (!state.random.isEnabled(stop)) state else state.copy(random = state.random.focusing(stop))
+        }
+    }
+
+    fun rollAgain() {
+        if (!_uiState.value.random.isEnabled(RandomStop.ROLL)) return
+        _uiState.update { it.copy(random = it.random.focusing(RandomStop.ROLL)) }
+        roll()
+    }
+
+    fun pickRandom(index: Int) {
+        _uiState.update { it.copy(random = it.random.picking(index)) }
+    }
+
+    fun focusRandomHistory(index: Int) {
+        _uiState.update { it.copy(random = it.random.focusingHistory(index)) }
+    }
+
+    fun cycleRandomPlatform(delta: Int) {
+        applyPool { it.cyclingPlatform(delta) }
+    }
+
+    fun selectRandomPlatform(index: Int) {
+        applyPool { it.withPlatformIndex(index) }
+    }
+
+    fun setRandomInstalledOnly(on: Boolean): Boolean {
+        if (_uiState.value.random.installedOnly == on) return false
+        applyPool { it.withInstalledOnly(on) }
+        return true
+    }
+
+    fun toggleRandomInstalledOnly() {
+        applyPool { it.withInstalledOnly(!it.installedOnly) }
+    }
+
+    private fun applyPool(transform: (RandomState) -> RandomState) {
+        _uiState.update { it.copy(random = transform(it.random).copy(isPoolEmpty = false)) }
+        if (!_uiState.value.random.pickFitsPool) roll()
+    }
+
+    private fun roll() {
+        rollJob?.cancel()
+        rollJob = viewModelScope.launch {
+            val random = _uiState.value.random
+            val game = loader.roll(random.filters, excludeGameId = random.current?.id)
+            _uiState.update { state ->
+                if (state.random.filters != random.filters) state else state.copy(random = state.random.withRoll(game))
             }
         }
     }
 
-    fun getSelectedGameId(): Long? {
-        val state = _uiState.value
-        if (!state.contentFocused) return null
+    fun cycleMostPlayedRange(delta: Int) {
+        val ranges = MostPlayedRange.entries
+        selectMostPlayedRange(ranges[(_uiState.value.mostPlayed.range.ordinal + delta).mod(ranges.size)])
+    }
 
-        return when (state.selectedOrb) {
-            QuickMenuOrb.SEARCH -> {
-                if (state.searchQuery.length < 2) null
-                else state.searchResults.getOrNull(state.focusedContentIndex)?.id
-            }
-            QuickMenuOrb.RANDOM -> state.randomGame?.id
-            QuickMenuOrb.MOST_PLAYED -> state.mostPlayedGames.getOrNull(state.focusedContentIndex)?.id
-            QuickMenuOrb.TOP_UNPLAYED -> state.topUnplayedGames.getOrNull(state.focusedContentIndex)?.id
-            QuickMenuOrb.RECENT -> state.recentGames.getOrNull(state.focusedContentIndex)?.id
-            QuickMenuOrb.FAVORITES -> state.favoriteGames.getOrNull(state.focusedContentIndex)?.id
+    fun selectMostPlayedRange(range: MostPlayedRange) {
+        if (_uiState.value.mostPlayed.range == range) return
+        _uiState.update { it.copy(mostPlayed = it.mostPlayed.copy(range = range)) }
+        viewModelScope.launch { loadMostPlayed(range) }
+    }
+
+    fun cycleFavoritesSort(delta: Int) {
+        _uiState.update { state ->
+            state.replacingSection(QuickMenuOrb.FAVORITES) { it.copy(favorites = it.favorites.cyclingSort(delta)) }
         }
     }
 
-    fun isOnRecentSearches(): Boolean {
-        val state = _uiState.value
-        return state.selectedOrb == QuickMenuOrb.SEARCH &&
-            state.contentFocused &&
-            !state.searchInputFocused &&
-            state.searchQuery.length < 2 &&
-            state.recentSearches.isNotEmpty()
-    }
-
-    fun selectRecentSearch(index: Int) {
-        val state = _uiState.value
-        val query = state.recentSearches.getOrNull(index) ?: return
-        selectRecentSearch(query)
-    }
-
-    fun selectRecentSearch(query: String) {
-        _uiState.update { it.copy(searchQuery = query, focusedContentIndex = 0) }
-        performSearch(query)
-    }
-
-    fun saveSearchQuery() {
-        val query = _uiState.value.searchQuery
-        if (query.length >= 2) {
-            viewModelScope.launch {
-                preferencesRepository.addLibraryRecentSearch(query)
-                loadRecentSearches()
-            }
+    fun selectFavoritesSort(sort: FavoritesSort) {
+        _uiState.update { state ->
+            state.replacingSection(QuickMenuOrb.FAVORITES) { it.copy(favorites = it.favorites.sortedBy(sort)) }
         }
     }
 
-    fun updateSearchQuery(query: String) {
-        _uiState.update { it.copy(searchQuery = query) }
-        performSearch(query)
+    fun openPicker(picker: QuickMenuPicker) {
+        _uiState.update { it.copy(picker = picker) }
     }
 
-    fun rerollRandom() {
-        randomJob?.cancel()
-        randomJob = viewModelScope.launch {
-            loadRandomGame(excludeId = _uiState.value.randomGame?.id)
-        }
+    fun closePicker() {
+        _uiState.update { it.copy(picker = null) }
     }
 
-    fun toggleRandomFavorite() {
-        val gameId = _uiState.value.randomGame?.id ?: return
+    fun toggleNotInterested(gameId: Long) {
+        _uiState.update { it.copy(topNew = it.topNew.togglingDismissal(gameId)) }
+    }
+
+    /**
+     * Toggles [gameId]'s favorite flag. In Favorites the tile stays in place and is marked removed,
+     * so a second toggle restores it.
+     */
+    fun toggleFavorite(gameId: Long) {
         viewModelScope.launch {
             val isFavorite = gameActions.toggleFavorite(gameId) ?: return@launch
-            _uiState.update { state ->
-                val card = state.randomGame
-                if (card != null && card.id == gameId) state.copy(randomGame = card.copy(isFavorite = isFavorite)) else state
-            }
-            loadFavorites()
+            _uiState.update { it.applyingFavorite(gameId, isFavorite) }
         }
     }
 
-    private fun getCurrentContentSize(): Int {
-        val state = _uiState.value
-        return when (state.selectedOrb) {
-            QuickMenuOrb.SEARCH -> {
-                if (state.searchQuery.length < 2) state.recentSearches.size
-                else state.searchResults.size
-            }
-            QuickMenuOrb.RANDOM -> if (state.randomGame != null) 1 else 0
-            QuickMenuOrb.MOST_PLAYED -> state.mostPlayedGames.size
-            QuickMenuOrb.TOP_UNPLAYED -> state.topUnplayedGames.size
-            QuickMenuOrb.RECENT -> state.recentGames.size
-            QuickMenuOrb.FAVORITES -> state.favoriteGames.size
+    fun openActions(game: QuickMenuGameUi) {
+        _uiState.update { state ->
+            state.copy(actionsMenu = GameActionsMenuState(game, state.selectedOrb, gameActionsFor(state.selectedOrb)))
         }
     }
 
-    private fun loadAllData() {
-        viewModelScope.launch {
-            _uiState.update { it.copy(isLoading = true) }
+    fun moveActionsFocus(delta: Int) {
+        _uiState.update { state ->
+            val menu = state.actionsMenu ?: return@update state
+            state.copy(actionsMenu = menu.copy(focusIndex = (menu.focusIndex + delta).mod(menu.actions.size)))
+        }
+    }
 
-            launch { loadMostPlayed() }
-            launch { loadTopUnplayed() }
+    fun closeActions() {
+        _uiState.update { it.copy(actionsMenu = null) }
+    }
+
+    private fun QuickMenuUiState.applyingFavorite(gameId: Long, isFavorite: Boolean): QuickMenuUiState {
+        val flip: (QuickMenuGameUi) -> QuickMenuGameUi = { if (it.id == gameId) it.copy(isFavorite = isFavorite) else it }
+        return copy(
+            random = random.replacingGame(gameId, flip),
+            mostPlayed = mostPlayed.copy(rows = mostPlayed.rows.map { it.copy(game = flip(it.game)) }),
+            topNew = topNew.copy(tiles = topNew.tiles.map { it.copy(game = flip(it.game)) }),
+            recent = recent.copy(rows = recent.rows.map { it.copy(game = flip(it.game)) }),
+            favorites = favorites.markingFavorite(gameId, isFavorite).copy(games = favorites.games.map(flip)),
+            search = search.copy(recentlyAdded = search.recentlyAdded.map(flip)),
+            actionsMenu = actionsMenu?.let { menu -> menu.copy(game = flip(menu.game)) }
+        )
+    }
+
+    private fun loadAll(firstOpen: Boolean) {
+        loadJob?.cancel()
+        loadJob = viewModelScope.launch {
+            launch {
+                val density = loader.gridDensity()
+                _uiState.update { it.copy(gridDensity = density) }
+            }
             launch { loadRecent() }
+            launch { loadMostPlayed(_uiState.value.mostPlayed.range) }
+            launch { loadTopNew() }
             launch { loadFavorites() }
-            randomJob?.cancel()
-            randomJob = launch { loadRandomGame(excludeId = null) }
-            launch { loadRecentSearches() }
-
-            _uiState.update { it.copy(isLoading = false) }
+            launch { loadSearchTab() }
+            launch { loadRandom(firstOpen) }
         }
-    }
-
-    private suspend fun loadRecentSearches() {
-        val prefs = preferencesRepository.preferences.first()
-        _uiState.update { it.copy(recentSearches = prefs.libraryRecentSearches) }
-    }
-
-    private suspend fun loadMostPlayed() {
-        val games = gameRepository.getPlayedGames().take(LIST_LIMIT)
-        val rows = games.map { it.toGameRowUi(MetadataType.PLAY_TIME) { formatPlayTime(context, it.playTimeMinutes) } }
-        _uiState.update { it.copy(mostPlayedGames = rows) }
-    }
-
-    private suspend fun loadTopUnplayed() {
-        val games = getTopUnplayedUseCase(LIST_LIMIT).first()
-        val rows = games.map { it.toGameRowUi(MetadataType.RATING) { formatRating(it.rating) } }
-        _uiState.update { it.copy(topUnplayedGames = rows) }
     }
 
     private suspend fun loadRecent() {
-        val games = gameRepository.getRecentlyPlayed(LIST_LIMIT)
-        val rows = games.map { it.toGameRowUi(MetadataType.RELATIVE_TIME) { formatRelativeTime(context, it.lastPlayed) } }
-        _uiState.update { it.copy(recentGames = rows) }
+        val rows = loader.recent()
+        _uiState.update { state ->
+            state.replacingSection(QuickMenuOrb.RECENT) { it.copy(recent = RecentState(rows = rows, isLoaded = true)) }
+        }
+    }
+
+    private suspend fun loadMostPlayed(range: MostPlayedRange) {
+        val rows = loader.mostPlayed(range)
+        _uiState.update { state ->
+            if (state.mostPlayed.range != range) return@update state
+            state.replacingSection(QuickMenuOrb.MOST_PLAYED) {
+                it.copy(mostPlayed = MostPlayedState(range = range, rows = rows, isLoaded = true))
+            }
+        }
+    }
+
+    private suspend fun loadTopNew() {
+        val tiles = loader.topNew()
+        _uiState.update { state ->
+            state.replacingSection(QuickMenuOrb.TOP_UNPLAYED) { it.copy(topNew = TopNewState(tiles = tiles, isLoaded = true)) }
+        }
     }
 
     private suspend fun loadFavorites() {
-        val games = gameRepository.getFavorites().take(LIST_LIMIT)
-        val rows = games.map { it.toGameRowUi(MetadataType.NONE) { "" } }
-        _uiState.update { it.copy(favoriteGames = rows) }
-    }
-
-    private suspend fun loadRandomGame(excludeId: Long?) {
-        val first = gameRepository.getRandomGame()
-        val game = if (excludeId != null && first?.id == excludeId) {
-            gameRepository.getRandomGame() ?: first
-        } else {
-            first
-        }
-        val card = game?.toGameCardUi()
-        _uiState.update { it.copy(randomGame = card, isRandomResolved = true) }
-    }
-
-    private fun performSearch(query: String) {
-        searchJob?.cancel()
-
-        if (query.length < 2) {
-            _uiState.update { it.copy(searchResults = emptyList()) }
-            return
-        }
-
-        searchJob = viewModelScope.launch {
-            delay(300)
-            val candidates = searchCandidates ?: gameRepository.getSearchCandidates().also {
-                searchCandidates = it
+        val sort = _uiState.value.favorites.sort
+        val games = loader.favorites(sort)
+        _uiState.update { state ->
+            state.replacingSection(QuickMenuOrb.FAVORITES) {
+                it.copy(favorites = FavoritesState(games = sortFavorites(games, it.favorites.sort), sort = it.favorites.sort, isLoaded = true))
             }
-            val matched = FuzzySearch.search(query, candidates, limit = 10)
-            if (matched.isEmpty()) {
-                _uiState.update { it.copy(searchResults = emptyList(), focusedContentIndex = 0) }
-                return@launch
-            }
-            val matchedIds = matched.map { it.id }
-            val games = gameRepository.getByIds(matchedIds)
-            val gamesById = games.associateBy { it.id }
-            val orderedGames = matchedIds.mapNotNull { gamesById[it] }
-            val rows = orderedGames.map { it.toGameRowUi(MetadataType.RATING) { formatRating(it.rating) } }
-            _uiState.update { it.copy(searchResults = rows, focusedContentIndex = 0) }
         }
     }
 
-    fun invalidateSearchCache() {
-        searchCandidates = null
+    private suspend fun loadSearchTab() {
+        val search = loader.searchTab()
+        _uiState.update { state ->
+            val index = state.focusIndexOf(QuickMenuOrb.SEARCH).coerceIn(SEARCH_FIELD_INDEX, search.rowCount)
+            state.copy(search = search).withFocusIndex(QuickMenuOrb.SEARCH, index)
+        }
     }
 
-    private suspend fun GameEntity.toGameRowUi(
-        metadataType: MetadataType,
-        metadataProvider: () -> String
-    ): GameRowUi {
-        val platformName = getPlatformName(platformId)
-        return GameRowUi(
-            id = id,
-            title = title,
-            platformName = platformName,
-            coverPath = gameRepository.getArt(id).coverPath,
-            metadata = metadataProvider(),
-            metadataType = metadataType,
-            isDownloaded = localPath != null,
-            titleId = displayTitleId
-        )
-    }
-
-    private suspend fun GameEntity.toGameCardUi(): GameCardUi {
-        val platformName = getPlatformName(platformId)
-        val firstScreenshot = gameRepository.getScreenshots(id).firstOrNull()?.sourceUrl
-        val art = gameRepository.getArt(id)
-        return GameCardUi(
-            id = id,
-            title = title,
-            platformName = platformName,
-            coverPath = art.coverPath,
-            backdropPath = art.backgroundPath ?: firstScreenshot ?: art.coverPath,
-            backdropIsScreenshotOrArt = art.backgroundPath != null || firstScreenshot != null,
-            year = releaseYear,
-            developer = developer,
-            rating = rating,
-            genre = genre,
-            description = description?.trim()?.takeIf { it.isNotEmpty() },
-            isDownloaded = resolveDownloaded(downloadStatus),
-            needsInstall = needsAndroidInstall,
-            isFavorite = isFavorite
-        )
-    }
-
-    private suspend fun getPlatformName(platformId: Long): String? {
-        platformCache[platformId]?.let { return it }
-        val name = platformRepository.getById(platformId)?.name ?: return null
-        platformCache[platformId] = name
-        return name
-    }
-
-    private fun formatRating(rating: Float?): String {
-        return rating?.let { "${it.toInt()}%" } ?: ""
+    private suspend fun loadRandom(firstOpen: Boolean) {
+        val platforms = loader.randomPlatforms()
+        val installedOnly = if (firstOpen) loader.startsInstalledOnly() else null
+        _uiState.update { state ->
+            val withPlatforms = state.random.withPlatforms(platforms)
+            state.copy(random = installedOnly?.let { withPlatforms.withInstalledOnly(it) } ?: withPlatforms)
+        }
+        if (_uiState.value.random.current != null) return
+        val filters = _uiState.value.random.filters
+        val game = loader.roll(filters, excludeGameId = null)
+        _uiState.update { state ->
+            if (state.random.filters != filters) return@update state
+            val rolled = state.random.withRoll(game)
+            val landed = if (state.random.focus == RandomStop.PLATFORM && !state.random.isEnabled(RandomStop.PLAY)) rolled.entered() else rolled
+            state.copy(random = landed)
+        }
     }
 }

@@ -26,7 +26,8 @@ internal fun CollectionNameDialog(
     initialName: String,
     gamepadInput: Boolean,
     onDismiss: () -> Unit,
-    onSubmit: (String) -> Unit
+    onSubmit: (String) -> Unit,
+    cancelLabel: String = stringResource(R.string.collections_namedialog_cancel)
 ) {
     var name by remember { mutableStateOf(initialName) }
     var focus by remember { mutableStateOf(TextEntryFocus()) }
@@ -93,7 +94,7 @@ internal fun CollectionNameDialog(
         title = title,
         label = label,
         confirmLabel = confirmLabel,
-        cancelLabel = stringResource(R.string.collections_namedialog_cancel),
+        cancelLabel = cancelLabel,
         text = name,
         onTextChange = { name = it },
         onDismiss = onDismiss,

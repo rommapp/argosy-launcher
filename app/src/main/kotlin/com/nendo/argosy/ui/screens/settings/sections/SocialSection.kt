@@ -1,6 +1,7 @@
 package com.nendo.argosy.ui.screens.settings.sections
 
 import android.graphics.Bitmap
+import androidx.annotation.StringRes
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -55,6 +56,7 @@ import com.nendo.argosy.ui.screens.settings.SettingsViewModel
 import com.nendo.argosy.ui.screens.settings.SocialAuthStatus
 import com.nendo.argosy.ui.screens.settings.SocialState
 import com.nendo.argosy.ui.screens.settings.menu.SettingsLayout
+import com.nendo.argosy.ui.screens.settings.search.SearchableSetting
 import com.nendo.argosy.ui.theme.Dimens
 import com.nendo.argosy.ui.theme.LocalArgosyTheme
 
@@ -63,17 +65,21 @@ private const val SOCIAL_LINK_HOST = "argosy.dev"
 internal data class SocialLayoutState(
     val isConnected: Boolean,
     val hasAvatarDoodle: Boolean = false
-)
+) {
+    companion object {
+        fun from(state: SettingsUiState) = SocialLayoutState(
+            isConnected = state.social.authStatus == SocialAuthStatus.CONNECTED,
+            hasAvatarDoodle = state.social.avatarDoodle != null
+        )
+    }
+}
 
 internal sealed class SocialItem(
     val key: String,
     val section: String,
     val visibleWhen: (SocialLayoutState) -> Boolean = { it.isConnected }
 ) {
-    val isFocusable: Boolean get() = when (this) {
-        is Header, is SectionSpacer -> false
-        else -> true
-    }
+    val isFocusable: Boolean get() = this is SearchableSetting
 
     class Header(key: String, section: String, val titleRes: Int, visibleWhen: (SocialLayoutState) -> Boolean = { it.isConnected })
         : SocialItem(key, section, visibleWhen)
@@ -81,19 +87,28 @@ internal sealed class SocialItem(
     class SectionSpacer(key: String, section: String, visibleWhen: (SocialLayoutState) -> Boolean = { it.isConnected })
         : SocialItem(key, section, visibleWhen)
 
-    data object AccountInfo : SocialItem("accountInfo", "account")
-    data object EditAvatar : SocialItem("editAvatar", "account")
-    data object UseDoodleAvatar : SocialItem(
-        "useDoodleAvatar", "account",
+    sealed class Row(
+        key: String,
+        section: String,
+        @StringRes override val labelRes: Int,
+        visibleWhen: (SocialLayoutState) -> Boolean = { it.isConnected }
+    ) : SocialItem(key, section, visibleWhen), SearchableSetting
+
+    data object AccountInfo : Row("accountInfo", "account", R.string.settings_search_label_social_account)
+    data object EditAvatar : Row("editAvatar", "account", R.string.settings_social_edit_avatar_title)
+    data object UseDoodleAvatar : Row(
+        "useDoodleAvatar", "account", R.string.settings_social_use_doodle_title,
         visibleWhen = { it.isConnected && it.hasAvatarDoodle }
     )
-    data object OnlineStatus : SocialItem("onlineStatus", "privacy")
-    data object ShowNowPlaying : SocialItem("showNowPlaying", "privacy")
-    data object NotifyFriendOnline : SocialItem("notifyFriendOnline", "notifications")
-    data object NotifyFriendPlaying : SocialItem("notifyFriendPlaying", "notifications")
-    data object SuppressInGame : SocialItem("suppressInGame", "notifications")
-    data object QuayPassEnabled : SocialItem("quayPassEnabled", "quaypass")
-    data object Unlink : SocialItem("unlink", "unlink")
+    data object OnlineStatus : Row("onlineStatus", "privacy", R.string.settings_social_online_status_title)
+    data object ShowNowPlaying : Row("showNowPlaying", "privacy", R.string.settings_social_now_playing_title)
+    data object NotifyFriendOnline :
+        Row("notifyFriendOnline", "notifications", R.string.settings_social_notify_online_title)
+    data object NotifyFriendPlaying :
+        Row("notifyFriendPlaying", "notifications", R.string.settings_social_notify_playing_title)
+    data object SuppressInGame : Row("suppressInGame", "notifications", R.string.settings_social_suppress_title)
+    data object QuayPassEnabled : Row("quayPassEnabled", "quaypass", R.string.settings_social_quaypass_title)
+    data object Unlink : Row("unlink", "unlink", R.string.settings_social_unlink_title)
 
     companion object {
         private val AccountHeader = Header("accountHeader", "account", R.string.settings_social_section_account)
@@ -116,7 +131,7 @@ internal sealed class SocialItem(
     }
 }
 
-private val socialLayout = SettingsLayout<SocialItem, SocialLayoutState>(
+internal val socialLayout = SettingsLayout<SocialItem, SocialLayoutState>(
     allItems = SocialItem.ALL,
     isFocusable = { it.isFocusable },
     visibleWhen = { item, state -> item.visibleWhen(state) },
@@ -154,12 +169,7 @@ fun SocialSection(
 ) {
     val social = uiState.social
 
-    val layoutState = remember(social.authStatus, social.avatarDoodle) {
-        SocialLayoutState(
-            isConnected = social.authStatus == SocialAuthStatus.CONNECTED,
-            hasAvatarDoodle = social.avatarDoodle != null
-        )
-    }
+    val layoutState = remember(social.authStatus, social.avatarDoodle) { SocialLayoutState.from(uiState) }
 
     fun isFocused(item: SocialItem): Boolean =
         uiState.focusedIndex == socialLayout.focusIndexOf(item, layoutState)
@@ -186,7 +196,7 @@ fun SocialSection(
 
                         is SocialItem.SectionSpacer -> Spacer(modifier = Modifier.height(Dimens.spacingLg))
 
-                        SocialItem.AccountInfo -> AccountInfoCard(
+                        is SocialItem.AccountInfo -> AccountInfoCard(
                             username = social.username ?: "",
                             displayName = social.displayName,
                             avatarColor = social.avatarColor,
@@ -194,15 +204,15 @@ fun SocialSection(
                             isFocused = isFocused(item)
                         )
 
-                        SocialItem.EditAvatar -> ActionPreference(
-                            title = stringResource(R.string.settings_social_edit_avatar_title),
+                        is SocialItem.EditAvatar -> ActionPreference(
+                            title = stringResource(item.labelRes),
                             subtitle = stringResource(R.string.settings_social_edit_avatar_subtitle),
                             isFocused = isFocused(item),
                             onClick = { viewModel.openAvatarEditor() }
                         )
 
-                        SocialItem.UseDoodleAvatar -> SwitchPreference(
-                            title = stringResource(R.string.settings_social_use_doodle_title),
+                        is SocialItem.UseDoodleAvatar -> SwitchPreference(
+                            title = stringResource(item.labelRes),
                             subtitle = if (social.avatarUseDoodle) {
                                 stringResource(R.string.settings_social_use_doodle_subtitle_on)
                             } else {
@@ -213,8 +223,8 @@ fun SocialSection(
                             onToggle = { viewModel.setSocialAvatarUseDoodle(it) }
                         )
 
-                        SocialItem.OnlineStatus -> SwitchPreference(
-                            title = stringResource(R.string.settings_social_online_status_title),
+                        is SocialItem.OnlineStatus -> SwitchPreference(
+                            title = stringResource(item.labelRes),
                             subtitle = if (social.onlineStatusEnabled) {
                                 stringResource(R.string.settings_social_online_status_subtitle_on)
                             } else {
@@ -225,8 +235,8 @@ fun SocialSection(
                             onToggle = { viewModel.setSocialOnlineStatus(it) }
                         )
 
-                        SocialItem.ShowNowPlaying -> SwitchPreference(
-                            title = stringResource(R.string.settings_social_now_playing_title),
+                        is SocialItem.ShowNowPlaying -> SwitchPreference(
+                            title = stringResource(item.labelRes),
                             subtitle = if (!social.onlineStatusEnabled) {
                                 stringResource(R.string.settings_social_now_playing_subtitle_locked)
                             } else if (social.showNowPlaying) {
@@ -239,8 +249,8 @@ fun SocialSection(
                             onToggle = { if (social.onlineStatusEnabled) viewModel.setSocialShowNowPlaying(it) }
                         )
 
-                        SocialItem.NotifyFriendOnline -> SwitchPreference(
-                            title = stringResource(R.string.settings_social_notify_online_title),
+                        is SocialItem.NotifyFriendOnline -> SwitchPreference(
+                            title = stringResource(item.labelRes),
                             subtitle = if (!social.onlineStatusEnabled) {
                                 stringResource(R.string.settings_social_notify_online_subtitle_locked)
                             } else if (social.notifyFriendOnline) {
@@ -253,8 +263,8 @@ fun SocialSection(
                             onToggle = { if (social.onlineStatusEnabled) viewModel.setSocialNotifyFriendOnline(it) }
                         )
 
-                        SocialItem.NotifyFriendPlaying -> SwitchPreference(
-                            title = stringResource(R.string.settings_social_notify_playing_title),
+                        is SocialItem.NotifyFriendPlaying -> SwitchPreference(
+                            title = stringResource(item.labelRes),
                             subtitle = if (!social.onlineStatusEnabled) {
                                 stringResource(R.string.settings_social_notify_playing_subtitle_locked)
                             } else if (social.notifyFriendPlaying) {
@@ -267,8 +277,8 @@ fun SocialSection(
                             onToggle = { if (social.onlineStatusEnabled) viewModel.setSocialNotifyFriendPlaying(it) }
                         )
 
-                        SocialItem.SuppressInGame -> SwitchPreference(
-                            title = stringResource(R.string.settings_social_suppress_title),
+                        is SocialItem.SuppressInGame -> SwitchPreference(
+                            title = stringResource(item.labelRes),
                             subtitle = if (!social.onlineStatusEnabled) {
                                 stringResource(R.string.settings_social_suppress_subtitle_locked)
                             } else if (social.suppressNotificationsInGame) {
@@ -281,8 +291,8 @@ fun SocialSection(
                             onToggle = { if (social.onlineStatusEnabled) viewModel.setSocialSuppressNotificationsInGame(it) }
                         )
 
-                        SocialItem.QuayPassEnabled -> SwitchPreference(
-                            title = stringResource(R.string.settings_social_quaypass_title),
+                        is SocialItem.QuayPassEnabled -> SwitchPreference(
+                            title = stringResource(item.labelRes),
                             subtitle = if (social.quayPassEnabled) {
                                 stringResource(R.string.settings_social_quaypass_subtitle_on)
                             } else {
@@ -299,8 +309,8 @@ fun SocialSection(
                             }
                         )
 
-                        SocialItem.Unlink -> ActionPreference(
-                            title = stringResource(R.string.settings_social_unlink_title),
+                        is SocialItem.Unlink -> ActionPreference(
+                            title = stringResource(item.labelRes),
                             subtitle = stringResource(R.string.settings_social_unlink_subtitle),
                             isFocused = isFocused(item),
                             isDangerous = true,

@@ -162,7 +162,8 @@ fun CustomGridScrollCanvas(
                     playbackPositions = state.playbackPositions,
                     onPlaybackPosition = onPlaybackPosition,
                     onTakeAudio = onTakeAudio,
-                    onReleaseAudio = onReleaseAudio
+                    onReleaseAudio = onReleaseAudio,
+                    decorInteractive = state.decorFocusable
                 )
             }
         }

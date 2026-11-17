@@ -1,5 +1,6 @@
 package com.nendo.argosy.ui.screens.settings.sections
 
+import androidx.annotation.StringRes
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
@@ -28,6 +29,7 @@ import com.nendo.argosy.ui.screens.settings.SettingsViewModel
 import com.nendo.argosy.ui.screens.settings.components.LocalSettingsTouchFocus
 import com.nendo.argosy.ui.screens.settings.components.settingsRowItems
 import com.nendo.argosy.ui.screens.settings.menu.SettingsLayout
+import com.nendo.argosy.ui.screens.settings.search.SearchableSetting
 import com.nendo.argosy.ui.theme.Dimens
 import com.nendo.argosy.ui.theme.LocalArgosyTheme
 
@@ -35,7 +37,15 @@ internal sealed class PermissionsItem(val key: String, val section: String? = nu
     data object Intro : PermissionsItem("intro")
     data class Header(val tier: PermissionTier) : PermissionsItem("header_${tier.name}", tier.name)
     data class Row(val permission: ArgosyPermission) :
-        PermissionsItem("row_${permission.token}", permission.tier.name)
+        PermissionsItem("row_${permission.token}", permission.tier.name), SearchableSetting {
+        @get:StringRes
+        override val labelRes: Int
+            get() = if (permission == ArgosyPermission.PRIVILEGED_ACCESS) {
+                R.string.settings_search_label_privileged_access
+            } else {
+                permission.titleRes
+            }
+    }
 }
 
 private val permissionsItems: List<PermissionsItem> =
@@ -43,9 +53,9 @@ private val permissionsItems: List<PermissionsItem> =
         listOf(PermissionsItem.Header(tier)) + ArgosyPermission.inTier(tier).map { PermissionsItem.Row(it) }
     }
 
-private val permissionsLayout = SettingsLayout<PermissionsItem, PermissionsState>(
+internal val permissionsLayout = SettingsLayout<PermissionsItem, PermissionsState>(
     allItems = permissionsItems,
-    isFocusable = { it is PermissionsItem.Row },
+    isFocusable = { it is SearchableSetting },
     visibleWhen = { item, state ->
         item !is PermissionsItem.Row || item.permission in state.snapshot.relevant
     },

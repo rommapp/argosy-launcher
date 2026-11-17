@@ -1,370 +1,238 @@
 package com.nendo.argosy.ui.quickmenu.components
 
-import androidx.compose.animation.AnimatedContent
-import androidx.compose.animation.core.tween
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.togetherWith
-import androidx.compose.foundation.background
-import androidx.compose.foundation.border
-import com.nendo.argosy.ui.util.clickableNoFocus
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.itemsIndexed
-import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.text.BasicTextField
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.History
-import androidx.compose.material.icons.filled.Search
-import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.alpha
-import androidx.compose.ui.focus.FocusRequester
-import androidx.compose.ui.focus.focusRequester
-import androidx.compose.ui.focus.onFocusChanged
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.SolidColor
-import androidx.compose.ui.graphics.compositeOver
-import androidx.compose.ui.graphics.lerp
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.style.TextOverflow
 import com.nendo.argosy.R
-import com.nendo.argosy.ui.components.animateScrollToItemCentered
-import com.nendo.argosy.ui.components.keyboard.ControllerKeyboardTapTarget
-import com.nendo.argosy.ui.quickmenu.GameRowUi
+import com.nendo.argosy.ui.quickmenu.FavoritesSort
+import com.nendo.argosy.ui.quickmenu.MostPlayedRange
+import com.nendo.argosy.ui.quickmenu.QuickMenuFormFactor
 import com.nendo.argosy.ui.quickmenu.QuickMenuOrb
 import com.nendo.argosy.ui.quickmenu.QuickMenuUiState
+import com.nendo.argosy.ui.quickmenu.RandomStop
+import com.nendo.argosy.ui.quickmenu.SaveSyncState
+import com.nendo.argosy.ui.screens.home.GameDownloadIndicator
 import com.nendo.argosy.ui.theme.Dimens
 import com.nendo.argosy.ui.theme.LocalArgosyTheme
+import com.nendo.argosy.ui.theme.generated.ComponentDefaults
 
+private val QuickMenuTokens = ComponentDefaults.QuickMenu
+
+/**
+ * What the content of the quick menu reports back. Every tap acts at once.
+ */
+data class QuickMenuContentActions(
+    val onItemTap: (Int) -> Unit,
+    val onItemLongPress: (Int) -> Unit,
+    val onHeaderCycle: (Int) -> Unit,
+    val onHeaderOpen: () -> Unit,
+    val onPrimary: () -> Unit,
+    val onRandomStop: (RandomStop) -> Unit,
+    val onRandomHistoryTap: (Int) -> Unit,
+    val onRandomCyclePlatform: (Int) -> Unit,
+    val onRandomCoverTap: () -> Unit,
+    val onSearchResultTap: (Long) -> Unit
+)
+
+/**
+ * The selected section's content. On [QuickMenuFormFactor.LANDSCAPE] list sections split into a
+ * list and a preview pane; the other form factors give the list the full width.
+ */
 @Composable
 fun QuickMenuContent(
     uiState: QuickMenuUiState,
-    isFocused: Boolean,
-    onSearchQueryChange: (String) -> Unit,
-    searchFieldFocus: FocusRequester,
-    onSearchFieldFocused: () -> Unit,
-    onSearchFieldTap: () -> Unit,
-    onGameSelect: (Long) -> Unit,
-    onRecentSearchSelect: (String) -> Unit,
-    onRandomPlay: (Long) -> Unit,
-    onRandomFavorite: () -> Unit,
-    onRandomReroll: () -> Unit,
-    modifier: Modifier = Modifier,
+    downloadIndicators: Map<Long, GameDownloadIndicator>,
+    actions: QuickMenuContentActions,
+    modifier: Modifier = Modifier
 ) {
-    val contentAlpha = if (isFocused) 1f else 0.7f
-
-    AnimatedContent(
-        targetState = uiState.selectedOrb,
-        transitionSpec = {
-            fadeIn(animationSpec = tween(150)) togetherWith fadeOut(animationSpec = tween(100))
-        },
-        modifier = modifier.alpha(contentAlpha),
-        label = "quickMenuContent"
-    ) { orb ->
-        when (orb) {
-            QuickMenuOrb.SEARCH -> SearchContent(
-                query = uiState.searchQuery,
+    val showCursor = uiState.showsCursor
+    val listFocused = showCursor && !uiState.isHeaderFocused
+    val focusIndex = uiState.focusIndex
+    val formFactor = uiState.formFactor
+    Box(modifier = modifier) {
+        when (uiState.selectedOrb) {
+            QuickMenuOrb.SEARCH -> QuickMenuSearchContent(
+                search = uiState.search,
                 results = uiState.searchResults,
-                recentSearches = uiState.recentSearches,
-                focusedIndex = uiState.focusedContentIndex,
-                isInputFocused = isFocused && uiState.searchInputFocused,
-                isListFocused = isFocused && !uiState.searchInputFocused,
-                onQueryChange = onSearchQueryChange,
-                searchFieldFocus = searchFieldFocus,
-                onSearchFieldFocused = onSearchFieldFocused,
-                onSearchFieldTap = onSearchFieldTap,
-                onGameSelect = onGameSelect,
-                onRecentSearchSelect = onRecentSearchSelect
+                formFactor = formFactor,
+                focusIndex = focusIndex,
+                showCursor = showCursor,
+                gridSpacingDp = uiState.gridSpacingDp,
+                downloadIndicators = downloadIndicators,
+                onStopTap = actions.onItemTap,
+                onGameLongPress = actions.onItemLongPress,
+                onResultTap = actions.onSearchResultTap
             )
             QuickMenuOrb.RANDOM -> QuickMenuRandomContent(
-                game = uiState.randomGame,
-                isResolved = uiState.isRandomResolved,
-                isFocused = isFocused,
-                onPlay = onRandomPlay,
-                onDetails = onGameSelect,
-                onFavorite = onRandomFavorite,
-                onReroll = onRandomReroll
+                random = uiState.random,
+                formFactor = formFactor,
+                showCursor = showCursor,
+                showGlyphs = showCursor,
+                onStop = actions.onRandomStop,
+                onHistoryTap = actions.onRandomHistoryTap,
+                onCyclePlatform = actions.onRandomCyclePlatform,
+                onCoverTap = actions.onRandomCoverTap
             )
-            QuickMenuOrb.MOST_PLAYED -> ListContent(
-                games = uiState.mostPlayedGames,
-                focusedIndex = uiState.focusedContentIndex,
-                isFocused = isFocused,
-                emptyMessage = stringResource(R.string.ui_quick_menu_empty_most_played),
-                onGameSelect = onGameSelect
-            )
-            QuickMenuOrb.TOP_UNPLAYED -> ListContent(
-                games = uiState.topUnplayedGames,
-                focusedIndex = uiState.focusedContentIndex,
-                isFocused = isFocused,
-                emptyMessage = stringResource(R.string.ui_quick_menu_empty_top_unplayed),
-                onGameSelect = onGameSelect
-            )
-            QuickMenuOrb.RECENT -> ListContent(
-                games = uiState.recentGames,
-                focusedIndex = uiState.focusedContentIndex,
-                isFocused = isFocused,
-                emptyMessage = stringResource(R.string.ui_quick_menu_empty_recent),
-                onGameSelect = onGameSelect
-            )
-            QuickMenuOrb.FAVORITES -> ListContent(
-                games = uiState.favoriteGames,
-                focusedIndex = uiState.focusedContentIndex,
-                isFocused = isFocused,
-                emptyMessage = stringResource(R.string.ui_quick_menu_empty_favorites),
-                onGameSelect = onGameSelect
-            )
-        }
-    }
-}
-
-@Composable
-private fun SearchContent(
-    query: String,
-    results: List<GameRowUi>,
-    recentSearches: List<String>,
-    focusedIndex: Int,
-    isInputFocused: Boolean,
-    isListFocused: Boolean,
-    onQueryChange: (String) -> Unit,
-    searchFieldFocus: FocusRequester,
-    onSearchFieldFocused: () -> Unit,
-    onSearchFieldTap: () -> Unit,
-    onGameSelect: (Long) -> Unit,
-    onRecentSearchSelect: (String) -> Unit,
-    modifier: Modifier = Modifier
-) {
-    val inputShape = RoundedCornerShape(Dimens.radiusLg)
-    val inputBorderModifier = if (isInputFocused) {
-        Modifier.border(Dimens.borderMedium, MaterialTheme.colorScheme.primary, inputShape)
-    } else Modifier
-
-    Column(modifier = modifier.fillMaxSize()) {
-        ControllerKeyboardTapTarget(onTap = onSearchFieldTap, modifier = Modifier.fillMaxWidth()) {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .then(inputBorderModifier)
-                    .background(
-                        if (isInputFocused) LocalArgosyTheme.current.focusAccent.copy(alpha = 0.15f)
-                            .compositeOver(MaterialTheme.colorScheme.surface)
-                        else MaterialTheme.colorScheme.surfaceVariant,
-                        inputShape
+            QuickMenuOrb.MOST_PLAYED -> SplitPane(uiState, actions.onPrimary, showPrimaryButton = false) {
+                Column(modifier = Modifier.fillMaxSize()) {
+                    val range = uiState.mostPlayed.range
+                    QuickMenuSectionHeader(
+                        label = stringResource(R.string.ui_quick_menu_most_played_header),
+                        value = stringResource(range.labelRes),
+                        isFocused = showCursor && uiState.isHeaderFocused,
+                        showGlyph = showCursor,
+                        selectedIndex = range.ordinal,
+                        optionCount = MostPlayedRange.entries.size,
+                        onPrev = { actions.onHeaderCycle(-1) },
+                        onNext = { actions.onHeaderCycle(1) },
+                        onOpen = actions.onHeaderOpen
                     )
-                    .padding(horizontal = Dimens.spacingMd, vertical = Dimens.radiusLg),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Icon(
-                    Icons.Default.Search,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.size(Dimens.iconSm + Dimens.borderMedium)
-                )
-                Spacer(modifier = Modifier.width(Dimens.radiusLg))
-
-                Box(modifier = Modifier.weight(1f)) {
-                    if (query.isEmpty()) {
-                        Text(
-                            text = stringResource(R.string.ui_quick_menu_search_placeholder),
-                            style = MaterialTheme.typography.bodyLarge,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
+                    when {
+                        !uiState.mostPlayed.isLoaded -> Unit
+                        uiState.mostPlayed.rows.isEmpty() -> SectionEmpty(
+                            stringResource(
+                                if (range == MostPlayedRange.LAST_30_DAYS) R.string.ui_quick_menu_empty_most_played_last_30
+                                else R.string.ui_quick_menu_empty_most_played
+                            )
+                        )
+                        else -> MostPlayedList(
+                            rows = uiState.mostPlayed.rows,
+                            focusedIndex = focusIndex,
+                            isFocused = listFocused,
+                            downloadIndicators = downloadIndicators,
+                            onRowTap = actions.onItemTap,
+                            onRowLongPress = actions.onItemLongPress,
+                            modifier = Modifier.fillMaxWidth().weight(1f)
                         )
                     }
-                    BasicTextField(
-                        value = query,
-                        onValueChange = onQueryChange,
-                        textStyle = TextStyle(
-                            color = MaterialTheme.colorScheme.onSurface,
-                            fontSize = MaterialTheme.typography.bodyLarge.fontSize
-                        ),
-                        cursorBrush = SolidColor(MaterialTheme.colorScheme.primary),
-                        singleLine = true,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .focusRequester(searchFieldFocus)
-                            .onFocusChanged { if (it.isFocused) onSearchFieldFocused() }
-                    )
                 }
             }
-        }
-
-        Spacer(modifier = Modifier.height(Dimens.spacingMd))
-
-        if (query.length < 2) {
-            if (recentSearches.isNotEmpty()) {
-                RecentSearchesList(
-                    searches = recentSearches,
-                    focusedIndex = focusedIndex,
-                    isFocused = isListFocused,
-                    onRecentSearchSelect = onRecentSearchSelect,
-                )
-            } else {
-                EmptyState(message = stringResource(R.string.ui_quick_menu_search_prompt))
+            QuickMenuOrb.RECENT -> SplitPane(uiState, actions.onPrimary, showPrimaryButton = true) {
+                when {
+                    !uiState.recent.isLoaded -> Unit
+                    uiState.recent.rows.isEmpty() -> SectionEmpty(stringResource(R.string.ui_quick_menu_empty_recent))
+                    else -> {
+                        val rows = uiState.recent.rows
+                        val heroExtras = uiState.extras?.takeIf { it.gameId == rows.first().game.id }
+                        RecentList(
+                            rows = rows,
+                            focusedIndex = focusIndex,
+                            isFocused = listFocused,
+                            downloadIndicators = downloadIndicators,
+                            onRowTap = actions.onItemTap,
+                            onRowLongPress = actions.onItemLongPress,
+                            showHero = formFactor == QuickMenuFormFactor.PORTRAIT,
+                            heroScreenshot = heroExtras?.screenshotPath,
+                            heroSaveLine = heroExtras?.saveStatus?.let { saveShortLine(it.state) },
+                            modifier = Modifier.fillMaxSize()
+                        )
+                    }
+                }
             }
-        } else if (results.isEmpty()) {
-            EmptyState(
-                message = stringResource(R.string.ui_quick_menu_search_no_results, query)
-            )
-        } else {
-            GameList(
-                games = results,
-                focusedIndex = focusedIndex,
-                isFocused = isListFocused,
-                onGameSelect = onGameSelect
-            )
+            QuickMenuOrb.TOP_UNPLAYED -> GridSection(
+                isLoaded = uiState.topNew.isLoaded,
+                isEmpty = uiState.topNew.tiles.isEmpty(),
+                emptyMessage = stringResource(R.string.ui_quick_menu_empty_top_unplayed),
+                header = { if (formFactor == QuickMenuFormFactor.LANDSCAPE) TopNewHeader(uiState) }
+            ) {
+                val tiles = uiState.topNew.tiles
+                QuickMenuCoverGrid(
+                    games = remember(tiles) { tiles.map { it.game } },
+                    focusedIndex = focusIndex,
+                    isFocused = listFocused,
+                    columns = uiState.gridColumns,
+                    spacingDp = uiState.gridSpacingDp,
+                    dimmedIds = uiState.topNew.dismissedIds,
+                    dimmedLabel = stringResource(R.string.ui_quick_menu_top_new_dismissed),
+                    downloadIndicators = downloadIndicators,
+                    onTileTap = actions.onItemTap,
+                    onTileLongPress = actions.onItemLongPress,
+                    modifier = Modifier.fillMaxSize(),
+                    tileCaption = if (formFactor == QuickMenuFormFactor.PORTRAIT) {
+                        { index -> tiles.getOrNull(index)?.let { TileCaption(it.game.title, topNewReasonText(it.reason)) } }
+                    } else {
+                        null
+                    }
+                )
+            }
+            QuickMenuOrb.FAVORITES -> GridSection(
+                isLoaded = uiState.favorites.isLoaded,
+                isEmpty = uiState.favorites.games.isEmpty(),
+                emptyMessage = stringResource(R.string.ui_quick_menu_empty_favorites),
+                header = header@{
+                    if (uiState.favorites.games.isEmpty()) return@header
+                    val sort = uiState.favorites.sort
+                    val count = uiState.favorites.count
+                    QuickMenuSectionHeader(
+                        label = pluralStringResource(R.plurals.ui_quick_menu_favorites_header_count, count, count),
+                        value = stringResource(sort.labelRes),
+                        isFocused = showCursor && uiState.isHeaderFocused,
+                        showGlyph = showCursor,
+                        selectedIndex = sort.ordinal,
+                        optionCount = FavoritesSort.entries.size,
+                        onPrev = { actions.onHeaderCycle(-1) },
+                        onNext = { actions.onHeaderCycle(1) },
+                        onOpen = actions.onHeaderOpen
+                    )
+                }
+            ) {
+                QuickMenuCoverGrid(
+                    games = uiState.favorites.games,
+                    focusedIndex = focusIndex,
+                    isFocused = listFocused,
+                    columns = uiState.gridColumns,
+                    spacingDp = uiState.gridSpacingDp,
+                    dimmedIds = uiState.favorites.removedIds,
+                    dimmedLabel = stringResource(R.string.ui_quick_menu_favorites_removed),
+                    downloadIndicators = downloadIndicators,
+                    onTileTap = actions.onItemTap,
+                    onTileLongPress = actions.onItemLongPress,
+                    hideFavoriteMark = true,
+                    modifier = Modifier.fillMaxSize()
+                )
+            }
         }
     }
 }
 
 @Composable
-private fun ListContent(
-    games: List<GameRowUi>,
-    focusedIndex: Int,
-    isFocused: Boolean,
-    emptyMessage: String,
-    onGameSelect: (Long) -> Unit,
-    modifier: Modifier = Modifier
-) {
-    if (games.isEmpty()) {
-        EmptyState(message = emptyMessage)
-        return
+private fun saveShortLine(state: SaveSyncState): String = stringResource(
+    when (state) {
+        SaveSyncState.SYNCED -> R.string.ui_quick_menu_recent_hero_saved_synced
+        SaveSyncState.PENDING -> R.string.ui_quick_menu_recent_hero_saved_pending
+        SaveSyncState.LOCAL_ONLY -> R.string.ui_quick_menu_recent_hero_saved_local
     }
-
-    GameList(
-        games = games,
-        focusedIndex = focusedIndex,
-        isFocused = isFocused,
-        onGameSelect = onGameSelect,
-        modifier = modifier
-    )
-}
+)
 
 @Composable
-private fun GameList(
-    games: List<GameRowUi>,
-    focusedIndex: Int,
-    isFocused: Boolean,
-    onGameSelect: (Long) -> Unit,
-    modifier: Modifier = Modifier
-) {
-    val listState = rememberLazyListState()
-
-    LaunchedEffect(focusedIndex) {
-        if (focusedIndex in games.indices) {
-            listState.animateScrollToItemCentered(focusedIndex)
-        }
-    }
-
-    LazyColumn(
-        state = listState,
-        modifier = modifier,
-        verticalArrangement = Arrangement.spacedBy(Dimens.spacingSm)
-    ) {
-        itemsIndexed(games, key = { _, game -> game.id }) { index, game ->
-            QuickMenuGameRow(
-                game = game,
-                isFocused = isFocused && index == focusedIndex,
-                onClick = { onGameSelect(game.id) }
-            )
-        }
-    }
-}
-
-@Composable
-private fun RecentSearchesList(
-    searches: List<String>,
-    focusedIndex: Int,
-    isFocused: Boolean,
-    onRecentSearchSelect: (String) -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    val listState = rememberLazyListState()
-
-    LaunchedEffect(focusedIndex) {
-        if (focusedIndex in searches.indices) {
-            listState.animateScrollToItemCentered(focusedIndex)
-        }
-    }
-
-    Column(modifier = modifier) {
+private fun TileCaption(title: String, reason: String) {
+    val theme = LocalArgosyTheme.current
+    Column {
         Text(
-            text = stringResource(R.string.ui_quick_menu_recent_searches_heading),
+            text = title,
             style = MaterialTheme.typography.labelMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.padding(bottom = Dimens.spacingSm)
-        )
-
-        LazyColumn(
-            state = listState,
-            verticalArrangement = Arrangement.spacedBy(Dimens.spacingXs)
-        ) {
-            itemsIndexed(searches, key = { index, _ -> index }) { index, query ->
-                RecentSearchRow(
-                    query = query,
-                    isFocused = isFocused && index == focusedIndex,
-                    onRecentSearchSelect = onRecentSearchSelect
-                )
-            }
-        }
-    }
-}
-
-@Composable
-private fun RecentSearchRow(
-    query: String,
-    isFocused: Boolean,
-    modifier: Modifier = Modifier,
-    onRecentSearchSelect: (String) -> Unit
-) {
-    val shape = RoundedCornerShape(Dimens.radiusMd)
-    val borderModifier = if (isFocused) {
-        Modifier.border(Dimens.borderMedium, MaterialTheme.colorScheme.primary, shape)
-    } else Modifier
-
-    Row(
-        modifier = modifier
-            .fillMaxWidth()
-            .then(borderModifier)
-            .background(
-                if (isFocused) LocalArgosyTheme.current.focusAccent.copy(alpha = 0.15f)
-                    .compositeOver(MaterialTheme.colorScheme.surface)
-                else MaterialTheme.colorScheme.surface,
-                shape
-            )
-            .padding(horizontal = Dimens.spacingMd, vertical = Dimens.spacingSm)
-            .clickableNoFocus(onClick = { onRecentSearchSelect(query) }),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(Dimens.spacingSm)
-    ) {
-        Icon(
-            Icons.Default.History,
-            contentDescription = null,
-            tint = if (isFocused) lerp(LocalArgosyTheme.current.focusAccent, Color.White, 0.45f)
-            else MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.size(Dimens.iconSm)
+            color = theme.textPrimary,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis
         )
         Text(
-            text = query,
-            style = MaterialTheme.typography.bodyMedium,
-            color = if (isFocused) lerp(LocalArgosyTheme.current.focusAccent, Color.White, 0.45f)
-            else MaterialTheme.colorScheme.onSurface,
+            text = reason,
+            style = MaterialTheme.typography.labelSmall,
+            color = theme.focusAccent,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis
         )
@@ -372,20 +240,72 @@ private fun RecentSearchRow(
 }
 
 @Composable
-private fun EmptyState(
-    message: String,
-    modifier: Modifier = Modifier
+private fun SplitPane(
+    uiState: QuickMenuUiState,
+    onPrimary: () -> Unit,
+    showPrimaryButton: Boolean,
+    list: @Composable () -> Unit
 ) {
-    Box(
-        modifier = modifier
-            .fillMaxWidth()
-            .padding(Dimens.spacingXl),
-        contentAlignment = Alignment.Center
+    if (uiState.formFactor != QuickMenuFormFactor.LANDSCAPE) {
+        Box(modifier = Modifier.fillMaxSize()) { list() }
+        return
+    }
+    Row(
+        modifier = Modifier.fillMaxSize().padding(horizontal = Dimens.spacingMd),
+        horizontalArrangement = Arrangement.spacedBy(Dimens.spacingMd)
+    ) {
+        Box(modifier = Modifier.weight(QuickMenuTokens.listPaneRatio).fillMaxHeight()) { list() }
+        Box(modifier = Modifier.weight(1f - QuickMenuTokens.listPaneRatio).fillMaxHeight()) {
+            uiState.preview?.let { preview ->
+                QuickMenuPreviewPane(
+                    preview = preview,
+                    large = false,
+                    onPrimary = onPrimary,
+                    showPrimaryButton = showPrimaryButton,
+                    modifier = Modifier.fillMaxSize()
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun GridSection(
+    isLoaded: Boolean,
+    isEmpty: Boolean,
+    emptyMessage: String,
+    header: @Composable () -> Unit,
+    grid: @Composable () -> Unit
+) {
+    if (!isLoaded) return
+    Column(modifier = Modifier.fillMaxSize()) {
+        header()
+        if (isEmpty) {
+            SectionEmpty(emptyMessage)
+            return@Column
+        }
+        Box(modifier = Modifier.weight(1f)) { grid() }
+    }
+}
+
+@Composable
+private fun TopNewHeader(uiState: QuickMenuUiState) {
+    val preview = uiState.preview ?: return
+    val theme = LocalArgosyTheme.current
+    Row(
+        modifier = Modifier.fillMaxWidth().padding(horizontal = Dimens.spacingLg),
+        horizontalArrangement = Arrangement.spacedBy(Dimens.spacingSm),
+        verticalAlignment = Alignment.CenterVertically
     ) {
         Text(
-            text = message,
-            style = MaterialTheme.typography.bodyLarge,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
+            text = preview.game.title,
+            style = MaterialTheme.typography.titleMedium,
+            color = theme.textPrimary,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+            modifier = Modifier.weight(1f, fill = false)
         )
+        QuickMenuChip(text = preview.game.platformName ?: stringResource(R.string.ui_quick_menu_row_platform_unknown))
+        QuickMenuChip(text = topNewReasonText(preview.reason), tone = ChipTone.ACCENT)
     }
 }

@@ -184,4 +184,13 @@
 
     <string name="reorder_hint_done">完成</string>
 
+    <string name="custom_tile_menu_action_move_to_folder">移到文件夹</string>
+    <string name="custom_tile_menu_action_rename_folder">重命名文件夹</string>
+    <string name="custom_tile_menu_action_folder_appearance">外观</string>
+    <string name="custom_tile_menu_action_sticker_outline_on">添加描边</string>
+    <string name="custom_tile_menu_action_sticker_outline_off">移除描边</string>
+    <string name="custom_tile_menu_action_sticker_outline_width">更改描边粗细</string>
+    <string name="custom_tile_menu_action_sticker_outline_color">更改描边颜色</string>
+    <string name="custom_tile_menu_action_edit_decor">编辑装饰</string>
+    <string name="custom_tile_menu_action_finish_decor">完成装饰编辑</string>
 </resources>

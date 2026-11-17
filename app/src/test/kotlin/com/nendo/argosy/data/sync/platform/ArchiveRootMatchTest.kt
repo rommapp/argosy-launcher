@@ -44,6 +44,7 @@ class ArchiveRootMatchTest {
             unitSaveHandler = mockk(relaxed = true),
             sigilSaveHandler = mockk(relaxed = true),
             dreamcastSaveHandler = mockk(relaxed = true),
+            emulatorSaveConfigRepository = mockk(relaxed = true),
         )
         handler = registry.getFolderHandler("ps2") as? FolderSaveHandler
             ?: error("PS2 handler not registered")

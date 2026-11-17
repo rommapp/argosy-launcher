@@ -193,4 +193,13 @@
 
     <string name="reorder_hint_done">Готово</string>
 
+    <string name="custom_tile_menu_action_move_to_folder">Переместить в папку</string>
+    <string name="custom_tile_menu_action_rename_folder">Переименовать папку</string>
+    <string name="custom_tile_menu_action_folder_appearance">Оформление</string>
+    <string name="custom_tile_menu_action_sticker_outline_on">Добавить контур</string>
+    <string name="custom_tile_menu_action_sticker_outline_off">Убрать контур</string>
+    <string name="custom_tile_menu_action_sticker_outline_width">Изменить толщину контура</string>
+    <string name="custom_tile_menu_action_sticker_outline_color">Изменить цвет контура</string>
+    <string name="custom_tile_menu_action_edit_decor">Изменить украшения</string>
+    <string name="custom_tile_menu_action_finish_decor">Закончить с украшениями</string>
 </resources>

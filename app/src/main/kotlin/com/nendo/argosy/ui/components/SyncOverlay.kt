@@ -71,6 +71,8 @@ import com.nendo.argosy.ui.components.launch.LaunchQuestionChoice
 import com.nendo.argosy.ui.primitives.ActionButton
 import com.nendo.argosy.ui.theme.Dimens
 import com.nendo.argosy.ui.theme.LocalLauncherTheme
+import com.nendo.argosy.ui.theme.Motion
+import com.nendo.argosy.ui.theme.generated.MotionTokens
 
 @Composable
 fun SyncOverlay(
@@ -96,7 +98,7 @@ fun SyncOverlay(
         initialValue = 0f,
         targetValue = -360f,
         animationSpec = infiniteRepeatable(
-            animation = tween(1000, easing = LinearEasing),
+            animation = tween(MotionTokens.Tween.spinMs, easing = LinearEasing),
             repeatMode = RepeatMode.Restart
         ),
         label = "rotation"
@@ -121,8 +123,8 @@ fun SyncOverlay(
 
     AnimatedVisibility(
         visible = isVisible,
-        enter = fadeIn(animationSpec = tween(300)),
-        exit = fadeOut(animationSpec = tween(300)),
+        enter = fadeIn(animationSpec = tween(Motion.durationOverlay)),
+        exit = fadeOut(animationSpec = tween(Motion.durationOverlay)),
         modifier = modifier
             .fillMaxSize()
             .focusProperties { canFocus = false }
@@ -196,8 +198,8 @@ private fun ActiveSyncContent(
         AnimatedContent(
             targetState = statusMessage,
             transitionSpec = {
-                slideInVertically { -it / 2 } + fadeIn(tween(200)) togetherWith
-                    slideOutVertically { it / 2 } + fadeOut(tween(150)) using
+                slideInVertically { -it / 2 } + fadeIn(tween(Motion.durationSlide)) togetherWith
+                    slideOutVertically { it / 2 } + fadeOut(tween(Motion.durationMicro)) using
                     SizeTransform(clip = true)
             },
             label = "syncStatus"

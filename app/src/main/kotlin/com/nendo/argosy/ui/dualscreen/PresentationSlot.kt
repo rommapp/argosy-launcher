@@ -64,6 +64,16 @@ sealed interface PresentationSlot {
 
     data class MediaPlayback(val itemId: String) : PresentationSlot
 
+    data class Search(
+        val owner: SlotOwner,
+        val state: com.nendo.argosy.ui.screens.search.SearchPresentationState
+    ) : PresentationSlot
+
+    data class QuickMenu(
+        val owner: SlotOwner,
+        val state: com.nendo.argosy.ui.quickmenu.QuickMenuPresentationState
+    ) : PresentationSlot
+
     data class InGame(
         val state: com.nendo.argosy.hardware.CompanionInGameState,
         val achievements: List<com.nendo.argosy.core.game.AchievementUi>
@@ -84,6 +94,8 @@ sealed interface PresentationSlot {
         val deviceSegments: List<Pair<androidx.compose.ui.graphics.Color, Long>>
     ) : PresentationSlot
 }
+
+data class PresentationTap(val owner: SlotOwner, val index: Int)
 
 data class SaveGameDevice(
     val label: String,

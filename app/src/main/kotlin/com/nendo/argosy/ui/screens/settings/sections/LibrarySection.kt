@@ -1,5 +1,6 @@
 package com.nendo.argosy.ui.screens.settings.sections
 
+import androidx.annotation.StringRes
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
@@ -25,6 +26,7 @@ import com.nendo.argosy.ui.screens.settings.SettingsUiState
 import com.nendo.argosy.ui.screens.settings.SettingsViewModel
 import com.nendo.argosy.ui.screens.settings.components.SectionPaneLayout
 import com.nendo.argosy.ui.screens.settings.menu.SettingsLayout
+import com.nendo.argosy.ui.screens.settings.search.SearchableSetting
 import com.nendo.argosy.ui.theme.Dimens
 
 internal const val LIBRARY_SOURCE_ALL = "ALL"
@@ -53,33 +55,50 @@ internal sealed class LibraryItem(
     val section: String,
     val visibleWhen: (LibraryLayoutState) -> Boolean = { true }
 ) {
-    val isFocusable: Boolean get() = this !is Header
+    val isFocusable: Boolean get() = this is SearchableSetting
 
     class Header(key: String, section: String, val titleRes: Int) : LibraryItem(key, section)
 
-    data object LayoutItem : LibraryItem("libraryLayout", "layout")
-    data object ListStyleItem : LibraryItem(
+    sealed class Row(
+        key: String,
+        section: String,
+        @StringRes override val labelRes: Int,
+        visibleWhen: (LibraryLayoutState) -> Boolean = { true }
+    ) : LibraryItem(key, section, visibleWhen), SearchableSetting
+
+    data object LayoutItem : Row("libraryLayout", "layout", R.string.settings_library_layout_title)
+    data object ListStyleItem : Row(
         key = "libraryListStyle",
         section = "layout",
+        labelRes = R.string.settings_library_list_style_title,
         visibleWhen = { it.libraryLayout == LibraryLayout.LIST }
     )
-    data object GridDensityItem : LibraryItem(
+    data object GridDensityItem : Row(
         key = "libraryGridDensity",
         section = "layout",
+        labelRes = R.string.settings_library_grid_density_title,
         visibleWhen = { it.libraryLayout == LibraryLayout.GRID }
     )
-    data object BoxArtItem : LibraryItem(
+    data object BoxArtItem : Row(
         key = "libraryBoxArt",
         section = "layout",
+        labelRes = R.string.settings_library_box_art_title,
         visibleWhen = { it.libraryLayout == LibraryLayout.GRID && it.offersBoxArt3d }
     )
-    data object DefaultSort : LibraryItem("libraryDefaultSort", "defaults")
-    data object InstalledFirst : LibraryItem("sortInstalledFirst", "defaults")
-    data object FavoritesFirst : LibraryItem("sortFavoritesFirst", "defaults")
-    data object DefaultPlatform : LibraryItem("libraryDefaultPlatform", "defaults")
-    data object DefaultSource : LibraryItem("libraryDefaultSource", "defaults")
-    data object DefaultRegion : LibraryItem("libraryDefaultRegion", "defaults")
-    data object DefaultPlayers : LibraryItem("libraryDefaultPlayers", "defaults")
+    data object DefaultSort :
+        Row("libraryDefaultSort", "defaults", R.string.settings_library_default_sort_title)
+    data object InstalledFirst :
+        Row("sortInstalledFirst", "defaults", R.string.settings_library_installed_first_title)
+    data object FavoritesFirst :
+        Row("sortFavoritesFirst", "defaults", R.string.settings_library_favorites_first_title)
+    data object DefaultPlatform :
+        Row("libraryDefaultPlatform", "defaults", R.string.settings_library_default_platform_title)
+    data object DefaultSource :
+        Row("libraryDefaultSource", "defaults", R.string.settings_library_default_source_title)
+    data object DefaultRegion :
+        Row("libraryDefaultRegion", "defaults", R.string.settings_library_default_region_title)
+    data object DefaultPlayers :
+        Row("libraryDefaultPlayers", "defaults", R.string.settings_library_default_players_title)
 
     companion object {
         val ALL: List<LibraryItem>
@@ -96,7 +115,7 @@ internal sealed class LibraryItem(
     }
 }
 
-private val libraryLayout = SettingsLayout<LibraryItem, LibraryLayoutState>(
+internal val libraryLayout = SettingsLayout<LibraryItem, LibraryLayoutState>(
     allItems = LibraryItem.ALL,
     isFocusable = { it.isFocusable },
     visibleWhen = { item, state -> item.visibleWhen(state) },
@@ -227,16 +246,16 @@ fun LibrarySection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
                     stringResource(item.titleRes)
                 )
 
-            LibraryItem.LayoutItem -> SegmentedPreference(
-                title = stringResource(R.string.settings_library_layout_title),
+            is LibraryItem.LayoutItem -> SegmentedPreference(
+                title = stringResource(item.labelRes),
                 options = LibraryLayout.entries.map { l -> stringResource(libraryLayoutLabelRes(l)) },
                 selectedIndex = LibraryLayout.entries.indexOf(display.libraryLayout),
                 isFocused = isFocused(item),
                 onSelect = { viewModel.setLibraryLayout(LibraryLayout.entries[it]) }
             )
 
-            LibraryItem.ListStyleItem -> SegmentedPreference(
-                title = stringResource(R.string.settings_library_list_style_title),
+            is LibraryItem.ListStyleItem -> SegmentedPreference(
+                title = stringResource(item.labelRes),
                 options = listOf(
                     stringResource(R.string.settings_library_list_style_compact),
                     stringResource(R.string.settings_library_list_style_relaxed)
@@ -246,16 +265,16 @@ fun LibrarySection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
                 onSelect = { viewModel.setLibraryListStyle(LibraryListStyle.entries[it]) }
             )
 
-            LibraryItem.GridDensityItem -> SegmentedPreference(
-                title = stringResource(R.string.settings_library_grid_density_title),
+            is LibraryItem.GridDensityItem -> SegmentedPreference(
+                title = stringResource(item.labelRes),
                 options = GridDensity.entries.map { d -> stringResource(gridDensityLabelRes(d)) },
                 selectedIndex = GridDensity.entries.indexOf(display.gridDensity),
                 isFocused = isFocused(item),
                 onSelect = { viewModel.setGridDensity(GridDensity.entries[it]) }
             )
 
-            LibraryItem.BoxArtItem -> SegmentedPreference(
-                title = stringResource(R.string.settings_library_box_art_title),
+            is LibraryItem.BoxArtItem -> SegmentedPreference(
+                title = stringResource(item.labelRes),
                 subtitle = stringResource(R.string.settings_library_box_art_subtitle),
                 options = listOf(
                     stringResource(R.string.settings_library_box_art_option_2d),
@@ -266,8 +285,8 @@ fun LibrarySection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
                 onSelect = { viewModel.setLibraryBoxArt3d(it == 1) }
             )
 
-            LibraryItem.DefaultSort -> CyclePreference(
-                title = stringResource(R.string.settings_library_default_sort_title),
+            is LibraryItem.DefaultSort -> CyclePreference(
+                title = stringResource(item.labelRes),
                 value = librarySortLabel(context, sortOption, sortDescending),
                 isFocused = isFocused(item),
                 onClick = { viewModel.cycleLibraryDefaultSort(1) },
@@ -277,24 +296,24 @@ fun LibrarySection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
                 pickerRequestToken = pickerToken(item)
             )
 
-            LibraryItem.InstalledFirst -> SwitchPreference(
-                title = stringResource(R.string.settings_library_installed_first_title),
+            is LibraryItem.InstalledFirst -> SwitchPreference(
+                title = stringResource(item.labelRes),
                 subtitle = stringResource(R.string.settings_library_installed_first_subtitle),
                 isEnabled = display.sortInstalledFirst,
                 isFocused = isFocused(item),
                 onToggle = { viewModel.setSortInstalledFirst(!display.sortInstalledFirst) }
             )
 
-            LibraryItem.FavoritesFirst -> SwitchPreference(
-                title = stringResource(R.string.settings_library_favorites_first_title),
+            is LibraryItem.FavoritesFirst -> SwitchPreference(
+                title = stringResource(item.labelRes),
                 subtitle = stringResource(R.string.settings_library_favorites_first_subtitle),
                 isEnabled = display.sortFavoritesFirst,
                 isFocused = isFocused(item),
                 onToggle = { viewModel.setSortFavoritesFirst(!display.sortFavoritesFirst) }
             )
 
-            LibraryItem.DefaultPlatform -> CyclePreference(
-                title = stringResource(R.string.settings_library_default_platform_title),
+            is LibraryItem.DefaultPlatform -> CyclePreference(
+                title = stringResource(item.labelRes),
                 value = platformLabels[platformIndex],
                 isFocused = isFocused(item),
                 onClick = { viewModel.cycleLibraryDefaultPlatform(1, platformTokens) },
@@ -304,16 +323,16 @@ fun LibrarySection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
                 pickerRequestToken = pickerToken(item)
             )
 
-            LibraryItem.DefaultSource -> SegmentedPreference(
-                title = stringResource(R.string.settings_library_default_source_title),
+            is LibraryItem.DefaultSource -> SegmentedPreference(
+                title = stringResource(item.labelRes),
                 options = remember(context) { librarySourceOptions(context) },
                 selectedIndex = sourceIndex,
                 isFocused = isFocused(item),
                 onSelect = { viewModel.setLibraryDefaultSource(librarySourceKeys()[it]) }
             )
 
-            LibraryItem.DefaultRegion -> MultiSelectPreference(
-                title = stringResource(R.string.settings_library_default_region_title),
+            is LibraryItem.DefaultRegion -> MultiSelectPreference(
+                title = stringResource(item.labelRes),
                 value = regionSummary(display.libraryDefaultRegions),
                 isFocused = isFocused(item),
                 options = regionOptions,
@@ -325,8 +344,8 @@ fun LibrarySection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
                 pickerRequestToken = pickerToken(item)
             )
 
-            LibraryItem.DefaultPlayers -> CyclePreference(
-                title = stringResource(R.string.settings_library_default_players_title),
+            is LibraryItem.DefaultPlayers -> CyclePreference(
+                title = stringResource(item.labelRes),
                 value = stringResource(libraryPlayersLabelRes(display.libraryDefaultPlayers)),
                 isFocused = isFocused(item),
                 onClick = { viewModel.cycleLibraryDefaultPlayers(1) },

@@ -240,6 +240,10 @@ class SaveSyncRepository @Inject constructor(
     suspend fun getSyncStatus(gameId: Long, emulatorId: String): SaveSyncEntity? =
         entityManager.getSyncStatus(gameId, emulatorId)
 
+    suspend fun getSaveRowsForGame(gameId: Long): List<SaveSyncEntity> = withContext(Dispatchers.IO) {
+        saveSyncDao.getByGame(gameId, syncPreferencesRepository.getRommUserId())
+    }
+
     suspend fun checkForAllServerUpdates(): List<SaveSyncEntity> =
         apiClient.checkForAllServerUpdates()
 

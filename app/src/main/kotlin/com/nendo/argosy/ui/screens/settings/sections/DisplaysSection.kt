@@ -1,6 +1,7 @@
 package com.nendo.argosy.ui.screens.settings.sections
 
 import android.content.Context
+import androidx.annotation.StringRes
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -34,6 +35,7 @@ import com.nendo.argosy.ui.screens.settings.SettingsViewModel
 import com.nendo.argosy.ui.screens.settings.components.SectionPaneLayout
 import com.nendo.argosy.ui.screens.settings.screenRole
 import com.nendo.argosy.ui.screens.settings.menu.SettingsLayout
+import com.nendo.argosy.ui.screens.settings.search.SearchableSetting
 import com.nendo.argosy.ui.theme.Dimens
 
 internal data class DisplaysLayoutState(
@@ -55,10 +57,7 @@ internal sealed class DisplaysItem(
     val section: String,
     val visibleWhen: (DisplaysLayoutState) -> Boolean = { true }
 ) {
-    val isFocusable: Boolean get() = when (this) {
-        is Header, is SectionSpacer -> false
-        else -> true
-    }
+    val isFocusable: Boolean get() = this is SearchableSetting
 
     class Header(
         key: String,
@@ -70,50 +69,67 @@ internal sealed class DisplaysItem(
     class SectionSpacer(key: String, section: String, visibleWhen: (DisplaysLayoutState) -> Boolean = { true })
         : DisplaysItem(key, section, visibleWhen)
 
-    data object ScreenDimmer : DisplaysItem("screenDimmer", "screenSafety")
-    data object DimAfter : DisplaysItem("dimAfter", "screenSafety")
-    data object DimLevel : DisplaysItem("dimLevel", "screenSafety")
-    data object LidSleep : DisplaysItem(
+    sealed class Row(
+        key: String,
+        section: String,
+        @StringRes override val labelRes: Int,
+        visibleWhen: (DisplaysLayoutState) -> Boolean = { true }
+    ) : DisplaysItem(key, section, visibleWhen), SearchableSetting
+
+    data object ScreenDimmer :
+        Row("screenDimmer", "screenSafety", R.string.settings_displays_screen_dimmer_title)
+    data object DimAfter : Row("dimAfter", "screenSafety", R.string.settings_displays_dim_after_title)
+    data object DimLevel : Row("dimLevel", "screenSafety", R.string.settings_displays_dim_level_title)
+    data object LidSleep : Row(
         key = "lidSleep",
         section = "screenSafety",
+        labelRes = R.string.settings_displays_lid_sleep_title,
         visibleWhen = { it.display.lidSleepSupported }
     )
 
-    data object DualScreenEnabled : DisplaysItem("dualScreenEnabled", "displays")
-    data object DisplayRoles : DisplaysItem(
+    data object DualScreenEnabled :
+        Row("dualScreenEnabled", "displays", R.string.settings_displays_dual_screen_title)
+    data object DisplayRoles : Row(
         key = "displayRoles",
         section = "displays",
+        labelRes = R.string.settings_displays_display_roles_title,
         visibleWhen = { it.dualScreenEnabled && !it.display.secondaryDisplayUnsupported }
     )
-    data object DualScreenMatchSize : DisplaysItem(
+    data object DualScreenMatchSize : Row(
         key = "dualScreenMatchSize",
         section = "displays",
+        labelRes = R.string.settings_displays_match_screen_size_title,
         visibleWhen = { it.dualScreenEnabled && it.display.dualScreenMatchSizeAvailable }
     )
-    data object ScreenLayout : DisplaysItem(
+    data object ScreenLayout : Row(
         key = "screenLayout",
         section = "displays",
+        labelRes = R.string.settings_displays_screens_title,
         visibleWhen = { it.hasPhysicalSecondaryDisplay }
     )
-    data object AmbientLedSettings : DisplaysItem(
+    data object AmbientLedSettings : Row(
         key = "ambientLedSettings",
         section = "displays",
+        labelRes = R.string.settings_displays_ambient_led_title,
         visibleWhen = { it.display.ambientLedAvailable }
     )
 
-    data object GamesTarget : DisplaysItem(
+    data object GamesTarget : Row(
         key = "gamesTarget",
         section = DISPLAY_TARGETS_SECTION,
+        labelRes = R.string.settings_displays_games_target_title,
         visibleWhen = { it.hasPhysicalSecondaryDisplay }
     )
-    data object AppsTarget : DisplaysItem(
+    data object AppsTarget : Row(
         key = "appsTarget",
         section = DISPLAY_TARGETS_SECTION,
+        labelRes = R.string.settings_displays_apps_target_title,
         visibleWhen = { it.hasPhysicalSecondaryDisplay }
     )
-    data object ByPlatformAndApp : DisplaysItem(
+    data object ByPlatformAndApp : Row(
         key = "byPlatformAndApp",
         section = DISPLAY_TARGETS_SECTION,
+        labelRes = R.string.settings_displays_by_platform_and_app_title,
         visibleWhen = { it.hasPhysicalSecondaryDisplay }
     )
 
@@ -150,7 +166,7 @@ internal sealed class DisplaysItem(
 
 private const val DISPLAY_TARGETS_SECTION = "displayTargets"
 
-private val displaysLayout = SettingsLayout<DisplaysItem, DisplaysLayoutState>(
+internal val displaysLayout = SettingsLayout<DisplaysItem, DisplaysLayoutState>(
     allItems = DisplaysItem.ALL,
     isFocusable = { it.isFocusable },
     visibleWhen = { item, state -> item.visibleWhen(state) },
@@ -283,16 +299,16 @@ fun DisplaysSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
             is DisplaysItem.Header -> DisplaysSectionHeader(stringResource(item.titleRes))
             is DisplaysItem.SectionSpacer -> Spacer(modifier = Modifier.height(Dimens.spacingMd))
 
-            DisplaysItem.ScreenDimmer -> SwitchPreference(
-                title = stringResource(R.string.settings_displays_screen_dimmer_title),
+            is DisplaysItem.ScreenDimmer -> SwitchPreference(
+                title = stringResource(item.labelRes),
                 subtitle = stringResource(R.string.settings_displays_screen_dimmer_subtitle),
                 isEnabled = storage.screenDimmerEnabled,
                 isFocused = isFocused(item),
                 onToggle = { viewModel.toggleScreenDimmer() }
             )
 
-            DisplaysItem.DimAfter -> CyclePreference(
-                title = stringResource(R.string.settings_displays_dim_after_title),
+            is DisplaysItem.DimAfter -> CyclePreference(
+                title = stringResource(item.labelRes),
                 value = pluralStringResource(
                     R.plurals.settings_displays_dim_after_value,
                     storage.screenDimmerTimeoutMinutes,
@@ -314,8 +330,8 @@ fun DisplaysSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
                 pickerRequestToken = pickerToken(item)
             )
 
-            DisplaysItem.DimLevel -> SliderPreference(
-                title = stringResource(R.string.settings_displays_dim_level_title),
+            is DisplaysItem.DimLevel -> SliderPreference(
+                title = stringResource(item.labelRes),
                 value = storage.screenDimmerLevel,
                 minValue = 40,
                 maxValue = 70,
@@ -324,16 +340,16 @@ fun DisplaysSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
                 onAdjust = { viewModel.adjustScreenDimmerLevel(if (it < 0) -1 else 1) }
             )
 
-            DisplaysItem.LidSleep -> SwitchPreference(
-                title = stringResource(R.string.settings_displays_lid_sleep_title),
+            is DisplaysItem.LidSleep -> SwitchPreference(
+                title = stringResource(item.labelRes),
                 subtitle = stringResource(R.string.settings_displays_lid_sleep_subtitle),
                 isEnabled = display.lidSleepEnabled,
                 isFocused = isFocused(item),
                 onToggle = { viewModel.setLidSleepEnabled(it) }
             )
 
-            DisplaysItem.DualScreenEnabled -> SwitchPreference(
-                title = stringResource(R.string.settings_displays_dual_screen_title),
+            is DisplaysItem.DualScreenEnabled -> SwitchPreference(
+                title = stringResource(item.labelRes),
                 subtitle = if (display.secondaryDisplayUnsupported) {
                     stringResource(R.string.settings_displays_dual_screen_subtitle_unsupported)
                 } else {
@@ -345,8 +361,8 @@ fun DisplaysSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
             )
 
 
-            DisplaysItem.DisplayRoles -> CyclePreference(
-                title = stringResource(R.string.settings_displays_display_roles_title),
+            is DisplaysItem.DisplayRoles -> CyclePreference(
+                title = stringResource(item.labelRes),
                 subtitle = stringResource(R.string.settings_displays_display_roles_subtitle),
                 value = stringResource(displayRoleLabelRes(display.displayRoleOverride)),
                 isFocused = isFocused(item),
@@ -359,32 +375,32 @@ fun DisplaysSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
                 pickerRequestToken = pickerToken(item)
             )
 
-            DisplaysItem.DualScreenMatchSize -> SwitchPreference(
-                title = stringResource(R.string.settings_displays_match_screen_size_title),
+            is DisplaysItem.DualScreenMatchSize -> SwitchPreference(
+                title = stringResource(item.labelRes),
                 subtitle = stringResource(R.string.settings_displays_match_screen_size_subtitle),
                 isEnabled = display.dualScreenMatchSize,
                 isFocused = isFocused(item),
                 onToggle = { viewModel.setDualScreenMatchSize(it) }
             )
 
-            DisplaysItem.ScreenLayout -> NavigationPreference(
+            is DisplaysItem.ScreenLayout -> NavigationPreference(
                 icon = Icons.Outlined.Monitor,
-                title = stringResource(R.string.settings_displays_screens_title),
+                title = stringResource(item.labelRes),
                 subtitle = stringResource(R.string.settings_displays_screens_subtitle),
                 isFocused = isFocused(item),
                 onClick = { openFrom(item) { viewModel.navigateToScreens() } }
             )
 
-            DisplaysItem.AmbientLedSettings -> NavigationPreference(
+            is DisplaysItem.AmbientLedSettings -> NavigationPreference(
                 icon = Icons.Outlined.WbTwilight,
-                title = stringResource(R.string.settings_displays_ambient_led_title),
+                title = stringResource(item.labelRes),
                 subtitle = stringResource(R.string.settings_displays_ambient_led_subtitle),
                 isFocused = isFocused(item),
                 onClick = { openFrom(item) { viewModel.navigateToAmbientLed() } }
             )
 
-            DisplaysItem.GamesTarget -> LaunchTargetPreference(
-                title = stringResource(R.string.settings_displays_games_target_title),
+            is DisplaysItem.GamesTarget -> LaunchTargetPreference(
+                title = stringResource(item.labelRes),
                 stored = display.gamesLaunchTarget,
                 screens = display.launchTargetScreens,
                 isFocused = isFocused(item),
@@ -393,8 +409,8 @@ fun DisplaysSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
                 pickerRequestToken = pickerToken(item)
             )
 
-            DisplaysItem.AppsTarget -> LaunchTargetPreference(
-                title = stringResource(R.string.settings_displays_apps_target_title),
+            is DisplaysItem.AppsTarget -> LaunchTargetPreference(
+                title = stringResource(item.labelRes),
                 stored = display.appsLaunchTarget,
                 screens = display.launchTargetScreens,
                 isFocused = isFocused(item),
@@ -403,9 +419,9 @@ fun DisplaysSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
                 pickerRequestToken = pickerToken(item)
             )
 
-            DisplaysItem.ByPlatformAndApp -> NavigationPreference(
+            is DisplaysItem.ByPlatformAndApp -> NavigationPreference(
                 icon = Icons.Outlined.Tv,
-                title = stringResource(R.string.settings_displays_by_platform_and_app_title),
+                title = stringResource(item.labelRes),
                 subtitle = if (display.launchTargetSetCount == 0) {
                     stringResource(R.string.settings_displays_by_platform_and_app_none)
                 } else {

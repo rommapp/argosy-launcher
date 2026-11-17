@@ -107,6 +107,7 @@ object DimensionTokens {
         const val mediaMenuRailWidth = 56
         const val mediaMenuWidthPct = 30
         const val searchResultArtwork = 56
+        const val searchPreviewCoverHeight = 88
         const val saveSyncRowCover = 56
         const val saveSyncAttentionCover = 144
         const val screenMapCardWidth = 220

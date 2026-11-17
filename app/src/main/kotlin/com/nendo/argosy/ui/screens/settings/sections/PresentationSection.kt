@@ -1,5 +1,6 @@
 package com.nendo.argosy.ui.screens.settings.sections
 
+import androidx.annotation.StringRes
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
@@ -37,6 +38,7 @@ import com.nendo.argosy.ui.screens.settings.SettingsUiState
 import com.nendo.argosy.ui.screens.settings.SettingsViewModel
 import com.nendo.argosy.ui.screens.settings.components.SectionPaneLayout
 import com.nendo.argosy.ui.screens.settings.menu.SettingsLayout
+import com.nendo.argosy.ui.screens.settings.search.SearchableSetting
 import com.nendo.argosy.ui.theme.Dimens
 
 internal val PRESENTATION_MENU_STATS: List<PresentationStat> = listOf(
@@ -58,30 +60,41 @@ internal sealed class PresentationItem(
     val section: String,
     val visibleWhen: (PresentationStyle) -> Boolean = { true }
 ) {
-    val isFocusable: Boolean get() = this !is Header
+    val isFocusable: Boolean get() = this is SearchableSetting
 
     class Header(key: String, section: String, val titleRes: Int) : PresentationItem(key, section)
 
-    data object Layout : PresentationItem("presentationLayout", "layout")
-    data object Scrim : PresentationItem("presentationScrim", "background")
-    data object ScrimStrength : PresentationItem(
+    sealed class Row(
+        key: String,
+        section: String,
+        @StringRes override val labelRes: Int,
+        visibleWhen: (PresentationStyle) -> Boolean = { true }
+    ) : PresentationItem(key, section, visibleWhen), SearchableSetting
+
+    data object Layout : Row("presentationLayout", "layout", R.string.settings_presentation_layout_title)
+    data object Scrim : Row("presentationScrim", "background", R.string.settings_presentation_scrim_title)
+    data object ScrimStrength : Row(
         key = "presentationScrimStrength",
         section = "background",
+        labelRes = R.string.settings_presentation_scrim_strength_title,
         visibleWhen = { it.scrim != PresentationScrim.NONE }
     )
-    data object BackgroundBlur : PresentationItem(
+    data object BackgroundBlur : Row(
         key = "presentationBackgroundBlur",
         section = "background",
+        labelRes = R.string.settings_presentation_background_blur_title,
         visibleWhen = { it.scrim == PresentationScrim.GRADIENT }
     )
-    data object Art : PresentationItem(
+    data object Art : Row(
         key = "presentationArt",
         section = "artwork",
+        labelRes = R.string.settings_presentation_art_title,
         visibleWhen = { it.layout == PresentationLayout.CINEMATIC }
     )
-    data class Stat(val stat: PresentationStat) : PresentationItem(
+    data class Stat(val stat: PresentationStat) : Row(
         key = "presentationStat_${stat.name}",
         section = "stats",
+        labelRes = presentationStatLabelRes(stat),
         visibleWhen = { it.layout != PresentationLayout.LOGO }
     )
 
@@ -100,7 +113,7 @@ internal sealed class PresentationItem(
     }
 }
 
-private val presentationLayout = SettingsLayout<PresentationItem, PresentationStyle>(
+internal val presentationLayout = SettingsLayout<PresentationItem, PresentationStyle>(
     allItems = PresentationItem.ALL,
     isFocusable = { it.isFocusable },
     visibleWhen = { item, style -> item.visibleWhen(style) },
@@ -226,8 +239,8 @@ fun PresentationSection(uiState: SettingsUiState, viewModel: SettingsViewModel) 
                 modifier = Modifier.padding(vertical = Dimens.spacingXs)
             )
 
-            PresentationItem.Layout -> SegmentedPreference(
-                title = stringResource(R.string.settings_presentation_layout_title),
+            is PresentationItem.Layout -> SegmentedPreference(
+                title = stringResource(item.labelRes),
                 options = PresentationLayout.entries.map { stringResource(presentationLayoutLabelRes(it)) },
                 selectedIndex = PresentationLayout.entries.indexOf(style.layout),
                 isFocused = isFocused(item),
@@ -237,8 +250,8 @@ fun PresentationSection(uiState: SettingsUiState, viewModel: SettingsViewModel) 
                 }
             )
 
-            PresentationItem.Scrim -> SegmentedPreference(
-                title = stringResource(R.string.settings_presentation_scrim_title),
+            is PresentationItem.Scrim -> SegmentedPreference(
+                title = stringResource(item.labelRes),
                 options = PresentationScrim.entries.map { stringResource(presentationScrimLabelRes(it)) },
                 selectedIndex = PresentationScrim.entries.indexOf(style.scrim),
                 isFocused = isFocused(item),
@@ -248,8 +261,8 @@ fun PresentationSection(uiState: SettingsUiState, viewModel: SettingsViewModel) 
                 }
             )
 
-            PresentationItem.ScrimStrength -> SliderPreference(
-                title = stringResource(R.string.settings_presentation_scrim_strength_title),
+            is PresentationItem.ScrimStrength -> SliderPreference(
+                title = stringResource(item.labelRes),
                 value = style.scrimStrength,
                 minValue = PRESENTATION_SCRIM_MIN,
                 maxValue = PRESENTATION_SCRIM_MAX,
@@ -263,8 +276,8 @@ fun PresentationSection(uiState: SettingsUiState, viewModel: SettingsViewModel) 
                 }
             )
 
-            PresentationItem.BackgroundBlur -> SliderPreference(
-                title = stringResource(R.string.settings_presentation_background_blur_title),
+            is PresentationItem.BackgroundBlur -> SliderPreference(
+                title = stringResource(item.labelRes),
                 value = uiState.display.presentationBackgroundBlur / 10,
                 minValue = 0,
                 maxValue = 10,
@@ -275,8 +288,8 @@ fun PresentationSection(uiState: SettingsUiState, viewModel: SettingsViewModel) 
                 }
             )
 
-            PresentationItem.Art -> SegmentedPreference(
-                title = stringResource(R.string.settings_presentation_art_title),
+            is PresentationItem.Art -> SegmentedPreference(
+                title = stringResource(item.labelRes),
                 options = PresentationArt.entries.map { stringResource(presentationArtLabelRes(it)) },
                 selectedIndex = PresentationArt.entries.indexOf(style.art),
                 isFocused = isFocused(item),
@@ -287,7 +300,7 @@ fun PresentationSection(uiState: SettingsUiState, viewModel: SettingsViewModel) 
             )
 
             is PresentationItem.Stat -> SwitchPreference(
-                title = stringResource(presentationStatLabelRes(item.stat)),
+                title = stringResource(item.labelRes),
                 isEnabled = style.shows(item.stat),
                 isFocused = isFocused(item),
                 onToggle = { enabled ->

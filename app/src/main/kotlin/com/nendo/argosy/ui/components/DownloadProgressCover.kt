@@ -35,6 +35,7 @@ import coil.compose.AsyncImage
 import com.nendo.argosy.R
 import com.nendo.argosy.ui.theme.Dimens
 import com.nendo.argosy.ui.theme.generated.ComponentDefaults
+import com.nendo.argosy.ui.theme.generated.MotionTokens
 import kotlin.math.sin
 
 private const val TWO_PI = (2.0 * Math.PI).toFloat()
@@ -99,7 +100,7 @@ fun DownloadProgressCover(
 ) {
     val animatedProgress by animateFloatAsState(
         targetValue = progress,
-        animationSpec = tween(durationMillis = 2000, easing = LinearEasing),
+        animationSpec = tween(durationMillis = MotionTokens.Tween.waterLevelMs, easing = LinearEasing),
         label = "water_level"
     )
     val transition = rememberInfiniteTransition(label = "water")
@@ -108,7 +109,7 @@ fun DownloadProgressCover(
         initialValue = 0f,
         targetValue = TWO_PI,
         animationSpec = infiniteRepeatable(
-            animation = tween(3000, easing = LinearEasing),
+            animation = tween(MotionTokens.Tween.wavePhaseAMs, easing = LinearEasing),
             repeatMode = RepeatMode.Restart
         ),
         label = "phase1"
@@ -117,7 +118,7 @@ fun DownloadProgressCover(
         initialValue = TWO_PI,
         targetValue = 0f,
         animationSpec = infiniteRepeatable(
-            animation = tween(4700, easing = LinearEasing),
+            animation = tween(MotionTokens.Tween.wavePhaseBMs, easing = LinearEasing),
             repeatMode = RepeatMode.Restart
         ),
         label = "phase2"
@@ -126,7 +127,7 @@ fun DownloadProgressCover(
         initialValue = 0.4f,
         targetValue = 1f,
         animationSpec = infiniteRepeatable(
-            animation = tween(2200, easing = LinearEasing),
+            animation = tween(MotionTokens.Tween.waveSwellAMs, easing = LinearEasing),
             repeatMode = RepeatMode.Reverse
         ),
         label = "amp1"
@@ -135,7 +136,7 @@ fun DownloadProgressCover(
         initialValue = 0.8f,
         targetValue = 0.2f,
         animationSpec = infiniteRepeatable(
-            animation = tween(3100, easing = LinearEasing),
+            animation = tween(MotionTokens.Tween.waveSwellBMs, easing = LinearEasing),
             repeatMode = RepeatMode.Reverse
         ),
         label = "amp2"

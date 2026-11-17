@@ -1,5 +1,6 @@
 package com.nendo.argosy.ui.screens.settings.sections
 
+import androidx.annotation.StringRes
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
@@ -18,6 +19,56 @@ import com.nendo.argosy.ui.screens.settings.libretro.LibretroSettingsSection
 import com.nendo.argosy.ui.screens.settings.libretro.PlatformLibretroSettingsAccessor
 import com.nendo.argosy.ui.screens.settings.libretro.libretroSettingsItemAtFocusIndex
 import com.nendo.argosy.ui.screens.settings.libretro.libretroSettingsMaxFocusIndex
+import com.nendo.argosy.ui.screens.settings.libretro.LibretroVisibilityState
+import com.nendo.argosy.ui.screens.settings.libretro.isLibretroSettingShown
+import com.nendo.argosy.ui.screens.settings.menu.SettingsLayout
+import com.nendo.argosy.ui.screens.settings.search.SearchableSetting
+
+internal data class BuiltinSavesLayoutState(
+    val visibility: LibretroVisibilityState,
+    val showsPathRows: Boolean
+) {
+    companion object {
+        fun from(
+            state: BuiltinVideoState,
+            platformSettings: Map<Long, PlatformLibretroSettingsEntity>
+        ) = BuiltinSavesLayoutState(
+            visibility = LibretroVisibilityState(
+                platformSlug = state.currentPlatformContext?.platformSlug,
+                canEnableBFI = state.canEnableBlackFrameInsertion,
+                scope = LibretroSettingsScope.SAVES
+            ),
+            showsPathRows = builtinSavesHasPathRows(state, platformSettings)
+        )
+
+        fun global(state: BuiltinVideoState) = from(state.copy(platformContextIndex = 0), emptyMap())
+    }
+}
+
+internal sealed class BuiltinSavesItem(
+    val key: String,
+    @StringRes override val labelRes: Int
+) : SearchableSetting {
+    data class Setting(val def: LibretroSettingDef) : BuiltinSavesItem(def.key, def.title)
+    data object SavePath : BuiltinSavesItem("save_path", R.string.settings_shell_builtinvideo_save_path_title)
+    data object StatePath : BuiltinSavesItem("state_path", R.string.settings_shell_builtinvideo_state_path_title)
+
+    companion object {
+        val ALL: List<BuiltinSavesItem>
+            get() = LibretroSettingDef.ALL.map { Setting(it) } + listOf(SavePath, StatePath)
+    }
+}
+
+internal val builtinSavesLayout = SettingsLayout<BuiltinSavesItem, BuiltinSavesLayoutState>(
+    allItems = BuiltinSavesItem.ALL,
+    isFocusable = { true },
+    visibleWhen = { item, state ->
+        when (item) {
+            is BuiltinSavesItem.Setting -> isLibretroSettingShown(item.def, state.visibility)
+            is BuiltinSavesItem.SavePath, is BuiltinSavesItem.StatePath -> state.showsPathRows
+        }
+    }
+)
 
 @Composable
 fun BuiltinSavesSection(
@@ -79,9 +130,9 @@ fun BuiltinSavesSection(
         },
         trailingItems = if (showPathItems) {
             {
-                settingsRowItem(key = "save_path", focusIndex = savePathFocusIndex) {
+                settingsRowItem(key = BuiltinSavesItem.SavePath.key, focusIndex = savePathFocusIndex) {
                     ActionPreference(
-                        title = stringResource(R.string.settings_shell_builtinvideo_save_path_title),
+                        title = stringResource(BuiltinSavesItem.SavePath.labelRes),
                         subtitle = formatStoragePath(effectiveSavePath),
                         trailingText = when {
                             isGlobal && videoState.isCustomSavePath ->
@@ -103,9 +154,9 @@ fun BuiltinSavesSection(
                         }
                     )
                 }
-                settingsRowItem(key = "state_path", focusIndex = statePathFocusIndex) {
+                settingsRowItem(key = BuiltinSavesItem.StatePath.key, focusIndex = statePathFocusIndex) {
                     ActionPreference(
-                        title = stringResource(R.string.settings_shell_builtinvideo_state_path_title),
+                        title = stringResource(BuiltinSavesItem.StatePath.labelRes),
                         subtitle = formatStoragePath(effectiveStatePath),
                         trailingText = when {
                             isGlobal && videoState.isCustomStatePath ->

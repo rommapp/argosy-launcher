@@ -46,6 +46,7 @@ import com.nendo.argosy.ui.components.friends.FRIENDS_LINE_MAX_LINES
 import com.nendo.argosy.ui.components.friends.FRIENDS_MAX_STACKED_AVATARS
 import com.nendo.argosy.ui.components.friends.friendsActivityLine
 import com.nendo.argosy.ui.theme.Dimens
+import com.nendo.argosy.ui.theme.Motion
 import com.nendo.argosy.util.formatTimeToBeat
 
 private const val HOME_TITLE_SERIES_SCALE = 0.75f
@@ -217,7 +218,7 @@ internal fun HomeTitleSection(
 ) {
     val metadataAlpha by animateFloatAsState(
         targetValue = if (showMetadata) 1f else 0f,
-        animationSpec = tween(500),
+        animationSpec = tween(Motion.durationMedium),
         label = "metadataAlpha"
     )
     val titleColor = textColorOverride ?: MaterialTheme.colorScheme.onSurface

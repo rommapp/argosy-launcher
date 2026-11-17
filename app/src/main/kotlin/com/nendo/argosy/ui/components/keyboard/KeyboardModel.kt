@@ -149,7 +149,8 @@ data class KeyboardUiState(
     val shiftRule: ShiftRule = ShiftRule.Upper,
     val localeTag: String? = null,
     val pasteAvailable: Boolean = false,
-    val pasteFocused: Boolean = false
+    val pasteFocused: Boolean = false,
+    val focusOutside: Boolean = false
 ) {
     val units: Float get() = rows.maxOfOrNull { row -> row.keys.sumOf { it.width.toDouble() }.toFloat() } ?: 1f
 

@@ -1,5 +1,6 @@
 package com.nendo.argosy.ui.screens.settings.sections
 
+import androidx.annotation.StringRes
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -54,6 +55,7 @@ import com.nendo.argosy.ui.screens.settings.components.SavePathModal
 import com.nendo.argosy.ui.screens.settings.components.SectionPaneLayout
 import com.nendo.argosy.ui.screens.settings.components.VariantPickerModal
 import com.nendo.argosy.ui.screens.settings.menu.SettingsLayout
+import com.nendo.argosy.ui.screens.settings.search.SearchableSetting
 import com.nendo.argosy.libretro.LibretroCoreRegistry
 import com.nendo.argosy.libretro.NetplaySupportLevel
 import com.nendo.argosy.ui.primitives.ActionButton
@@ -69,43 +71,96 @@ internal sealed class PlatformDetailItem(
     val section: String,
     val visibleWhen: (PlatformDetailVisibility) -> Boolean = { true }
 ) {
-    val isFocusable: Boolean get() = this !is Header && this !is InfoItem
+    val isFocusable: Boolean get() = this is SearchableSetting
 
     class Header(key: String, section: String, val titleRes: Int, visibleWhen: (PlatformDetailVisibility) -> Boolean = { true }) : PlatformDetailItem(key, section, visibleWhen)
     class InfoItem(key: String, section: String, visibleWhen: (PlatformDetailVisibility) -> Boolean = { true }) : PlatformDetailItem(key, section, visibleWhen)
 
-    data object Emulator : PlatformDetailItem("emulator", "emulator", { !it.isAndroid })
-    data object Core : PlatformDetailItem("core", "emulator", { it.showCore && !it.isAndroid })
-    data object Extension : PlatformDetailItem("extension", "emulator", { it.showExtension && !it.isAndroid })
-    data object DisplayTarget : PlatformDetailItem("display_target", "emulator", { it.showDisplayTarget && !it.isAndroid })
-    data object LegacyMode : PlatformDetailItem("legacy_mode", "emulator", { it.showLegacyMode && !it.isAndroid })
-    data object LaunchArgs : PlatformDetailItem("launch_args", "emulator", { !it.isBuiltin && !it.isAndroid })
-    data object BuiltinVideo : PlatformDetailItem("builtin_video", "emulator", { it.isBuiltin && !it.isAndroid })
-    data object BuiltinControls : PlatformDetailItem("builtin_controls", "emulator", { it.isBuiltin && !it.isAndroid })
-    data object BuiltinSaves : PlatformDetailItem("builtin_saves", "emulator", { it.isBuiltin && !it.isAndroid })
-    data object BuiltinCoreOptions : PlatformDetailItem("builtin_core_options", "emulator", { it.isBuiltin && !it.isAndroid })
+    sealed class Row(
+        key: String,
+        section: String,
+        @StringRes override val labelRes: Int,
+        visibleWhen: (PlatformDetailVisibility) -> Boolean = { true }
+    ) : PlatformDetailItem(key, section, visibleWhen), SearchableSetting
 
-    data object ClearArtCache : PlatformDetailItem("clear_art_cache", "platform")
-    data object ScanFiles : PlatformDetailItem("scan_files", "platform", { !it.isAndroid })
-    data object ScanApps : PlatformDetailItem("scan_apps", "platform", { it.isAndroid })
+    data object Emulator : Row("emulator", "emulator", R.string.settings_search_label_platform_emulator, { !it.isAndroid }) {
+        override val keywordsRes: Int? get() = R.string.settings_platform_emulator_change
+    }
+    data object Core : Row("core", "emulator", R.string.settings_platform_core_title, { it.showCore && !it.isAndroid })
+    data object Extension :
+        Row("extension", "emulator", R.string.settings_platform_extension_title, { it.showExtension && !it.isAndroid })
+    data object DisplayTarget : Row(
+        "display_target",
+        "emulator",
+        R.string.settings_platform_display_target_title,
+        { it.showDisplayTarget && !it.isAndroid }
+    )
+    data object LegacyMode :
+        Row("legacy_mode", "emulator", R.string.settings_platform_legacy_mode_title, { it.showLegacyMode && !it.isAndroid })
+    data object LaunchArgs :
+        Row("launch_args", "emulator", R.string.settings_platform_launch_args_title, { !it.isBuiltin && !it.isAndroid })
+    data object BuiltinVideo :
+        Row("builtin_video", "emulator", R.string.settings_platform_builtin_video_title, { it.isBuiltin && !it.isAndroid })
+    data object BuiltinControls : Row(
+        "builtin_controls",
+        "emulator",
+        R.string.settings_platform_builtin_controls_title,
+        { it.isBuiltin && !it.isAndroid }
+    )
+    data object BuiltinSaves :
+        Row("builtin_saves", "emulator", R.string.settings_platform_builtin_saves_title, { it.isBuiltin && !it.isAndroid })
+    data object BuiltinCoreOptions : Row(
+        "builtin_core_options",
+        "emulator",
+        R.string.settings_platform_core_options_title,
+        { it.isBuiltin && !it.isAndroid }
+    )
 
-    data object RomPath : PlatformDetailItem("rom_path", "sync", { !it.isAndroid })
-    data object SavePath : PlatformDetailItem("save_path", "sync", { it.showSavePath && !it.isAndroid })
-    data object MemoryCard : PlatformDetailItem("memory_card", "sync", { it.showMemoryCard && !it.isAndroid })
-    data object StatePath : PlatformDetailItem("state_path", "sync", { it.showStatePath && !it.isAndroid })
+    data object ClearArtCache : Row("clear_art_cache", "platform", R.string.settings_platform_clear_art_title)
+    data object ScanFiles : Row("scan_files", "platform", R.string.settings_platform_scan_files_title, { !it.isAndroid })
+    data object ScanApps : Row("scan_apps", "platform", R.string.settings_platform_scan_apps_title, { it.isAndroid })
 
-    data object SyncToggle : PlatformDetailItem("sync_toggle", "sync")
-    data object CombineContent : PlatformDetailItem("combine_content", "sync", { it.showCombineContent })
-    data object SyncNow : PlatformDetailItem("sync_now", "sync", { it.syncEnabled })
-    data object SkipFullSync : PlatformDetailItem("skip_full_sync", "sync", { it.syncEnabled })
-    data object DownloadDefaults : PlatformDetailItem("download_defaults", "sync", { !it.isAndroid })
-    data object PackagePath : PlatformDetailItem("package_path", "sync", { it.showSavePath && !it.isAndroid })
-    data object RemoveFiles : PlatformDetailItem("remove_files", "sync", { it.hasDownloads && !it.isAndroid })
+    data object RomPath : Row("rom_path", "sync", R.string.settings_platform_rom_path_title, { !it.isAndroid })
+    data object SavePath :
+        Row("save_path", "sync", R.string.settings_platform_save_path_title, { it.showSavePath && !it.isAndroid })
+    data object MemoryCard :
+        Row("memory_card", "sync", R.string.settings_platform_memcard_title, { it.showMemoryCard && !it.isAndroid })
+    data object StatePath :
+        Row("state_path", "sync", R.string.settings_platform_state_path_title, { it.showStatePath && !it.isAndroid })
 
-    data object BiosStatus : PlatformDetailItem("bios_status", "bios", { it.hasBios && !it.isAndroid })
-    data object BiosDownload : PlatformDetailItem("bios_download", "bios", { it.hasBios && it.biosMissing && !it.isAndroid })
-    data object BiosInstall : PlatformDetailItem("bios_install", "bios", { it.hasBios && it.biosDownloaded && it.canDistribute && !it.isAndroid })
-    data object BiosCopy : PlatformDetailItem("bios_copy", "bios", { it.hasBios && it.biosDownloaded && !it.isAndroid })
+    data object SyncToggle : Row("sync_toggle", "sync", R.string.settings_platform_sync_toggle_title)
+    data object CombineContent :
+        Row("combine_content", "sync", R.string.settings_platform_combine_content_title, { it.showCombineContent })
+    data object SyncNow : Row("sync_now", "sync", R.string.settings_platform_sync_now_title, { it.syncEnabled })
+    data object SkipFullSync :
+        Row("skip_full_sync", "sync", R.string.settings_platform_skip_full_sync_title, { it.syncEnabled })
+    data object DownloadDefaults :
+        Row("download_defaults", "sync", R.string.settings_platform_download_defaults_title, { !it.isAndroid })
+    data object PackagePath :
+        Row("package_path", "sync", R.string.settings_platform_package_path_title, { it.showSavePath && !it.isAndroid })
+    data object RemoveFiles :
+        Row("remove_files", "sync", R.string.settings_platform_remove_files_title, { it.hasDownloads && !it.isAndroid })
+
+    data object BiosStatus :
+        Row("bios_status", "bios", R.string.settings_platform_bios_status_title, { it.hasBios && !it.isAndroid })
+    data object BiosDownload : Row(
+        "bios_download",
+        "bios",
+        R.string.settings_platform_bios_download_title,
+        { it.hasBios && it.biosMissing && !it.isAndroid }
+    )
+    data object BiosInstall : Row(
+        "bios_install",
+        "bios",
+        R.string.settings_platform_bios_install_title,
+        { it.hasBios && it.biosDownloaded && it.canDistribute && !it.isAndroid }
+    )
+    data object BiosCopy : Row(
+        "bios_copy",
+        "bios",
+        R.string.settings_platform_bios_copy_title,
+        { it.hasBios && it.biosDownloaded && !it.isAndroid }
+    )
 
     companion object {
         val ALL: List<PlatformDetailItem>
@@ -188,7 +243,7 @@ internal data class PlatformDetailVisibility(
     }
 }
 
-private fun createPlatformDetailLayout() = SettingsLayout<PlatformDetailItem, PlatformDetailVisibility>(
+internal fun createPlatformDetailLayout() = SettingsLayout<PlatformDetailItem, PlatformDetailVisibility>(
     allItems = PlatformDetailItem.ALL,
     isFocusable = { it.isFocusable },
     visibleWhen = { item, state -> item.visibleWhen(state) },
@@ -205,15 +260,27 @@ private fun createPlatformDetailLayout() = SettingsLayout<PlatformDetailItem, Pl
     }
 )
 
+internal fun platformDetailVisibilityOf(
+    state: SettingsUiState,
+    config: PlatformEmulatorConfig,
+    detail: PlatformDetailState
+): PlatformDetailVisibility {
+    val storageConfig = state.storage.platformConfigs.find { it.platformId == config.platform.id }
+    return PlatformDetailVisibility.from(
+        config, detail, storageConfig?.syncEnabled ?: true, storageConfig?.folderMemcardCount ?: -1
+    )
+}
+
 internal fun platformDetailMaxFocusIndex(state: SettingsUiState): Int {
     val config = state.emulators.platforms.getOrNull(state.platformDetail.platformIndex) ?: return 0
-    val storageConfig = state.storage.platformConfigs.find { it.platformId == config.platform.id }
-    val syncEnabled = storageConfig?.syncEnabled ?: true
-    val visibility = PlatformDetailVisibility.from(
-        config, state.platformDetail, syncEnabled, storageConfig?.folderMemcardCount ?: -1
-    )
-    val layout = createPlatformDetailLayout()
-    return layout.maxFocusIndex(visibility)
+    return createPlatformDetailLayout().maxFocusIndex(platformDetailVisibilityOf(state, config, state.platformDetail))
+}
+
+internal fun platformDetailFocusIndexOf(key: String, state: SettingsUiState): Int {
+    val config = state.emulators.platforms.getOrNull(state.platformDetail.platformIndex) ?: return -1
+    return createPlatformDetailLayout()
+        .focusableItems(platformDetailVisibilityOf(state, config, state.platformDetail))
+        .indexOfFirst { it.key == key }
 }
 
 internal fun platformDetailItemAtFocusIndex(
@@ -305,7 +372,7 @@ fun PlatformDetailSection(
                         stringResource(item.titleRes)
                     )
 
-                PlatformDetailItem.Emulator -> {
+                is PlatformDetailItem.Emulator -> {
                     val hasUpdate = config.effectiveEmulatorId != null &&
                         config.effectiveEmulatorId in emulators.emulatorUpdateVersions
                     val hasInstallableKnown = config.availableEmulators.isNotEmpty() ||
@@ -333,7 +400,7 @@ fun PlatformDetailSection(
                         }
                     )
                 }
-                PlatformDetailItem.Core -> {
+                is PlatformDetailItem.Core -> {
                     val platformHasNetplay = config.effectiveEmulatorId == EmulatorRegistry.BUILTIN_ID &&
                         LibretroCoreRegistry.getCoresForPlatform(config.platform.slug)
                             .any { it.netplaySupport == NetplaySupportLevel.SUPPORTED }
@@ -347,7 +414,7 @@ fun PlatformDetailSection(
                         .indexOfFirst { it.id == config.selectedCore }
                         .takeIf { it >= 0 } ?: 0
                     CyclePreference(
-                        title = stringResource(R.string.settings_platform_core_title),
+                        title = stringResource(item.labelRes),
                         value = config.availableCores
                             .firstOrNull { it.id == config.selectedCore }
                             ?.displayName ?: stringResource(R.string.settings_platform_core_default),
@@ -371,8 +438,8 @@ fun PlatformDetailSection(
                         } else null
                     )
                 }
-                PlatformDetailItem.Extension -> CyclePreference(
-                    title = stringResource(R.string.settings_platform_extension_title),
+                is PlatformDetailItem.Extension -> CyclePreference(
+                    title = stringResource(item.labelRes),
                     value = config.extensionOptions
                         .firstOrNull { it.extension == config.selectedExtension }?.label
                         ?: config.selectedExtension
@@ -384,8 +451,8 @@ fun PlatformDetailSection(
                     onSelect = { viewModel.changeExtensionForPlatform(config, config.extensionOptions[it].extension) },
                     pickerRequestToken = pickerToken(item)
                 )
-                PlatformDetailItem.DisplayTarget -> CyclePreference(
-                    title = stringResource(R.string.settings_platform_display_target_title),
+                is PlatformDetailItem.DisplayTarget -> CyclePreference(
+                    title = stringResource(item.labelRes),
                     value = platformDisplayTargetLabel(config.displayTarget, uiState.display.gamesLaunchTarget),
                     isFocused = isFocused(item),
                     onClick = { viewModel.cycleDisplayTarget(config, 1) },
@@ -396,44 +463,44 @@ fun PlatformDetailSection(
                     onSelect = { viewModel.cycleDisplayTarget(config, it - config.displayTarget.ordinal) },
                     pickerRequestToken = pickerToken(item)
                 )
-                PlatformDetailItem.LegacyMode -> SwitchPreference(
-                    title = stringResource(R.string.settings_platform_legacy_mode_title),
+                is PlatformDetailItem.LegacyMode -> SwitchPreference(
+                    title = stringResource(item.labelRes),
                     subtitle = stringResource(R.string.settings_platform_legacy_mode_subtitle),
                     isEnabled = config.useFileUri,
                     isFocused = isFocused(item),
                     onToggle = { viewModel.toggleLegacyMode(config) }
                 )
-                PlatformDetailItem.LaunchArgs -> NavigationPreference(
+                is PlatformDetailItem.LaunchArgs -> NavigationPreference(
                     icon = Icons.Default.Settings,
-                    title = stringResource(R.string.settings_platform_launch_args_title),
+                    title = stringResource(item.labelRes),
                     subtitle = stringResource(R.string.settings_platform_launch_args_subtitle),
                     isFocused = isFocused(item),
                     onClick = { viewModel.openLaunchArgsModal(config.platform.id) }
                 )
-                PlatformDetailItem.BuiltinVideo -> NavigationPreference(
+                is PlatformDetailItem.BuiltinVideo -> NavigationPreference(
                     icon = Icons.Default.Gamepad,
-                    title = stringResource(R.string.settings_platform_builtin_video_title),
+                    title = stringResource(item.labelRes),
                     subtitle = stringResource(R.string.settings_platform_builtin_video_subtitle),
                     isFocused = isFocused(item),
                     onClick = { openFrom(item) { viewModel.navigateToBuiltinVideoForPlatform(detail.platformIndex) } }
                 )
-                PlatformDetailItem.BuiltinControls -> NavigationPreference(
+                is PlatformDetailItem.BuiltinControls -> NavigationPreference(
                     icon = Icons.Default.Gamepad,
-                    title = stringResource(R.string.settings_platform_builtin_controls_title),
+                    title = stringResource(item.labelRes),
                     subtitle = stringResource(R.string.settings_platform_builtin_controls_subtitle),
                     isFocused = isFocused(item),
                     onClick = { openFrom(item) { viewModel.navigateToBuiltinControlsForPlatform(detail.platformIndex) } }
                 )
-                PlatformDetailItem.BuiltinSaves -> NavigationPreference(
+                is PlatformDetailItem.BuiltinSaves -> NavigationPreference(
                     icon = Icons.Default.Gamepad,
-                    title = stringResource(R.string.settings_platform_builtin_saves_title),
+                    title = stringResource(item.labelRes),
                     subtitle = stringResource(R.string.settings_platform_builtin_saves_subtitle),
                     isFocused = isFocused(item),
                     onClick = { openFrom(item) { viewModel.navigateToBuiltinSavesForPlatform(detail.platformIndex) } }
                 )
-                PlatformDetailItem.BuiltinCoreOptions -> NavigationPreference(
+                is PlatformDetailItem.BuiltinCoreOptions -> NavigationPreference(
                     icon = Icons.Default.Gamepad,
-                    title = stringResource(R.string.settings_platform_core_options_title),
+                    title = stringResource(item.labelRes),
                     subtitle = stringResource(R.string.settings_platform_core_options_subtitle),
                     isFocused = isFocused(item),
                     onClick = { openFrom(item) { viewModel.navigateToCoreOptionsForPlatform() } }
@@ -543,18 +610,18 @@ fun PlatformDetailSection(
                         }
                     }
                 }
-                PlatformDetailItem.ClearArtCache -> ActionPreference(
-                    title = stringResource(R.string.settings_platform_clear_art_title),
+                is PlatformDetailItem.ClearArtCache -> ActionPreference(
+                    title = stringResource(item.labelRes),
                     subtitle = stringResource(R.string.settings_platform_clear_art_subtitle),
                     isFocused = isFocused(item),
                     icon = Icons.Default.Refresh,
                     onClick = { viewModel.clearPlatformArtCache(config.platform.slug) }
                 )
-                PlatformDetailItem.ScanFiles -> ActionPreference(
+                is PlatformDetailItem.ScanFiles -> ActionPreference(
                     title = if (detail.isScanning) {
                         stringResource(R.string.settings_platform_scan_busy)
                     } else {
-                        stringResource(R.string.settings_platform_scan_files_title)
+                        stringResource(item.labelRes)
                     },
                     subtitle = stringResource(R.string.settings_platform_scan_files_subtitle),
                     isFocused = isFocused(item),
@@ -562,11 +629,11 @@ fun PlatformDetailSection(
                     isEnabled = !detail.isScanning,
                     onClick = { viewModel.scanFilesForPlatform(config.platform.id) }
                 )
-                PlatformDetailItem.ScanApps -> ActionPreference(
+                is PlatformDetailItem.ScanApps -> ActionPreference(
                     title = if (detail.isScanning) {
                         stringResource(R.string.settings_platform_scan_busy)
                     } else {
-                        stringResource(R.string.settings_platform_scan_apps_title)
+                        stringResource(item.labelRes)
                     },
                     subtitle = stringResource(R.string.settings_platform_scan_apps_subtitle),
                     isFocused = isFocused(item),
@@ -575,8 +642,8 @@ fun PlatformDetailSection(
                     onClick = { viewModel.scanInstalledAndroidGames() }
                 )
 
-                PlatformDetailItem.RomPath -> ActionPreference(
-                    title = stringResource(R.string.settings_platform_rom_path_title),
+                is PlatformDetailItem.RomPath -> ActionPreference(
+                    title = stringResource(item.labelRes),
                     subtitle = formatPath(context, storageConfig?.effectivePath),
                     trailingText = if (storageConfig?.customRomPath != null) {
                         stringResource(R.string.settings_platform_path_custom_tag)
@@ -588,7 +655,7 @@ fun PlatformDetailSection(
                     showResetButton = storageConfig?.customRomPath != null,
                     onReset = { viewModel.resetPlatformRomPath(config.platform.id) }
                 )
-                PlatformDetailItem.SavePath -> {
+                is PlatformDetailItem.SavePath -> {
                     val hasOverride = storageConfig?.isUserSavePathOverride == true
                     val canReset = storageConfig?.canResetSavePath == true
                     val isBuiltinEmulator = config.effectiveEmulatorId == EmulatorRegistry.BUILTIN_ID
@@ -596,7 +663,7 @@ fun PlatformDetailSection(
                     val accessBlocked = !isBuiltinEmulator && !config.effectiveEmulatorIsRetroArch &&
                         detail.packagePathAccess == PackageDataAccess.BLOCKED && !hasOverride && !besideRom
                     ActionPreference(
-                        title = stringResource(R.string.settings_platform_save_path_title),
+                        title = stringResource(item.labelRes),
                         subtitle = when {
                             besideRom -> formatPath(context, storageConfig?.effectivePath)
                             accessBlocked ->
@@ -617,7 +684,7 @@ fun PlatformDetailSection(
                         onReset = { viewModel.resetPlatformSavePath(config.platform.id) }
                     )
                 }
-                PlatformDetailItem.MemoryCard -> {
+                is PlatformDetailItem.MemoryCard -> {
                     val cardCount = storageConfig?.folderMemcardCount ?: -1
                     val selected = storageConfig?.selectedMemcardPath
                     val selectedName = selected?.let { java.io.File(it).name }
@@ -644,7 +711,7 @@ fun PlatformDetailSection(
                                 stringResource(R.string.settings_platform_memcard_unselected_subtitle)
                     }
                     ActionPreference(
-                        title = stringResource(R.string.settings_platform_memcard_title),
+                        title = stringResource(item.labelRes),
                         subtitle = subtitle,
                         trailingText = value,
                         isFocused = isFocused(item),
@@ -655,10 +722,10 @@ fun PlatformDetailSection(
                         }
                     )
                 }
-                PlatformDetailItem.StatePath -> {
+                is PlatformDetailItem.StatePath -> {
                     val hasOverride = storageConfig?.isUserStatePathOverride == true
                     ActionPreference(
-                        title = stringResource(R.string.settings_platform_state_path_title),
+                        title = stringResource(item.labelRes),
                         subtitle = if (config.effectiveEmulatorIsRetroArch) {
                             retroArchPathSubtitle(context, config, storageConfig?.effectiveStatePath, hasOverride)
                         } else {
@@ -676,25 +743,25 @@ fun PlatformDetailSection(
                     )
                 }
 
-                PlatformDetailItem.SyncToggle -> SwitchPreference(
-                    title = stringResource(R.string.settings_platform_sync_toggle_title),
+                is PlatformDetailItem.SyncToggle -> SwitchPreference(
+                    title = stringResource(item.labelRes),
                     subtitle = stringResource(R.string.settings_platform_sync_toggle_subtitle),
                     isEnabled = storageConfig?.syncEnabled ?: true,
                     isFocused = isFocused(item),
                     onToggle = { viewModel.togglePlatformSync(config.platform.id, it) }
                 )
-                PlatformDetailItem.CombineContent -> SwitchPreference(
-                    title = stringResource(R.string.settings_platform_combine_content_title),
+                is PlatformDetailItem.CombineContent -> SwitchPreference(
+                    title = stringResource(item.labelRes),
                     subtitle = stringResource(R.string.settings_platform_combine_content_subtitle),
                     isEnabled = storageConfig?.combineContent ?: false,
                     isFocused = isFocused(item),
                     onToggle = { viewModel.togglePlatformCombineContent(config.platform.id, it) }
                 )
-                PlatformDetailItem.SyncNow -> {
+                is PlatformDetailItem.SyncNow -> {
                     val isBusy = config.platform.id in uiState.storage.busyPlatformIds ||
                         uiState.storage.isLibrarySyncing
                     ActionPreference(
-                        title = stringResource(R.string.settings_platform_sync_now_title),
+                        title = stringResource(item.labelRes),
                         subtitle = if (isBusy) {
                             stringResource(R.string.settings_platform_sync_now_busy)
                         } else {
@@ -707,16 +774,16 @@ fun PlatformDetailSection(
                         onClick = { viewModel.syncPlatform(config.platform.id, config.platform.getDisplayName()) }
                     )
                 }
-                PlatformDetailItem.SkipFullSync -> SwitchPreference(
-                    title = stringResource(R.string.settings_platform_skip_full_sync_title),
+                is PlatformDetailItem.SkipFullSync -> SwitchPreference(
+                    title = stringResource(item.labelRes),
                     subtitle = stringResource(R.string.settings_platform_skip_full_sync_subtitle),
                     isEnabled = storageConfig?.skipFullSync ?: false,
                     isFocused = isFocused(item),
                     onToggle = { viewModel.togglePlatformSkipFullSync(config.platform.id, it) }
                 )
-                PlatformDetailItem.PackagePath -> {}
-                PlatformDetailItem.DownloadDefaults -> ActionPreference(
-                    title = stringResource(R.string.settings_platform_download_defaults_title),
+                is PlatformDetailItem.PackagePath -> {}
+                is PlatformDetailItem.DownloadDefaults -> ActionPreference(
+                    title = stringResource(item.labelRes),
                     subtitle = if (detail.downloadOverrides.isEmpty()) {
                         stringResource(R.string.settings_platform_download_defaults_subtitle)
                     } else {
@@ -729,8 +796,8 @@ fun PlatformDetailSection(
                     isFocused = isFocused(item),
                     onClick = { viewModel.openPlatformDownloadDefaults(config.platform.slug) }
                 )
-                PlatformDetailItem.RemoveFiles -> ActionPreference(
-                    title = stringResource(R.string.settings_platform_remove_files_title),
+                is PlatformDetailItem.RemoveFiles -> ActionPreference(
+                    title = stringResource(item.labelRes),
                     subtitle = pluralStringResource(
                         R.plurals.settings_platform_remove_files_subtitle,
                         detail.downloadedGames,
@@ -741,9 +808,9 @@ fun PlatformDetailSection(
                     onClick = { viewModel.requestRemoveLocalFiles() }
                 )
 
-                PlatformDetailItem.BiosStatus -> {}
-                PlatformDetailItem.BiosDownload -> ActionPreference(
-                    title = stringResource(R.string.settings_platform_bios_download_title),
+                is PlatformDetailItem.BiosStatus -> {}
+                is PlatformDetailItem.BiosDownload -> ActionPreference(
+                    title = stringResource(item.labelRes),
                     subtitle = if (uiState.bios.isDownloading) {
                         uiState.bios.downloadingFileName
                             ?.let { stringResource(R.string.settings_platform_bios_downloading_file, it) }
@@ -759,8 +826,8 @@ fun PlatformDetailSection(
                     icon = Icons.Default.Download,
                     onClick = { viewModel.downloadBiosForPlatform(config.platform.slug) }
                 )
-                PlatformDetailItem.BiosInstall -> ActionPreference(
-                    title = stringResource(R.string.settings_platform_bios_install_title),
+                is PlatformDetailItem.BiosInstall -> ActionPreference(
+                    title = stringResource(item.labelRes),
                     subtitle = stringResource(
                         R.string.settings_platform_bios_install_subtitle,
                         config.effectiveEmulatorName
@@ -769,8 +836,8 @@ fun PlatformDetailSection(
                     isFocused = isFocused(item),
                     onClick = { viewModel.distributeAllBios() }
                 )
-                PlatformDetailItem.BiosCopy -> ActionPreference(
-                    title = stringResource(R.string.settings_platform_bios_copy_title),
+                is PlatformDetailItem.BiosCopy -> ActionPreference(
+                    title = stringResource(item.labelRes),
                     subtitle = stringResource(R.string.settings_platform_bios_copy_subtitle),
                     isFocused = isFocused(item),
                     icon = Icons.Default.ContentCopy,

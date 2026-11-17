@@ -19,6 +19,7 @@ data class HomeTilesSnapshot(
     val tileCollections: Map<Long, TileCollectionUi>,
     val tileApps: Map<String, String>,
     val tileLibraryLinks: Map<Long, LibraryLinkTileUi>,
+    val tileFolders: Map<Long, FolderTileUi>,
     val tileShowcases: Map<Long, PresentationSlot.PlatformShowcase>,
     val continueGameId: Long?,
     val raTileSummary: RaTileContent?

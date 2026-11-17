@@ -120,9 +120,9 @@ class LidSleepGuard @Inject constructor(
         return LidSleepDecision.parseLidClosed(result.output)
     }
 
-    private companion object {
-        const val TAG = "LidSleepGuard"
-        const val LID_SCRIPT = "dumpsys input"
+    companion object {
+        private const val TAG = "LidSleepGuard"
+        private const val LID_SCRIPT = "dumpsys input"
         const val SLEEP_SCRIPT = "input keyevent KEYCODE_SLEEP"
     }
 }

@@ -9,6 +9,7 @@ import com.nendo.argosy.data.repository.CollectionRepository
 import com.nendo.argosy.data.repository.GameRepository
 import com.nendo.argosy.data.repository.PlatformRepository
 import com.nendo.argosy.domain.model.HomeTileTargetRef
+import com.nendo.argosy.domain.model.TileArtSlot
 import com.nendo.argosy.ui.components.PageChooserAction
 import com.nendo.argosy.ui.components.PageChooserEntry
 import com.nendo.argosy.ui.components.PageChooserKind
@@ -47,9 +48,57 @@ class PageChooserEntrySource @Inject constructor(
     ): List<PageChooserEntry> = when {
         chooser.kind == PageChooserKind.FOCUS_GAME -> focusGameEntries(focusedCollection)
         chooser.kind == PageChooserKind.MUSIC -> musicEntries()
+        chooser.kind == PageChooserKind.DECOR && chooser.gameId != null -> decorArtEntries(chooser.gameId)
         chooser.gameId != null -> gameArtEntries(chooser.gameId)
         chooser.gameTitle != null -> gameArtSourceEntries(chooser.query)
+        chooser.kind == PageChooserKind.DECOR -> decorRootEntries(canBrowseFiles)
         else -> backdropRootEntries(canBrowseFiles)
+    }
+
+    private fun decorRootEntries(canBrowseFiles: Boolean): List<PageChooserEntry> = buildList {
+        add(
+            PageChooserEntry(
+                label = context.getString(R.string.ui_page_chooser_decor_source_game_art),
+                subtitle = context.getString(R.string.ui_page_chooser_decor_source_game_art_subtitle),
+                action = PageChooserAction.BrowseGameArt
+            )
+        )
+        if (canBrowseFiles) {
+            add(
+                PageChooserEntry(
+                    label = context.getString(R.string.ui_page_chooser_decor_source_file),
+                    subtitle = context.getString(R.string.ui_page_chooser_decor_source_file_subtitle),
+                    action = PageChooserAction.OpenFileBrowser
+                )
+            )
+        }
+    }
+
+    private suspend fun decorArtEntries(gameId: Long): List<PageChooserEntry> {
+        val art = gameRepository.getArt(gameId) ?: return emptyList()
+        return listOfNotNull(
+            art.logoPath?.takeIf { it.startsWith("/") }?.let {
+                PageChooserEntry(
+                    label = context.getString(R.string.ui_page_chooser_art_logo),
+                    previewPath = it,
+                    action = PageChooserAction.UseDecorArt(TileArtSlot.LOGO)
+                )
+            },
+            art.coverPath?.takeIf { it.startsWith("/") }?.let {
+                PageChooserEntry(
+                    label = context.getString(R.string.ui_page_chooser_decor_art_cover),
+                    previewPath = it,
+                    action = PageChooserAction.UseDecorArt(TileArtSlot.COVER)
+                )
+            },
+            art.backgroundPath?.takeIf { it.startsWith("/") }?.let {
+                PageChooserEntry(
+                    label = context.getString(R.string.ui_page_chooser_decor_art_background),
+                    previewPath = it,
+                    action = PageChooserAction.UseDecorArt(TileArtSlot.BACKGROUND)
+                )
+            }
+        )
     }
 
     private suspend fun focusGameEntries(

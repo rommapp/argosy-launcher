@@ -8,7 +8,8 @@ import com.nendo.argosy.ui.input.InputResult
 internal class ControllerKeyboardInputHandler(
     private val engine: KeyboardEngine,
     private val onFeedback: (KeyboardFeedback) -> Unit,
-    private val onCycleLayout: () -> KeyboardFeedback
+    private val onCycleLayout: () -> KeyboardFeedback,
+    private val onTopEdge: (() -> Boolean)? = null
 ) : InputHandler {
 
     private fun run(feedback: KeyboardFeedback): InputResult {
@@ -16,7 +17,12 @@ internal class ControllerKeyboardInputHandler(
         return feedback.toInputResult()
     }
 
-    override fun onUp(): InputResult = run(engine.move(0, -1))
+    override fun onUp(): InputResult {
+        if (onTopEdge != null && engine.isAtTopEdge() && onTopEdge.invoke()) {
+            return KeyboardFeedback.NAVIGATE.toInputResult()
+        }
+        return run(engine.move(0, -1))
+    }
     override fun onDown(): InputResult = run(engine.move(0, 1))
     override fun onLeft(): InputResult = run(engine.move(-1, 0))
     override fun onRight(): InputResult = run(engine.move(1, 0))

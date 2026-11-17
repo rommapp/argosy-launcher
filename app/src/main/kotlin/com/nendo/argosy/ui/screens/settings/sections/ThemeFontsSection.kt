@@ -1,5 +1,6 @@
 package com.nendo.argosy.ui.screens.settings.sections
 
+import androidx.annotation.StringRes
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
@@ -34,6 +35,7 @@ import com.nendo.argosy.ui.screens.settings.SettingsUiState
 import com.nendo.argosy.ui.screens.settings.SettingsViewModel
 import com.nendo.argosy.ui.screens.settings.components.SectionPaneLayout
 import com.nendo.argosy.ui.screens.settings.menu.SettingsLayout
+import com.nendo.argosy.ui.screens.settings.search.SearchableSetting
 import com.nendo.argosy.ui.theme.Dimens
 import com.nendo.argosy.ui.theme.LocalArgosyTheme
 
@@ -54,21 +56,27 @@ internal sealed class ThemeFontsItem(
     val section: String,
     val visibleWhen: (ThemeFontsLayoutState) -> Boolean = { true }
 ) {
-    val isFocusable: Boolean get() = when (this) {
-        is Header, is SectionSpacer, Guidelines, Preview -> false
-        else -> true
-    }
+    val isFocusable: Boolean get() = this is SearchableSetting
 
     class Header(key: String, section: String, val titleRes: Int) : ThemeFontsItem(key, section)
 
     class SectionSpacer(key: String, section: String) : ThemeFontsItem(key, section)
 
-    data object DisplaySlot : ThemeFontsItem("displayFont", "display")
-    data object DisplayScale : ThemeFontsItem("displayScale", "display")
-    data object DisplayRevert : ThemeFontsItem("displayRevert", "display", { it.displayCustom })
-    data object BodySlot : ThemeFontsItem("bodyFont", "body")
-    data object BodyScale : ThemeFontsItem("bodyScale", "body")
-    data object BodyRevert : ThemeFontsItem("bodyRevert", "body", { it.bodyCustom })
+    sealed class Row(
+        key: String,
+        section: String,
+        @StringRes override val labelRes: Int,
+        visibleWhen: (ThemeFontsLayoutState) -> Boolean = { true }
+    ) : ThemeFontsItem(key, section, visibleWhen), SearchableSetting
+
+    data object DisplaySlot : Row("displayFont", "display", R.string.settings_fonts_display_slot_title)
+    data object DisplayScale : Row("displayScale", "display", R.string.settings_fonts_display_scale_title)
+    data object DisplayRevert :
+        Row("displayRevert", "display", R.string.settings_fonts_display_revert_title, { it.displayCustom })
+    data object BodySlot : Row("bodyFont", "body", R.string.settings_fonts_body_slot_title)
+    data object BodyScale : Row("bodyScale", "body", R.string.settings_fonts_body_scale_title)
+    data object BodyRevert :
+        Row("bodyRevert", "body", R.string.settings_fonts_body_revert_title, { it.bodyCustom })
     data object Guidelines : ThemeFontsItem("fontGuidelines", "preview")
     data object Preview : ThemeFontsItem("fontPreview", "preview")
 
@@ -90,7 +98,7 @@ internal sealed class ThemeFontsItem(
     }
 }
 
-private val themeFontsLayout = SettingsLayout<ThemeFontsItem, ThemeFontsLayoutState>(
+internal val themeFontsLayout = SettingsLayout<ThemeFontsItem, ThemeFontsLayoutState>(
     allItems = ThemeFontsItem.ALL,
     isFocusable = { it.isFocusable },
     visibleWhen = { item, state -> item.visibleWhen(state) },
@@ -147,8 +155,8 @@ fun ThemeFontsSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
             is ThemeFontsItem.Header -> ThemeFontsSectionHeader(stringResource(item.titleRes))
             is ThemeFontsItem.SectionSpacer -> Spacer(modifier = Modifier.height(Dimens.spacingMd))
 
-            ThemeFontsItem.DisplaySlot -> ActionPreference(
-                title = stringResource(R.string.settings_fonts_display_slot_title),
+            is ThemeFontsItem.DisplaySlot -> ActionPreference(
+                title = stringResource(item.labelRes),
                 subtitle = stringResource(R.string.settings_fonts_display_slot_subtitle),
                 icon = Icons.Outlined.TextFields,
                 trailingText = display.displayFontName
@@ -157,8 +165,8 @@ fun ThemeFontsSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
                 onClick = { viewModel.openFontPicker(FontSlot.DISPLAY) }
             )
 
-            ThemeFontsItem.DisplayScale -> SliderPreference(
-                title = stringResource(R.string.settings_fonts_display_scale_title),
+            is ThemeFontsItem.DisplayScale -> SliderPreference(
+                title = stringResource(item.labelRes),
                 value = display.displayFontScale,
                 minValue = 50,
                 maxValue = 150,
@@ -168,16 +176,16 @@ fun ThemeFontsSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
                 onAdjust = { viewModel.adjustFontScale(FontSlot.DISPLAY, it) }
             )
 
-            ThemeFontsItem.DisplayRevert -> ActionPreference(
-                title = stringResource(R.string.settings_fonts_display_revert_title),
+            is ThemeFontsItem.DisplayRevert -> ActionPreference(
+                title = stringResource(item.labelRes),
                 subtitle = stringResource(R.string.settings_fonts_display_revert_subtitle),
                 icon = Icons.Outlined.RestartAlt,
                 isFocused = isFocused(item),
                 onClick = { viewModel.revertFont(FontSlot.DISPLAY) }
             )
 
-            ThemeFontsItem.BodySlot -> ActionPreference(
-                title = stringResource(R.string.settings_fonts_body_slot_title),
+            is ThemeFontsItem.BodySlot -> ActionPreference(
+                title = stringResource(item.labelRes),
                 subtitle = stringResource(R.string.settings_fonts_body_slot_subtitle),
                 icon = Icons.Outlined.TextFields,
                 trailingText = display.bodyFontName
@@ -186,8 +194,8 @@ fun ThemeFontsSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
                 onClick = { viewModel.openFontPicker(FontSlot.BODY) }
             )
 
-            ThemeFontsItem.BodyScale -> SliderPreference(
-                title = stringResource(R.string.settings_fonts_body_scale_title),
+            is ThemeFontsItem.BodyScale -> SliderPreference(
+                title = stringResource(item.labelRes),
                 value = display.bodyFontScale,
                 minValue = 50,
                 maxValue = 150,
@@ -197,8 +205,8 @@ fun ThemeFontsSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
                 onAdjust = { viewModel.adjustFontScale(FontSlot.BODY, it) }
             )
 
-            ThemeFontsItem.BodyRevert -> ActionPreference(
-                title = stringResource(R.string.settings_fonts_body_revert_title),
+            is ThemeFontsItem.BodyRevert -> ActionPreference(
+                title = stringResource(item.labelRes),
                 subtitle = stringResource(R.string.settings_fonts_body_revert_subtitle),
                 icon = Icons.Outlined.RestartAlt,
                 isFocused = isFocused(item),

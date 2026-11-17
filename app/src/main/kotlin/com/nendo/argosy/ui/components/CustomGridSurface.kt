@@ -191,6 +191,7 @@ fun CustomGridSurface(
                     onCoverLoaded = onCoverLoaded,
                     onPosterLoaded = onPosterLoaded,
                     useBoxArt = useBoxArt,
+                    decorInteractive = state.decorFocusable,
                     modifier = Modifier.fillMaxSize()
                 )
             }

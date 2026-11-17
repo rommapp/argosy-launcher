@@ -1186,6 +1186,7 @@
     </plurals>
     <string name="settings_caches_pending_uploads_subtitle_online">Синхронизируйте перед очисткой кэшей синхронизации</string>
     <string name="settings_caches_pending_uploads_subtitle_offline">Подключитесь к серверу, чтобы синхронизировать</string>
+    <string name="settings_caches_pending_uploads_search_label">Сохранения ожидают выгрузки</string>
 
     <string name="settings_caches_save_cache_title">Сбросить кэш сохранений</string>
     <string name="settings_caches_save_cache_busy">Сброс...</string>
@@ -2954,4 +2955,42 @@
     <string name="settings_romm_config_error_client_certificate_required">Сервер требует клиентский сертификат. Импортируйте его в разделе «Клиентский сертификат» или включите там «Использовать для RomM».</string>
     <string name="settings_accounts_pairing_error_client_certificate_required">Сервер требует клиентский сертификат. Импортируйте его в разделе «Клиентский сертификат» или включите там «Использовать для RomM».</string>
     <string name="settings_jellyfin_error_client_certificate_required">Сервер требует клиентский сертификат. Включите «Использовать для Jellyfin» в разделе «Клиентский сертификат».</string>
+    <string name="settings_search_row_title">Поиск настроек</string>
+    <string name="settings_search_keyboard_label">Поиск настроек</string>
+    <string name="settings_search_keyboard_submit">Готово</string>
+    <string name="settings_search_no_results">Нет настроек по запросу «%1$s»</string>
+    <string name="settings_search_crumb_displays">Экраны</string>
+    <string name="settings_search_crumb_ambient_led">Управление LED</string>
+    <string name="settings_search_crumb_audio">Аудио</string>
+    <string name="settings_search_crumb_theme">Тема</string>
+    <string name="settings_search_crumb_platforms">Платформы</string>
+    <string name="settings_search_crumb_builtin_emulator">Встроенный эмулятор</string>
+    <string name="settings_search_crumb_core_options">Настройки ядра</string>
+    <string name="settings_search_crumb_storage">Хранилище</string>
+    <string name="settings_search_crumb_storage_caches">Кэши и система</string>
+    <string name="settings_search_crumb_bios">Файлы BIOS</string>
+    <string name="settings_search_crumb_sounds">Звуки</string>
+    <string name="settings_search_crumb_music">Музыка</string>
+    <string name="settings_search_crumb_fonts">Шрифты</string>
+    <string name="settings_search_crumb_backdrop">Фон экрана</string>
+    <string name="settings_search_crumb_interface">Интерфейс</string>
+    <string name="settings_search_crumb_box_art">Обложки</string>
+    <string name="settings_search_crumb_controller_grip">Хват контроллера</string>
+    <string name="settings_search_crumb_saves">Сохранения</string>
+    <string name="settings_search_crumb_sync_settings">Настройки синхронизации</string>
+    <string name="settings_search_crumb_social">Социальное</string>
+    <string name="settings_search_crumb_permissions">Разрешения</string>
+    <string name="settings_search_crumb_about">О приложении</string>
+    <string name="settings_search_label_jellyfin_account">Аккаунт</string>
+    <string name="settings_search_label_social_account">Аккаунт</string>
+    <string name="settings_search_label_about_changelog">Список изменений</string>
+    <string name="settings_search_crumb_home_screen">Главный экран</string>
+    <string name="settings_search_crumb_presentation">Презентация</string>
+    <string name="settings_search_crumb_library_view">Библиотека</string>
+    <string name="settings_search_crumb_navigation">Навигация</string>
+    <string name="settings_search_crumb_builtin_video">A/V и производительность</string>
+    <string name="settings_search_crumb_builtin_controls">Управление</string>
+    <string name="settings_search_crumb_builtin_saves">Сохранения</string>
+    <string name="settings_search_label_home_layout_selector">Раскладка</string>
+    <string name="settings_search_label_platform_emulator">Эмулятор</string>
 </resources>

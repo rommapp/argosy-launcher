@@ -1,5 +1,6 @@
 package com.nendo.argosy.ui.screens.settings.sections
 
+import androidx.annotation.StringRes
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.res.stringResource
 import com.nendo.argosy.R
@@ -22,6 +23,13 @@ import com.nendo.argosy.ui.screens.settings.platformGpuDriverOverride
 import com.nendo.argosy.ui.screens.settings.selectableGpuDriverTokens
 
 enum class BuiltinGraphicsRow { BACKEND, GPU_DRIVER }
+
+@get:StringRes
+val BuiltinGraphicsRow.titleRes: Int
+    get() = when (this) {
+        BuiltinGraphicsRow.BACKEND -> R.string.settings_builtin_graphics_backend_title
+        BuiltinGraphicsRow.GPU_DRIVER -> R.string.settings_builtin_gpu_driver_title
+    }
 
 private val BuiltinVideoState.graphicsLoaded: Boolean
     get() = graphics.isLoaded && graphics.loadedPlatformId == currentPlatformContext?.platformId
@@ -82,7 +90,7 @@ private fun BackendRow(uiState: SettingsUiState, viewModel: SettingsViewModel, i
         stringResource(R.string.settings_builtin_graphics_backend_platform_subtitle, backend.coreName)
     }
     CyclePreference(
-        title = stringResource(R.string.settings_builtin_graphics_backend_title),
+        title = stringResource(BuiltinGraphicsRow.BACKEND.titleRes),
         subtitle = subtitle,
         value = labels.getOrNull(currentIndex) ?: backend.currentValue,
         isFocused = isFocused,
@@ -101,7 +109,7 @@ private fun BackendRow(uiState: SettingsUiState, viewModel: SettingsViewModel, i
 private fun GpuDriverRow(uiState: SettingsUiState, viewModel: SettingsViewModel, isFocused: Boolean) {
     val video = uiState.builtinVideo
     val graphics = video.graphics
-    val title = stringResource(R.string.settings_builtin_gpu_driver_title)
+    val title = stringResource(BuiltinGraphicsRow.GPU_DRIVER.titleRes)
     val current = currentGpuDriverToken(uiState)
     val currentLabel = gpuDriverLabel(current, graphics.installedDrivers)
     val block = builtinGpuDriverBlock(video)

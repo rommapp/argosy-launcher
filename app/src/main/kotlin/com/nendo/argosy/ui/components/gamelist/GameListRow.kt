@@ -360,7 +360,7 @@ private fun SaveStateMark(state: SaveListState) {
 }
 
 @Composable
-private fun DownloadStateMark(
+internal fun DownloadStateMark(
     indicator: GameDownloadIndicator,
     isDownloaded: Boolean,
     needsInstall: Boolean

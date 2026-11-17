@@ -120,7 +120,8 @@ internal fun KeyboardKeyView(
     onKeyTap: (KeyPosition) -> Unit,
     onKeyLongPress: (KeyPosition) -> Unit
 ) {
-    val focused = state.accentStrip == null && !state.pasteFocused && state.focus == geometry.position
+    val focused = state.accentStrip == null && !state.pasteFocused && !state.focusOutside &&
+        state.focus == geometry.position
     val placement = Modifier
         .offset(geometry.x, geometry.y)
         .size(geometry.width, keyHeight)

@@ -1,5 +1,6 @@
 package com.nendo.argosy.ui.screens.settings.sections
 
+import androidx.annotation.StringRes
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -31,80 +32,96 @@ import com.nendo.argosy.ui.screens.settings.components.RomMConfigForm
 import com.nendo.argosy.ui.screens.settings.components.SectionHeader
 import com.nendo.argosy.ui.screens.settings.components.SectionPaneLayout
 import com.nendo.argosy.ui.screens.settings.menu.SettingsLayout
+import com.nendo.argosy.ui.screens.settings.search.SearchableSetting
 import com.nendo.argosy.ui.theme.Dimens
 import com.nendo.argosy.util.formatClockDateTime
 
-internal sealed class RomMItem(val key: String, val section: String) {
-    val isFocusable: Boolean get() = this !is Header
+internal data class RomMLayoutState(
+    val isConnected: Boolean,
+    val isSignedIntoRomM: Boolean,
+    val streamingAvailable: Boolean
+) {
+    companion object {
+        fun from(state: SettingsUiState) = RomMLayoutState(
+            isConnected = state.server.connectionStatus == ConnectionStatus.ONLINE ||
+                state.server.connectionStatus == ConnectionStatus.OFFLINE,
+            isSignedIntoRomM = state.server.rommUrl.isNotBlank(),
+            streamingAvailable = state.server.streamingAvailable
+        )
+    }
+}
+
+internal sealed class RomMItem(
+    val key: String,
+    val section: String,
+    val visibleWhen: (RomMLayoutState) -> Boolean = { true }
+) {
+    val isFocusable: Boolean get() = this is SearchableSetting
 
     class Header(key: String, section: String, val titleRes: Int) : RomMItem(key, section)
 
-    data object RomManager : RomMItem("romManager", "server")
-    data object RomMSignOut : RomMItem("rommSignOut", "server")
-    data object Accounts : RomMItem("rommAccounts", "server")
-    data object NotOnDevice : RomMItem("rommNotOnDevice", "server")
-    data object SyncSettings : RomMItem("syncSettings", "library")
-    data object SyncLibrary : RomMItem("syncLibrary", "library")
-}
+    sealed class Row(
+        key: String,
+        section: String,
+        @StringRes override val labelRes: Int,
+        visibleWhen: (RomMLayoutState) -> Boolean = { true }
+    ) : RomMItem(key, section, visibleWhen), SearchableSetting
 
-internal fun buildRomMItems(
-    isConnected: Boolean,
-    isSignedIntoRomM: Boolean,
-    streamingAvailable: Boolean = false
-): List<RomMItem> = buildList {
-    add(RomMItem.Header("serverHeader", "server", R.string.settings_romm_section_server))
-    add(RomMItem.RomManager)
-    add(RomMItem.Accounts)
-    if (streamingAvailable) {
-        add(RomMItem.NotOnDevice)
-    }
-    if (isSignedIntoRomM) {
-        add(RomMItem.RomMSignOut)
-    }
-
-    if (isConnected) {
-        add(RomMItem.Header("libraryHeader", "library", R.string.settings_romm_section_library))
-        add(RomMItem.SyncSettings)
-        add(RomMItem.SyncLibrary)
-    }
-}
-
-internal fun buildRomMItemsFromState(state: SettingsUiState): List<RomMItem> {
-    val isConnected = state.server.connectionStatus == ConnectionStatus.ONLINE ||
-        state.server.connectionStatus == ConnectionStatus.OFFLINE
-    return buildRomMItems(
-        isConnected = isConnected,
-        isSignedIntoRomM = state.server.rommUrl.isNotBlank(),
-        streamingAvailable = state.server.streamingAvailable
+    data object RomManager : Row("romManager", "server", R.string.settings_romm_server_title)
+    data object Accounts : Row("rommAccounts", "server", R.string.settings_romm_accounts_title)
+    data object NotOnDevice : Row(
+        "rommNotOnDevice", "server", R.string.stream_setting_not_on_device_title,
+        visibleWhen = { it.streamingAvailable }
     )
+    data object RomMSignOut : Row(
+        "rommSignOut", "server", R.string.settings_romm_sign_out_title,
+        visibleWhen = { it.isSignedIntoRomM }
+    )
+    data object SyncSettings : Row(
+        "syncSettings", "library", R.string.settings_romm_sync_settings_title,
+        visibleWhen = { it.isConnected }
+    )
+    data object SyncLibrary : Row(
+        "syncLibrary", "library", R.string.settings_romm_sync_library_title,
+        visibleWhen = { it.isConnected }
+    )
+
+    companion object {
+        val ALL: List<RomMItem>
+            get() = listOf(
+                Header("serverHeader", "server", R.string.settings_romm_section_server),
+                RomManager, Accounts, NotOnDevice, RomMSignOut,
+                Header("libraryHeader", "library", R.string.settings_romm_section_library),
+                SyncSettings, SyncLibrary
+            )
+    }
 }
 
-internal fun createRomMLayout(items: List<RomMItem>) =
-    SettingsLayout<RomMItem, Unit>(
-        allItems = items,
-        isFocusable = { it.isFocusable },
-        visibleWhen = { _, _ -> true },
-        sectionOf = { it.section },
-        sectionTitleRes = {
-            when (it) {
-                "server" -> R.string.settings_romm_section_server
-                "library" -> R.string.settings_romm_section_library
-                else -> null
-            }
+internal val rommLayout = SettingsLayout<RomMItem, RomMLayoutState>(
+    allItems = RomMItem.ALL,
+    isFocusable = { it.isFocusable },
+    visibleWhen = { item, state -> item.visibleWhen(state) },
+    sectionOf = { it.section },
+    sectionTitleRes = {
+        when (it) {
+            "server" -> R.string.settings_romm_section_server
+            "library" -> R.string.settings_romm_section_library
+            else -> null
         }
-    )
+    }
+)
 
-internal fun rommItemAtFocusIndex(index: Int, items: List<RomMItem>): RomMItem? =
-    createRomMLayout(items).itemAtFocusIndex(index, Unit)
+internal fun rommItemAtFocusIndex(index: Int, state: RomMLayoutState): RomMItem? =
+    rommLayout.itemAtFocusIndex(index, state)
 
-internal fun rommSections(items: List<RomMItem>) =
-    createRomMLayout(items).buildSections(Unit)
+internal fun rommSections(state: RomMLayoutState) =
+    rommLayout.buildSections(state)
 
-internal fun rommMaxFocusIndex(items: List<RomMItem>): Int =
-    createRomMLayout(items).maxFocusIndex(Unit)
+internal fun rommMaxFocusIndex(state: RomMLayoutState): Int =
+    rommLayout.maxFocusIndex(state)
 
-internal fun rommFocusIndexOf(item: RomMItem, items: List<RomMItem>): Int =
-    createRomMLayout(items).focusIndexOf(item, Unit)
+internal fun rommFocusIndexOf(item: RomMItem, state: RomMLayoutState): Int =
+    rommLayout.focusIndexOf(item, state)
 
 internal fun accountsSummary(context: android.content.Context, state: SettingsUiState): String {
     val accounts = state.accounts
@@ -138,30 +155,30 @@ private fun RomMContent(uiState: SettingsUiState, viewModel: SettingsViewModel) 
     val isSignedIntoRomM = uiState.server.rommUrl.isNotBlank()
     val streamingAvailable = uiState.server.streamingAvailable
 
-    val allItems = remember(isConnected, isSignedIntoRomM, streamingAvailable) {
-        buildRomMItems(
+    val layoutState = remember(isConnected, isSignedIntoRomM, streamingAvailable) {
+        RomMLayoutState(
             isConnected = isConnected,
             isSignedIntoRomM = isSignedIntoRomM,
             streamingAvailable = streamingAvailable
         )
     }
     val context = LocalContext.current
-    val layout = remember(allItems) { createRomMLayout(allItems) }
-    val sections = remember(allItems, context) { layout.buildSections(Unit, context) }
+    val visibleItems = remember(layoutState) { rommLayout.visibleItems(layoutState) }
+    val sections = remember(layoutState, context) { rommLayout.buildSections(layoutState, context) }
 
     fun isFocused(item: RomMItem): Boolean =
-        uiState.focusedIndex == layout.focusIndexOf(item, Unit)
+        uiState.focusedIndex == rommLayout.focusIndexOf(item, layoutState)
 
     fun openFrom(item: RomMItem, enter: () -> Unit) {
-        viewModel.setFocusIndex(layout.focusIndexOf(item, Unit))
+        viewModel.setFocusIndex(rommLayout.focusIndexOf(item, layoutState))
         enter()
     }
 
     SectionPaneLayout(
-        items = allItems,
+        items = visibleItems,
         sections = sections,
         focusedIndex = uiState.focusedIndex,
-        focusToListIndex = { layout.focusToListIndex(it, Unit) },
+        focusToListIndex = { rommLayout.focusToListIndex(it, layoutState) },
         itemKey = { it.key },
         isNavItem = { false },
         isHeader = { it is RomMItem.Header },
@@ -177,9 +194,9 @@ private fun RomMContent(uiState: SettingsUiState, viewModel: SettingsViewModel) 
                 SectionHeader(stringResource(item.titleRes))
             }
 
-            RomMItem.RomManager -> NavigationPreference(
+            is RomMItem.RomManager -> NavigationPreference(
                 icon = Icons.Default.Dns,
-                title = stringResource(R.string.settings_romm_server_title),
+                title = stringResource(item.labelRes),
                 subtitle = when (uiState.server.connectionStatus) {
                     ConnectionStatus.CHECKING ->
                         stringResource(R.string.settings_romm_server_checking)
@@ -195,12 +212,12 @@ private fun RomMContent(uiState: SettingsUiState, viewModel: SettingsViewModel) 
                 onClick = { viewModel.startRommConfig() }
             )
 
-            RomMItem.RomMSignOut -> ActionPreference(
+            is RomMItem.RomMSignOut -> ActionPreference(
                 icon = Icons.AutoMirrored.Filled.Logout,
                 title = if (uiState.server.rommSigningOut) {
                     stringResource(R.string.settings_romm_sign_out_title_busy)
                 } else {
-                    stringResource(R.string.settings_romm_sign_out_title)
+                    stringResource(item.labelRes)
                 },
                 subtitle = uiState.server.rommUsername.takeIf { it.isNotBlank() }
                     ?.let { stringResource(R.string.settings_romm_sign_out_signed_in_as, it) }
@@ -211,18 +228,18 @@ private fun RomMContent(uiState: SettingsUiState, viewModel: SettingsViewModel) 
                 onClick = { viewModel.requestRommSignOut() }
             )
 
-            RomMItem.Accounts -> NavigationPreference(
+            is RomMItem.Accounts -> NavigationPreference(
                 icon = Icons.Default.ManageAccounts,
-                title = stringResource(R.string.settings_romm_accounts_title),
+                title = stringResource(item.labelRes),
                 subtitle = accountsSummary(context, uiState),
                 isFocused = isFocused(item),
                 onClick = { openFrom(item) { viewModel.navigateToSection(SettingsSection.ACCOUNTS) } }
             )
 
-            RomMItem.NotOnDevice -> {
+            is RomMItem.NotOnDevice -> {
                 val action = uiState.server.notOnDeviceAction
                 SegmentedPreference(
-                    title = stringResource(R.string.stream_setting_not_on_device_title),
+                    title = stringResource(item.labelRes),
                     subtitle = stringResource(action.subtitleRes),
                     options = NotOnDeviceAction.entries.map { stringResource(it.labelRes) },
                     selectedIndex = NotOnDeviceAction.entries.indexOf(action),
@@ -231,15 +248,15 @@ private fun RomMContent(uiState: SettingsUiState, viewModel: SettingsViewModel) 
                 )
             }
 
-            RomMItem.SyncSettings -> NavigationPreference(
+            is RomMItem.SyncSettings -> NavigationPreference(
                 icon = Icons.Default.Tune,
-                title = stringResource(R.string.settings_romm_sync_settings_title),
+                title = stringResource(item.labelRes),
                 subtitle = stringResource(R.string.settings_romm_sync_settings_subtitle),
                 isFocused = isFocused(item),
                 onClick = { openFrom(item) { viewModel.navigateToSection(SettingsSection.SYNC_SETTINGS) } }
             )
 
-            RomMItem.SyncLibrary -> {
+            is RomMItem.SyncLibrary -> {
                 val enabledCount = uiState.syncSettings.enabledPlatformCount
                 val totalCount = uiState.syncSettings.totalPlatforms
                 val platformText = if (totalCount > 0) {
@@ -257,7 +274,7 @@ private fun RomMContent(uiState: SettingsUiState, viewModel: SettingsViewModel) 
                 } ?: platformText.ifEmpty { stringResource(R.string.settings_romm_sync_never) }
                 ActionPreference(
                     icon = Icons.AutoMirrored.Filled.LibraryBooks,
-                    title = stringResource(R.string.settings_romm_sync_library_title),
+                    title = stringResource(item.labelRes),
                     subtitle = lastSyncText,
                     isFocused = isFocused(item),
                     isEnabled = isOnline,

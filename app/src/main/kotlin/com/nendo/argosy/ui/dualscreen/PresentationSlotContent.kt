@@ -121,7 +121,8 @@ private fun PresentationSlotBody(
     val gameDisplayId = manager?.emulatorDisplay?.collectAsState()?.value
     val displayId = ContextCompat.getDisplayOrDefault(LocalContext.current).displayId
     var measuredHintsHeight by remember { mutableStateOf(0.dp) }
-    val hintsHeight = if (!showControlHints || hints.isEmpty()) 0.dp else measuredHintsHeight
+    val drawsHints = showControlHints && hints.isNotEmpty()
+    val hintsHeight = if (drawsHints) measuredHintsHeight else 0.dp
     val recapBlur = maxOf(
         com.nendo.argosy.ui.components.launchRecapBackdropBlur(),
         com.nendo.argosy.ui.components.recap.monthlyRecapBackdropBlur()
@@ -150,7 +151,7 @@ private fun PresentationSlotBody(
                     .padding(Dimens.spacingLg)
                     .graphicsLayer { alpha = chromeAlpha }
             )
-            if (showControlHints && hints.isNotEmpty()) {
+            if (drawsHints) {
                 Box(
                     modifier = Modifier
                         .align(Alignment.BottomCenter)
@@ -240,6 +241,22 @@ private fun PresentationSlotScene(
             is PresentationSlot.SaveGame -> SaveGameSlot(slot, bottomInset = hintsHeight)
             is PresentationSlot.MediaPlayback ->
                 com.nendo.argosy.ui.dualscreen.media.CompanionMediaPanel(slot.itemId, bottomInset = hintsHeight)
+            is PresentationSlot.Search -> com.nendo.argosy.ui.screens.search.SearchPresentation(
+                state = slot.state,
+                bottomInset = hintsHeight,
+                onTap = { index ->
+                    com.nendo.argosy.DualScreenManagerHolder.instance
+                        ?.tapPresentation(PresentationTap(slot.owner, index))
+                }
+            )
+            is PresentationSlot.QuickMenu -> com.nendo.argosy.ui.quickmenu.QuickMenuPresentation(
+                state = slot.state,
+                bottomInset = hintsHeight,
+                onTap = {
+                    com.nendo.argosy.DualScreenManagerHolder.instance
+                        ?.tapPresentation(PresentationTap(slot.owner, 0))
+                }
+            )
             is PresentationSlot.InGame -> {
                 val manager = com.nendo.argosy.DualScreenManagerHolder.instance ?: return@Box
                 val bar = rememberInGameAppBarState()

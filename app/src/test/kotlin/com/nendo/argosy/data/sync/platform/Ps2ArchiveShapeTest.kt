@@ -63,6 +63,7 @@ class Ps2ArchiveShapeTest {
             unitSaveHandler = mockk(relaxed = true),
             sigilSaveHandler = mockk(relaxed = true),
             dreamcastSaveHandler = mockk(relaxed = true),
+            emulatorSaveConfigRepository = mockk(relaxed = true),
         )
         handler = registry.getFolderHandler("ps2") ?: error("PS2 handler not registered")
 
@@ -182,6 +183,36 @@ class Ps2ArchiveShapeTest {
 
         assertFalse(result.success)
         assertFalse(File(card, "BASLUS-21693XX").exists())
+    }
+
+    @Test
+    fun `an upload bundles only this game's folders under their own names`() = runTest {
+        File(card, gameFolder).mkdirs()
+        File(card, "$gameFolder/icon.sys").writeText("icon")
+        File(card, "$gameFolder/ace.bin").writeText("local-save")
+        File(card, "${saveId}SYS").mkdirs()
+        File(card, "${saveId}SYS/sys.bin").writeText("system")
+        File(card, "BASLUS-21050").mkdirs()
+        File(card, "BASLUS-21050/other.bin").writeText("not ours")
+
+        val prepared = handler.prepareForUpload(card.absolutePath, saveContext())
+
+        val zip = prepared?.file ?: error("nothing prepared")
+        val entries = java.util.zip.ZipFile(zip).use { archive ->
+            archive.entries().toList().associate { entry ->
+                entry.name to if (entry.isDirectory) "" else archive.getInputStream(entry).use { it.readBytes().decodeToString() }
+            }
+        }
+        assertEquals(
+            mapOf(
+                "$gameFolder/" to "",
+                "$gameFolder/ace.bin" to "local-save",
+                "$gameFolder/icon.sys" to "icon",
+                "${saveId}SYS/" to "",
+                "${saveId}SYS/sys.bin" to "system"
+            ),
+            entries
+        )
     }
 
     @Test

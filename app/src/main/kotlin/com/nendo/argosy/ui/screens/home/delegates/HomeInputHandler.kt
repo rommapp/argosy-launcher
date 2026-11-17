@@ -61,6 +61,18 @@ interface HomeInputActions {
     fun confirmAddPage()
     fun openTilePicker()
     fun closeTilePicker()
+    fun openFolder(tile: com.nendo.argosy.domain.model.HomeTile)
+    fun closeFolder(): Boolean
+    fun moveFolderFocus(direction: com.nendo.argosy.domain.model.GridDirection2D): Boolean
+    fun removeFocusedFolderMember(): Boolean
+    fun moveFolderChooserFocus(delta: Int)
+    fun confirmFolderChooser()
+    fun closeFolderChooser()
+    fun finishDecorEditing()
+    fun closeFolderAppearance(): Boolean
+    fun moveFolderAppearanceFocus(delta: Int)
+    fun cycleFolderAppearance(delta: Int): Boolean
+    fun confirmFolderAppearance(): Boolean
 
     /**
      * Steps the media tab out of a library. False when it is already at the library list, which is
@@ -354,7 +366,19 @@ class HomeInputHandler(
             return
         }
         if (actions.engageFocusedTile()) return
-        when (val target = state.customGrid.focusedTile?.target) {
+        val tile = state.customGrid.focusedTile
+        if (tile != null && tile.target is com.nendo.argosy.domain.model.HomeTileTargetRef.Folder) {
+            actions.openFolder(tile)
+            return
+        }
+        if (!activateTileTarget(tile?.target, state)) actions.openTilePicker()
+    }
+
+    private fun activateTileTarget(
+        target: com.nendo.argosy.domain.model.HomeTileTargetRef?,
+        state: HomeUiState
+    ): Boolean {
+        when (target) {
             is com.nendo.argosy.domain.model.HomeTileTargetRef.Game ->
                 activateTileGame(target.gameId, state)
             is com.nendo.argosy.domain.model.HomeTileTargetRef.App ->
@@ -368,9 +392,142 @@ class HomeInputHandler(
             is com.nendo.argosy.domain.model.HomeTileTargetRef.Media ->
                 actions.playTileMedia(target.itemId)
             is com.nendo.argosy.domain.model.HomeTileTargetRef.Feature -> confirmFeatureTile(target, state)
-            else -> actions.openTilePicker()
+            else -> return false
         }
+        return true
     }
+
+    /**
+     * Input for an open folder. It takes every button, so nothing reaches the grid behind it: the
+     * d-pad moves within the folder, confirm acts on the member as the grid would, the context
+     * button returns a member to the grid, and back closes the folder onto its tile.
+     */
+    val folderOverlayInput: InputHandler = object : InputHandler {
+        override fun onUp(): InputResult = folderMove(GridDirection2D.UP)
+        override fun onDown(): InputResult = folderMove(GridDirection2D.DOWN)
+        override fun onLeft(): InputResult = folderMove(GridDirection2D.LEFT)
+        override fun onRight(): InputResult = folderMove(GridDirection2D.RIGHT)
+
+        override fun onConfirm(): InputResult {
+            val state = actions.uiState.value
+            val member = state.customGrid.focusedFolderMember ?: return InputResult.handled(SoundType.BOUNDARY)
+            return if (activateTileTarget(member.target, state)) {
+                InputResult.HANDLED
+            } else {
+                InputResult.handled(SoundType.BOUNDARY)
+            }
+        }
+
+        override fun onBack(): InputResult {
+            actions.closeFolder()
+            return InputResult.handled(SoundType.CLOSE_MODAL)
+        }
+
+        override fun onContextMenu(): InputResult =
+            if (actions.removeFocusedFolderMember()) InputResult.HANDLED else InputResult.handled(SoundType.BOUNDARY)
+
+        override fun onMenu(): InputResult = InputResult.HANDLED
+        override fun onSecondaryAction(): InputResult = InputResult.HANDLED
+        override fun onPrevSection(): InputResult = InputResult.HANDLED
+        override fun onNextSection(): InputResult = InputResult.HANDLED
+        override fun onPrevTrigger(): InputResult = InputResult.HANDLED
+        override fun onNextTrigger(): InputResult = InputResult.HANDLED
+        override fun onSelect(): InputResult = InputResult.HANDLED
+        override fun onLongSelect(): InputResult = InputResult.HANDLED
+        override fun onLeftStickClick(): InputResult = InputResult.HANDLED
+        override fun onRightStickClick(): InputResult = InputResult.HANDLED
+        override fun onLongConfirm(): InputResult = InputResult.HANDLED
+    }
+
+    private fun folderMove(direction: GridDirection2D): InputResult =
+        if (actions.moveFolderFocus(direction)) InputResult.HANDLED else InputResult.handled(SoundType.BOUNDARY)
+
+    /**
+     * Input for the folder chooser, which lists where the focused tile can be moved.
+     */
+    val folderChooserInput: InputHandler = object : InputHandler {
+        override fun onUp(): InputResult {
+            actions.moveFolderChooserFocus(-1)
+            return InputResult.HANDLED
+        }
+
+        override fun onDown(): InputResult {
+            actions.moveFolderChooserFocus(1)
+            return InputResult.HANDLED
+        }
+
+        override fun onConfirm(): InputResult {
+            actions.confirmFolderChooser()
+            return InputResult.HANDLED
+        }
+
+        override fun onBack(): InputResult {
+            actions.closeFolderChooser()
+            return InputResult.handled(SoundType.CLOSE_MODAL)
+        }
+
+        override fun onLeft(): InputResult = InputResult.HANDLED
+        override fun onRight(): InputResult = InputResult.HANDLED
+        override fun onMenu(): InputResult = InputResult.HANDLED
+        override fun onSecondaryAction(): InputResult = InputResult.HANDLED
+        override fun onContextMenu(): InputResult = InputResult.HANDLED
+        override fun onPrevSection(): InputResult = InputResult.HANDLED
+        override fun onNextSection(): InputResult = InputResult.HANDLED
+        override fun onPrevTrigger(): InputResult = InputResult.HANDLED
+        override fun onNextTrigger(): InputResult = InputResult.HANDLED
+        override fun onSelect(): InputResult = InputResult.HANDLED
+        override fun onLongSelect(): InputResult = InputResult.HANDLED
+        override fun onLeftStickClick(): InputResult = InputResult.HANDLED
+        override fun onRightStickClick(): InputResult = InputResult.HANDLED
+        override fun onLongConfirm(): InputResult = InputResult.HANDLED
+    }
+
+    /**
+     * Input for the folder appearance panel. Up and down move between rows, left and right step the
+     * focused row's value, A opens a picture row's chooser or toggles the name, and back closes it.
+     */
+    val folderAppearanceInput: InputHandler = object : InputHandler {
+        override fun onUp(): InputResult {
+            actions.moveFolderAppearanceFocus(-1)
+            return InputResult.HANDLED
+        }
+
+        override fun onDown(): InputResult {
+            actions.moveFolderAppearanceFocus(1)
+            return InputResult.HANDLED
+        }
+
+        override fun onLeft(): InputResult = appearanceStep(-1)
+        override fun onRight(): InputResult = appearanceStep(1)
+
+        override fun onConfirm(): InputResult =
+            if (actions.confirmFolderAppearance()) {
+                InputResult.handled(SoundType.SELECT)
+            } else {
+                InputResult.handled(SoundType.SILENT)
+            }
+
+        override fun onBack(): InputResult {
+            actions.closeFolderAppearance()
+            return InputResult.handled(SoundType.CLOSE_MODAL)
+        }
+
+        override fun onMenu(): InputResult = InputResult.HANDLED
+        override fun onSecondaryAction(): InputResult = InputResult.HANDLED
+        override fun onContextMenu(): InputResult = InputResult.HANDLED
+        override fun onPrevSection(): InputResult = InputResult.HANDLED
+        override fun onNextSection(): InputResult = InputResult.HANDLED
+        override fun onPrevTrigger(): InputResult = InputResult.HANDLED
+        override fun onNextTrigger(): InputResult = InputResult.HANDLED
+        override fun onSelect(): InputResult = InputResult.HANDLED
+        override fun onLongSelect(): InputResult = InputResult.HANDLED
+        override fun onLeftStickClick(): InputResult = InputResult.HANDLED
+        override fun onRightStickClick(): InputResult = InputResult.HANDLED
+        override fun onLongConfirm(): InputResult = InputResult.HANDLED
+    }
+
+    private fun appearanceStep(delta: Int): InputResult =
+        if (actions.cycleFolderAppearance(delta)) InputResult.HANDLED else InputResult.handled(SoundType.BOUNDARY)
 
     private fun activateTileGame(gameId: Long, state: HomeUiState) {
         val game = state.tileGames[gameId]
@@ -590,6 +747,10 @@ class HomeInputHandler(
         }
         if (state.customGrid.isEditing) {
             actions.cancelTileEdit()
+            return InputResult.handled(SoundType.BACK)
+        }
+        if (state.customGrid.decorEditing) {
+            actions.finishDecorEditing()
             return InputResult.handled(SoundType.BACK)
         }
         if (state.showAddToCollectionModal) {

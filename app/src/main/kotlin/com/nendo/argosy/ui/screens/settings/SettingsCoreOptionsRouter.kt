@@ -5,8 +5,13 @@ import com.nendo.argosy.data.local.entity.CoreOptionOverrideEntity
 import com.nendo.argosy.libretro.GraphicsBackendRegistry
 import com.nendo.argosy.libretro.LibretroCoreRegistry
 import com.nendo.argosy.libretro.coreoptions.CoreOptionManifestRegistry
+import com.nendo.argosy.ui.screens.settings.search.SettingsSearchCoreOption
+import com.nendo.argosy.ui.screens.settings.sections.BuiltinEmulatorItem
+import com.nendo.argosy.ui.screens.settings.sections.coreOptionsFocusIndexOfOption
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 internal fun routeLoadCoreOptionsState(vm: SettingsViewModel) {
     vm.viewModelScope.launch {
@@ -169,6 +174,59 @@ internal suspend fun refreshCoreOptionsInstallState(vm: SettingsViewModel) {
                 overrides = optionItems.second
             )
         )
+    }
+}
+
+internal suspend fun loadDownloadedCoreOptionsForSearch(vm: SettingsViewModel): List<SettingsSearchCoreOption> {
+    val reachableCores = vm._uiState.value.builtinVideo.availablePlatforms
+        .flatMap { LibretroCoreRegistry.getCoresForPlatform(it.platformSlug) }
+        .distinctBy { it.coreId }
+    return withContext(Dispatchers.IO) {
+        val installed = vm.getInstalledCoreIds()
+        reachableCores
+            .filter { it.coreId in installed && CoreOptionManifestRegistry.hasManifest(it.coreId) }
+            .flatMap { core ->
+                loadOptionsForCore(vm, core.coreId).first.map { option ->
+                    SettingsSearchCoreOption(
+                        coreId = core.coreId,
+                        coreName = core.displayName,
+                        optionKey = option.key,
+                        optionName = option.displayName
+                    )
+                }
+            }
+    }
+}
+
+internal fun routeOpenCoreOption(vm: SettingsViewModel, coreId: String, optionKey: String) {
+    val platforms = vm._uiState.value.builtinVideo.availablePlatforms
+    val platformIndex = platforms.indexOfFirst { platform ->
+        LibretroCoreRegistry.getCoresForPlatform(platform.platformSlug).any { it.coreId == coreId }
+    }
+    if (platformIndex < 0) return
+    routeNavigateToSection(vm, SettingsSection.BUILTIN_EMULATOR)
+    vm.setFocusIndex(BuiltinEmulatorItem.CORE_OPTIONS.focusIndex)
+    routeNavigateToSection(vm, SettingsSection.CORE_OPTIONS)
+    vm.viewModelScope.launch {
+        val cores = buildCoreContexts(vm, platforms[platformIndex].platformSlug)
+        val coreIndex = cores.indexOfFirst { it.coreId == coreId }.coerceAtLeast(0)
+        val optionItems = loadOptionsForCore(vm, coreId)
+        vm._uiState.update { state ->
+            val coreOptions = state.coreOptions.copy(
+                availablePlatforms = platforms,
+                platformContextIndex = platformIndex,
+                coresForCurrentPlatform = cores,
+                selectedCoreIndex = coreIndex,
+                options = optionItems.first,
+                overrides = optionItems.second
+            )
+            val focus = if (state.currentSection == SettingsSection.CORE_OPTIONS) {
+                coreOptionsFocusIndexOfOption(coreOptions, optionKey).coerceAtLeast(0)
+            } else {
+                state.focusedIndex
+            }
+            state.copy(coreOptions = coreOptions, focusedIndex = focus)
+        }
     }
 }
 

@@ -173,7 +173,16 @@
     <string name="library_search_no_results">Nenhum resultado para \"%1$s\"</string>
     <string name="library_search_heading_games">Jogos</string>
     <string name="library_search_heading_media">Mídia</string>
-    <string name="library_search_result_platform_unknown">Desconhecida</string>
+    <string name="library_search_heading_recent_searches">Buscas recentes</string>
+    <string name="library_search_heading_recently_played">Jogados recentemente</string>
+    <plurals name="library_search_presentation_min_query_hint">
+        <item quantity="one">Digite pelo menos %d caractere para buscar</item>
+        <item quantity="many">Digite pelo menos %d caracteres para buscar</item>
+        <item quantity="other">Digite pelo menos %d caracteres para buscar</item>
+    </plurals>
+    <string name="library_search_presentation_no_results">Nenhum resultado para \"%1$s\"</string>
+    <string name="library_search_presentation_heading_recently_played">Jogados recentemente</string>
+    <string name="library_search_history_heading">Buscas recentes</string>
     <string name="library_search_result_kind_series">Série</string>
     <string name="library_search_result_kind_movie">Filme</string>
     <string name="library_search_hint_group_jump">Jogos / Mídia</string>
@@ -199,7 +208,4 @@
     <string name="library_quickmenu_resume_game">Retomar</string>
     <string name="library_quickmenu_close_game">Fechar jogo</string>
     <string name="library_quickmenu_move_to_display">Mover para a tela %1$d</string>
-    <string name="library_search_result_running">Em execução</string>
-    <string name="library_search_result_running_in">Em execução no %1$s</string>
-    <string name="library_search_result_saving">Salvando</string>
 </resources>

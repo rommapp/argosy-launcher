@@ -7,6 +7,7 @@ import com.nendo.argosy.data.model.PrivilegedRoute
 import com.nendo.argosy.ui.common.BuiltinCoreSummary
 import com.nendo.argosy.ui.common.DisplayText
 import com.nendo.argosy.ui.components.TextEntryFocus
+import com.nendo.argosy.ui.screens.settings.search.SettingsSearchState
 import com.nendo.argosy.ui.components.TextEntryRow
 import com.nendo.argosy.core.emulator.EmulatorDownloadState
 import com.nendo.argosy.data.cache.GradientExtractionConfig
@@ -331,7 +332,7 @@ data class DisplayState(
     val libraryRegionOptions: List<String> = emptyList(),
     val videoWallpaperEnabled: Boolean = false,
     val videoWallpaperDelaySeconds: Int = 3,
-    val videoWallpaperMuted: Boolean = false,
+    val videoWallpaperMuted: Boolean = com.nendo.argosy.ui.theme.generated.ComponentDefaults.Background.videoWallpaperMuted,
     val uiScale: Int = 100,
     val gripReserveMode: GripReserveMode = GripReserveMode.OFF,
     val gripReservePercent: Int = GRIP_RESERVE_DEFAULT_PERCENT,
@@ -1704,21 +1705,6 @@ data class PermissionsState(
     val allGranted: Boolean get() = grantedCount == totalCount
 }
 
-const val RA_PROXY_TOGGLE_INDEX = 1
-const val RA_PROXY_FIELD_INDEX = 2
-
-const val RA_LOGGED_IN_LOGOUT_INDEX = 0
-const val RA_LOGGED_IN_WEB_API_KEY_INDEX = 1
-const val RA_LOGGED_IN_PLAY_MODE_INDEX = 2
-const val RA_LOGGED_IN_PROXY_TOGGLE_INDEX = 3
-const val RA_LOGGED_IN_PROXY_FIELD_INDEX = 4
-
-fun raLoggedInPushIndex(proxyEnabled: Boolean): Int =
-    if (proxyEnabled) RA_LOGGED_IN_PROXY_FIELD_INDEX + 1 else RA_LOGGED_IN_PROXY_TOGGLE_INDEX + 1
-
-fun raLoggedInMaxFocusIndex(proxyEnabled: Boolean, canPushToRetroArch: Boolean): Int =
-    if (canPushToRetroArch) raLoggedInPushIndex(proxyEnabled) else raLoggedInPushIndex(proxyEnabled) - 1
-
 enum class RAWebApiKeyAction { PASTE, CLEAR, CANCEL, SAVE }
 
 enum class RAWebApiKeyStatus { IDLE, VALIDATING, REJECTED, UNREACHABLE, CLIPBOARD_EMPTY }
@@ -2022,6 +2008,7 @@ data class SettingsUiState(
     val drivers: DriversState = DriversState(),
     val social: SocialState = SocialState(),
     val permissions: PermissionsState = PermissionsState(),
+    val settingsSearch: SettingsSearchState = SettingsSearchState(),
     val launchFolderPicker: Boolean = false,
     val showImportSettingsConfirm: Boolean = false,
     val showMigrationDialog: Boolean = false,

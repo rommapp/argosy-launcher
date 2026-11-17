@@ -18,6 +18,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
+import com.nendo.argosy.ui.theme.Motion
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -65,10 +66,10 @@ class LongPressAnimationState(
             gamepadAnimationJob?.cancel()
             gamepadAnimationJob = null
             scope.launch {
-                launch { scale.animateTo(1f, tween(150)) }
+                launch { scale.animateTo(1f, tween(Motion.durationMicro)) }
                 if (config.withFadeEffect) {
-                    launch { alpha.animateTo(1f, tween(150)) }
-                    launch { whiteOverlay.animateTo(0f, tween(150)) }
+                    launch { alpha.animateTo(1f, tween(Motion.durationMicro)) }
+                    launch { whiteOverlay.animateTo(0f, tween(Motion.durationMicro)) }
                 }
             }
             isAnimating = false
@@ -99,28 +100,28 @@ class LongPressAnimationState(
                 launch {
                     scale.animateTo(
                         2f,
-                        tween(durationMillis = 100, easing = EaseOut),
+                        tween(durationMillis = Motion.durationFast, easing = EaseOut),
                     )
                 }
                 launch {
                     alpha.animateTo(
                         0f,
-                        tween(durationMillis = 100, easing = EaseOut),
+                        tween(durationMillis = Motion.durationFast, easing = EaseOut),
                     )
                 }
                 launch {
                     whiteOverlay.animateTo(
                         1f,
-                        tween(durationMillis = 100, easing = EaseOut),
+                        tween(durationMillis = Motion.durationFast, easing = EaseOut),
                     )
                 }
-                delay(100)
+                delay(Motion.durationFast.toLong())
                 scale.snapTo(1f)
                 alpha.snapTo(1f)
                 whiteOverlay.snapTo(0f)
                 isAnimating = false
             } else {
-                scale.animateTo(1f, tween(150))
+                scale.animateTo(1f, tween(Motion.durationMicro))
             }
         }
     }
@@ -135,10 +136,10 @@ class LongPressAnimationState(
         touchAnimationJob = null
 
         scope.launch {
-            launch { scale.animateTo(1f, tween(150)) }
+            launch { scale.animateTo(1f, tween(Motion.durationMicro)) }
             if (config.withFadeEffect) {
-                launch { alpha.animateTo(1f, tween(150)) }
-                launch { whiteOverlay.animateTo(0f, tween(150)) }
+                launch { alpha.animateTo(1f, tween(Motion.durationMicro)) }
+                launch { whiteOverlay.animateTo(0f, tween(Motion.durationMicro)) }
                 isAnimating = false
             }
         }

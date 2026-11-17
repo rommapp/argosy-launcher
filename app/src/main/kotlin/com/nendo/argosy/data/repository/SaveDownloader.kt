@@ -254,6 +254,9 @@ class SaveDownloader @Inject constructor(
                 val cached = syncEntity.localSavePath
                     ?.takeIf { fal.exists(it) }
                     ?.takeIf { folderSaveId == null || folderHandler.isCanonicalFolderPath(it, folderSaveId) }
+                    ?.takeUnless {
+                        savePathResolver.isOffLegacyPcsx2Cards(resolvedEmulatorId, game.platformSlug, emulatorPackage, gameId, it)
+                    }
                 if (syncEntity.localSavePath != null && cached == null) {
                     Logger.debug(TAG, "[SaveSync] DOWNLOAD gameId=$gameId | Cached folder path stale or non-canonical, re-discovering | stalePath=${syncEntity.localSavePath}")
                 }

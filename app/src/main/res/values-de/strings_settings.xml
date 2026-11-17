@@ -1129,6 +1129,7 @@
     </plurals>
     <string name="settings_caches_pending_uploads_subtitle_online">Jetzt synchronisieren, bevor Sync-Caches geleert werden</string>
     <string name="settings_caches_pending_uploads_subtitle_offline">Zum Synchronisieren erneut mit dem Server verbinden</string>
+    <string name="settings_caches_pending_uploads_search_label">Spielstände warten auf Upload</string>
 
     <string name="settings_caches_save_cache_title">Spielstand-Cache zurücksetzen</string>
     <string name="settings_caches_save_cache_busy">Wird zurückgesetzt…</string>
@@ -2816,4 +2817,42 @@
     <string name="settings_romm_config_error_client_certificate_required">Der Server verlangt ein Client-Zertifikat. Importiere eines unter Client-Zertifikat oder schalte dort „Für RomM verwenden“ ein.</string>
     <string name="settings_accounts_pairing_error_client_certificate_required">Der Server verlangt ein Client-Zertifikat. Importiere eines unter Client-Zertifikat oder schalte dort „Für RomM verwenden“ ein.</string>
     <string name="settings_jellyfin_error_client_certificate_required">Der Server verlangt ein Client-Zertifikat. Aktiviere „Für Jellyfin verwenden“ unter Client-Zertifikat.</string>
+    <string name="settings_search_row_title">Einstellungen durchsuchen</string>
+    <string name="settings_search_keyboard_label">Einstellungen durchsuchen</string>
+    <string name="settings_search_keyboard_submit">Fertig</string>
+    <string name="settings_search_no_results">Keine Einstellung passt zu „%1$s“</string>
+    <string name="settings_search_crumb_displays">Bildschirme</string>
+    <string name="settings_search_crumb_ambient_led">LED-Steuerung</string>
+    <string name="settings_search_crumb_audio">Audio</string>
+    <string name="settings_search_crumb_theme">Design</string>
+    <string name="settings_search_crumb_platforms">Plattformen</string>
+    <string name="settings_search_crumb_builtin_emulator">Integrierter Emulator</string>
+    <string name="settings_search_crumb_core_options">Core-Optionen</string>
+    <string name="settings_search_crumb_storage">Speicher</string>
+    <string name="settings_search_crumb_storage_caches">Caches &amp; System</string>
+    <string name="settings_search_crumb_bios">BIOS-Dateien</string>
+    <string name="settings_search_crumb_sounds">Sounds</string>
+    <string name="settings_search_crumb_music">Musik</string>
+    <string name="settings_search_crumb_fonts">Schriftarten</string>
+    <string name="settings_search_crumb_backdrop">Hintergrundmuster</string>
+    <string name="settings_search_crumb_interface">Oberfläche</string>
+    <string name="settings_search_crumb_box_art">Cover</string>
+    <string name="settings_search_crumb_controller_grip">Controller-Griff</string>
+    <string name="settings_search_crumb_saves">Spielstände</string>
+    <string name="settings_search_crumb_sync_settings">Sync-Einstellungen</string>
+    <string name="settings_search_crumb_social">Sozial</string>
+    <string name="settings_search_crumb_permissions">Berechtigungen</string>
+    <string name="settings_search_crumb_about">Über</string>
+    <string name="settings_search_label_jellyfin_account">Konto</string>
+    <string name="settings_search_label_social_account">Konto</string>
+    <string name="settings_search_label_about_changelog">Änderungsprotokoll</string>
+    <string name="settings_search_crumb_home_screen">Startbildschirm</string>
+    <string name="settings_search_crumb_presentation">Präsentation</string>
+    <string name="settings_search_crumb_library_view">Bibliothek</string>
+    <string name="settings_search_crumb_navigation">Navigation</string>
+    <string name="settings_search_crumb_builtin_video">A/V &amp; Leistung</string>
+    <string name="settings_search_crumb_builtin_controls">Steuerung</string>
+    <string name="settings_search_crumb_builtin_saves">Spielstände</string>
+    <string name="settings_search_label_home_layout_selector">Layout</string>
+    <string name="settings_search_label_platform_emulator">Emulator</string>
 </resources>

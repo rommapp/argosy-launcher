@@ -9,8 +9,8 @@ enum class DisabledBehavior {
 }
 
 class SettingsLayout<Item, State>(
-    private val allItems: List<Item>,
-    private val isFocusable: (Item) -> Boolean,
+    val allItems: List<Item>,
+    val isFocusable: (Item) -> Boolean,
     private val visibleWhen: (Item, State) -> Boolean,
     private val disabledBehavior: (Item) -> DisabledBehavior = { DisabledBehavior.HIDDEN },
     private val sectionOf: (Item) -> String? = { null },

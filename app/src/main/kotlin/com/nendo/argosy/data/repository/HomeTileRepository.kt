@@ -10,16 +10,29 @@ import com.nendo.argosy.data.model.SortOption
 import com.nendo.argosy.data.model.SourceFilter
 import com.nendo.argosy.domain.model.CustomGridLayout
 import com.nendo.argosy.domain.model.CustomGridShape
+import com.nendo.argosy.domain.model.FOLDER_MEMBER_PAGE_INDEX
 import com.nendo.argosy.domain.model.FeatureTileKind
+import com.nendo.argosy.domain.model.FolderAccent
+import com.nendo.argosy.domain.model.FolderAppearance
+import com.nendo.argosy.domain.model.FolderBackdropStyle
+import com.nendo.argosy.domain.model.FolderCoverStyle
+import com.nendo.argosy.domain.model.FolderMemberSize
 import com.nendo.argosy.domain.model.HomeGridKind
 import com.nendo.argosy.domain.model.HomeTile
 import com.nendo.argosy.domain.model.HomeTileTargetRef
 import com.nendo.argosy.domain.model.LibraryLinkFilters
 import com.nendo.argosy.domain.model.PlayerCountBucket
+import com.nendo.argosy.domain.model.RaProgressFilter
 import com.nendo.argosy.domain.model.RandomTileFilters
+import com.nendo.argosy.domain.model.StickerOutline
+import com.nendo.argosy.domain.model.StickerOutlineColor
+import com.nendo.argosy.domain.model.StickerOutlineWidth
+import com.nendo.argosy.domain.model.TileArtSlot
 import com.nendo.argosy.domain.model.TileCoverScale
+import com.nendo.argosy.domain.model.TileImageSource
 import com.nendo.argosy.domain.model.TileRect
 import com.nendo.argosy.domain.model.firstFreeScrollRect
+import com.nendo.argosy.domain.model.gridKindFor
 import com.nendo.argosy.domain.model.minimumSpanFor
 import com.nendo.argosy.domain.model.reflowScrollTiles
 import kotlinx.coroutines.flow.Flow
@@ -130,7 +143,14 @@ class HomeTileRepository @Inject constructor(
                 rect = row.rect(),
                 target = target,
                 coverScale = TileCoverScale.fromString(row.coverScale)
-            ).copy(id = tileId, pageId = row.pageId, artStyle = row.artStyle, createdAt = row.createdAt)
+            ).copy(
+                id = tileId,
+                pageId = row.pageId,
+                artStyle = row.artStyle,
+                createdAt = row.createdAt,
+                parentTileId = row.parentTileId,
+                pageIndex = row.pageIndex
+            )
         )
         homeTileDao.replaceEpisodes(
             tileId,
@@ -158,9 +178,87 @@ class HomeTileRepository @Inject constructor(
      */
     suspend fun removePage(ownerUserId: Long?, pageIndex: Int) {
         val kind = HomeGridKind.PAGED.name
+        homeTileDao.deleteFolderMemberEpisodesForPage(ownerUserId, kind, pageIndex)
+        homeTileDao.deleteFolderMembersForPage(ownerUserId, kind, pageIndex)
         homeTileDao.deleteEpisodesForPage(ownerUserId, kind, pageIndex)
         homeTileDao.deletePage(ownerUserId, kind, pageIndex)
         homeTileDao.shiftPagesDown(ownerUserId, kind, pageIndex)
+    }
+
+    /**
+     * Puts a grid tile inside a hand-filled folder, after its last member. Answers false and writes
+     * nothing when [folderId] is not a hand-filled folder on the grid, or when the tile is itself a
+     * folder, since folders nest one level deep.
+     */
+    suspend fun moveIntoFolder(tileId: Long, folderId: Long): Boolean {
+        if (tileId == folderId) return false
+        val folder = homeTileDao.getById(folderId) ?: return false
+        val folderTarget = folder.resolveTarget() as? HomeTileTargetRef.Folder ?: return false
+        if (folderTarget.rule != null || folder.parentTileId != null) return false
+        val row = homeTileDao.getById(tileId) ?: return false
+        if (row.resolveTarget() is HomeTileTargetRef.Folder) return false
+        val order = (homeTileDao.getFolderMembers(folderId).maxOfOrNull { it.columnIndex } ?: -1) + 1
+        homeTileDao.update(
+            row.copy(
+                parentTileId = folderId,
+                gridKind = folder.gridKind,
+                pageIndex = FOLDER_MEMBER_PAGE_INDEX,
+                columnIndex = order,
+                rowIndex = 0
+            )
+        )
+        return true
+    }
+
+    /**
+     * Takes a member out of its folder and onto the first free spot of the folder's page on the grid
+     * [layout] describes, falling back to the last page and then a new one.
+     */
+    suspend fun removeFromFolder(tileId: Long, layout: CustomGridLayout) {
+        val row = homeTileDao.getById(tileId) ?: return
+        val folderId = row.parentTileId ?: return
+        val page = homeTileDao.getById(folderId)?.pageIndex ?: 0
+        releaseToGrid(row, layout, page)
+    }
+
+    /**
+     * Returns every member of a folder to the grid in folder order, then deletes the folder tile.
+     */
+    suspend fun deleteFolder(folderId: Long, layout: CustomGridLayout) {
+        val folder = homeTileDao.getById(folderId) ?: return
+        homeTileDao.getFolderMembers(folderId).forEach { releaseToGrid(it, layout, folder.pageIndex) }
+        homeTileDao.deleteTileWithEpisodes(folderId)
+    }
+
+    private suspend fun releaseToGrid(row: HomeTileEntity, layout: CustomGridLayout, page: Int) {
+        val (pageIndex, rect) = freeSpot(row.ownerUserId, layout, page, minimumSpanFor(row.resolveTarget()))
+        homeTileDao.update(
+            row.copy(parentTileId = null, gridKind = gridKindFor(layout.scrollAxis).name)
+                .placedAt(pageIndex, rect)
+        )
+    }
+
+    private suspend fun freeSpot(
+        ownerUserId: Long?,
+        layout: CustomGridLayout,
+        page: Int,
+        span: Int
+    ): Pair<Int, TileRect> {
+        val axis = layout.scrollAxis
+        if (axis != null) {
+            val taken = homeTileDao.getPage(ownerUserId, HomeGridKind.SCROLL.name, 0).map { it.rect() }
+            return 0 to firstFreeScrollRect(taken, layout.lanes, axis, span, span)
+        }
+        val kind = HomeGridKind.PAGED.name
+        val start = page.coerceAtLeast(0)
+        firstFreeRect(homeTileDao.getPage(ownerUserId, kind, start).map { it.rect() }, layout.shape, span)
+            ?.let { return start to it }
+        val lastPage = (homeTileDao.getMaxPageIndex(ownerUserId, kind) ?: 0).coerceAtLeast(start)
+        if (lastPage != start) {
+            firstFreeRect(homeTileDao.getPage(ownerUserId, kind, lastPage).map { it.rect() }, layout.shape, span)
+                ?.let { return lastPage to it }
+        }
+        return lastPage + 1 to TileRect(0, 0).atLeast(span)
     }
 
     suspend fun pruneMissingGames() = homeTileDao.deleteTilesForMissingGames()
@@ -176,22 +274,13 @@ class HomeTileRepository @Inject constructor(
         layout: CustomGridLayout,
         playlist: List<String> = emptyList()
     ): Long {
-        val axis = layout.scrollAxis
-        if (axis != null) {
-            val taken = homeTileDao.getPage(ownerUserId, HomeGridKind.SCROLL.name, 0).map { it.rect() }
-            val span = minimumSpanFor(target)
-            val free = firstFreeScrollRect(taken, layout.lanes, axis, span, span)
-            return place(ownerUserId, HomeGridKind.SCROLL, 0, free, target, playlist)
-        }
-        val kind = HomeGridKind.PAGED
-        val lastPage = (homeTileDao.getMaxPageIndex(ownerUserId, kind.name) ?: 0).coerceAtLeast(0)
-        val taken = homeTileDao.getPage(ownerUserId, kind.name, lastPage).map { it.rect() }
-        val free = firstFreeRect(taken, layout.shape, minimumSpanFor(target))
-        return if (free != null) {
-            place(ownerUserId, kind, lastPage, free, target, playlist)
+        val lastPage = if (layout.scrollAxis == null) {
+            (homeTileDao.getMaxPageIndex(ownerUserId, HomeGridKind.PAGED.name) ?: 0).coerceAtLeast(0)
         } else {
-            place(ownerUserId, kind, lastPage + 1, TileRect(0, 0), target, playlist)
+            0
         }
+        val (page, free) = freeSpot(ownerUserId, layout, lastPage, minimumSpanFor(target))
+        return place(ownerUserId, gridKindFor(layout.scrollAxis), page, free, target, playlist)
     }
 
     private fun entityFor(
@@ -233,6 +322,9 @@ class HomeTileRepository @Inject constructor(
                 featureKind = target.kind.name,
                 featureConfig = encodeFeatureConfig(target)
             )
+            is HomeTileTargetRef.Folder -> base.copy(featureConfig = encodeFolder(target))
+            is HomeTileTargetRef.Image -> base.copy(featureConfig = encodeDecor(target))
+            is HomeTileTargetRef.Sticker -> base.copy(featureConfig = encodeDecor(target))
             HomeTileTargetRef.Unresolvable -> base
         }
     }
@@ -270,6 +362,9 @@ private fun HomeTileTargetRef.storedType(): String = when (this) {
     is HomeTileTargetRef.Media -> HomeTileTarget.MEDIA.name
     is HomeTileTargetRef.LocalMedia -> HomeTileTarget.MEDIA.name
     is HomeTileTargetRef.Feature -> HomeTileTarget.FEATURE.name
+    is HomeTileTargetRef.Folder -> HomeTileTarget.FOLDER.name
+    is HomeTileTargetRef.Image -> HomeTileTarget.IMAGE.name
+    is HomeTileTargetRef.Sticker -> HomeTileTarget.STICKER.name
     HomeTileTargetRef.Unresolvable -> ""
 }
 
@@ -283,6 +378,139 @@ private const val KEY_SOURCE = "source"
 private const val KEY_PLAYERS = "players"
 private const val KEY_SORT = "sort"
 private const val KEY_SORT_DESCENDING = "sortDescending"
+private const val KEY_DEVELOPERS = "developers"
+private const val KEY_YEAR_FROM = "releaseYearFrom"
+private const val KEY_YEAR_TO = "releaseYearTo"
+private const val KEY_PLAY_STATUSES = "playStatuses"
+private const val KEY_ADDED_WITHIN_DAYS = "addedWithinDays"
+private const val KEY_RA_PROGRESS = "raProgress"
+private const val KEY_NAME = "name"
+private const val KEY_RULE = "rule"
+private const val KEY_IMAGE_SOURCE = "imageSource"
+private const val KEY_IMAGE_PATH = "path"
+private const val KEY_IMAGE_GAME_ID = "gameId"
+private const val KEY_IMAGE_SLOT = "slot"
+private const val KEY_OUTLINE = "outline"
+private const val KEY_OUTLINE_WIDTH = "width"
+private const val KEY_OUTLINE_COLOR = "color"
+private const val IMAGE_SOURCE_FILE = "FILE"
+private const val IMAGE_SOURCE_GAME_ART = "GAME_ART"
+
+private const val KEY_APPEARANCE = "appearance"
+private const val KEY_COVER = "cover"
+private const val KEY_COVER_SOURCE = "coverSource"
+private const val KEY_COVER_OUTLINE = "coverOutline"
+private const val KEY_SHOW_NAME = "showName"
+private const val KEY_BACKDROP = "backdrop"
+private const val KEY_BACKDROP_SOURCE = "backdropSource"
+private const val KEY_ACCENT = "accent"
+private const val KEY_MEMBER_SIZE = "memberSize"
+
+private fun encodeFolder(target: HomeTileTargetRef.Folder): String =
+    JSONObject().apply {
+        put(KEY_NAME, target.name)
+        target.rule?.let { put(KEY_RULE, JSONObject(encodeLibraryLink(it))) }
+        if (target.appearance != FolderAppearance()) put(KEY_APPEARANCE, encodeAppearance(target.appearance))
+    }.toString()
+
+private fun decodeFolder(config: String?): HomeTileTargetRef.Folder {
+    val json = config?.let { runCatching { JSONObject(it) }.getOrNull() }
+        ?: return HomeTileTargetRef.Folder(name = "")
+    return HomeTileTargetRef.Folder(
+        name = json.optString(KEY_NAME),
+        rule = json.optJSONObject(KEY_RULE)?.let(::decodeLibraryLink),
+        appearance = json.optJSONObject(KEY_APPEARANCE)?.let(::decodeAppearance) ?: FolderAppearance()
+    )
+}
+
+private fun encodeAppearance(appearance: FolderAppearance): JSONObject = JSONObject().apply {
+    put(KEY_COVER, appearance.cover.name)
+    appearance.coverSource?.let { source -> put(KEY_COVER_SOURCE, JSONObject().also { encodeImageSource(source, it) }) }
+    put(KEY_COVER_OUTLINE, encodeOutline(appearance.coverOutline))
+    put(KEY_SHOW_NAME, appearance.showName)
+    put(KEY_BACKDROP, appearance.backdrop.name)
+    appearance.backdropSource?.let { source ->
+        put(KEY_BACKDROP_SOURCE, JSONObject().also { encodeImageSource(source, it) })
+    }
+    put(KEY_ACCENT, appearance.accent.name)
+    put(KEY_MEMBER_SIZE, appearance.memberSize.name)
+}
+
+private fun decodeAppearance(json: JSONObject): FolderAppearance = FolderAppearance(
+    cover = FolderCoverStyle.fromStored(json.optString(KEY_COVER)),
+    coverSource = json.optJSONObject(KEY_COVER_SOURCE)?.let(::decodeImageSource),
+    coverOutline = decodeOutline(json.optJSONObject(KEY_COVER_OUTLINE)),
+    showName = json.optBoolean(KEY_SHOW_NAME, true),
+    backdrop = FolderBackdropStyle.fromStored(json.optString(KEY_BACKDROP)),
+    backdropSource = json.optJSONObject(KEY_BACKDROP_SOURCE)?.let(::decodeImageSource),
+    accent = FolderAccent.fromStored(json.optString(KEY_ACCENT)),
+    memberSize = FolderMemberSize.fromStored(json.optString(KEY_MEMBER_SIZE))
+)
+
+private fun encodeOutline(outline: StickerOutline): JSONObject = JSONObject().apply {
+    put(KEY_OUTLINE_ENABLED, outline.enabled)
+    put(KEY_OUTLINE_WIDTH, outline.width.name)
+    put(KEY_OUTLINE_COLOR, outline.color.name)
+}
+
+private fun decodeOutline(json: JSONObject?): StickerOutline = StickerOutline(
+    enabled = json?.optBoolean(KEY_OUTLINE_ENABLED, false) ?: false,
+    width = StickerOutlineWidth.fromStored(json?.optString(KEY_OUTLINE_WIDTH)),
+    color = StickerOutlineColor.fromStored(json?.optString(KEY_OUTLINE_COLOR))
+)
+
+private fun encodeImageSource(source: TileImageSource, into: JSONObject) {
+    when (source) {
+        is TileImageSource.File -> {
+            into.put(KEY_IMAGE_SOURCE, IMAGE_SOURCE_FILE)
+            into.put(KEY_IMAGE_PATH, source.path)
+        }
+        is TileImageSource.GameArt -> {
+            into.put(KEY_IMAGE_SOURCE, IMAGE_SOURCE_GAME_ART)
+            into.put(KEY_IMAGE_GAME_ID, source.gameId)
+            into.put(KEY_IMAGE_SLOT, source.slot.name)
+        }
+    }
+}
+
+private fun decodeImageSource(json: JSONObject): TileImageSource? =
+    when (json.optString(KEY_IMAGE_SOURCE)) {
+        IMAGE_SOURCE_FILE -> json.optString(KEY_IMAGE_PATH).takeIf { it.isNotBlank() }
+            ?.let { TileImageSource.File(it) }
+        IMAGE_SOURCE_GAME_ART -> {
+            val slot = TileArtSlot.fromStored(json.optString(KEY_IMAGE_SLOT))
+            if (json.has(KEY_IMAGE_GAME_ID) && slot != null) {
+                TileImageSource.GameArt(json.getLong(KEY_IMAGE_GAME_ID), slot)
+            } else {
+                null
+            }
+        }
+        else -> null
+    }
+
+private fun encodeDecor(target: HomeTileTargetRef): String = JSONObject().apply {
+    when (target) {
+        is HomeTileTargetRef.Image -> encodeImageSource(target.source, this)
+        is HomeTileTargetRef.Sticker -> {
+            encodeImageSource(target.source, this)
+            put(KEY_OUTLINE, encodeOutline(target.outline))
+        }
+        else -> Unit
+    }
+}.toString()
+
+private const val KEY_OUTLINE_ENABLED = "enabled"
+
+private fun decodeImage(config: String?): HomeTileTargetRef.Image? {
+    val json = config?.let { runCatching { JSONObject(it) }.getOrNull() } ?: return null
+    return decodeImageSource(json)?.let { HomeTileTargetRef.Image(it) }
+}
+
+private fun decodeSticker(config: String?): HomeTileTargetRef.Sticker? {
+    val json = config?.let { runCatching { JSONObject(it) }.getOrNull() } ?: return null
+    val source = decodeImageSource(json) ?: return null
+    return HomeTileTargetRef.Sticker(source = source, outline = decodeOutline(json.optJSONObject(KEY_OUTLINE)))
+}
 
 private fun encodeFeatureConfig(target: HomeTileTargetRef.Feature): String =
     if (target.kind == FeatureTileKind.LIBRARY_LINK) {
@@ -306,6 +534,12 @@ private fun encodeLibraryLink(filters: LibraryLinkFilters): String =
         filters.players?.let { put(KEY_PLAYERS, it.name) }
         put(KEY_SORT, filters.sort.option.name)
         put(KEY_SORT_DESCENDING, filters.sort.descending)
+        if (filters.developers.isNotEmpty()) put(KEY_DEVELOPERS, JSONArray(filters.developers.toList()))
+        filters.releaseYearFrom?.let { put(KEY_YEAR_FROM, it) }
+        filters.releaseYearTo?.let { put(KEY_YEAR_TO, it) }
+        if (filters.playStatuses.isNotEmpty()) put(KEY_PLAY_STATUSES, JSONArray(filters.playStatuses.toList()))
+        filters.addedWithinDays?.let { put(KEY_ADDED_WITHIN_DAYS, it) }
+        filters.raProgress?.let { put(KEY_RA_PROGRESS, it.name) }
     }.toString()
 
 private fun decodeLibraryLink(json: JSONObject): LibraryLinkFilters {
@@ -320,9 +554,17 @@ private fun decodeLibraryLink(json: JSONObject): LibraryLinkFilters {
         sort = ActiveSort(
             option = sortOption,
             descending = json.optBoolean(KEY_SORT_DESCENDING, sortOption.defaultDescending)
-        )
+        ),
+        developers = json.stringSet(KEY_DEVELOPERS),
+        releaseYearFrom = json.optIntOrNull(KEY_YEAR_FROM),
+        releaseYearTo = json.optIntOrNull(KEY_YEAR_TO),
+        playStatuses = json.stringSet(KEY_PLAY_STATUSES),
+        addedWithinDays = json.optIntOrNull(KEY_ADDED_WITHIN_DAYS),
+        raProgress = RaProgressFilter.fromStored(json.optString(KEY_RA_PROGRESS))
     )
 }
+
+private fun JSONObject.optIntOrNull(key: String): Int? = if (has(key)) optInt(key) else null
 
 private fun JSONObject.longSet(key: String): Set<Long> =
     optJSONArray(key)?.let { array -> (0 until array.length()).map { array.getLong(it) } }
@@ -383,7 +625,8 @@ private fun HomeTileEntity.toDomain(playlist: List<String>): HomeTile = HomeTile
     target = resolveTarget(),
     playlist = playlist,
     coverScale = TileCoverScale.fromString(coverScale),
-    kind = gridKindOf(this)
+    kind = gridKindOf(this),
+    parentTileId = parentTileId
 )
 
 /**
@@ -422,5 +665,8 @@ private fun HomeTileEntity.resolveTarget(): HomeTileTargetRef =
         HomeTileTarget.FEATURE -> FeatureTileKind.fromStored(featureKind)?.let { kind ->
             decodeFeature(kind, featureConfig)
         }
+        HomeTileTarget.FOLDER -> decodeFolder(featureConfig)
+        HomeTileTarget.IMAGE -> decodeImage(featureConfig)
+        HomeTileTarget.STICKER -> decodeSticker(featureConfig)
         null -> null
     } ?: HomeTileTargetRef.Unresolvable

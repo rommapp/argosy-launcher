@@ -157,6 +157,42 @@ because a wrong region prefix still leaves the disc identifiable.
 Nothing fabricates an entry name. If a game has no folder on the card yet, a
 restore lands in the card and the archive's own entry names create it.
 
+#### Which card, for the folder archives a server without Sigil units holds
+
+For the standalone PCSX2 family (`pcsx2`, `nethersx2`, `aethersx2`,
+`armsx2_refresh`, `armsx2`), upload discovery and every restore target resolve
+the same cards through `Pcsx2LegacyCards`:
+
+- Cards folder. A save path the user set for the emulator is the cards folder as
+  given. Otherwise `EmulatorSaveRoots.rootFor` finds the data folder: the
+  packaged path is placed on every storage volume, and the data folder whose
+  `PCSX2-Android.ini` (in `inis/` or at its top) is newest wins over the
+  evaluated default. The cards folder is that ini's `[Folders] MemoryCards`,
+  relative to the data folder unless absolute, `memcards` when unset.
+- Card, in order: the per-game or per-emulator selected card when it is on disk;
+  the ini's `[MemoryCards] Slot1_Filename` (ignored when `Slot1_Enable` is
+  false); the one card in the cards folder, or the most recently written of
+  several. An absent slot 1 card whose name does not end `.ps2` is created as a
+  formatted folder card under that name.
+- No card: slot 1 is a file card, slot 1 names a missing `.ps2` file card, or the
+  cards folder holds no card. Nothing is written and the save resolves to no
+  target. No card named `Shared.ps2` or any other is invented.
+- Discovery searches the selected card, then slot 1's card, then the cards
+  folder. A save path stored on a sync row that lies outside those cards is
+  dropped and re-resolved; the card it pointed at stays on disk.
+
+Sigil routing roots at the same `EmulatorSaveRoots.rootFor`, so on a server with
+Sigil units the `pcsx2_standalone` root is the same live data folder: the user's
+save path when set, else the volume whose `PCSX2-Android.ini` is newest, else
+the evaluated default. The volume search applies to the `pcsx2_standalone`
+layout only; every other Sigil layout roots at its packaged and evaluated
+folders. Sigil state is keyed by root, so a root on a different volume starts
+with no anchor, and the folder it replaced stays on disk untouched.
+
+The memory card picker, the launch-time card gate and the per-game save path
+row read `PlatformSaveHandlerRegistry.ps2CardBaseForEmulator`, which resolves
+through `Pcsx2LegacyCards`, so they list and show the cards folder sync uses.
+
 Because the save unit is the card, an upload is rooted at the card's own name,
 which identifies nothing - the game's folder is one level below it. Archives
 written before the save unit became the card are rooted at that folder

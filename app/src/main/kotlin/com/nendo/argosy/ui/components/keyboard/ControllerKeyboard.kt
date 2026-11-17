@@ -1,10 +1,16 @@
 package com.nendo.argosy.ui.components.keyboard
 
+import androidx.compose.runtime.Composable
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 
+/**
+ * [onTopEdge] runs when Up is pressed on the topmost stop of the keyboard; returning true means the
+ * field took focus above the keyboard, so the keyboard does not wrap to its bottom row. [accessory]
+ * draws directly above a docked sheet, inside the keyboard's own layer, and is skipped full screen.
+ */
 class ControllerKeyboardRequest(
     val owner: Any,
     val label: String,
@@ -16,14 +22,20 @@ class ControllerKeyboardRequest(
     val onTextChange: (String) -> Unit,
     val onSubmit: () -> Unit,
     val onClose: () -> Unit,
-    val onSystemKeyboard: (() -> Unit)? = null
+    val onSystemKeyboard: (() -> Unit)? = null,
+    val onTopEdge: (() -> Boolean)? = null,
+    val accessory: (@Composable () -> Unit)? = null
 )
 
+/**
+ * [focusOutside] is true while the field holds focus above the keyboard, which hides the key focus.
+ */
 data class ControllerKeyboardLiveProps(
     val text: String? = null,
     val error: String? = null,
     val canSubmit: Boolean = true,
-    val enabled: Boolean = true
+    val enabled: Boolean = true,
+    val focusOutside: Boolean = false
 )
 
 class ActiveControllerKeyboard(

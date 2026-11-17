@@ -11,7 +11,13 @@ import com.nendo.argosy.domain.model.GridDirection2D
 import com.nendo.argosy.domain.model.FeatureTileKind
 import com.nendo.argosy.domain.model.HomeScrollAxis
 import com.nendo.argosy.domain.model.HomeTile
+import com.nendo.argosy.domain.model.LibraryLinkFilters
+import com.nendo.argosy.domain.model.StickerOutline
+import com.nendo.argosy.domain.model.StickerOutlineColor
+import com.nendo.argosy.domain.model.StickerOutlineWidth
 import com.nendo.argosy.domain.model.TileCoverScale
+import com.nendo.argosy.domain.model.TileImageSource
+import com.nendo.argosy.ui.components.DecorKind
 import com.nendo.argosy.ui.components.FeatureFilterOptions
 import com.nendo.argosy.domain.model.HomeTileTargetRef
 import com.nendo.argosy.domain.model.TileRect
@@ -22,7 +28,9 @@ import com.nendo.argosy.data.local.entity.PageBackgroundKind
 import com.nendo.argosy.ui.components.AppMenuRow
 import com.nendo.argosy.ui.components.CustomGridState
 import com.nendo.argosy.ui.components.CustomTileMenuAction
+import com.nendo.argosy.ui.components.FolderAppearanceRow
 import com.nendo.argosy.ui.components.GridPageSettings
+import com.nendo.argosy.ui.components.PicturePurpose
 import com.nendo.argosy.ui.components.PageChooserAction
 import com.nendo.argosy.ui.components.PageChooserEntry
 import com.nendo.argosy.ui.components.PageChooserKind
@@ -61,11 +69,30 @@ class CustomGridCoordinator(
     private val featureFilterOptions: (suspend () -> FeatureFilterOptions)? = null,
     private val raGamePickerEntries: (suspend (String) -> List<TilePickerEntry>)? = null,
     private val onOpenOnScreen: ((HomeTileTargetRef, AppMenuRow.OpenOnScreen) -> Unit)? = null,
+    private val autoFolderGames: (suspend (LibraryLinkFilters) -> List<Long>)? = null,
     private val read: () -> CustomGridState,
     private val write: ((CustomGridState) -> CustomGridState) -> Unit
 ) {
 
     val state: CustomGridState get() = read()
+
+    private val folderController = FolderController(
+        scope = scope,
+        repository = repository,
+        ownerUserId = ownerUserId,
+        autoFolderGames = autoFolderGames,
+        defaultFolderName = { context.getString(R.string.ui_folder_default_name) },
+        read = read,
+        write = write
+    )
+
+    private val appearanceController = FolderAppearanceController(
+        scope = scope,
+        repository = repository,
+        read = read,
+        write = write,
+        choosePicture = { purpose -> choosePicture(purpose) }
+    )
 
     private val featureSetupController = FeatureTileSetupController(
         scope = scope,
@@ -82,11 +109,20 @@ class CustomGridCoordinator(
             retargetTile(tileId, target, emptyList())
             closePicker()
         },
-        onTrackGame = { openRaGamePicker() }
+        onTrackGame = { openRaGamePicker() },
+        onFolderRule = { folderId, rule ->
+            closePicker()
+            if (folderId == null) folderController.beginCreate(rule) else folderController.updateRule(folderId, rule)
+        }
     )
 
     init {
-        write { it.copy(supportsRaTileSetup = raGamePickerEntries != null) }
+        write {
+            it.copy(
+                supportsRaTileSetup = raGamePickerEntries != null,
+                supportsFolderRules = featureFilterOptions != null
+            )
+        }
     }
 
     private val mediaSetupController = MediaTileSetupController(
@@ -249,7 +285,11 @@ class CustomGridCoordinator(
                 pendingPage = null,
                 engagedTileId = null,
                 showMenu = false,
-                menuListsHidden = false
+                menuListsHidden = false,
+                folderOverlay = null,
+                folderChooser = null,
+                folderAppearance = null,
+                decorEditing = false
             )
         }
     }
@@ -301,7 +341,8 @@ class CustomGridCoordinator(
             tiles = current.tilesOnPage(current.page),
             columns = current.canvasColumns,
             rows = current.canvasRows,
-            direction = direction
+            direction = direction,
+            isFocusable = current::isFocusable
         )
         return when (move) {
             is CustomGridMove.Focus -> {
@@ -395,6 +436,19 @@ class CustomGridCoordinator(
             CustomTileMenuAction.EDIT_FILTERS -> editFocusedFeature()
             CustomTileMenuAction.EDIT_TILE -> editFocusedFeature()
             CustomTileMenuAction.BROWSE_ACHIEVEMENTS -> browseFocusedRaTile()
+            CustomTileMenuAction.MOVE_TO_FOLDER -> folderController.openChooser()
+            CustomTileMenuAction.RENAME_FOLDER -> folderController.beginRename()
+            CustomTileMenuAction.FOLDER_APPEARANCE -> appearanceController.open()
+            CustomTileMenuAction.STICKER_OUTLINE_ON -> updateFocusedSticker { it.copy(enabled = true) }
+            CustomTileMenuAction.STICKER_OUTLINE_OFF -> updateFocusedSticker { it.copy(enabled = false) }
+            CustomTileMenuAction.STICKER_OUTLINE_WIDTH -> updateFocusedSticker {
+                it.copy(width = StickerOutlineWidth.entries[(it.width.ordinal + 1).mod(StickerOutlineWidth.entries.size)])
+            }
+            CustomTileMenuAction.STICKER_OUTLINE_COLOR -> updateFocusedSticker {
+                it.copy(color = StickerOutlineColor.entries[(it.color.ordinal + 1).mod(StickerOutlineColor.entries.size)])
+            }
+            CustomTileMenuAction.EDIT_DECOR -> setDecorEditing(true)
+            CustomTileMenuAction.FINISH_DECOR -> setDecorEditing(false)
             CustomTileMenuAction.REMOVE -> removeFocusedTile()
             CustomTileMenuAction.START_GAME_QUEUE -> startGameQueue()
             CustomTileMenuAction.SET_FOCUS_GAME -> openPageChooser(PageChooserKind.FOCUS_GAME)
@@ -673,11 +727,76 @@ class CustomGridCoordinator(
         )
     }
 
+    /**
+     * Removes the focused tile. A hand-filled folder returns its members to the grid first.
+     */
     fun removeFocusedTile() {
         val tile = read().focusedTile ?: return
         val tiles = repository ?: return
+        val folder = tile.target as? HomeTileTargetRef.Folder
+        if (folder != null && folder.rule == null) {
+            folderController.deleteFolder(tile)
+            return
+        }
         scope.launch { tiles.remove(tile.id) }
     }
+
+    private fun updateFocusedSticker(transform: (StickerOutline) -> StickerOutline) {
+        val tile = read().focusedTile ?: return
+        val sticker = tile.target as? HomeTileTargetRef.Sticker ?: return
+        val retargeted = sticker.copy(outline = transform(sticker.outline))
+        write { state ->
+            state.copy(tiles = state.tiles.map { if (it.id == tile.id) it.copy(target = retargeted) else it })
+        }
+        retargetTile(tile.id, retargeted, emptyList())
+    }
+
+    /**
+     * Lets the cursor reach image and sticker tiles, or stops it. Leaving the mode while the cursor
+     * sits on one steps the cursor on so it rests on something it can act on.
+     */
+    fun setDecorEditing(enabled: Boolean) {
+        write { it.copy(decorEditing = enabled, showMenu = false) }
+        if (enabled) return
+        val current = read()
+        if (!current.isCellOccupied || current.focusedTile != null) return
+        if (!moveFocus(GridDirection2D.RIGHT)) moveFocus(GridDirection2D.LEFT)
+    }
+
+    fun openFolder(tile: HomeTile) = folderController.open(tile)
+
+    fun closeFolder(): Boolean = folderController.close()
+
+    fun moveFolderFocus(direction: GridDirection2D): Boolean = folderController.moveFocus(direction)
+
+    fun focusFolderMember(index: Int) = folderController.focusMember(index)
+
+    fun removeFocusedFolderMember(): Boolean = folderController.removeFocusedMember()
+
+    fun closeFolderChooser() = folderController.closeChooser()
+
+    fun moveFolderChooserFocus(delta: Int) = folderController.moveChooserFocus(delta)
+
+    fun confirmFolderChooser(index: Int? = null) = folderController.confirmChooser(index)
+
+    fun submitFolderName(name: String) = folderController.submitName(name)
+
+    fun cancelFolderNaming() = folderController.cancelNaming()
+
+    fun closeFolderAppearance(): Boolean = appearanceController.close()
+
+    fun moveFolderAppearanceFocus(delta: Int) = appearanceController.moveFocus(delta)
+
+    fun focusFolderAppearanceRow(index: Int) = appearanceController.focusRow(index)
+
+    fun cycleFolderAppearance(delta: Int): Boolean = appearanceController.cycleFocused(delta)
+
+    fun cycleFolderAppearanceRow(row: FolderAppearanceRow, delta: Int): Boolean =
+        appearanceController.cycle(row, delta)
+
+    fun confirmFolderAppearance(): Boolean = appearanceController.confirmFocused()
+
+    fun activateFolderAppearanceRow(row: FolderAppearanceRow): Boolean = appearanceController.activate(row)
 
     private fun setFocusedCoverScale(scale: TileCoverScale) {
         val tile = read().focusedTile ?: return
@@ -745,7 +864,7 @@ class CustomGridCoordinator(
     }
 
     fun openPicker() {
-        if (read().focusedTile != null) return
+        if (read().isCellOccupied) return
         write {
             it.copy(
                 showPicker = true,
@@ -885,9 +1004,12 @@ class CustomGridCoordinator(
             val entries = if (current.pickerPurpose == TilePickerPurpose.TRACK_RA_GAME) {
                 raGamePickerEntries?.invoke(query).orEmpty()
             } else {
-                withLocalVideoRow(
+                withOrganizeRows(
                     current,
-                    pickerEntries(current.pickerCategory, query, current.pickerLibraryId)
+                    withLocalVideoRow(
+                        current,
+                        pickerEntries(current.pickerCategory, query, current.pickerLibraryId)
+                    )
                 )
             }
             write { state ->
@@ -962,6 +1084,35 @@ class CustomGridCoordinator(
         ) + entries
     }
 
+    private fun withOrganizeRows(
+        current: CustomGridState,
+        entries: List<TilePickerEntry>
+    ): List<TilePickerEntry> {
+        if (current.pickerCategory != TilePickerCategory.FEATURES) return entries
+        return entries + listOfNotNull(
+            TilePickerEntry(
+                target = HomeTileTargetRef.Folder(name = ""),
+                title = context.getString(R.string.home_grid_picker_folder_title),
+                subtitle = context.getString(R.string.home_grid_picker_folder_subtitle)
+            ),
+            TilePickerEntry(
+                target = HomeTileTargetRef.Folder(name = "", rule = LibraryLinkFilters()),
+                title = context.getString(R.string.home_grid_picker_auto_folder_title),
+                subtitle = context.getString(R.string.home_grid_picker_auto_folder_subtitle)
+            ).takeIf { featureFilterOptions != null },
+            TilePickerEntry(
+                target = HomeTileTargetRef.Image(TileImageSource.File("")),
+                title = context.getString(R.string.home_grid_picker_image_title),
+                subtitle = context.getString(R.string.home_grid_picker_image_subtitle)
+            ).takeIf { pageChooserEntries != null },
+            TilePickerEntry(
+                target = HomeTileTargetRef.Sticker(TileImageSource.File("")),
+                title = context.getString(R.string.home_grid_picker_sticker_title),
+                subtitle = context.getString(R.string.home_grid_picker_sticker_subtitle)
+            ).takeIf { pageChooserEntries != null }
+        )
+    }
+
     fun confirmPickerSelection() {
         val current = read()
         if (current.pickerSearchFocused) {
@@ -996,6 +1147,26 @@ class CustomGridCoordinator(
             write { it.copy(pickerLibraryId = entry.libraryId, pickerFocusIndex = 0) }
             refreshPicker()
             return
+        }
+        when (val target = entry.target) {
+            is HomeTileTargetRef.Folder -> {
+                if (target.rule == null) {
+                    closePicker()
+                    folderController.beginCreate()
+                } else {
+                    featureSetupController.beginFolderRule()
+                }
+                return
+            }
+            is HomeTileTargetRef.Image -> {
+                beginDecor(DecorKind.IMAGE)
+                return
+            }
+            is HomeTileTargetRef.Sticker -> {
+                beginDecor(DecorKind.STICKER)
+                return
+            }
+            else -> Unit
         }
         if (entry.target is HomeTileTargetRef.Media) {
             if (entry.isSeries) {
@@ -1036,7 +1207,32 @@ class CustomGridCoordinator(
         loadChooserEntries()
     }
 
-    fun closePageChooser() = write { it.copy(pageChooser = null) }
+    private fun beginDecor(kind: DecorKind) {
+        closePicker()
+        choosePicture(PicturePurpose.Decor(kind))
+    }
+
+    private fun choosePicture(purpose: PicturePurpose) {
+        write { it.copy(pendingPicture = purpose) }
+        openPageChooser(PageChooserKind.DECOR)
+    }
+
+    private fun usePicture(source: TileImageSource) {
+        val purpose = read().pendingPicture ?: return
+        write { it.copy(pendingPicture = null) }
+        when (purpose) {
+            is PicturePurpose.Decor -> placeOnFocusedCell(
+                when (purpose.kind) {
+                    DecorKind.IMAGE -> HomeTileTargetRef.Image(source)
+                    DecorKind.STICKER -> HomeTileTargetRef.Sticker(source)
+                }
+            )
+            is PicturePurpose.FolderCover -> appearanceController.setCoverSource(purpose.folderId, source)
+            is PicturePurpose.FolderBackdrop -> appearanceController.setBackdropSource(purpose.folderId, source)
+        }
+    }
+
+    fun closePageChooser() = write { it.copy(pageChooser = null, pendingPicture = null) }
 
     /**
      * Steps the cursor over headers, which label a group rather than being something to choose.
@@ -1146,8 +1342,17 @@ class CustomGridCoordinator(
         }
         val entry = chooser.entries.getOrNull(chooser.focusIndex) ?: return
         when (val action = entry.action ?: return) {
-            PageChooserAction.OpenFileBrowser ->
+            PageChooserAction.OpenFileBrowser -> if (chooser.kind == PageChooserKind.DECOR) {
+                write { it.copy(showFileBrowser = true, pageChooser = null) }
+            } else {
                 write { it.copy(showFileBrowser = true, pendingBackgroundPage = chooser.page) }
+            }
+
+            is PageChooserAction.UseDecorArt -> {
+                val gameId = chooser.gameId ?: return
+                usePicture(TileImageSource.GameArt(gameId, action.slot))
+                closePageChooser()
+            }
 
             PageChooserAction.BrowseGameArt -> {
                 write {
@@ -1370,7 +1575,7 @@ class CustomGridCoordinator(
     fun openFileBrowser() = write { it.copy(showFileBrowser = true) }
 
     fun closeFileBrowser() = write {
-        it.copy(showFileBrowser = false, pendingBackgroundPage = null)
+        it.copy(showFileBrowser = false, pendingBackgroundPage = null, pendingPicture = null)
     }
 
     /**
@@ -1380,6 +1585,15 @@ class CustomGridCoordinator(
     fun placeLocalVideo(path: String) {
         if (read().pendingBackgroundPage != null) {
             setPageBackground(path)
+            return
+        }
+        if (read().pendingPicture != null) {
+            write { it.copy(showFileBrowser = false) }
+            if (path.isBlank()) {
+                write { it.copy(pendingPicture = null) }
+            } else {
+                usePicture(TileImageSource.File(path))
+            }
             return
         }
         write { it.copy(showFileBrowser = false) }
@@ -1424,6 +1638,10 @@ class CustomGridCoordinator(
      */
     fun editFocusedFeature() {
         val tile = read().focusedTile ?: return
+        if (tile.target is HomeTileTargetRef.Folder) {
+            featureSetupController.beginFolderRule(tile)
+            return
+        }
         featureSetupController.begin(tile)
     }
 
@@ -1457,11 +1675,7 @@ class CustomGridCoordinator(
         write { it.copy(pendingAdd = null) }
         entry.gameId?.let(onResolved)
         if (tiles == null) return
-        val current = read()
-        val layout = CustomGridLayout(
-            shape = CustomGridShape(current.columns.coerceAtLeast(1), current.rows.coerceAtLeast(1)),
-            scrollAxis = current.scrollAxis
-        )
+        val layout = read().layout
         scope.launch {
             tiles.append(
                 ownerUserId = ownerUserId(),

@@ -98,8 +98,147 @@ sealed interface HomeTileTargetRef {
         val libraryLink: LibraryLinkFilters? = null
     ) : HomeTileTargetRef
 
+    /**
+     * A tile that holds other tiles. [rule] null is a hand-filled folder whose members are the tiles
+     * whose [HomeTile.parentTileId] names it; a rule makes it an auto-folder whose members are the
+     * games the rule matches, and it holds no tiles of its own.
+     */
+    data class Folder(
+        val name: String,
+        val rule: LibraryLinkFilters? = null,
+        val appearance: FolderAppearance = FolderAppearance()
+    ) : HomeTileTargetRef
+
+    /**
+     * A picture filling its cells, cropped like a cover. Never focused outside decoration editing.
+     */
+    data class Image(val source: TileImageSource) : HomeTileTargetRef
+
+    /**
+     * A picture with transparency drawn without tile chrome, fitted inside its cells, with an
+     * optional outline traced around its opaque pixels. Never focused outside decoration editing.
+     */
+    data class Sticker(
+        val source: TileImageSource,
+        val outline: StickerOutline = StickerOutline()
+    ) : HomeTileTargetRef
+
     data object Unresolvable : HomeTileTargetRef
 }
+
+/**
+ * Where an image or sticker tile reads its picture: a file on this device, or art Argosy already
+ * holds for a game.
+ */
+sealed interface TileImageSource {
+    data class File(val path: String) : TileImageSource
+    data class GameArt(val gameId: Long, val slot: TileArtSlot) : TileImageSource
+}
+
+enum class TileArtSlot {
+    COVER,
+    LOGO,
+    BACKGROUND;
+
+    companion object {
+        fun fromStored(value: String?): TileArtSlot? = entries.find { it.name == value }
+    }
+}
+
+enum class StickerOutlineWidth {
+    THIN,
+    MEDIUM,
+    THICK;
+
+    companion object {
+        fun fromStored(value: String?): StickerOutlineWidth = entries.find { it.name == value } ?: MEDIUM
+    }
+}
+
+enum class StickerOutlineColor {
+    WHITE,
+    BLACK,
+    ACCENT;
+
+    companion object {
+        fun fromStored(value: String?): StickerOutlineColor = entries.find { it.name == value } ?: WHITE
+    }
+}
+
+data class StickerOutline(
+    val enabled: Boolean = false,
+    val width: StickerOutlineWidth = StickerOutlineWidth.MEDIUM,
+    val color: StickerOutlineColor = StickerOutlineColor.WHITE
+)
+
+enum class FolderCoverStyle {
+    MOSAIC,
+    IMAGE,
+    STICKER;
+
+    companion object {
+        fun fromStored(value: String?): FolderCoverStyle = entries.find { it.name == value } ?: MOSAIC
+    }
+}
+
+enum class FolderBackdropStyle {
+    NONE,
+    COVER_BLURRED,
+    IMAGE;
+
+    companion object {
+        fun fromStored(value: String?): FolderBackdropStyle = entries.find { it.name == value } ?: NONE
+    }
+}
+
+enum class FolderAccent {
+    THEME,
+    ROSE,
+    AMBER,
+    LIME,
+    SKY,
+    VIOLET;
+
+    companion object {
+        fun fromStored(value: String?): FolderAccent = entries.find { it.name == value } ?: THEME
+    }
+}
+
+enum class FolderMemberSize {
+    SMALL,
+    MEDIUM,
+    LARGE;
+
+    companion object {
+        fun fromStored(value: String?): FolderMemberSize = entries.find { it.name == value } ?: MEDIUM
+    }
+}
+
+/**
+ * How a folder looks on the grid and once opened. [cover] other than [FolderCoverStyle.MOSAIC] draws
+ * [coverSource], falling back to the mosaic while no source is chosen. [FolderBackdropStyle.COVER_BLURRED]
+ * blurs the chosen cover picture, or the first member's cover when the folder shows a mosaic.
+ */
+data class FolderAppearance(
+    val cover: FolderCoverStyle = FolderCoverStyle.MOSAIC,
+    val coverSource: TileImageSource? = null,
+    val coverOutline: StickerOutline = StickerOutline(),
+    val showName: Boolean = true,
+    val backdrop: FolderBackdropStyle = FolderBackdropStyle.NONE,
+    val backdropSource: TileImageSource? = null,
+    val accent: FolderAccent = FolderAccent.THEME,
+    val memberSize: FolderMemberSize = FolderMemberSize.MEDIUM
+) {
+    val pictureSources: List<TileImageSource>
+        get() = listOfNotNull(coverSource, backdropSource)
+}
+
+/**
+ * Whether a tile is decoration: drawn on the grid but skipped by the cursor unless decorations are
+ * being edited.
+ */
+val HomeTileTargetRef.isDecor: Boolean
+    get() = this is HomeTileTargetRef.Image || this is HomeTileTargetRef.Sticker
 
 enum class FeatureTileKind {
     RANDOM_GAME,
@@ -148,7 +287,10 @@ enum class TileCoverScale {
 
 /**
  * [playlist] is the run a media tile was told to play, in the order it was chosen. It is empty for
- * every other kind and for every play mode that works the run out rather than being handed one.
+ * every other kind and for every play mode that works out its own run.
+ *
+ * [parentTileId] names the folder holding this tile, or null for a tile on the grid itself. A
+ * folder member is never placed on a page; its [rect] column is its position inside the folder.
  */
 data class HomeTile(
     val id: Long,
@@ -157,10 +299,25 @@ data class HomeTile(
     val target: HomeTileTargetRef,
     val playlist: List<String> = emptyList(),
     val coverScale: TileCoverScale = TileCoverScale.CROP,
-    val kind: HomeGridKind = HomeGridKind.PAGED
+    val kind: HomeGridKind = HomeGridKind.PAGED,
+    val parentTileId: Long? = null
 ) {
     val minSpan: Int get() = minimumSpanFor(target)
+
+    val isInFolder: Boolean get() = parentTileId != null
 }
+
+/**
+ * The page index a folder member is stored under, so no page query, page count or page delete ever
+ * reads one as a tile on a page.
+ */
+const val FOLDER_MEMBER_PAGE_INDEX = -1
+
+/**
+ * The members of [folderId] among [tiles], in their order inside the folder.
+ */
+fun folderMembers(tiles: List<HomeTile>, folderId: Long): List<HomeTile> =
+    tiles.filter { it.parentTileId == folderId }.sortedWith(compareBy({ it.rect.columnIndex }, { it.id }))
 
 /**
  * The bound a scrolling grid gives its scroll axis wherever the placement rules take a page size.
@@ -207,7 +364,7 @@ fun firstFreeScrollRect(
  */
 fun placeScrollTiles(tiles: List<HomeTile>, lanes: Int, axis: HomeScrollAxis): List<HomeTile> {
     val placed = mutableListOf<HomeTile>()
-    for (tile in tiles) {
+    for (tile in tiles.filterNot { it.isInFolder }) {
         val sized = scrollSized(tile, lanes, axis)
         val taken = placed.map { it.rect }
         val kept = sized.takeIf { rect -> rect.withinLanes(lanes, axis) && taken.none { it.overlaps(rect) } }
@@ -238,7 +395,7 @@ fun reflowScrollTiles(
         compareBy<HomeTile>({ it.rect.columnIndex }, { it.rect.rowIndex }, { it.id })
     }
     val placed = mutableListOf<HomeTile>()
-    for (tile in tiles.sortedWith(readingOrder)) {
+    for (tile in tiles.filterNot { it.isInFolder }.sortedWith(readingOrder)) {
         val sized = scrollSized(tile, to.lanes, toAxis)
         placed += tile.copy(
             rect = firstFreeScrollRect(placed.map { it.rect }, to.lanes, toAxis, sized.columnSpan, sized.rowSpan)
@@ -271,7 +428,7 @@ private fun TileRect.withinLanes(lanes: Int, axis: HomeScrollAxis): Boolean =
 fun placeTiles(tiles: List<HomeTile>, columns: Int, rows: Int): TilePlacement {
     val placed = mutableListOf<HomeTile>()
     val displaced = mutableListOf<HomeTile>()
-    for (tile in tiles) {
+    for (tile in tiles.filterNot { it.isInFolder }) {
         val anchor = TileRect(tile.rect.columnIndex, tile.rect.rowIndex)
         if (!anchor.withinBounds(columns, rows) || placed.any { it.rect.overlaps(anchor) }) {
             displaced += tile
@@ -327,33 +484,41 @@ sealed interface CustomGridMove {
 /**
  * Where focus lands moving [direction] from [cell] across a page of [columns] by [rows].
  *
- * A step starts from the edge of whatever tile currently holds the cell, not from the cell itself,
- * so leaving a tile that spans three columns takes one press rather than three. Running off the
- * left or right edge turns the page, because a curated grid has no sections to switch between;
- * running off the top or bottom stops, since that is the direction a page does not continue in.
+ * A step starts from the far edge of the tile holding [cell], so leaving a multi-cell tile takes
+ * one press. Running off the left or right edge turns the page; running off the top or bottom
+ * stops. Tiles [isFocusable] rejects are stepped over, and folder members are never on the page.
  */
 fun customGridStep(
     cell: GridCell,
     tiles: List<HomeTile>,
     columns: Int,
     rows: Int,
-    direction: GridDirection2D
+    direction: GridDirection2D,
+    isFocusable: (HomeTile) -> Boolean = { true }
 ): CustomGridMove {
     if (columns <= 0 || rows <= 0) return CustomGridMove.None
-    val origin = tiles.firstOrNull { it.rect.covers(cell.columnIndex, cell.rowIndex) }?.rect
+    val onPage = tiles.filterNot { it.isInFolder }
+    var origin = onPage.firstOrNull { it.rect.covers(cell.columnIndex, cell.rowIndex) }?.rect
         ?: TileRect(cell.columnIndex, cell.rowIndex)
-    val target = when (direction) {
-        GridDirection2D.LEFT -> GridCell(origin.columnIndex - 1, cell.rowIndex)
-        GridDirection2D.RIGHT -> GridCell(origin.lastColumn + 1, cell.rowIndex)
-        GridDirection2D.UP -> GridCell(cell.columnIndex, origin.rowIndex - 1)
-        GridDirection2D.DOWN -> GridCell(cell.columnIndex, origin.lastRow + 1)
-    }
-    val offPage = target.columnIndex !in 0 until columns || target.rowIndex !in 0 until rows
-    if (!offPage) return CustomGridMove.Focus(target)
-    return when (direction) {
-        GridDirection2D.LEFT -> CustomGridMove.PreviousPage
-        GridDirection2D.RIGHT -> CustomGridMove.NextPage
-        else -> CustomGridMove.None
+    while (true) {
+        val target = when (direction) {
+            GridDirection2D.LEFT -> GridCell(origin.columnIndex - 1, cell.rowIndex)
+            GridDirection2D.RIGHT -> GridCell(origin.lastColumn + 1, cell.rowIndex)
+            GridDirection2D.UP -> GridCell(cell.columnIndex, origin.rowIndex - 1)
+            GridDirection2D.DOWN -> GridCell(cell.columnIndex, origin.lastRow + 1)
+        }
+        val offPage = target.columnIndex !in 0 until columns || target.rowIndex !in 0 until rows
+        if (offPage) {
+            return when (direction) {
+                GridDirection2D.LEFT -> CustomGridMove.PreviousPage
+                GridDirection2D.RIGHT -> CustomGridMove.NextPage
+                else -> CustomGridMove.None
+            }
+        }
+        val skipped = onPage.firstOrNull {
+            it.rect.covers(target.columnIndex, target.rowIndex) && !isFocusable(it)
+        } ?: return CustomGridMove.Focus(target)
+        origin = skipped.rect
     }
 }
 
@@ -378,9 +543,10 @@ fun settleAfterEdit(
 ): TilePlacement {
     val settled = mutableListOf(editing)
     val dropped = mutableListOf<HomeTile>()
-    val untouched = others.filterNot { it.rect.overlaps(editing.rect) }
+    val onPage = others.filterNot { it.isInFolder }
+    val untouched = onPage.filterNot { it.rect.overlaps(editing.rect) }
     settled += untouched
-    for (tile in others.filter { it.rect.overlaps(editing.rect) }) {
+    for (tile in onPage.filter { it.rect.overlaps(editing.rect) }) {
         val pushed = pushClear(tile, editing.rect, settled, columns, rows)
         if (pushed != null) {
             settled += tile.copy(rect = pushed)

@@ -208,6 +208,8 @@ open class LibretroActivity : ComponentActivity() {
     @Inject lateinit var keepAlivePolicy: com.nendo.argosy.data.emulator.background.KeepAlivePolicy
     @Inject lateinit var quickPanelOverlay: com.nendo.argosy.ui.quickpanel.QuickPanelOverlay
     @Inject lateinit var resumeOverlay: dagger.Lazy<com.nendo.argosy.ui.screens.running.ResumeOverlay>
+    @Inject lateinit var hapticManager: com.nendo.argosy.ui.input.HapticFeedbackManager
+    @Inject lateinit var soundManager: com.nendo.argosy.ui.input.SoundFeedbackManager
     @Inject lateinit var preferencesRepository: UserPreferencesRepository
     @Inject lateinit var touchLayoutRepository: com.nendo.argosy.data.repository.TouchLayoutRepository
     @Inject lateinit var inputConfigRepository: InputConfigRepository
@@ -536,7 +538,9 @@ open class LibretroActivity : ComponentActivity() {
         onBackPressedDispatcher.addCallback(this, object : androidx.activity.OnBackPressedCallback(true) {
             override fun handleOnBackPressed() {
                 if (isAnyMenuOpen) {
-                    activeMenuHandler?.onBack()
+                    if (::gamepadInputBridge.isInitialized) gamepadInputBridge.dispatch(
+                        com.nendo.argosy.ui.input.GamepadInput(com.nendo.argosy.ui.input.GamepadEvent.Back)
+                    )
                 } else {
                     showMenu()
                 }
@@ -1071,8 +1075,10 @@ open class LibretroActivity : ComponentActivity() {
             inputPrefs.swapXY,
             inputPrefs.swapStartSelect
         )
+        com.nendo.argosy.ui.input.applyFeedbackPreferences(inputPrefs, hapticManager, soundManager)
         gamepadInputBridge = LibretroGamepadInputHandler(
             menuInputHandler = menuInputHandler,
+            dispatcher = com.nendo.argosy.ui.input.InputDispatcher(hapticManager, soundManager),
             getActiveHandler = { activeMenuHandler }
         )
     }

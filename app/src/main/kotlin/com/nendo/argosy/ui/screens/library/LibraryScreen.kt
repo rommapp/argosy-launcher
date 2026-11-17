@@ -103,8 +103,9 @@ import com.nendo.argosy.data.model.GameSource
 import com.nendo.argosy.data.model.SourceFilter
 import com.nendo.argosy.data.preferences.GridDensity
 import com.nendo.argosy.data.preferences.SelectSwapMode
-import com.nendo.argosy.ui.components.FocusedScroll
-import com.nendo.argosy.ui.components.fastAnimateScrollToItem
+import com.nendo.argosy.ui.components.GameActionEntry
+import com.nendo.argosy.ui.components.GameActionsMenu
+import com.nendo.argosy.ui.components.scrollToItemCentered
 import com.nendo.argosy.ui.components.withNavBarClearance
 import com.nendo.argosy.ui.components.ActiveFilterChipRow
 import com.nendo.argosy.ui.components.ActiveFilterChipUi
@@ -128,6 +129,7 @@ import com.nendo.argosy.ui.input.LocalInputDispatcher
 import com.nendo.argosy.ui.input.ModalInputEffect
 import com.nendo.argosy.ui.input.ModalPresenceEffect
 import com.nendo.argosy.ui.navigation.Screen
+import com.nendo.argosy.ui.navigation.navTransitionOrigin
 import com.nendo.argosy.ui.theme.LocalBoxArtStyle
 import com.nendo.argosy.ui.theme.LocalLauncherTheme
 import com.nendo.argosy.ui.theme.generated.ColorTokens
@@ -208,12 +210,6 @@ fun LibraryScreen(
         gridState.scrollToItem(0)
     }
 
-    LaunchedEffect(uiState.games.size) {
-        if (uiState.games.isNotEmpty() && uiState.focusedIndex > 0) {
-            gridState.scrollToItem(viewModel.gameIndexToGridIndex(uiState.focusedIndex))
-        }
-    }
-
     val density = LocalDensity.current
     val isCompactList = uiState.isListLayout && uiState.libraryListStyle == LibraryListStyle.COMPACT
     var compactHeaderHeightPx by remember { mutableStateOf(0) }
@@ -226,42 +222,33 @@ fun LibraryScreen(
     val footerHeight = withNavBarClearance(Dimens.footerHeight)
     val footerHeightPx = with(density) { footerHeight.toPx() }.toInt()
 
+    LaunchedEffect(uiState.games.size) {
+        if (uiState.games.isNotEmpty() && uiState.focusedIndex > 0) {
+            gridState.scrollToItemCentered(
+                viewModel.gameIndexToGridIndex(uiState.focusedIndex),
+                animate = false,
+                topInsetPx = headerHeightPx,
+                bottomInsetPx = footerHeightPx
+            )
+        }
+    }
+
     LaunchedEffect(uiState.focusedIndex, uiState.lastFocusMove) {
         if (uiState.lastFocusMove == null || uiState.games.isEmpty()) return@LaunchedEffect
-
-        val layoutInfo = gridState.layoutInfo
-        val viewportHeight = layoutInfo.viewportSize.height
-        if (viewportHeight == 0) return@LaunchedEffect
-
-        val itemHeight = layoutInfo.visibleItemsInfo.firstOrNull()?.size?.height ?: return@LaunchedEffect
-
-        val effectiveHeight = viewportHeight - headerHeightPx - footerHeightPx
-        val centeringOffset = (effectiveHeight - itemHeight) / 2
-
-        gridState.animateScrollToItem(
-            index = viewModel.gameIndexToGridIndex(uiState.focusedIndex),
-            scrollOffset = -centeringOffset
+        gridState.animateScrollToItemCentered(
+            viewModel.gameIndexToGridIndex(uiState.focusedIndex),
+            topInsetPx = headerHeightPx,
+            bottomInsetPx = footerHeightPx
         )
     }
 
     LaunchedEffect(uiState.sectionJumpTrigger) {
         if (uiState.sectionJumpTrigger == 0 || uiState.games.isEmpty()) return@LaunchedEffect
-
-        val gridIndex = viewModel.gameIndexToGridIndex(uiState.focusedIndex)
-        val layoutInfo = gridState.layoutInfo
-        val viewportHeight = layoutInfo.viewportSize.height
-        if (viewportHeight == 0) {
-            gridState.scrollToItem(gridIndex)
-            return@LaunchedEffect
-        }
-
-        val itemHeight = layoutInfo.visibleItemsInfo.firstOrNull()?.size?.height ?: 0
-        val effectiveHeight = viewportHeight - headerHeightPx - footerHeightPx
-        val centeringOffset = if (itemHeight > 0) (effectiveHeight - itemHeight) / 2 else 0
-
-        gridState.fastAnimateScrollToItem(
-            index = gridIndex,
-            scrollOffset = -centeringOffset
+        gridState.animateScrollToItemCentered(
+            viewModel.gameIndexToGridIndex(uiState.focusedIndex),
+            topInsetPx = headerHeightPx,
+            bottomInsetPx = footerHeightPx,
+            snapFarJumps = true
         )
     }
 
@@ -1012,8 +999,8 @@ private fun LibraryHeader(
                     targetState = focusedGameTitle,
                     transitionSpec = {
                         ContentTransform(
-                            targetContentEnter = fadeIn(tween(150)),
-                            initialContentExit = fadeOut(tween(100))
+                            targetContentEnter = fadeIn(tween(Motion.durationMicro)),
+                            initialContentExit = fadeOut(tween(Motion.durationFast))
                         )
                     },
                     label = "focusedGameTitle"
@@ -1122,48 +1109,31 @@ private fun LibraryMasonryGrid(
 
     LaunchedEffect(uiState.games.size) {
         if (uiState.games.isNotEmpty() && uiState.focusedIndex > 0) {
-            staggeredState.scrollToItem(viewModel.gameIndexToGridIndex(uiState.focusedIndex))
+            staggeredState.scrollToItemCentered(
+                viewModel.gameIndexToGridIndex(uiState.focusedIndex),
+                animate = false,
+                topInsetPx = headerHeightPx,
+                bottomInsetPx = footerHeightPx
+            )
         }
     }
 
     LaunchedEffect(uiState.focusedIndex, uiState.lastFocusMove) {
         if (uiState.lastFocusMove == null || uiState.games.isEmpty()) return@LaunchedEffect
-
-        val layoutInfo = staggeredState.layoutInfo
-        val viewportHeight = layoutInfo.viewportSize.height
-        if (viewportHeight == 0) return@LaunchedEffect
-
-        val gridIndex = viewModel.gameIndexToGridIndex(uiState.focusedIndex)
-        val focusedItem = layoutInfo.visibleItemsInfo.firstOrNull { it.index == gridIndex }
-        val itemHeight = focusedItem?.size?.height ?: 0
-        val effectiveHeight = viewportHeight - headerHeightPx - footerHeightPx
-        val centeringOffset = (effectiveHeight - itemHeight) / 2
-
-        staggeredState.animateScrollToItem(
-            index = gridIndex,
-            scrollOffset = -centeringOffset
+        staggeredState.animateScrollToItemCentered(
+            viewModel.gameIndexToGridIndex(uiState.focusedIndex),
+            topInsetPx = headerHeightPx,
+            bottomInsetPx = footerHeightPx
         )
     }
 
     LaunchedEffect(uiState.sectionJumpTrigger) {
         if (uiState.sectionJumpTrigger == 0 || uiState.games.isEmpty()) return@LaunchedEffect
-
-        val gridIndex = viewModel.gameIndexToGridIndex(uiState.focusedIndex)
-        val layoutInfo = staggeredState.layoutInfo
-        val viewportHeight = layoutInfo.viewportSize.height
-        if (viewportHeight == 0) {
-            staggeredState.scrollToItem(gridIndex)
-            return@LaunchedEffect
-        }
-
-        val focusedItem = layoutInfo.visibleItemsInfo.firstOrNull { it.index == gridIndex }
-        val itemHeight = focusedItem?.size?.height ?: 0
-        val effectiveHeight = viewportHeight - headerHeightPx - footerHeightPx
-        val centeringOffset = if (itemHeight > 0) (effectiveHeight - itemHeight) / 2 else 0
-
-        staggeredState.fastAnimateScrollToItem(
-            index = gridIndex,
-            scrollOffset = -centeringOffset
+        staggeredState.animateScrollToItemCentered(
+            viewModel.gameIndexToGridIndex(uiState.focusedIndex),
+            topInsetPx = headerHeightPx,
+            bottomInsetPx = footerHeightPx,
+            snapFarJumps = true
         )
     }
 
@@ -1299,6 +1269,7 @@ private fun LibraryGameCard(
         modifier = modifier
             .fillMaxWidth()
             .then(if (cardHeight != null) Modifier.height(cardHeight) else Modifier)
+            .navTransitionOrigin(game.id, isFocused)
             .clickableNoFocus(onClick = onClick, onLongClick = onLongClick)
     )
 }
@@ -1816,13 +1787,6 @@ private fun QuickMenuOverlay(
         else -> stringResource(R.string.library_quickmenu_download)
     }
 
-    data class MenuEntry(
-        val icon: androidx.compose.ui.graphics.vector.ImageVector? = null,
-        val label: String,
-        val isDangerous: Boolean = false,
-        val onClick: () -> Unit
-    )
-
     val favoriteLabel = if (game.isFavorite) {
         stringResource(R.string.library_quickmenu_unfavorite)
     } else {
@@ -1854,50 +1818,50 @@ private fun QuickMenuOverlay(
         stringResource(R.string.library_quickmenu_hide)
     }
 
-    fun LibraryQuickMenuRow.toEntry(position: Int): MenuEntry = when (this) {
-        LibraryQuickMenuRow.PRIMARY -> MenuEntry(primaryIcon, primaryLabel, onClick = onPrimaryAction)
-        LibraryQuickMenuRow.STREAM -> MenuEntry(streamIcon, streamLabel, onClick = onStream)
+    fun LibraryQuickMenuRow.toEntry(position: Int): GameActionEntry = when (this) {
+        LibraryQuickMenuRow.PRIMARY -> GameActionEntry(primaryIcon, primaryLabel, onClick = onPrimaryAction)
+        LibraryQuickMenuRow.STREAM -> GameActionEntry(streamIcon, streamLabel, onClick = onStream)
         LibraryQuickMenuRow.MOVE_TO_DISPLAY -> {
             val targetIndex = rows.moveTargetIndexAt(position)
-            MenuEntry(
+            GameActionEntry(
                 Icons.Default.Tv,
                 moveLabels.getOrElse(targetIndex) { "" },
                 onClick = { moveTargets.getOrNull(targetIndex)?.let(onMoveToDisplay) }
             )
         }
-        LibraryQuickMenuRow.FAVORITE -> MenuEntry(
+        LibraryQuickMenuRow.FAVORITE -> GameActionEntry(
             if (game.isFavorite) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
             favoriteLabel,
             onClick = onFavorite
         )
-        LibraryQuickMenuRow.DETAILS -> MenuEntry(Icons.Default.Info, detailsLabel, onClick = onDetails)
-        LibraryQuickMenuRow.ADD_TO_COLLECTION -> MenuEntry(
+        LibraryQuickMenuRow.DETAILS -> GameActionEntry(Icons.Default.Info, detailsLabel, onClick = onDetails)
+        LibraryQuickMenuRow.ADD_TO_COLLECTION -> GameActionEntry(
             Icons.AutoMirrored.Filled.PlaylistAdd,
             addToCollectionLabel,
             onClick = onAddToCollection
         )
-        LibraryQuickMenuRow.ADD_TO_GRID -> MenuEntry(Icons.Default.GridView, addToGridLabel, onClick = onAddToGrid)
-        LibraryQuickMenuRow.ACTIVE_VARIANT -> MenuEntry(
+        LibraryQuickMenuRow.ADD_TO_GRID -> GameActionEntry(Icons.Default.GridView, addToGridLabel, onClick = onAddToGrid)
+        LibraryQuickMenuRow.ACTIVE_VARIANT -> GameActionEntry(
             Icons.Default.Layers,
             activeVariantLabel,
             onClick = onActiveVariant
         )
-        LibraryQuickMenuRow.REFRESH -> MenuEntry(Icons.Default.Refresh, refreshLabel, onClick = onRefresh)
-        LibraryQuickMenuRow.RESYNC_PLATFORM -> MenuEntry(Icons.Default.Refresh, resyncLabel, onClick = onResyncPlatform)
-        LibraryQuickMenuRow.DELETE -> MenuEntry(
+        LibraryQuickMenuRow.REFRESH -> GameActionEntry(Icons.Default.Refresh, refreshLabel, onClick = onRefresh)
+        LibraryQuickMenuRow.RESYNC_PLATFORM -> GameActionEntry(Icons.Default.Refresh, resyncLabel, onClick = onResyncPlatform)
+        LibraryQuickMenuRow.DELETE -> GameActionEntry(
             Icons.Default.DeleteOutline,
             deleteLabel,
             isDangerous = true,
             onClick = onDelete
         )
-        LibraryQuickMenuRow.REMOVE_FROM_LIBRARY -> MenuEntry(
+        LibraryQuickMenuRow.REMOVE_FROM_LIBRARY -> GameActionEntry(
             Icons.Default.RemoveCircleOutline,
             removeFromLibraryLabel,
             isDangerous = true,
             onClick = onRemoveFromLibrary
         )
-        LibraryQuickMenuRow.HIDE -> MenuEntry(label = hideLabel, isDangerous = !game.isHidden, onClick = onHide)
-        LibraryQuickMenuRow.CLOSE_GAME -> MenuEntry(
+        LibraryQuickMenuRow.HIDE -> GameActionEntry(label = hideLabel, isDangerous = !game.isHidden, onClick = onHide)
+        LibraryQuickMenuRow.CLOSE_GAME -> GameActionEntry(
             Icons.Default.Close,
             closeGameLabel,
             isDangerous = true,
@@ -1906,125 +1870,12 @@ private fun QuickMenuOverlay(
     }
 
     val entries = rows.mapIndexed { position, row -> row to row.toEntry(position) }
-    val options = entries.filterNot { it.first.isDangerous }.map { it.second }
-    val dangerousOptions = entries.filter { it.first.isDangerous }.map { it.second }
-
-    ModalPresenceEffect()
-    val isDarkTheme = LocalLauncherTheme.current.isDarkTheme
-    val overlayColor = if (isDarkTheme) Color.Black.copy(alpha = 0.7f) else Color.White.copy(alpha = 0.5f)
-    val listState = rememberLazyListState()
-    val listIndex = if (focusIndex < options.size) focusIndex else focusIndex + 1
-    FocusedScroll(listState = listState, focusedIndex = listIndex)
-
-    BoxWithConstraints(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(overlayColor)
-            .clickableNoFocus(onClick = onDismiss),
-        contentAlignment = Alignment.Center
-    ) {
-        Column(
-            modifier = Modifier
-                .background(
-                    MaterialTheme.colorScheme.surface,
-                    RoundedCornerShape(Dimens.radiusLg)
-                )
-                .clickableNoFocus(enabled = false) {}
-                .padding(Dimens.spacingLg)
-                .width(Dimens.modalWidth)
-                .heightIn(max = maxHeight * 0.85f)
-        ) {
-            Text(
-                text = stringResource(R.string.library_quickmenu_title),
-                style = MaterialTheme.typography.titleMedium,
-                color = MaterialTheme.colorScheme.onSurface
-            )
-            Spacer(modifier = Modifier.height(Dimens.spacingMd))
-
-            LazyColumn(
-                state = listState,
-                modifier = Modifier.weight(1f, fill = false)
-            ) {
-                itemsIndexed(options) { index, entry ->
-                    QuickMenuItem(
-                        icon = entry.icon,
-                        label = entry.label,
-                        isFocused = focusIndex == index,
-                        onClick = entry.onClick
-                    )
-                }
-                item {
-                    HorizontalDivider(
-                        modifier = Modifier.padding(vertical = Dimens.spacingSm),
-                        color = MaterialTheme.colorScheme.outlineVariant
-                    )
-                }
-                itemsIndexed(dangerousOptions) { index, entry ->
-                    QuickMenuItem(
-                        icon = entry.icon,
-                        label = entry.label,
-                        isFocused = focusIndex == options.size + index,
-                        isDangerous = entry.isDangerous,
-                        onClick = entry.onClick
-                    )
-                }
-            }
-        }
-    }
-}
-
-@Composable
-private fun QuickMenuItem(
-    icon: androidx.compose.ui.graphics.vector.ImageVector? = null,
-    label: String,
-    value: String? = null,
-    isFocused: Boolean = false,
-    isDangerous: Boolean = false,
-    onClick: () -> Unit
-) {
-    val contentColor = when {
-        isDangerous && isFocused -> lerp(LocalArgosyTheme.current.destructive, Color.White, 0.45f)
-        isDangerous -> LocalArgosyTheme.current.destructive
-        isFocused -> lerp(LocalArgosyTheme.current.focusAccent, Color.White, 0.45f)
-        else -> MaterialTheme.colorScheme.onSurface
-    }
-    val backgroundColor = when {
-        isDangerous && isFocused -> LocalArgosyTheme.current.destructive.copy(alpha = 0.15f)
-        isFocused -> LocalArgosyTheme.current.focusAccent.copy(alpha = 0.15f)
-        else -> Color.Transparent
-    }
-
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickableNoFocus(onClick = onClick)
-            .background(backgroundColor, RoundedCornerShape(Dimens.radiusMd))
-            .padding(horizontal = Dimens.radiusLg, vertical = Dimens.spacingSm + Dimens.borderMedium),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(Dimens.radiusLg)
-    ) {
-        if (icon != null) {
-            Icon(
-                imageVector = icon,
-                contentDescription = null,
-                tint = contentColor,
-                modifier = Modifier.size(Dimens.iconSm)
-            )
-        }
-        Text(
-            text = label,
-            style = MaterialTheme.typography.bodyMedium,
-            color = contentColor,
-            modifier = Modifier.weight(1f)
-        )
-        if (value != null) {
-            Text(
-                text = "[$value]",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-        }
-    }
+    GameActionsMenu(
+        options = entries.filterNot { it.first.isDangerous }.map { it.second },
+        dangerousOptions = entries.filter { it.first.isDangerous }.map { it.second },
+        focusIndex = focusIndex,
+        onDismiss = onDismiss
+    )
 }
 
 @Composable
@@ -2035,8 +1886,8 @@ private fun LetterOverlay(
 ) {
     AnimatedVisibility(
         visible = visible,
-        enter = fadeIn(tween(100)),
-        exit = fadeOut(tween(400)),
+        enter = fadeIn(tween(Motion.durationFast)),
+        exit = fadeOut(tween(Motion.durationLinger)),
         modifier = modifier
     ) {
         Box(

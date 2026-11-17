@@ -50,6 +50,7 @@ import com.nendo.argosy.ui.input.GamepadInputHandler
 import com.nendo.argosy.ui.input.HapticFeedbackManager
 import com.nendo.argosy.ui.input.InputHandler
 import com.nendo.argosy.ui.input.InputResult
+import com.nendo.argosy.ui.input.applyFeedbackPreferences
 import com.nendo.argosy.ui.input.buttonGlyphSwaps
 import com.nendo.argosy.ui.input.SoundFeedbackManager
 import com.nendo.argosy.core.input.SoundType
@@ -207,7 +208,10 @@ class ArgosyViewModel @Inject constructor(
     val privilegedAccess: com.nendo.argosy.data.access.PrivilegedAccess,
     private val runningGames: com.nendo.argosy.data.emulator.background.RunningGames,
     private val setupStateRepository: com.nendo.argosy.data.setup.SetupStateRepository,
-    val permissionSheets: com.nendo.argosy.data.permissions.PermissionSheetController
+    val permissionSheets: com.nendo.argosy.data.permissions.PermissionSheetController,
+    private val powerActions: com.nendo.argosy.hardware.PowerActions,
+    private val syncQueueManager: com.nendo.argosy.data.sync.SyncQueueManager,
+    private val activityHistory: com.nendo.argosy.core.notification.ActivityHistory
 ) : ViewModel() {
 
     val runningGamesUi: StateFlow<com.nendo.argosy.ui.common.RunningGamesUi> = runningGames.state
@@ -326,11 +330,7 @@ class ArgosyViewModel @Inject constructor(
     private fun observeFeedbackSettings(preferencesRepository: UserPreferencesRepository) {
         viewModelScope.launch {
             preferencesRepository.userPreferences.collect { prefs ->
-                hapticManager.setEnabled(prefs.hapticEnabled)
-                hapticManager.setStrength(prefs.hapticStrength)
-                soundManager.setEnabled(prefs.soundEnabled)
-                soundManager.setVolume(prefs.soundVolume)
-                soundManager.setSoundConfigs(prefs.soundConfigs)
+                applyFeedbackPreferences(prefs, hapticManager, soundManager)
                 _isMediaSignedIn = prefs.isJellyfinSignedIn
             }
         }
@@ -380,6 +380,13 @@ class ArgosyViewModel @Inject constructor(
         hapticManager = hapticManager,
         soundManager = soundManager,
         quickFriends = quickFriends,
+        power = com.nendo.argosy.ui.components.power.QuickPowerController(powerActions, viewModelScope),
+        activity = com.nendo.argosy.ui.components.activity.QuickActivityController(
+            downloadManager = downloadManager,
+            syncQueueManager = syncQueueManager,
+            history = activityHistory,
+            scope = viewModelScope
+        ),
         wrapMode = { uiState.value.menuWrapMode },
         scope = viewModelScope
     )

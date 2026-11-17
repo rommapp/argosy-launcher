@@ -44,6 +44,7 @@ import com.nendo.argosy.ui.primitives.ArgosyProgressBar
 import com.nendo.argosy.ui.primitives.InputGlyph
 import com.nendo.argosy.ui.theme.Dimens
 import com.nendo.argosy.ui.theme.LocalArgosyTheme
+import com.nendo.argosy.ui.theme.Motion
 
 const val SCREEN_SET_PROMPT_MS = 5000L
 
@@ -74,13 +75,13 @@ fun ScreenSetPrompt(
     AnimatedVisibility(
         visible = visible,
         enter = slideInHorizontally(initialOffsetX = { it }) +
-            fadeIn(animationSpec = tween(200)) +
+            fadeIn(animationSpec = tween(Motion.durationSlide)) +
             scaleIn(
                 initialScale = 0.92f,
                 animationSpec = spring(dampingRatio = 0.7f, stiffness = 400f)
             ),
         exit = slideOutHorizontally(targetOffsetX = { it / 3 }) +
-            fadeOut(animationSpec = tween(150)) +
+            fadeOut(animationSpec = tween(Motion.durationMicro)) +
             scaleOut(targetScale = 0.95f),
         modifier = modifier
     ) {

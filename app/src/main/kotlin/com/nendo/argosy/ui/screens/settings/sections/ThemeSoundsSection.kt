@@ -1,5 +1,6 @@
 package com.nendo.argosy.ui.screens.settings.sections
 
+import androidx.annotation.StringRes
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -39,6 +40,7 @@ import com.nendo.argosy.ui.screens.settings.SettingsUiState
 import com.nendo.argosy.ui.screens.settings.SettingsViewModel
 import com.nendo.argosy.ui.screens.settings.components.SectionPaneLayout
 import com.nendo.argosy.ui.screens.settings.menu.SettingsLayout
+import com.nendo.argosy.ui.screens.settings.search.SearchableSetting
 import com.nendo.argosy.ui.theme.Dimens
 import com.nendo.argosy.ui.theme.LocalArgosyTheme
 import com.nendo.argosy.ui.theme.LocalLauncherTheme
@@ -59,10 +61,7 @@ internal sealed class ThemeSoundsItem(
     val section: String,
     val visibleWhen: (ThemeSoundsLayoutState) -> Boolean = { true }
 ) {
-    val isFocusable: Boolean get() = when (this) {
-        is Header, is SectionSpacer -> false
-        else -> true
-    }
+    val isFocusable: Boolean get() = this is SearchableSetting
 
     class Header(
         key: String,
@@ -74,12 +73,21 @@ internal sealed class ThemeSoundsItem(
     class SectionSpacer(key: String, section: String, visibleWhen: (ThemeSoundsLayoutState) -> Boolean = { true })
         : ThemeSoundsItem(key, section, visibleWhen)
 
-    data object UiSoundsToggle : ThemeSoundsItem("uiSoundsToggle", "uiSounds")
-    data object UiSoundsVolume : ThemeSoundsItem("uiVolume", "uiSounds", { it.uiSoundsEnabled })
+    sealed class Row(
+        key: String,
+        section: String,
+        @StringRes override val labelRes: Int,
+        visibleWhen: (ThemeSoundsLayoutState) -> Boolean = { true }
+    ) : ThemeSoundsItem(key, section, visibleWhen), SearchableSetting
 
-    class SoundTypeItem(val soundType: SoundType) : ThemeSoundsItem(
+    data object UiSoundsToggle : Row("uiSoundsToggle", "uiSounds", R.string.settings_sounds_toggle_title)
+    data object UiSoundsVolume :
+        Row("uiVolume", "uiSounds", R.string.settings_sounds_volume_title, { it.uiSoundsEnabled })
+
+    class SoundTypeItem(val soundType: SoundType) : Row(
         key = "soundType_${soundType.name}",
         section = "customize",
+        labelRes = soundType.labelRes,
         visibleWhen = { it.uiSoundsEnabled }
     )
 
@@ -104,7 +112,7 @@ internal sealed class ThemeSoundsItem(
     }
 }
 
-private val themeSoundsLayout = SettingsLayout<ThemeSoundsItem, ThemeSoundsLayoutState>(
+internal val themeSoundsLayout = SettingsLayout<ThemeSoundsItem, ThemeSoundsLayoutState>(
     allItems = ThemeSoundsItem.ALL,
     isFocusable = { it.isFocusable },
     visibleWhen = { item, state -> item.visibleWhen(state) },
@@ -161,19 +169,19 @@ fun ThemeSoundsSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
             is ThemeSoundsItem.Header -> ThemeSoundsSectionHeader(stringResource(item.titleRes))
             is ThemeSoundsItem.SectionSpacer -> Spacer(modifier = Modifier.height(Dimens.spacingMd))
 
-            ThemeSoundsItem.UiSoundsToggle -> SwitchPreference(
-                title = stringResource(R.string.settings_sounds_toggle_title),
+            is ThemeSoundsItem.UiSoundsToggle -> SwitchPreference(
+                title = stringResource(item.labelRes),
                 subtitle = stringResource(R.string.settings_sounds_toggle_subtitle),
                 isEnabled = uiState.sounds.enabled,
                 isFocused = isFocused(item),
                 onToggle = { viewModel.setSoundEnabled(it) }
             )
 
-            ThemeSoundsItem.UiSoundsVolume -> {
+            is ThemeSoundsItem.UiSoundsVolume -> {
                 val volumeLevels = VolumeLevels.UI_SOUNDS
                 val currentIndex = volumeLevels.indexOfFirst { it >= uiState.sounds.volume }.takeIf { it >= 0 } ?: 0
                 SliderPreference(
-                    title = stringResource(R.string.settings_sounds_volume_title),
+                    title = stringResource(item.labelRes),
                     value = volumeLevels[currentIndex],
                     suffix = "%",
                     minValue = volumeLevels.first(),
@@ -184,7 +192,7 @@ fun ThemeSoundsSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
             }
 
             is ThemeSoundsItem.SoundTypeItem -> SoundCustomizationItem(
-                soundType = item.soundType,
+                labelRes = item.labelRes,
                 displayValue = uiState.sounds.getSoundValueForType(item.soundType),
                 isFocused = isFocused(item),
                 onClick = { viewModel.showSoundPicker(item.soundType) }
@@ -205,12 +213,12 @@ private fun ThemeSoundsSectionHeader(title: String) {
 
 @Composable
 private fun SoundCustomizationItem(
-    soundType: SoundType,
+    @StringRes labelRes: Int,
     displayValue: SoundValueLabel,
     isFocused: Boolean,
     onClick: () -> Unit
 ) {
-    val displayName = stringResource(soundType.labelRes)
+    val displayName = stringResource(labelRes)
 
     val focusAccent = LocalArgosyTheme.current.focusAccent
     val focusedContent = lerp(focusAccent, Color.White, 0.45f)

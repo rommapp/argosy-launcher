@@ -416,7 +416,8 @@ class PerGameSettingsDelegate @Inject constructor(
         val saveBasePath = if (!showSaveBasePathRow || saveConfig == null) {
             null
         } else {
-            emulatorSaveConfigRepository.resolveEffectiveSavePath(saveConfig.emulatorId, game.platformSlug)
+            emulatorContext.memcardCardsDir
+                ?: emulatorSaveConfigRepository.resolveEffectiveSavePath(saveConfig.emulatorId, game.platformSlug)
                 ?: SavePathRegistry.resolvePathWithPackage(saveConfig, effectivePackage, context.filesDir.absolutePath).firstOrNull()
         }
         val saveBasePathIsInherited = saveBasePath != null &&

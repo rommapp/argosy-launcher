@@ -1,5 +1,6 @@
 package com.nendo.argosy.ui.screens.settings.sections
 
+import androidx.annotation.StringRes
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -28,29 +29,31 @@ import com.nendo.argosy.ui.screens.settings.SettingsUiState
 import com.nendo.argosy.ui.screens.settings.SettingsViewModel
 import com.nendo.argosy.ui.screens.settings.components.SectionPaneLayout
 import com.nendo.argosy.ui.screens.settings.menu.SettingsLayout
+import com.nendo.argosy.ui.screens.settings.search.SearchableSetting
 import com.nendo.argosy.ui.theme.Dimens
 import com.nendo.argosy.ui.theme.colorIntToHue
 import com.nendo.argosy.ui.theme.hueToColorInt
 
 internal sealed class ThemeItem(val key: String, val section: String) {
-    val isFocusable: Boolean get() = when (this) {
-        is Header, is SectionSpacer -> false
-        else -> true
-    }
+    val isFocusable: Boolean get() = this is SearchableSetting
 
     class Header(key: String, section: String, val titleRes: Int) : ThemeItem(key, section)
 
     class SectionSpacer(key: String, section: String) : ThemeItem(key, section)
 
-    data object Mode : ThemeItem("theme", "appearance")
-    data object AccentColor : ThemeItem("accentColor", "appearance")
-    data object AccentFooter : ThemeItem("accentFooter", "appearance")
-    data object SecondaryColor : ThemeItem("secondaryColor", "appearance")
-    data object TintBleed : ThemeItem("tintBleed", "appearance")
+    sealed class Row(key: String, section: String, @StringRes override val labelRes: Int) :
+        ThemeItem(key, section), SearchableSetting
 
-    data object Backdrop : ThemeItem("backdrop", "identity")
-    data object Fonts : ThemeItem("fonts", "identity")
-    data object IconPack : ThemeItem("iconPack", "identity")
+    data object Mode : Row("theme", "appearance", R.string.settings_theme_mode_title)
+    data object AccentColor : Row("accentColor", "appearance", R.string.settings_theme_accent_color_title)
+    data object AccentFooter : Row("accentFooter", "appearance", R.string.settings_theme_accent_footer_title)
+    data object SecondaryColor :
+        Row("secondaryColor", "appearance", R.string.settings_theme_secondary_color_title)
+    data object TintBleed : Row("tintBleed", "appearance", R.string.settings_theme_tint_bleed_title)
+
+    data object Backdrop : Row("backdrop", "identity", R.string.settings_theme_backdrop_title)
+    data object Fonts : Row("fonts", "identity", R.string.settings_theme_fonts_title)
+    data object IconPack : Row("iconPack", "identity", R.string.settings_theme_icon_pack_title)
 
     companion object {
         private val AppearanceHeader =
@@ -69,7 +72,7 @@ internal sealed class ThemeItem(val key: String, val section: String) {
     }
 }
 
-private val themeLayout = SettingsLayout<ThemeItem, Unit>(
+internal val themeLayout =SettingsLayout<ThemeItem, Unit>(
     allItems = ThemeItem.ALL,
     isFocusable = { it.isFocusable },
     visibleWhen = { _, _ -> true },
@@ -133,16 +136,16 @@ fun ThemeSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
             is ThemeItem.Header -> ThemeSectionHeader(stringResource(item.titleRes))
             is ThemeItem.SectionSpacer -> Spacer(modifier = Modifier.height(Dimens.spacingMd))
 
-            ThemeItem.Mode -> SegmentedPreference(
-                title = stringResource(R.string.settings_theme_mode_title),
+            is ThemeItem.Mode -> SegmentedPreference(
+                title = stringResource(item.labelRes),
                 options = ThemeMode.entries.map { mode -> stringResource(themeModeLabelRes(mode)) },
                 selectedIndex = ThemeMode.entries.indexOf(display.themeMode),
                 isFocused = isFocused(item),
                 onSelect = { viewModel.setThemeMode(ThemeMode.entries[it]) }
             )
 
-            ThemeItem.AccentColor -> HueSliderPreference(
-                title = stringResource(R.string.settings_theme_accent_color_title),
+            is ThemeItem.AccentColor -> HueSliderPreference(
+                title = stringResource(item.labelRes),
                 currentHue = currentHue,
                 isFocused = isFocused(item),
                 readableOnTheme = true,
@@ -155,8 +158,8 @@ fun ThemeSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
                 }
             )
 
-            ThemeItem.SecondaryColor -> HueSliderPreference(
-                title = stringResource(R.string.settings_theme_secondary_color_title),
+            is ThemeItem.SecondaryColor -> HueSliderPreference(
+                title = stringResource(item.labelRes),
                 currentHue = secondaryHue,
                 isFocused = isFocused(item),
                 readableOnTheme = true,
@@ -169,16 +172,16 @@ fun ThemeSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
                 }
             )
 
-            ThemeItem.AccentFooter -> SwitchPreference(
-                title = stringResource(R.string.settings_theme_accent_footer_title),
+            is ThemeItem.AccentFooter -> SwitchPreference(
+                title = stringResource(item.labelRes),
                 subtitle = stringResource(R.string.settings_theme_accent_footer_subtitle),
                 isEnabled = display.useAccentColorFooter,
                 isFocused = isFocused(item),
                 onToggle = { viewModel.setUseAccentColorFooter(it) }
             )
 
-            ThemeItem.TintBleed -> SliderPreference(
-                title = stringResource(R.string.settings_theme_tint_bleed_title),
+            is ThemeItem.TintBleed -> SliderPreference(
+                title = stringResource(item.labelRes),
                 value = display.surfaceTintBleed,
                 minValue = 0,
                 maxValue = 100,
@@ -188,9 +191,9 @@ fun ThemeSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
                 onAdjust = { viewModel.adjustSurfaceTintBleed(it) }
             )
 
-            ThemeItem.Backdrop -> NavigationPreference(
+            is ThemeItem.Backdrop -> NavigationPreference(
                 icon = Icons.Outlined.Texture,
-                title = stringResource(R.string.settings_theme_backdrop_title),
+                title = stringResource(item.labelRes),
                 subtitle = if (display.surfaceBackdrop.enabled) {
                     display.surfaceBackdrop.preset.displayName
                 } else {
@@ -200,15 +203,16 @@ fun ThemeSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
                 onClick = { openFrom(item) { viewModel.navigateToThemeBackdrop() } }
             )
 
-            ThemeItem.Fonts -> NavigationPreference(
+            is ThemeItem.Fonts -> NavigationPreference(
                 icon = Icons.Outlined.TextFields,
-                title = stringResource(R.string.settings_theme_fonts_title),
+                title = stringResource(item.labelRes),
                 subtitle = fontsSubtitle(context, display.displayFontName, display.bodyFontName),
                 isFocused = isFocused(item),
                 onClick = { openFrom(item) { viewModel.navigateToThemeFonts() } }
             )
 
-            ThemeItem.IconPack -> IconPackRow(
+            is ThemeItem.IconPack -> IconPackRow(
+                title = stringResource(item.labelRes),
                 uiState = uiState,
                 isFocused = isFocused(item),
                 onCycle = { direction -> openFrom(item) { viewModel.cycleIconPack(direction) } },
@@ -220,6 +224,7 @@ fun ThemeSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
 
 @Composable
 private fun IconPackRow(
+    title: String,
     uiState: SettingsUiState,
     isFocused: Boolean,
     onCycle: (Int) -> Unit,
@@ -234,7 +239,7 @@ private fun IconPackRow(
         stringResource(R.string.settings_theme_icon_pack_subtitle)
     }
     CyclePreference(
-        title = stringResource(R.string.settings_theme_icon_pack_title),
+        title = title,
         subtitle = subtitle,
         value = labels[display.selectedIconPackIndex],
         isFocused = isFocused,

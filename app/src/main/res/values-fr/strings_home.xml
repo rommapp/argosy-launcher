@@ -197,4 +197,20 @@
     <string name="home_title_running_in">En cours dans %1$s</string>
     <string name="home_title_saving">Sauvegarde en cours</string>
     <string name="home_title_running_with_time">En cours depuis %1$s</string>
+    <string name="home_grid_picker_folder_title">Dossier</string>
+    <string name="home_grid_picker_folder_subtitle">Regroupe des tuiles de tout type sous une seule</string>
+    <string name="home_grid_picker_auto_folder_title">Dossier automatique</string>
+    <string name="home_grid_picker_auto_folder_subtitle">Se remplit avec les jeux qu\'une règle retient</string>
+    <string name="home_grid_picker_image_title">Image</string>
+    <string name="home_grid_picker_image_subtitle">Une image qui remplit ses cases</string>
+    <string name="home_grid_picker_sticker_title">Autocollant</string>
+    <string name="home_grid_picker_sticker_subtitle">Une image détourée avec un contour facultatif</string>
+    <string name="home_grid_tile_image_label">Image</string>
+    <string name="home_grid_tile_sticker_label">Autocollant</string>
+    <plurals name="home_grid_tile_folder_count">
+        <item quantity="one">%d élément</item>
+        <item quantity="many">%d éléments</item>
+        <item quantity="other">%d éléments</item>
+    </plurals>
+    <string name="home_tile_file_browser_decor_title">Choisir une image</string>
 </resources>

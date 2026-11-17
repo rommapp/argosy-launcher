@@ -164,7 +164,15 @@
     <string name="library_search_no_results">\"%1$s\" के लिए कोई परिणाम नहीं</string>
     <string name="library_search_heading_games">गेम</string>
     <string name="library_search_heading_media">मीडिया</string>
-    <string name="library_search_result_platform_unknown">अज्ञात</string>
+    <string name="library_search_heading_recent_searches">हाल की खोजें</string>
+    <string name="library_search_heading_recently_played">हाल ही में खेले गए</string>
+    <plurals name="library_search_presentation_min_query_hint">
+        <item quantity="one">खोजने के लिए कम से कम %d अक्षर टाइप करें</item>
+        <item quantity="other">खोजने के लिए कम से कम %d अक्षर टाइप करें</item>
+    </plurals>
+    <string name="library_search_presentation_no_results">\"%1$s\" के लिए कोई परिणाम नहीं</string>
+    <string name="library_search_presentation_heading_recently_played">हाल ही में खेले गए</string>
+    <string name="library_search_history_heading">हाल की खोजें</string>
     <string name="library_search_result_kind_series">सीरीज़</string>
     <string name="library_search_result_kind_movie">मूवी</string>
     <string name="library_search_hint_group_jump">गेम / मीडिया</string>
@@ -190,7 +198,4 @@
     <string name="library_quickmenu_resume_game">फिर से खेलें</string>
     <string name="library_quickmenu_close_game">गेम बंद करें</string>
     <string name="library_quickmenu_move_to_display">डिस्प्ले %1$d पर ले जाएँ</string>
-    <string name="library_search_result_running">चल रहा है</string>
-    <string name="library_search_result_running_in">%1$s में चल रहा है</string>
-    <string name="library_search_result_saving">सेव हो रहा है</string>
 </resources>

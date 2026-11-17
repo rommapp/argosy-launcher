@@ -31,6 +31,7 @@ import com.nendo.argosy.R
 import com.nendo.argosy.data.platform.LaunchableApp
 import com.nendo.argosy.ui.coil.AppIconData
 import com.nendo.argosy.ui.components.Modal
+import com.nendo.argosy.ui.components.animateScrollToItemCentered
 import com.nendo.argosy.ui.screens.settings.AppPickerModalState
 import com.nendo.argosy.ui.theme.Dimens
 import com.nendo.argosy.ui.theme.LocalArgosyTheme
@@ -47,7 +48,7 @@ fun AppPickerModal(
 
     LaunchedEffect(state.focusIndex) {
         if (state.apps.isNotEmpty()) {
-            listState.animateScrollToItem(state.focusIndex.coerceIn(0, state.apps.size - 1))
+            listState.animateScrollToItemCentered(state.focusIndex.coerceIn(0, state.apps.size - 1))
         }
     }
 

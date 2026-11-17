@@ -48,7 +48,7 @@ import com.nendo.argosy.ui.screens.settings.sections.aboutItemAtFocusIndex
 import com.nendo.argosy.ui.screens.settings.sections.aboutSections
 import com.nendo.argosy.ui.screens.settings.sections.biosItemAtFocusIndex
 import com.nendo.argosy.ui.screens.settings.sections.biosSections
-import com.nendo.argosy.ui.screens.settings.sections.buildRomMItemsFromState
+import com.nendo.argosy.ui.screens.settings.sections.RomMLayoutState
 import com.nendo.argosy.ui.screens.settings.sections.JellyfinItem
 import com.nendo.argosy.ui.screens.settings.sections.JellyfinLayoutState
 import com.nendo.argosy.ui.screens.settings.sections.jellyfinItemAtFocusIndex
@@ -127,6 +127,7 @@ internal class LightSectionsInput(
     private fun handleMainGroupJump(direction: Int): InputResult {
         val state = viewModel.uiState.value
         if (state.currentSection != SettingsSection.MAIN) return InputResult.UNHANDLED
+        if (state.settingsSearch.isActive) return InputResult.HANDLED
         val sections = mainSettingsSections(state.controls)
         if (direction < 0) viewModel.jumpToPrevSection(sections) else viewModel.jumpToNextSection(sections)
         return InputResult.HANDLED
@@ -202,7 +203,7 @@ internal class LightSectionsInput(
             return InputResult.UNHANDLED
         }
         if (state.server.rommConfiguring) return InputResult.UNHANDLED
-        if (rommItemAtFocusIndex(state.focusedIndex, buildRomMItemsFromState(state)) == RomMItem.NotOnDevice) {
+        if (rommItemAtFocusIndex(state.focusedIndex, RomMLayoutState.from(state)) == RomMItem.NotOnDevice) {
             return stepOption(
                 NotOnDeviceAction.entries,
                 state.server.notOnDeviceAction,
@@ -516,7 +517,7 @@ internal class LightSectionsInput(
             SettingsSection.PRESENTATION -> presentationSections(state.display.presentationStyle)
             SettingsSection.LIBRARY_VIEW -> librarySections(LibraryLayoutState.from(state))
             SettingsSection.BIOS -> biosSections(state.bios.platformGroups, state.bios.expandedPlatformIndex)
-            SettingsSection.ROMM -> rommSections(buildRomMItemsFromState(state))
+            SettingsSection.ROMM -> rommSections(RomMLayoutState.from(state))
             SettingsSection.SAVES -> savesSections(SavesLayoutState.from(state))
             SettingsSection.STEAM_SETTINGS -> steamSections(state.steam)
             SettingsSection.JELLYFIN -> if (state.jellyfin.configuring || state.jellyfin.showLoginForm) {

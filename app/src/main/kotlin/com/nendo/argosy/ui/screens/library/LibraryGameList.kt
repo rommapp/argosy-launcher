@@ -25,7 +25,9 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.nendo.argosy.data.preferences.LibraryListStyle
 import com.nendo.argosy.ui.common.rememberResolvedCoverPath
+import com.nendo.argosy.ui.components.animateScrollToItemCentered
 import com.nendo.argosy.ui.components.fastAnimateScrollToItem
+import com.nendo.argosy.ui.components.scrollToItemCentered
 import com.nendo.argosy.ui.components.gamelist.CompactGameListRow
 import com.nendo.argosy.ui.components.gamelist.GameCoverImage
 import com.nendo.argosy.ui.components.gamelist.GameListRow
@@ -73,7 +75,12 @@ internal fun LibraryGameList(
 
     LaunchedEffect(uiState.games.size) {
         if (uiState.games.isNotEmpty() && uiState.focusedIndex > 0) {
-            listState.scrollToItem(viewModel.gameIndexToGridIndex(uiState.focusedIndex))
+            listState.scrollToItemCentered(
+                viewModel.gameIndexToGridIndex(uiState.focusedIndex),
+                animate = false,
+                topInsetPx = headerHeightPx,
+                bottomInsetPx = footerHeightPx
+            )
         }
     }
 
@@ -83,15 +90,11 @@ internal fun LibraryGameList(
             revealCompactSelection()
             return@LaunchedEffect
         }
-        val layoutInfo = listState.layoutInfo
-        val viewportHeight = layoutInfo.viewportSize.height
-        if (viewportHeight == 0) return@LaunchedEffect
-        val listIndex = viewModel.gameIndexToGridIndex(uiState.focusedIndex)
-        val itemHeight = layoutInfo.visibleItemsInfo.firstOrNull { it.index == listIndex }?.size
-            ?: layoutInfo.visibleItemsInfo.firstOrNull()?.size
-            ?: return@LaunchedEffect
-        val centeringOffset = (viewportHeight - headerHeightPx - footerHeightPx - itemHeight) / 2
-        listState.animateScrollToItem(index = listIndex, scrollOffset = -centeringOffset)
+        listState.animateScrollToItemCentered(
+            viewModel.gameIndexToGridIndex(uiState.focusedIndex),
+            topInsetPx = headerHeightPx,
+            bottomInsetPx = footerHeightPx
+        )
     }
 
     LaunchedEffect(uiState.sectionJumpTrigger) {
@@ -100,20 +103,12 @@ internal fun LibraryGameList(
             revealCompactSelection()
             return@LaunchedEffect
         }
-        val listIndex = viewModel.gameIndexToGridIndex(uiState.focusedIndex)
-        val layoutInfo = listState.layoutInfo
-        val viewportHeight = layoutInfo.viewportSize.height
-        if (viewportHeight == 0) {
-            listState.scrollToItem(listIndex)
-            return@LaunchedEffect
-        }
-        val itemHeight = layoutInfo.visibleItemsInfo.firstOrNull()?.size ?: 0
-        val centeringOffset = if (itemHeight > 0) {
-            (viewportHeight - headerHeightPx - footerHeightPx - itemHeight) / 2
-        } else {
-            0
-        }
-        listState.fastAnimateScrollToItem(index = listIndex, scrollOffset = -centeringOffset)
+        listState.animateScrollToItemCentered(
+            viewModel.gameIndexToGridIndex(uiState.focusedIndex),
+            topInsetPx = headerHeightPx,
+            bottomInsetPx = footerHeightPx,
+            snapFarJumps = true
+        )
     }
 
     BoxWithConstraints(modifier = Modifier.fillMaxSize()) {

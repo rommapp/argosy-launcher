@@ -26,6 +26,7 @@ import androidx.compose.ui.unit.dp
 import com.nendo.argosy.ui.primitives.FocusIndicators
 import com.nendo.argosy.ui.primitives.argosyFocusIndicators
 import com.nendo.argosy.ui.theme.Dimens
+import com.nendo.argosy.ui.theme.Motion
 import com.nendo.argosy.ui.theme.generated.ComponentDefaults
 import com.nendo.argosy.ui.util.touchOnly
 
@@ -77,7 +78,7 @@ fun AlphabetSidebar(
                 val isActive = letter == currentLetter
                 val scale by animateFloatAsState(
                     targetValue = if (isActive) 1.5f else 1f,
-                    animationSpec = tween(150),
+                    animationSpec = tween(Motion.durationMicro),
                     label = "letterScale"
                 )
                 Text(

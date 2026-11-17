@@ -16,11 +16,16 @@ val LocalMotionTier = staticCompositionLocalOf { MotionTier.Comfortable }
 object Motion {
     val argosyEase: Easing = CubicBezierEasing(0.2f, 0.7f, 0.2f, 1f)
 
+    val durationFast = MotionTokens.Tween.fastMs
     val durationMicro = MotionTokens.Tween.microMs
     val durationContent = MotionTokens.Tween.contentMs
     val durationSlide = MotionTokens.Tween.slideMs
     val durationPage = MotionTokens.Tween.pageMs
+    val durationOverlay = MotionTokens.Tween.overlayMs
+    val durationLinger = MotionTokens.Tween.lingerMs
     val durationDrawer = MotionTokens.Tween.drawerMs
+    val durationMedium = MotionTokens.Tween.mediumMs
+    val durationShimmer = MotionTokens.Tween.shimmerMs
 
     val focusSpring: AnimationSpec<Float> = MotionTokens.Spring.focus
     val focusSpringDp: AnimationSpec<Dp> = MotionTokens.Spring.focusDp

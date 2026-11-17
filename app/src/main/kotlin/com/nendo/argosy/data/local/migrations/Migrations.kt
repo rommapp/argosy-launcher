@@ -4350,6 +4350,15 @@ object Migration_223_224 : Migration(223, 224) {
     }
 }
 
+object Migration_224_225 : Migration(224, 225) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL("ALTER TABLE `home_tiles` ADD COLUMN `parentTileId` INTEGER")
+        db.execSQL(
+            "CREATE INDEX IF NOT EXISTS `index_home_tiles_parentTileId` ON `home_tiles` (`parentTileId`)"
+        )
+    }
+}
+
 object Migration_203_204 : Migration(203, 204) {
     override fun migrate(db: SupportSQLiteDatabase) {
         db.execSQL(

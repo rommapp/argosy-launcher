@@ -20,6 +20,7 @@ import com.nendo.argosy.ui.screens.settings.sections.ambientLedMaxFocusIndex
 import com.nendo.argosy.ui.screens.settings.sections.BiosItem
 import com.nendo.argosy.ui.components.toggleHomeLayoutField
 import com.nendo.argosy.ui.screens.settings.sections.BuiltinEmulatorItem
+import com.nendo.argosy.ui.screens.settings.sections.builtinEmulatorLayout
 import com.nendo.argosy.ui.screens.settings.sections.PlatformDetailItem
 import com.nendo.argosy.ui.screens.settings.sections.platformDetailItemAtFocusIndex
 import com.nendo.argosy.ui.screens.settings.sections.platformDetailMaxFocusIndex
@@ -140,7 +141,11 @@ import com.nendo.argosy.ui.screens.settings.sections.SavesItem
 import com.nendo.argosy.ui.screens.settings.sections.SavesLayoutState
 import com.nendo.argosy.ui.screens.settings.sections.SyncSettingsItem
 import com.nendo.argosy.ui.screens.settings.sections.coreManagementMaxFocusIndex
-import com.nendo.argosy.ui.screens.settings.sections.buildRomMItemsFromState
+import com.nendo.argosy.ui.screens.settings.sections.RAItem
+import com.nendo.argosy.ui.screens.settings.sections.RALayoutState
+import com.nendo.argosy.ui.screens.settings.sections.raItemAtFocusIndex
+import com.nendo.argosy.ui.screens.settings.sections.raMaxFocusIndex
+import com.nendo.argosy.ui.screens.settings.sections.RomMLayoutState
 import com.nendo.argosy.ui.screens.settings.sections.rommItemAtFocusIndex
 import com.nendo.argosy.ui.screens.settings.sections.rommMaxFocusIndex
 import com.nendo.argosy.ui.screens.settings.sections.savesItemAtFocusIndex
@@ -164,9 +169,14 @@ internal fun routeConfirm(vm: SettingsViewModel): InputResult {
     val state = vm._uiState.value
     return when (state.currentSection) {
         SettingsSection.MAIN -> {
+            if (state.settingsSearch.isActive) {
+                routeSettingsSearchConfirm(vm, state.focusedIndex)
+                return InputResult.HANDLED
+            }
             val item = mainSettingsItemAtFocusIndex(state.focusedIndex, state.controls)
             when (item) {
                 is MainSettingsItem.Header -> Unit
+                MainSettingsItem.Search -> vm.openSettingsSearch()
                 MainSettingsItem.ManagedInstallers ->
                     vm.navigateToSection(SettingsSection.MANAGED_INSTALLERS)
                 MainSettingsItem.DeviceSettings -> vm.viewModelScope.launch { vm._openDeviceSettingsEvent.emit(Unit) }
@@ -209,29 +219,22 @@ internal fun routeConfirm(vm: SettingsViewModel): InputResult {
                     3 -> vm.hideRALoginForm()
                 }
             } else {
-                if (ra.isLoggedIn) {
-                    val pushIndex = raLoggedInPushIndex(ra.proxyEnabled)
-                    when (state.focusedIndex) {
-                        RA_LOGGED_IN_LOGOUT_INDEX -> vm.logoutFromRA()
-                        RA_LOGGED_IN_WEB_API_KEY_INDEX -> {
-                            vm.openRAWebApiKeyEditor()
-                            return InputResult.handled(SoundType.OPEN_MODAL)
-                        }
-                        RA_LOGGED_IN_PLAY_MODE_INDEX -> {
-                            if (!state.syncSettings.secureSaves) return InputResult.HANDLED
-                            vm.cycleRADefaultMode(1)
-                            return InputResult.handled(SoundType.SELECT)
-                        }
-                        RA_LOGGED_IN_PROXY_TOGGLE_INDEX -> vm.setRAProxyEnabled(!ra.proxyEnabled)
-                        pushIndex -> if (ra.canPushToRetroArch) vm.pushRACredentialsToRetroArch()
-                        RA_LOGGED_IN_PROXY_FIELD_INDEX -> if (ra.proxyEnabled) vm.raDelegate.setFocusField(RA_LOGGED_IN_PROXY_FIELD_INDEX)
+                when (raItemAtFocusIndex(state.focusedIndex, RALayoutState.from(state))) {
+                    RAItem.Login -> vm.showRALoginForm()
+                    RAItem.Logout -> vm.logoutFromRA()
+                    RAItem.WebApiKey -> {
+                        vm.openRAWebApiKeyEditor()
+                        return InputResult.handled(SoundType.OPEN_MODAL)
                     }
-                } else {
-                    when (state.focusedIndex) {
-                        0 -> vm.showRALoginForm()
-                        1 -> vm.setRAProxyEnabled(!ra.proxyEnabled)
-                        2 -> if (ra.proxyEnabled) vm.raDelegate.setFocusField(2)
+                    RAItem.PlayMode -> {
+                        if (!state.syncSettings.secureSaves) return InputResult.HANDLED
+                        vm.cycleRADefaultMode(1)
+                        return InputResult.handled(SoundType.SELECT)
                     }
+                    RAItem.ProxyToggle -> vm.setRAProxyEnabled(!ra.proxyEnabled)
+                    RAItem.ProxyField -> vm.raDelegate.setFocusField(state.focusedIndex)
+                    RAItem.PushToRetroArch -> vm.pushRACredentialsToRetroArch()
+                    null -> {}
                 }
             }
             InputResult.HANDLED
@@ -423,8 +426,7 @@ private fun routeRomMConfirm(vm: SettingsViewModel, state: SettingsUiState): Inp
         return InputResult.HANDLED
     }
 
-    val items = buildRomMItemsFromState(state)
-    when (rommItemAtFocusIndex(state.focusedIndex, items)) {
+    when (rommItemAtFocusIndex(state.focusedIndex, RomMLayoutState.from(state))) {
         RomMItem.RomManager -> vm.startRommConfig()
         RomMItem.RomMSignOut -> vm.requestRommSignOut()
         RomMItem.Accounts -> vm.navigateToSection(SettingsSection.ACCOUNTS)
@@ -1351,6 +1353,9 @@ private fun routeDismissTopOverlay(vm: SettingsViewModel): Boolean {
         state.currentSection == SettingsSection.PLATFORM_DETAIL && state.platformDetail.combineRestoreCount > 0 -> {
             vm.dismissCombineRestore(); true
         }
+        state.currentSection == SettingsSection.MAIN && state.settingsSearch.isActive -> {
+            vm.clearSettingsSearch(); true
+        }
         else -> false
     }
 }
@@ -1427,7 +1432,11 @@ private fun computeMaxFocusIndex(
     state: SettingsUiState,
     isConnected: Boolean
 ): Int = when (state.currentSection) {
-    SettingsSection.MAIN -> mainSettingsMaxFocusIndex(state.controls)
+    SettingsSection.MAIN -> if (state.settingsSearch.isActive) {
+        SETTINGS_SEARCH_FIELD_INDEX + state.settingsSearch.results.size
+    } else {
+        mainSettingsMaxFocusIndex(state.controls)
+    }
     SettingsSection.ACCOUNTS -> if (state.accounts.pairing.active || state.accounts.switchInProgress) {
         0
     } else {
@@ -1436,7 +1445,7 @@ private fun computeMaxFocusIndex(
     SettingsSection.ROMM -> if (state.server.rommConfiguring) {
         rommConfigMaxIndex(state.server)
     } else {
-        rommMaxFocusIndex(buildRomMItemsFromState(state))
+        rommMaxFocusIndex(RomMLayoutState.from(state))
     }
     SettingsSection.SAVES -> savesMaxFocusIndex(SavesLayoutState.from(state))
     SettingsSection.SYNC_SETTINGS -> syncSettingsMaxFocusIndex()
@@ -1447,14 +1456,10 @@ private fun computeMaxFocusIndex(
         else -> jellyfinMaxFocusIndex(JellyfinLayoutState.from(state))
     }
     SettingsSection.NETWORK_BLUETOOTH -> 0
-    SettingsSection.RETRO_ACHIEVEMENTS -> when {
-        state.retroAchievements.showLoginForm -> 3
-        state.retroAchievements.isLoggedIn -> raLoggedInMaxFocusIndex(
-            proxyEnabled = state.retroAchievements.proxyEnabled,
-            canPushToRetroArch = state.retroAchievements.canPushToRetroArch
-        )
-        state.retroAchievements.proxyEnabled -> RA_PROXY_FIELD_INDEX
-        else -> RA_PROXY_TOGGLE_INDEX
+    SettingsSection.RETRO_ACHIEVEMENTS -> if (state.retroAchievements.showLoginForm) {
+        3
+    } else {
+        raMaxFocusIndex(RALayoutState.from(state))
     }
     SettingsSection.STORAGE -> createStorageLayoutInfo(state).let { it.layout.maxFocusIndex(it.state) }
     SettingsSection.STORAGE_GAMES -> storageGamesMaxFocusIndex(createStorageGamesLayoutInfo(state))
@@ -1484,11 +1489,7 @@ private fun computeMaxFocusIndex(
     SettingsSection.NAVIGATION -> navigationMaxFocusIndex(state.controls)
     SettingsSection.MANAGED_INSTALLERS -> installersMaxFocusIndex(state.managedInstallers)
     SettingsSection.PLATFORMS -> emulatorsMaxFocusIndex(state.emulators.platforms)
-    SettingsSection.BUILTIN_EMULATOR -> when {
-        !state.emulators.builtinLibretroEnabled -> BuiltinEmulatorItem.ENABLE.focusIndex
-        state.emulators.hudEnabled -> BuiltinEmulatorItem.HUD_LAST_SAVE.focusIndex
-        else -> BuiltinEmulatorItem.HUD_ENABLED.focusIndex
-    }
+    SettingsSection.BUILTIN_EMULATOR -> builtinEmulatorLayout.maxFocusIndex(state.emulators)
     SettingsSection.PLATFORM_DETAIL -> platformDetailMaxFocusIndex(state)
     SettingsSection.BUILTIN_VIDEO -> builtinVideoMaxFocusIndex(state.builtinVideo, state.platformLibretro.platformSettings)
     SettingsSection.BUILTIN_CONTROLS -> builtinControlsMaxFocusIndex(state.builtinControls)

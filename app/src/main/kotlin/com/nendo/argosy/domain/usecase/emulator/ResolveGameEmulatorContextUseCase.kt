@@ -7,7 +7,6 @@ import com.nendo.argosy.data.emulator.SavePathConfig
 import com.nendo.argosy.data.emulator.SavePathRegistry
 import com.nendo.argosy.data.local.dao.EmulatorConfigDao
 import com.nendo.argosy.data.platform.PlatformDefinitions
-import com.nendo.argosy.data.repository.EmulatorSaveConfigRepository
 import com.nendo.argosy.data.sync.platform.MemcardInfo
 import com.nendo.argosy.data.sync.platform.PlatformSaveHandlerRegistry
 import kotlinx.coroutines.Dispatchers
@@ -26,14 +25,14 @@ import javax.inject.Inject
 class ResolveGameEmulatorContextUseCase @Inject constructor(
     private val emulatorResolver: EmulatorResolver,
     private val emulatorConfigDao: EmulatorConfigDao,
-    private val emulatorSaveConfigRepository: EmulatorSaveConfigRepository,
     private val saveHandlerRegistry: PlatformSaveHandlerRegistry
 ) {
 
     /**
      * [memcardCanonicalId] is what a memory-card selection is stored against. It is the canonical
      * id rather than the raw emulator id: a card chosen under one and read under the other is a
-     * selection that silently does not apply.
+     * selection that silently does not apply. [memcardCardsDir] is the folder save sync reads and
+     * writes the emulator's cards in, and [memcards] the folder cards found there.
      */
     data class Context(
         val effectivePackage: String?,
@@ -41,7 +40,7 @@ class ResolveGameEmulatorContextUseCase @Inject constructor(
         val saveConfig: SavePathConfig?,
         val supportsPerGameSavePath: Boolean,
         val memcardCanonicalId: String?,
-        val memcardBaseOverride: String?,
+        val memcardCardsDir: String?,
         val memcards: List<MemcardInfo>,
         val showMemcardRow: Boolean
     )
@@ -67,24 +66,12 @@ class ResolveGameEmulatorContextUseCase @Inject constructor(
             } else {
                 null
             }
-        val memcardUserConfig = memcardCanonicalId?.let {
-            emulatorSaveConfigRepository.getByEmulator(it)
-        }
-        val memcardBaseOverride = memcardUserConfig
-            ?.takeIf { it.isUserOverride || it.isAutoDetected }
-            ?.savePathPattern
-            ?.takeIf { it.isNotBlank() }
-        val memcards = if (memcardCanonicalId != null) {
-            withContext(Dispatchers.IO) {
-                saveHandlerRegistry.listPs2FolderMemcardsForEmulator(
-                    emulatorId = memcardCanonicalId,
-                    emulatorPackage = effectivePackage,
-                    basePathOverride = memcardBaseOverride
-                )
-            }
-        } else {
-            emptyList()
-        }
+        val memcardCardsDir = memcardCanonicalId
+            ?.let { saveHandlerRegistry.ps2CardBaseForEmulator(it, effectivePackage) }
+            ?.cardsDir
+        val memcards = memcardCardsDir
+            ?.let { withContext(Dispatchers.IO) { saveHandlerRegistry.listPs2FolderMemcards(it) } }
+            .orEmpty()
 
         return Context(
             effectivePackage = effectivePackage,
@@ -93,7 +80,7 @@ class ResolveGameEmulatorContextUseCase @Inject constructor(
             supportsPerGameSavePath =
                 EmulatorSettingScope.showsPerGameSavePath(saveConfig, platformSlug),
             memcardCanonicalId = memcardCanonicalId,
-            memcardBaseOverride = memcardBaseOverride,
+            memcardCardsDir = memcardCardsDir,
             memcards = memcards,
             showMemcardRow = EmulatorSettingScope.showsMemoryCard(platformSlug, memcards.size)
         )

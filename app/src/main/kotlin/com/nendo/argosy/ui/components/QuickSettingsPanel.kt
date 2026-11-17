@@ -89,6 +89,7 @@ fun QuickSettingsPanel(
     focusedIndex: Int,
     controller: QuickSettingsController,
     onOpenDeviceAccess: (() -> Unit)?,
+    onOpenRoute: ((String) -> Unit)?,
     onDismiss: () -> Unit,
     modifier: Modifier = Modifier,
     friendsPage: @Composable () -> Unit = {},
@@ -166,7 +167,9 @@ fun QuickSettingsPanel(
                                 state = state,
                                 focusedIndex = focusedIndex,
                                 controller = controller,
-                                onOpenDeviceAccess = onOpenDeviceAccess
+                                onDismiss = onDismiss,
+                                onOpenDeviceAccess = onOpenDeviceAccess,
+                                onOpenRoute = onOpenRoute
                             )
                         }
                     }
@@ -188,8 +191,8 @@ private fun quickPanelWidthFor(page: QuickSettingsPage): Dp {
     val cap = LocalConfiguration.current.screenWidthDp.dp * WIDE_PAGE_MAX_SCREEN_FRACTION
     val width = when (page) {
         QuickSettingsPage.MUSIC -> Dimens.quickPanelWidthMedia
-        QuickSettingsPage.FRIENDS, QuickSettingsPage.QUICK, QuickSettingsPage.PERFORMANCE,
-        QuickSettingsPage.CONNECTIONS -> Dimens.quickPanelWidthWide
+        QuickSettingsPage.FRIENDS, QuickSettingsPage.QUICK, QuickSettingsPage.ACTIVITY, QuickSettingsPage.PERFORMANCE,
+        QuickSettingsPage.CONNECTIONS, QuickSettingsPage.POWER -> Dimens.quickPanelWidthWide
     }
     return min(width, cap)
 }
@@ -305,7 +308,9 @@ private fun QuickSettingsList(
     state: QuickSettingsState,
     focusedIndex: Int,
     controller: QuickSettingsController,
-    onOpenDeviceAccess: (() -> Unit)?
+    onDismiss: () -> Unit,
+    onOpenDeviceAccess: (() -> Unit)?,
+    onOpenRoute: ((String) -> Unit)?
 ) {
     val visibleItems = remember(page, state) { quickSettingsVisibleItems(page, state) }
     val focusable = remember(page, state) { quickSettingsFocusableItems(page, state) }
@@ -330,7 +335,9 @@ private fun QuickSettingsList(
                 state = state,
                 isFocused = focusable.indexOf(item) == focusedIndex,
                 controller = controller,
-                onOpenDeviceAccess = onOpenDeviceAccess
+                onDismiss = onDismiss,
+                onOpenDeviceAccess = onOpenDeviceAccess,
+                onOpenRoute = onOpenRoute
             )
         }
     }
@@ -342,11 +349,21 @@ private fun QuickSettingsItemRow(
     state: QuickSettingsState,
     isFocused: Boolean,
     controller: QuickSettingsController,
-    onOpenDeviceAccess: (() -> Unit)?
+    onDismiss: () -> Unit,
+    onOpenDeviceAccess: (() -> Unit)?,
+    onOpenRoute: ((String) -> Unit)?
 ) {
     val focus = { controller.focusItem(item) }
     val enabled = !item.isLocked(state)
     when (item) {
+        QuickSettingsItem.PowerAccess, QuickSettingsItem.PowerSleep, QuickSettingsItem.PowerRestart,
+        QuickSettingsItem.PowerOff, QuickSettingsItem.PowerMenu, QuickSettingsItem.OpenGames ->
+            QuickPowerRow(item = item, state = state, isFocused = isFocused, power = controller.power, onFocus = focus, onDismiss = onDismiss)
+
+        QuickSettingsItem.ActivityDownloads, QuickSettingsItem.ActivitySync, QuickSettingsItem.ActivityIdle,
+        QuickSettingsItem.ActivityRecent ->
+            QuickActivityRow(item = item, state = state.activity, isFocused = isFocused, onFocus = focus, onOpenRoute = onOpenRoute)
+
         is QuickSettingsItem.Header -> QuickSectionHeader(title = stringResource(item.headerGroup.titleRes))
 
         QuickSettingsItem.Theme -> QuickSegmentedRow(

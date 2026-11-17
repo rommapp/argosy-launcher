@@ -89,7 +89,7 @@ class SettingsBackupKeysTest {
     )
 
     private val localRowIdsAndSets = setOf(
-        "library_default_platform_id", "library_default_regions"
+        "library_default_platform_id", "library_default_regions", "quick_menu_top_new_not_interested"
     )
 
     private val derivedAndGenerated = setOf(

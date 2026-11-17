@@ -738,7 +738,7 @@ fun ActionPreference(
                     targetValue = if (icon in clockwiseArrowIcons) 360f else -360f,
                     animationSpec = androidx.compose.animation.core.infiniteRepeatable(
                         animation = androidx.compose.animation.core.tween(
-                            durationMillis = 1200,
+                            durationMillis = com.nendo.argosy.ui.theme.generated.MotionTokens.Tween.longMs,
                             easing = androidx.compose.animation.core.LinearEasing
                         )
                     ),

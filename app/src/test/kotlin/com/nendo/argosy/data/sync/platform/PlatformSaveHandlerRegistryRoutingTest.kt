@@ -45,6 +45,7 @@ class PlatformSaveHandlerRegistryRoutingTest {
             defaultSaveHandler = defaultHandler,
             unitSaveHandler = unitHandler,
             sigilSaveHandler = sigilHandler,
+            emulatorSaveConfigRepository = mockk(relaxed = true),
         )
     }
 

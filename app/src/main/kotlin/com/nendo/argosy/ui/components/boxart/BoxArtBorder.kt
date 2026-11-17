@@ -39,6 +39,7 @@ import com.nendo.argosy.data.preferences.BoxArtInnerEffect
 import com.nendo.argosy.data.preferences.SystemIconPosition
 import com.nendo.argosy.ui.theme.Dimens
 import com.nendo.argosy.ui.theme.LocalBoxArtStyle
+import com.nendo.argosy.ui.theme.Motion
 import com.nendo.argosy.ui.theme.generated.ComponentDefaults
 
 /**
@@ -57,7 +58,7 @@ internal fun rememberShineSweep(active: Boolean): State<Float> {
         initialValue = -0.5f,
         targetValue = 1.5f,
         animationSpec = infiniteRepeatable(
-            animation = tween(2000, easing = LinearEasing),
+            animation = tween(Motion.durationShimmer, easing = LinearEasing),
             repeatMode = RepeatMode.Restart
         ),
         label = "shine"

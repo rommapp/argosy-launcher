@@ -37,6 +37,7 @@ class HomeVideoPreviewDelegateTest {
 
     @Test
     fun `an old player cannot activate the replacement loading video`() {
+        preview.updateFromPreferences(muteVideoPreview = false, videoWallpaperEnabled = true, videoWallpaperDelaySeconds = 3)
         val oldReady = { preview.activateVideoPreview("video-a", blocked = false, isResumed = true) }
         preview.startVideoPreviewLoading("video-a")
         preview.deactivateVideoPreview()
@@ -58,6 +59,7 @@ class HomeVideoPreviewDelegateTest {
 
     @Test
     fun `a backgrounded surface cannot activate a loading preview`() {
+        preview.updateFromPreferences(muteVideoPreview = false, videoWallpaperEnabled = true, videoWallpaperDelaySeconds = 3)
         preview.startVideoPreviewLoading("video-a")
 
         preview.activateVideoPreview("video-a", blocked = false, isResumed = false)

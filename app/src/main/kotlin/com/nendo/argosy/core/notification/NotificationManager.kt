@@ -29,7 +29,8 @@ private const val DEBOUNCE_DELAY_MS = 500L
 private const val OVER_APP_BUFFER = 16
 
 /**
- * Every launcher notice passes [routeNotice] once, when it is posted. In-app and held notices wait
+ * Every launcher notice passes [routeNotice] once, when it is posted, and every notice not dropped
+ * there is recorded in [ActivityHistory]. In-app and held notices wait
  * in [notifications] until a started surface draws them; notices for a resumed built-in game go to
  * that game's own host; the rest are emitted on [overAppNotices] for the window drawn above other
  * apps.
@@ -37,7 +38,8 @@ private const val OVER_APP_BUFFER = 16
 @Singleton
 class NotificationManager @Inject constructor(
     @ApplicationContext private val context: Context,
-    appPreferencesRepository: AppPreferencesRepository
+    appPreferencesRepository: AppPreferencesRepository,
+    private val activityHistory: ActivityHistory
 ) {
 
     private val scope = SafeCoroutineScope(Dispatchers.Main, "NotificationManager")
@@ -122,7 +124,9 @@ class NotificationManager @Inject constructor(
             argosyVisible = startedSurfaces.value > 0,
             builtInGameInFront = ResumedGameRouter.hasGameInFront
         )
-        when (routeNotice(notification.type, notification.category, preferences.value, stage)) {
+        val route = routeNotice(notification.type, notification.category, preferences.value, stage)
+        if (route != NoticeRoute.DROP) activityHistory.record(notification)
+        when (route) {
             NoticeRoute.DROP -> Unit
             NoticeRoute.IN_APP, NoticeRoute.HOLD -> _notifications.update { current -> current + notification }
             NoticeRoute.BUILT_IN_GAME -> scope.launch {

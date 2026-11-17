@@ -12,7 +12,9 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -55,10 +57,11 @@ fun ArgosyConfirmModal(
     neutralLabel: String? = null,
     onNeutral: (() -> Unit)? = null,
     visible: Boolean = true,
+    working: String? = null,
 ) {
     val theme = LocalArgosyTheme.current
     val confirmIndex = if (neutralLabel != null) 2 else 1
-    ModalScaffold(visible = visible, onDismiss = onDismiss, modifier = modifier) {
+    ModalScaffold(visible = visible, onDismiss = if (working == null) onDismiss else ({}), modifier = modifier) {
         Column(modifier = Modifier.padding(Dimens.spacingLg)) {
             Text(
                 text = title,
@@ -72,35 +75,62 @@ fun ArgosyConfirmModal(
                 color = theme.textDim,
             )
             Spacer(Modifier.height(Dimens.spacingLg))
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(Dimens.spacingSm, Alignment.End),
-            ) {
-                ModalActionButton(
-                    label = cancelLabel,
-                    tint = theme.focusAccent,
-                    restLabelColor = theme.textPrimary,
-                    focused = focusedIndex == 0,
-                    onClick = onDismiss,
-                )
-                if (neutralLabel != null) {
+            if (working != null) {
+                ConfirmWorkingRow(label = working, tint = if (destructive) theme.destructive else theme.focusAccent)
+            } else {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(Dimens.spacingSm, Alignment.End),
+                ) {
                     ModalActionButton(
-                        label = neutralLabel,
+                        label = cancelLabel,
                         tint = theme.focusAccent,
                         restLabelColor = theme.textPrimary,
-                        focused = focusedIndex == 1,
-                        onClick = { onNeutral?.invoke() },
+                        focused = focusedIndex == 0,
+                        onClick = onDismiss,
+                    )
+                    if (neutralLabel != null) {
+                        ModalActionButton(
+                            label = neutralLabel,
+                            tint = theme.focusAccent,
+                            restLabelColor = theme.textPrimary,
+                            focused = focusedIndex == 1,
+                            onClick = { onNeutral?.invoke() },
+                        )
+                    }
+                    ModalActionButton(
+                        label = confirmLabel,
+                        tint = if (destructive) LocalArgosyTheme.current.destructive else theme.focusAccent,
+                        restLabelColor = if (destructive) LocalArgosyTheme.current.destructive else theme.textPrimary,
+                        focused = focusedIndex == confirmIndex,
+                        onClick = onConfirm,
                     )
                 }
-                ModalActionButton(
-                    label = confirmLabel,
-                    tint = if (destructive) LocalArgosyTheme.current.destructive else theme.focusAccent,
-                    restLabelColor = if (destructive) LocalArgosyTheme.current.destructive else theme.textPrimary,
-                    focused = focusedIndex == confirmIndex,
-                    onClick = onConfirm,
-                )
             }
         }
+    }
+}
+
+@Composable
+private fun ConfirmWorkingRow(label: String, tint: Color) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .heightIn(min = Dimens.buttonHeight),
+        horizontalArrangement = Arrangement.spacedBy(Dimens.spacingSm, Alignment.End),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        CircularProgressIndicator(
+            modifier = Modifier.size(Dimens.iconSm),
+            strokeWidth = Dimens.borderMedium,
+            color = tint,
+        )
+        Text(
+            text = label,
+            style = MaterialTheme.typography.titleSmall,
+            color = LocalArgosyTheme.current.textPrimary,
+            maxLines = 1,
+        )
     }
 }
 
@@ -118,9 +148,11 @@ fun ArgosyConfirmModalHost(
     cancelLabel: String = stringResource(R.string.ui_confirm_modal_cancel),
     neutralLabel: String? = null,
     onNeutral: (() -> Unit)? = null,
+    working: String? = null,
 ) {
     var focusedIndex by remember { mutableIntStateOf(0) }
     val hasNeutral by rememberUpdatedState(neutralLabel != null)
+    val isWorking by rememberUpdatedState(working != null)
     val currentOnConfirm by rememberUpdatedState(onConfirm)
     val currentOnDismiss by rememberUpdatedState(onDismiss)
     val currentOnNeutral by rememberUpdatedState(onNeutral)
@@ -134,16 +166,19 @@ fun ArgosyConfirmModalHost(
             private fun lastIndex(): Int = if (hasNeutral) 2 else 1
 
             override fun onLeft(): InputResult {
+                if (isWorking) return InputResult.handled(SoundType.SILENT)
                 focusedIndex = (focusedIndex - 1).coerceAtLeast(0)
                 return InputResult.HANDLED
             }
 
             override fun onRight(): InputResult {
+                if (isWorking) return InputResult.handled(SoundType.SILENT)
                 focusedIndex = (focusedIndex + 1).coerceAtMost(lastIndex())
                 return InputResult.HANDLED
             }
 
             override fun onConfirm(): InputResult {
+                if (isWorking) return InputResult.handled(SoundType.SILENT)
                 when (focusedIndex) {
                     0 -> currentOnDismiss()
                     lastIndex() -> currentOnConfirm()
@@ -153,6 +188,7 @@ fun ArgosyConfirmModalHost(
             }
 
             override fun onBack(): InputResult {
+                if (isWorking) return InputResult.handled(SoundType.SILENT)
                 currentOnDismiss()
                 return InputResult.handled(SoundType.CLOSE_MODAL)
             }
@@ -188,6 +224,7 @@ fun ArgosyConfirmModalHost(
         neutralLabel = neutralLabel,
         onNeutral = onNeutral,
         visible = visible,
+        working = working,
     )
 }
 

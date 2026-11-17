@@ -1,5 +1,6 @@
 package com.nendo.argosy.ui.components
 
+import androidx.annotation.StringRes
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.res.stringResource
@@ -62,6 +63,34 @@ fun homeRailFields(): List<HomeLayoutSettingField> = listOf(
     HomeLayoutSettingField.RAIL_CONTINUE_WATCHING,
     HomeLayoutSettingField.RAIL_NEXT_UP
 )
+
+/**
+ * The row title for this field. [HomeLayoutSettingField.AUTO_GRID_LANES] names its columns
+ * form here; its row title follows the scroll axis and reads rows when the grid scrolls sideways.
+ */
+@get:StringRes
+val HomeLayoutSettingField.titleRes: Int
+    get() = when (this) {
+        HomeLayoutSettingField.ROW_ALIGNMENT -> R.string.ui_home_layout_row_alignment
+        HomeLayoutSettingField.FOCUS_POSITION -> R.string.ui_home_layout_focus_position
+        HomeLayoutSettingField.INVERTED -> R.string.ui_home_layout_inverted
+        HomeLayoutSettingField.RESTING_SCALE -> R.string.ui_home_layout_resting_scale
+        HomeLayoutSettingField.NEIGHBOUR_PUSH -> R.string.ui_home_layout_neighbour_push
+        HomeLayoutSettingField.PLATFORM_BADGE -> R.string.ui_home_layout_platform_badge
+        HomeLayoutSettingField.SCROLL_AXIS -> R.string.ui_home_layout_scroll_axis
+        HomeLayoutSettingField.AUTO_GRID_LANES -> R.string.ui_home_layout_lanes_columns
+        HomeLayoutSettingField.SHOW_TITLES -> R.string.ui_home_layout_show_titles
+        HomeLayoutSettingField.AUTO_GRID_SHOW_ALL -> R.string.ui_home_layout_show_all_games
+        HomeLayoutSettingField.CUSTOM_GRID_COLUMNS -> R.string.ui_home_layout_custom_grid_columns
+        HomeLayoutSettingField.CUSTOM_GRID_ROWS -> R.string.ui_home_layout_custom_grid_rows
+        HomeLayoutSettingField.CUSTOM_GRID_AUTO_ADD -> R.string.ui_home_layout_custom_grid_auto_add
+        HomeLayoutSettingField.CUSTOM_GRID_EMPTY_SLOTS -> R.string.ui_home_layout_custom_grid_empty_slots
+        HomeLayoutSettingField.CUSTOM_GRID_PERSIST_PAGES -> R.string.ui_home_layout_custom_grid_persist_pages
+        HomeLayoutSettingField.CUSTOM_GRID_AUTO_FIT -> R.string.ui_home_layout_custom_grid_auto_fit
+        HomeLayoutSettingField.RAIL_MEDIA_LIBRARIES -> R.string.ui_home_layout_rail_libraries
+        HomeLayoutSettingField.RAIL_CONTINUE_WATCHING -> R.string.ui_home_layout_rail_continue_watching
+        HomeLayoutSettingField.RAIL_NEXT_UP -> R.string.ui_home_layout_rail_next_up
+    }
 
 private const val SCALE_PERCENT_STEP = 10
 private const val RESTING_SCALE_MIN_PERCENT = 50
@@ -273,27 +302,27 @@ fun HomeLayoutSettingRow(
 ) {
     when (field) {
         HomeLayoutSettingField.ROW_ALIGNMENT -> SegmentedPreference(
-            title = stringResource(R.string.ui_home_layout_row_alignment),
+            title = stringResource(field.titleRes),
             options = HomeRowAlignment.entries.map { alignmentLabel(it) },
             selectedIndex = settings.carousel.rowAlignment.ordinal,
             isFocused = isFocused,
             onSelect = { onAdjust(it - settings.carousel.rowAlignment.ordinal) }
         )
         HomeLayoutSettingField.FOCUS_POSITION -> SegmentedPreference(
-            title = stringResource(R.string.ui_home_layout_focus_position),
+            title = stringResource(field.titleRes),
             options = HomeFocusPosition.entries.map { focusPositionLabel(it) },
             selectedIndex = settings.carousel.focusPosition.ordinal,
             isFocused = isFocused,
             onSelect = { onAdjust(it - settings.carousel.focusPosition.ordinal) }
         )
         HomeLayoutSettingField.INVERTED -> SwitchPreference(
-            title = stringResource(R.string.ui_home_layout_inverted),
+            title = stringResource(field.titleRes),
             isEnabled = settings.carousel.inverted,
             isFocused = isFocused,
             onToggle = { onToggle() }
         )
         HomeLayoutSettingField.RESTING_SCALE -> SliderPreference(
-            title = stringResource(R.string.ui_home_layout_resting_scale),
+            title = stringResource(field.titleRes),
             value = percentOf(settings.carousel.restingScale),
             minValue = RESTING_SCALE_MIN_PERCENT,
             maxValue = RESTING_SCALE_MAX_PERCENT,
@@ -303,32 +332,32 @@ fun HomeLayoutSettingRow(
             onAdjust = { delta -> onAdjust(if (delta < 0) -1 else 1) }
         )
         HomeLayoutSettingField.NEIGHBOUR_PUSH -> SwitchPreference(
-            title = stringResource(R.string.ui_home_layout_neighbour_push),
+            title = stringResource(field.titleRes),
             isEnabled = settings.carousel.neighbourPush,
             isFocused = isFocused,
             onToggle = { onToggle() }
         )
         HomeLayoutSettingField.PLATFORM_BADGE -> SwitchPreference(
-            title = stringResource(R.string.ui_home_layout_platform_badge),
+            title = stringResource(field.titleRes),
             isEnabled = settings.carousel.showPlatformBadge,
             isFocused = isFocused,
             onToggle = { onToggle() }
         )
         HomeLayoutSettingField.SCROLL_AXIS -> SegmentedPreference(
-            title = stringResource(R.string.ui_home_layout_scroll_axis),
+            title = stringResource(field.titleRes),
             options = HomeScrollAxis.entries.map { scrollAxisLabel(it) },
             selectedIndex = settings.autoGrid.scrollAxis.ordinal,
             isFocused = isFocused,
             onSelect = { onAdjust(it - settings.autoGrid.scrollAxis.ordinal) }
         )
         HomeLayoutSettingField.SHOW_TITLES -> SwitchPreference(
-            title = stringResource(R.string.ui_home_layout_show_titles),
+            title = stringResource(field.titleRes),
             isEnabled = settings.autoGrid.showTitles,
             isFocused = isFocused,
             onToggle = { onToggle() }
         )
         HomeLayoutSettingField.AUTO_GRID_SHOW_ALL -> SwitchPreference(
-            title = stringResource(R.string.ui_home_layout_show_all_games),
+            title = stringResource(field.titleRes),
             subtitle = stringResource(R.string.ui_home_layout_show_all_games_subtitle),
             isEnabled = settings.autoGrid.showAllGames,
             isFocused = isFocused,
@@ -343,61 +372,61 @@ fun HomeLayoutSettingRow(
             onAdjust = { delta -> onAdjust(if (delta < 0) -1 else 1) }
         )
         HomeLayoutSettingField.CUSTOM_GRID_COLUMNS -> GridAxisStepperRow(
-            title = stringResource(R.string.ui_home_layout_custom_grid_columns),
+            title = stringResource(field.titleRes),
             axis = settings.customGrid.columns,
             isFocused = isFocused,
             onAdjust = onAdjust
         )
         HomeLayoutSettingField.CUSTOM_GRID_ROWS -> GridAxisStepperRow(
-            title = stringResource(R.string.ui_home_layout_custom_grid_rows),
+            title = stringResource(field.titleRes),
             axis = settings.customGrid.rows,
             isFocused = isFocused,
             onAdjust = onAdjust
         )
         HomeLayoutSettingField.CUSTOM_GRID_AUTO_ADD -> SegmentedPreference(
-            title = stringResource(R.string.ui_home_layout_custom_grid_auto_add),
+            title = stringResource(field.titleRes),
             options = HomeTileAutoAdd.entries.map { autoAddLabel(it) },
             selectedIndex = settings.customGrid.autoAdd.ordinal,
             isFocused = isFocused,
             onSelect = { onAdjust(it - settings.customGrid.autoAdd.ordinal) }
         )
         HomeLayoutSettingField.CUSTOM_GRID_EMPTY_SLOTS -> SwitchPreference(
-            title = stringResource(R.string.ui_home_layout_custom_grid_empty_slots),
+            title = stringResource(field.titleRes),
             subtitle = stringResource(R.string.ui_home_layout_custom_grid_empty_slots_subtitle),
             isEnabled = settings.customGrid.showEmptySlots,
             isFocused = isFocused,
             onToggle = { onToggle() }
         )
         HomeLayoutSettingField.CUSTOM_GRID_PERSIST_PAGES -> SwitchPreference(
-            title = stringResource(R.string.ui_home_layout_custom_grid_persist_pages),
+            title = stringResource(field.titleRes),
             subtitle = stringResource(R.string.ui_home_layout_custom_grid_persist_pages_subtitle),
             isEnabled = settings.customGrid.persistBlankPages,
             isFocused = isFocused,
             onToggle = { onToggle() }
         )
         HomeLayoutSettingField.CUSTOM_GRID_AUTO_FIT -> SwitchPreference(
-            title = stringResource(R.string.ui_home_layout_custom_grid_auto_fit),
+            title = stringResource(field.titleRes),
             subtitle = stringResource(R.string.ui_home_layout_custom_grid_auto_fit_subtitle),
             isEnabled = settings.customGrid.autoFit,
             isFocused = isFocused,
             onToggle = { onToggle() }
         )
         HomeLayoutSettingField.RAIL_MEDIA_LIBRARIES -> SwitchPreference(
-            title = stringResource(R.string.ui_home_layout_rail_libraries),
+            title = stringResource(field.titleRes),
             subtitle = stringResource(R.string.ui_home_layout_rail_libraries_subtitle),
             isEnabled = settings.rails.showLibraries,
             isFocused = isFocused,
             onToggle = { onToggle() }
         )
         HomeLayoutSettingField.RAIL_CONTINUE_WATCHING -> SwitchPreference(
-            title = stringResource(R.string.ui_home_layout_rail_continue_watching),
+            title = stringResource(field.titleRes),
             subtitle = stringResource(R.string.ui_home_layout_rail_continue_watching_subtitle),
             isEnabled = settings.rails.showContinueWatching,
             isFocused = isFocused,
             onToggle = { onToggle() }
         )
         HomeLayoutSettingField.RAIL_NEXT_UP -> SwitchPreference(
-            title = stringResource(R.string.ui_home_layout_rail_next_up),
+            title = stringResource(field.titleRes),
             subtitle = stringResource(R.string.ui_home_layout_rail_next_up_subtitle),
             isEnabled = settings.rails.showNextUp,
             isFocused = isFocused,

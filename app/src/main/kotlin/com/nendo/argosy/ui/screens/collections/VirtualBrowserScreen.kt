@@ -58,6 +58,7 @@ import com.nendo.argosy.ui.common.rememberFileImageModel
 import com.nendo.argosy.ui.components.AlphabetSidebar
 import com.nendo.argosy.ui.components.FooterHints
 import com.nendo.argosy.ui.components.InputButton
+import com.nendo.argosy.ui.components.animateScrollToItemCentered
 import com.nendo.argosy.ui.components.keyboard.ControllerKeyboardSession
 import com.nendo.argosy.ui.input.LocalInputDispatcher
 import com.nendo.argosy.ui.navigation.Screen
@@ -103,13 +104,7 @@ fun VirtualBrowserScreen(
         if (uiState.isSearchStopFocused) {
             listState.animateScrollToItem(0)
         } else if (uiState.categories.isNotEmpty() && uiState.focusedIndex in uiState.categories.indices) {
-            val visibleItems = listState.layoutInfo.visibleItemsInfo
-            val viewportHeight = listState.layoutInfo.viewportEndOffset
-            val avgItemHeight = if (visibleItems.isNotEmpty()) {
-                visibleItems.sumOf { it.size } / visibleItems.size
-            } else 80
-            val targetOffset = (viewportHeight / 2) - (avgItemHeight / 2)
-            listState.animateScrollToItem(uiState.focusedIndex, -targetOffset)
+            listState.animateScrollToItemCentered(uiState.focusedIndex)
         }
     }
 

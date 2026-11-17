@@ -22,10 +22,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import com.nendo.argosy.R
 import com.nendo.argosy.data.model.SortOption
+import com.nendo.argosy.domain.model.CompletionStatus
 import com.nendo.argosy.domain.model.PlayerCountBucket
 import com.nendo.argosy.ui.common.labelRes
 import com.nendo.argosy.ui.primitives.ArgosyToggle
@@ -120,6 +122,39 @@ fun FeatureTileSetupModal(
                         onClick = { onSelect(index) }
                     )
                 }
+                FeatureSetupStep.DEVELOPERS -> itemsIndexed(
+                    setup.developers,
+                    key = { _, name -> name }
+                ) { index, name ->
+                    CheckRow(
+                        label = name,
+                        isFocused = setup.focusIndex == index,
+                        isSelected = name in setup.libraryLink.developers,
+                        onClick = { onSelect(index) }
+                    )
+                }
+                FeatureSetupStep.RELEASE_YEAR -> itemsIndexed(
+                    ReleaseYearPreset.entries,
+                    key = { _, preset -> preset.name }
+                ) { index, preset ->
+                    CheckRow(
+                        label = stringResource(preset.labelRes),
+                        isFocused = setup.focusIndex == index,
+                        isSelected = ReleaseYearPreset.of(setup.libraryLink) == preset,
+                        onClick = { onSelect(index) }
+                    )
+                }
+                FeatureSetupStep.PLAY_STATUS -> itemsIndexed(
+                    CompletionStatus.entries,
+                    key = { _, status -> status.name }
+                ) { index, status ->
+                    CheckRow(
+                        label = stringResource(status.labelRes),
+                        isFocused = setup.focusIndex == index,
+                        isSelected = status.apiValue in setup.libraryLink.playStatuses,
+                        onClick = { onSelect(index) }
+                    )
+                }
             }
         }
     }
@@ -202,6 +237,42 @@ private fun androidx.compose.foundation.lazy.LazyListScope.filterRows(
                 FeatureSetupRow.SORT -> LinkRow(
                     label = stringResource(R.string.ui_feature_setup_sort),
                     supporting = stringResource(setup.libraryLink.sort.option.labelRes),
+                    isFocused = focused,
+                    onClick = { onSelect(index) }
+                )
+                FeatureSetupRow.DEVELOPERS -> LinkRow(
+                    label = stringResource(R.string.ui_feature_setup_developers),
+                    supporting = selectionSummary(setup.libraryLink.developers.size),
+                    isFocused = focused,
+                    onClick = { onSelect(index) }
+                )
+                FeatureSetupRow.RELEASE_YEAR -> LinkRow(
+                    label = stringResource(R.string.ui_feature_setup_release_year),
+                    supporting = stringResource(
+                        (ReleaseYearPreset.of(setup.libraryLink) ?: ReleaseYearPreset.ANY).labelRes
+                    ),
+                    isFocused = focused,
+                    onClick = { onSelect(index) }
+                )
+                FeatureSetupRow.PLAY_STATUS -> LinkRow(
+                    label = stringResource(R.string.ui_feature_setup_play_status),
+                    supporting = selectionSummary(setup.libraryLink.playStatuses.size),
+                    isFocused = focused,
+                    onClick = { onSelect(index) }
+                )
+                FeatureSetupRow.RECENTLY_ADDED -> LinkRow(
+                    label = stringResource(R.string.ui_feature_setup_recently_added),
+                    supporting = setup.libraryLink.addedWithinDays
+                        ?.let { pluralStringResource(R.plurals.ui_feature_setup_recently_added_days, it, it) }
+                        ?: stringResource(R.string.ui_feature_setup_any),
+                    isFocused = focused,
+                    onClick = { onSelect(index) }
+                )
+                FeatureSetupRow.RA_PROGRESS -> LinkRow(
+                    label = stringResource(R.string.ui_feature_setup_ra_progress),
+                    supporting = setup.libraryLink.raProgress
+                        ?.let { stringResource(it.labelRes) }
+                        ?: stringResource(R.string.ui_feature_setup_any),
                     isFocused = focused,
                     onClick = { onSelect(index) }
                 )

@@ -18,7 +18,6 @@ import com.nendo.argosy.data.local.dao.GameFileDao
 import com.nendo.argosy.data.local.dao.GameScreenshotDao
 import com.nendo.argosy.data.local.dao.PlatformDao
 import com.nendo.argosy.data.local.dao.PlatformShowcaseStats
-import com.nendo.argosy.data.local.dao.SearchCandidate
 import com.nendo.argosy.data.local.dao.UserRomsHiddenDao
 import com.nendo.argosy.data.local.dao.coverPathsForGamesChunked
 import com.nendo.argosy.data.local.dao.forGames
@@ -844,46 +843,62 @@ class GameRepository @Inject constructor(
         filters: com.nendo.argosy.domain.model.RandomTileFilters,
         excludeGameId: Long? = null
     ): GameEntity? {
-        val candidates = gameDao.getRandomCandidates(
-            ownerUserId = hiddenOwnerId(),
-            downloadedOnly = filters.downloadedOnly,
-            neverPlayed = filters.neverPlayed,
-            platformCount = filters.platformIds.size,
-            platformIds = filters.platformIds.toList()
-        )
-        val matching = candidates.filter { candidate ->
-            filters.genres.isEmpty() ||
-                candidate.genres.orEmpty().split(',').any { it.trim() in filters.genres }
-        }
+        val matching = randomCandidates(filters)
         val pool = matching.filter { it.id != excludeGameId }.ifEmpty { matching }
         val pick = pool.randomOrNull() ?: return null
         return gameDao.getById(pick.id)
     }
 
+    suspend fun countRandomCandidates(filters: com.nendo.argosy.domain.model.RandomTileFilters): Int =
+        randomCandidates(filters).size
+
+    private suspend fun randomCandidates(filters: com.nendo.argosy.domain.model.RandomTileFilters) =
+        gameDao.getRandomCandidates(
+            ownerUserId = hiddenOwnerId(),
+            downloadedOnly = filters.downloadedOnly,
+            neverPlayed = filters.neverPlayed,
+            platformCount = filters.platformIds.size,
+            platformIds = filters.platformIds.toList()
+        ).filter { candidate ->
+            filters.genres.isEmpty() ||
+                candidate.genres.orEmpty().split(',').any { it.trim() in filters.genres }
+        }
+
     /**
      * How many games a library link's [filters] match, and the first of them carrying a cover.
      * [seriesGameIds] are the games in the link's series, resolved by the caller through the
-     * collection tables; null when the link names no series.
+     * collection tables; null when the link names no series. [collapseSiblings] counts one game
+     * per sibling group, the way the library lists them.
      */
     suspend fun summarizeLibraryLink(
         filters: com.nendo.argosy.domain.model.LibraryLinkFilters,
-        seriesGameIds: Set<Long>?
+        seriesGameIds: Set<Long>?,
+        collapseSiblings: Boolean = false
     ): LibraryLinkSummary {
         val candidates = gameDao.getLibraryLinkCandidates(
             ownerUserId = hiddenOwnerId(),
             platformCount = filters.platformIds.size,
             platformIds = filters.platformIds.toList(),
-            source = filters.source.name
+            source = filters.source.name,
+            collapseSiblings = collapseSiblings
         )
+        val now = System.currentTimeMillis()
         val matching = candidates.filter { candidate ->
-            (filters.genres.isEmpty() || candidate.genre in filters.genres) &&
-                (seriesGameIds == null || candidate.id in seriesGameIds) &&
-                (
-                    filters.players == null ||
-                        filters.players.admits(
-                            com.nendo.argosy.domain.model.PlayerCount.parse(candidate.players)
-                        )
-                    )
+            filters.admits(
+                com.nendo.argosy.domain.model.LibraryFilterFacts(
+                    id = candidate.id,
+                    genre = candidate.genre,
+                    players = candidate.players,
+                    developer = candidate.developer,
+                    releaseYear = candidate.releaseYear,
+                    status = candidate.status,
+                    addedAt = candidate.addedAt,
+                    achievementCount = candidate.achievementCount,
+                    earnedAchievementCount = candidate.earnedAchievementCount
+                ),
+                seriesGameIds,
+                now
+            )
         }
         return LibraryLinkSummary(
             gameCount = matching.size,
@@ -891,9 +906,6 @@ class GameRepository @Inject constructor(
             gameIds = matching.map { it.id }
         )
     }
-
-    suspend fun getSearchCandidates(): List<SearchCandidate> =
-        gameDao.getSearchCandidates(hiddenOwnerId())
 
     suspend fun getByIds(ids: List<Long>): List<GameEntity> = gameDao.getByIds(ids)
 
@@ -964,6 +976,8 @@ class GameRepository @Inject constructor(
 
     suspend fun getDistinctGenres(oneEntryPerGroup: Boolean): List<String> =
         gameDao.getDistinctGenres(hiddenOwnerId(), oneEntryPerGroup)
+
+    suspend fun getDistinctDevelopers(): List<String> = gameDao.getDistinctDevelopers(hiddenOwnerId())
 
     suspend fun getDistinctRegions(): List<String> =
         gameDao.getDistinctRegions(hiddenOwnerId())

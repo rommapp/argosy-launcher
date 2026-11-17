@@ -70,6 +70,7 @@ import com.nendo.argosy.ui.screens.settings.delegates.SyncSettingsDelegate
 import com.nendo.argosy.ui.screens.settings.sections.EmulatorsItem
 import com.nendo.argosy.ui.screens.settings.sections.createEmulatorsLayoutInfo
 import com.nendo.argosy.ui.screens.settings.sections.emulatorsItemAtFocusIndex
+import com.nendo.argosy.ui.screens.settings.sections.platformDetailFocusIndexOf
 import com.nendo.argosy.ui.components.TextEntryRow
 import com.nendo.argosy.ui.components.connections.QuickConnectionsController
 import com.nendo.argosy.ui.components.connections.QuickConnectionsInputHandler
@@ -447,12 +448,21 @@ class SettingsViewModel @Inject constructor(
         }
     }
 
-    fun navigateToPlatformDetail(platformIndex: Int) {
+    fun navigateToPlatformDetail(platformIndex: Int, focusRowKey: String? = null) {
         _uiState.update {
             it.copy(platformDetail = it.platformDetail.copy(platformIndex = platformIndex))
         }
         routePushSection(this, SettingsSection.PLATFORM_DETAIL)
-        loadPlatformDetailStats(platformIndex)
+        val stats = loadPlatformDetailStats(platformIndex) ?: return
+        if (focusRowKey == null) return
+        viewModelScope.launch {
+            stats.join()
+            val state = _uiState.value
+            if (state.currentSection != SettingsSection.PLATFORM_DETAIL) return@launch
+            if (state.platformDetail.platformIndex != platformIndex) return@launch
+            val index = platformDetailFocusIndexOf(focusRowKey, state)
+            if (index >= 0) setFocusIndex(index)
+        }
     }
 
     fun cyclePlatformDetail(direction: Int) {
@@ -468,9 +478,9 @@ class SettingsViewModel @Inject constructor(
         loadPlatformDetailStats(newIndex)
     }
 
-    internal fun loadPlatformDetailStats(platformIndex: Int) {
-        val config = _uiState.value.emulators.platforms.getOrNull(platformIndex) ?: return
-        viewModelScope.launch {
+    internal fun loadPlatformDetailStats(platformIndex: Int): Job? {
+        val config = _uiState.value.emulators.platforms.getOrNull(platformIndex) ?: return null
+        return viewModelScope.launch {
             val platformId = config.platform.id
             val platformSlug = config.platform.slug
             val downloaded = gameRepository.countDownloadedByPlatform(platformId)
@@ -1044,6 +1054,12 @@ class SettingsViewModel @Inject constructor(
     fun handlePlatformItemTap(index: Int) = routeHandlePlatformItemTap(this, index)
 
     fun navigateToSection(section: SettingsSection) = routeNavigateToSection(this, section)
+
+    fun openSettingsSearch() = routeOpenSettingsSearch(this)
+    fun updateSettingsSearchQuery(query: String) = routeUpdateSettingsSearchQuery(this, query)
+    fun closeSettingsSearchKeyboard() = routeCloseSettingsSearchKeyboard(this)
+    fun clearSettingsSearch() = routeClearSettingsSearch(this)
+    fun openSettingsSearchResult(index: Int) = routeOpenSettingsSearchResult(this, index)
 
     fun setFocusIndex(index: Int) { _uiState.update { it.copy(focusedIndex = index) } }
 

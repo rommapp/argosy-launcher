@@ -102,7 +102,7 @@ fun Modifier.boxArtFrame(
         initialValue = -0.5f,
         targetValue = 1.5f,
         animationSpec = infiniteRepeatable(
-            animation = tween(2000, easing = LinearEasing),
+            animation = tween(Motion.durationShimmer, easing = LinearEasing),
             repeatMode = RepeatMode.Restart
         ),
         label = "boxArtShine"

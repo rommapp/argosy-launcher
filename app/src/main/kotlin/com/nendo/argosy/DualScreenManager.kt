@@ -377,9 +377,9 @@ class DualScreenManager(
                 appTargetDisplayId = attached.find { it.key == layout.appTargetKey }?.displayId,
                 hasPresentation = !layout.isSingleDisplay
             )
-            _unconfiguredScreenSet.value = setKey.takeIf {
-                promptWhenUnknown && !isWizardActive.value && known == null && attached.size > 1
-            }
+            val prompts = promptWhenUnknown && !isWizardActive.value && known == null && attached.size > 1
+            if (prompts) preferencesRepository.setScreenLayouts(resolved.stored.with(setKey, layout))
+            _unconfiguredScreenSet.value = setKey.takeIf { prompts }
             ensureAppScreenLaunched()
         }
     }
@@ -1158,6 +1158,23 @@ class DualScreenManager(
     fun releaseSlot(owner: com.nendo.argosy.ui.dualscreen.SlotOwner) {
         _presentationSlots.update { entries -> entries.filterNot { it.first == owner } }
     }
+
+    private val _presentationTap = MutableStateFlow<com.nendo.argosy.ui.dualscreen.PresentationTap?>(null)
+
+    /**
+     * The latest tap on an item of a published slot, held until the slot's owner consumes it. The
+     * owner runs the tap on the control surface, and the launcher window is refocused so the pad
+     * keeps driving it.
+     */
+    val presentationTap: StateFlow<com.nendo.argosy.ui.dualscreen.PresentationTap?> = _presentationTap
+
+    fun tapPresentation(tap: com.nendo.argosy.ui.dualscreen.PresentationTap) {
+        _presentationTap.value = tap
+        refocusMain()
+    }
+
+    fun consumePresentationTap(tap: com.nendo.argosy.ui.dualscreen.PresentationTap): Boolean =
+        _presentationTap.compareAndSet(tap, null)
 
     private val _primaryOnHome = MutableStateFlow(true)
 

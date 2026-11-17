@@ -60,6 +60,7 @@ import com.nendo.argosy.domain.model.ResolvedGridShape
 import com.nendo.argosy.domain.model.isFixed
 import com.nendo.argosy.domain.model.TileCoverScale
 import com.nendo.argosy.domain.model.TileRect
+import com.nendo.argosy.domain.model.isDecor
 import com.nendo.argosy.ui.primitives.FocusIndicators
 import com.nendo.argosy.ui.primitives.argosyFocusIndicators
 import com.nendo.argosy.ui.screens.media.components.MediaDownloadBadge
@@ -204,7 +205,33 @@ data class CustomGridTileContent(
      * What a RetroAchievements tile draws, in place of every other field here. Present only on
      * that tile, which owns its own layout in each cell shape rather than borrowing one.
      */
-    val ra: RaTileUi? = null
+    val ra: RaTileUi? = null,
+    val folder: FolderTileContent? = null,
+    val decor: DecorTileContent? = null
+)
+
+/**
+ * A folder tile's face: [picturePath] drawn as [coverStyle], or the covers of its first members as a
+ * mosaic when the style is the mosaic or no picture resolves.
+ */
+data class FolderTileContent(
+    val coverPaths: List<String>,
+    val memberCount: Int,
+    val isAuto: Boolean,
+    val coverStyle: com.nendo.argosy.domain.model.FolderCoverStyle = com.nendo.argosy.domain.model.FolderCoverStyle.MOSAIC,
+    val picturePath: String? = null,
+    val outline: com.nendo.argosy.domain.model.StickerOutline? = null,
+    val showName: Boolean = true
+)
+
+/**
+ * An image or sticker tile's picture, resolved to a file on this device, or null when its source is
+ * gone. [outline] is null for an image and for a sticker drawn without one.
+ */
+data class DecorTileContent(
+    val path: String?,
+    val isSticker: Boolean,
+    val outline: com.nendo.argosy.domain.model.StickerOutline? = null
 )
 
 /**
@@ -270,7 +297,8 @@ fun HomeCustomGridPage(
     playbackPositions: Map<String, Long> = emptyMap(),
     onPlaybackPosition: (String, Long) -> Unit = { _, _ -> },
     onTakeAudio: () -> Unit = {},
-    onReleaseAudio: () -> Unit = {}
+    onReleaseAudio: () -> Unit = {},
+    decorInteractive: Boolean = false
 ) {
     val density = LocalDensity.current
     var measured by remember { mutableStateOf(IntSize.Zero) }
@@ -330,7 +358,8 @@ fun HomeCustomGridPage(
             playbackPositions = playbackPositions,
             onPlaybackPosition = onPlaybackPosition,
             onTakeAudio = onTakeAudio,
-            onReleaseAudio = onReleaseAudio
+            onReleaseAudio = onReleaseAudio,
+            decorInteractive = decorInteractive
         )
 
         if (editingTileId != null && onTileDrag != null) {
@@ -383,7 +412,8 @@ internal fun CustomGridCells(
     playbackPositions: Map<String, Long>,
     onPlaybackPosition: (String, Long) -> Unit,
     onTakeAudio: () -> Unit,
-    onReleaseAudio: () -> Unit
+    onReleaseAudio: () -> Unit,
+    decorInteractive: Boolean = false
 ) {
     val occupied = remember(tiles) {
         tiles.flatMap { tile ->
@@ -422,6 +452,7 @@ internal fun CustomGridCells(
     }
 
     tiles.sortedBy { it.id == editingTileId }.forEach { tile ->
+        val interactive = decorInteractive || !tile.target.isDecor
         key(tile.id) {
             CustomGridCellBox(
                 rect = tile.rect,
@@ -433,8 +464,9 @@ internal fun CustomGridCells(
                 isFocused = if (editingTileId != null) {
                     tile.id == editingTileId
                 } else {
-                    showCursor && tile.rect.covers(focusedCell.columnIndex, focusedCell.rowIndex)
+                    interactive && showCursor && tile.rect.covers(focusedCell.columnIndex, focusedCell.rowIndex)
                 },
+                interactive = interactive,
                 onClick = { onCellTap(GridCell(tile.rect.columnIndex, tile.rect.rowIndex)) },
                 onLongClick = onTileLongPress?.let { handler ->
                     { handler(GridCell(tile.rect.columnIndex, tile.rect.rowIndex)) }
@@ -507,7 +539,8 @@ private fun CustomGridCellBox(
     startPositionMs: Long = 0L,
     onPlaybackPosition: (String, Long) -> Unit = { _, _ -> },
     onTakeAudio: () -> Unit = {},
-    onReleaseAudio: () -> Unit = {}
+    onReleaseAudio: () -> Unit = {},
+    interactive: Boolean = true
 ) {
     val theme = LocalArgosyTheme.current
     val boxArtStyle = com.nendo.argosy.ui.theme.LocalBoxArtStyle.current
@@ -531,6 +564,39 @@ private fun CustomGridCellBox(
             translationY = dragOffset.y
         }
         .size(width, height)
+
+    val decor = content?.decor
+    if (decor != null) {
+        DecorTileBox(
+            placement = placement,
+            decor = decor,
+            shape = shape,
+            isFocused = isFocused,
+            isOverlapped = isOverlapped,
+            editModeLabel = editModeLabel,
+            interactive = interactive,
+            onClick = onClick,
+            onLongClick = onLongClick
+        )
+        return
+    }
+
+    val folder = content?.folder
+    if (folder != null) {
+        FolderTileBox(
+            placement = placement,
+            label = content?.label.orEmpty(),
+            folder = folder,
+            coverScale = coverScale,
+            isFocused = isFocused,
+            isOverlapped = isOverlapped,
+            focusScale = focusScaleForSpan(rect),
+            editModeLabel = editModeLabel,
+            onClick = onClick,
+            onLongClick = onLongClick
+        )
+        return
+    }
 
     val ra = content?.ra
     if (ra != null) {

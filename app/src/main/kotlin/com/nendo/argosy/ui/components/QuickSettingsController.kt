@@ -18,7 +18,13 @@ import com.nendo.argosy.hardware.HardwareStatsReader
 import com.nendo.argosy.hardware.PerformanceMode
 import com.nendo.argosy.hardware.PerformanceModeStore
 import com.nendo.argosy.hardware.VolumeController
+import com.nendo.argosy.ui.components.activity.QuickActivityController
+import com.nendo.argosy.ui.components.activity.QuickActivityState
 import com.nendo.argosy.ui.components.friends.QuickFriendsController
+import com.nendo.argosy.ui.components.power.PowerCommand
+import com.nendo.argosy.ui.components.power.QuickPowerController
+import com.nendo.argosy.ui.components.power.QuickPowerState
+import com.nendo.argosy.ui.navigation.Screen
 import com.nendo.argosy.ui.input.HapticFeedbackManager
 import com.nendo.argosy.ui.theme.AccentHue
 import com.nendo.argosy.ui.input.HapticPattern
@@ -32,6 +38,7 @@ import com.nendo.argosy.util.PServerExecutor
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -41,6 +48,8 @@ import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
@@ -88,6 +97,11 @@ private data class DeviceReadings(
     val hardware: HardwareStatsUi?
 )
 
+private data class PageReadings(
+    val power: QuickPowerState,
+    val activity: QuickActivityState
+)
+
 /**
  * State, actions and gamepad input of the quick settings panel. [state] is the single source the
  * panel renders and the input handler reads.
@@ -104,6 +118,8 @@ class QuickSettingsController(
     private val hapticManager: HapticFeedbackManager,
     private val soundManager: SoundFeedbackManager,
     private val quickFriends: QuickFriendsController,
+    val power: QuickPowerController,
+    val activity: QuickActivityController,
     private val wrapMode: () -> MenuWrapMode,
     private val scope: CoroutineScope,
     private val deviceDispatcher: CoroutineDispatcher = Dispatchers.IO.limitedParallelism(1)
@@ -134,24 +150,35 @@ class QuickSettingsController(
     init {
         refreshDisplayLevels()
         pollHardwareWhileShown()
+        whileShown(QuickSettingsPage.POWER) { power.watchOpenGames() }
+        whileShown(QuickSettingsPage.ACTIVITY) { activity.markSeenWhileShown() }
+        power.refreshRoute()
+    }
+
+    private fun whileShown(page: QuickSettingsPage, block: suspend () -> Unit) {
+        scope.launch {
+            combine(_isOpen, _page) { open, shown -> open && shown == page }
+                .distinctUntilChanged()
+                .collectLatest { shown -> if (shown) block() }
+        }
     }
 
     private fun pollHardwareWhileShown() {
-        scope.launch {
-            combine(_isOpen, _page) { open, page -> open && page == QuickSettingsPage.PERFORMANCE }
-                .distinctUntilChanged()
-                .collectLatest { shown ->
-                    if (!shown) return@collectLatest
-                    var previous: HardwareStatsUi? = null
-                    while (true) {
-                        val sample = withContext(deviceDispatcher) { hardwareStatsReader.read() }
-                        val next = HardwareStatsUi.from(sample, previous).takeUnless { it.isEmpty }
-                        previous = next
-                        hardware.update { next }
-                        delay(HARDWARE_POLL_MS)
-                    }
-                }
+        whileShown(QuickSettingsPage.PERFORMANCE) {
+            var previous: HardwareStatsUi? = null
+            while (true) {
+                val sample = withContext(deviceDispatcher) { hardwareStatsReader.read() }
+                val next = HardwareStatsUi.from(sample, previous).takeUnless { it.isEmpty }
+                previous = next
+                hardware.update { next }
+                delay(HARDWARE_POLL_MS)
+            }
         }
+    }
+
+    @OptIn(ExperimentalCoroutinesApi::class)
+    private val activityWhileOpen = _isOpen.flatMapLatest { open ->
+        if (open) activity.state else flowOf(QuickActivityState())
     }
 
     private val hudEnabled = preferencesRepository.getBuiltinEmulatorSettings()
@@ -162,8 +189,9 @@ class QuickSettingsController(
         preferencesRepository.userPreferences,
         hudEnabled,
         socialRepository.connectionState,
-        combine(device, levels, dualScreen, hardware, ::DeviceReadings)
-    ) { prefs, hud, social, (deviceSettings, displayLevels, screens, hardwareStats) ->
+        combine(device, levels, dualScreen, hardware, ::DeviceReadings),
+        combine(power.state, activityWhileOpen, ::PageReadings)
+    ) { prefs, hud, social, (deviceSettings, displayLevels, screens, hardwareStats), (powerState, activityState) ->
         QuickSettingsState(
             themeMode = prefs.themeMode,
             screenOrientation = prefs.screenOrientation,
@@ -193,7 +221,11 @@ class QuickSettingsController(
             isSocialLinked = prefs.isSocialLinked,
             isSocialConnected = social is SocialConnectionState.Connected,
             quayPassEnabled = prefs.quayPassEnabled,
-            hardwareStats = hardwareStats
+            hardwareStats = hardwareStats,
+            powerRoute = powerState.route,
+            powerSleepAvailable = powerState.sleepAvailable,
+            openGames = powerState.openGames,
+            activity = activityState
         )
     }.stateIn(
         scope = scope,
@@ -208,8 +240,10 @@ class QuickSettingsController(
             quickFriends.resetFocus()
             loadDeviceSettings()
             refreshDisplayLevels()
+            power.refreshRoute()
         } else {
             quickFriends.dismissModal()
+            power.dismiss()
         }
     }
 
@@ -566,9 +600,35 @@ class QuickSettingsController(
         }
     }
 
-    private fun confirm(onOpenDeviceAccess: (() -> Unit)?): InputResult {
+    private fun confirm(
+        onDismiss: () -> Unit,
+        onOpenDeviceAccess: (() -> Unit)?,
+        onOpenRoute: ((String) -> Unit)?
+    ): InputResult {
         val snapshot = state.value
         return when (focusedItem(snapshot)) {
+            QuickSettingsItem.PowerSleep -> {
+                power.sleep(onDismiss)
+                InputResult.HANDLED
+            }
+            QuickSettingsItem.PowerRestart -> {
+                power.request(PowerCommand.RESTART)
+                InputResult.handled(SoundType.OPEN_MODAL)
+            }
+            QuickSettingsItem.PowerOff -> {
+                power.request(PowerCommand.POWER_OFF)
+                InputResult.handled(SoundType.OPEN_MODAL)
+            }
+            QuickSettingsItem.PowerMenu -> {
+                power.openSystemPowerMenu(onDismiss)
+                InputResult.HANDLED
+            }
+            QuickSettingsItem.PowerAccess -> {
+                power.openAccessibilitySettings(onDismiss)
+                InputResult.HANDLED
+            }
+            QuickSettingsItem.ActivityDownloads -> openRoute(onOpenRoute, Screen.Downloads.route)
+            QuickSettingsItem.ActivitySync -> openRoute(onOpenRoute, Screen.SyncMonitor.route)
             QuickSettingsItem.UISounds -> {
                 val enabled = !snapshot.soundEnabled
                 setSoundEnabled(enabled)
@@ -621,9 +681,20 @@ class QuickSettingsController(
         }
     }
 
+    private fun openRoute(onOpenRoute: ((String) -> Unit)?, route: String): InputResult {
+        if (onOpenRoute == null) return InputResult.handled(SoundType.BOUNDARY)
+        onOpenRoute(route)
+        return InputResult.HANDLED
+    }
+
+    /**
+     * [onOpenRoute] opens an Argosy screen by route; null where the panel cannot open one, which
+     * leaves those rows disabled.
+     */
     fun createInputHandler(
         onDismiss: () -> Unit,
-        onOpenDeviceAccess: (() -> Unit)?
+        onOpenDeviceAccess: (() -> Unit)?,
+        onOpenRoute: ((String) -> Unit)?
     ): InputHandler = object : InputHandler {
         override fun onUp(): InputResult = moveFocus(-1)
 
@@ -637,7 +708,7 @@ class QuickSettingsController(
 
         override fun onNextSection(): InputResult = cyclePage(1)
 
-        override fun onConfirm(): InputResult = confirm(onOpenDeviceAccess)
+        override fun onConfirm(): InputResult = confirm(onDismiss, onOpenDeviceAccess, onOpenRoute)
 
         override fun onBack(): InputResult {
             onDismiss()

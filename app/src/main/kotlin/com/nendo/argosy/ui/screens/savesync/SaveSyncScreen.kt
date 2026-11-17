@@ -44,7 +44,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
@@ -60,6 +59,7 @@ import com.nendo.argosy.ui.common.icon
 import com.nendo.argosy.ui.common.rememberFileImageModel
 import com.nendo.argosy.ui.components.FooterHints
 import com.nendo.argosy.ui.components.InputButton
+import com.nendo.argosy.ui.components.animateScrollToItemCentered
 import com.nendo.argosy.ui.components.withNavBarClearance
 import com.nendo.argosy.ui.input.LocalInputDispatcher
 import com.nendo.argosy.ui.navigation.Screen
@@ -100,7 +100,6 @@ fun SaveSyncScreen(
     val focusedKey = uiState.focusedRow?.key
     val forceCheck by viewModel.forceCheckStatus.collectAsState()
     val listState = rememberLazyListState()
-    val topMarginPx = with(LocalDensity.current) { Dimens.spacingLg.roundToPx() }
 
     LaunchedEffect(
         uiState.focusedIndex,
@@ -116,7 +115,7 @@ fun SaveSyncScreen(
             return@LaunchedEffect
         }
 
-        listState.animateScrollToItem(uiState.lazyIndexForFocused(), -topMarginPx)
+        listState.animateScrollToItemCentered(uiState.lazyIndexForFocused())
     }
 
     SaveSyncPresentation(viewModel)

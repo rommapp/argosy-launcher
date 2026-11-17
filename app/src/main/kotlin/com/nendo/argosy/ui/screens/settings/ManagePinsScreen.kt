@@ -56,6 +56,7 @@ import com.nendo.argosy.domain.model.PinnedCollection
 import com.nendo.argosy.domain.usecase.collection.CategoryType
 import com.nendo.argosy.ui.components.FooterHints
 import com.nendo.argosy.ui.components.InputButton
+import com.nendo.argosy.ui.components.animateScrollToItemCentered
 import com.nendo.argosy.ui.components.dragReorderContainer
 import com.nendo.argosy.ui.components.dragReorderItem
 import com.nendo.argosy.ui.components.liftedReorderHints
@@ -107,13 +108,7 @@ fun ManagePinsScreen(
     LaunchedEffect(uiState.focusedIndex) {
         if (dragState.draggingKey != null) return@LaunchedEffect
         if (uiState.pins.isNotEmpty() && uiState.focusedIndex in uiState.pins.indices) {
-            val visibleItems = listState.layoutInfo.visibleItemsInfo
-            val viewportHeight = listState.layoutInfo.viewportEndOffset
-            val avgItemHeight = if (visibleItems.isNotEmpty()) {
-                visibleItems.sumOf { it.size } / visibleItems.size
-            } else 80
-            val targetOffset = (viewportHeight / 2) - (avgItemHeight / 2)
-            listState.animateScrollToItem(uiState.focusedIndex, -targetOffset)
+            listState.animateScrollToItemCentered(uiState.focusedIndex)
         }
     }
 

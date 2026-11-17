@@ -190,4 +190,13 @@
 
     <string name="reorder_hint_done">Listo</string>
 
+    <string name="custom_tile_menu_action_move_to_folder">Mover a carpeta</string>
+    <string name="custom_tile_menu_action_rename_folder">Cambiar nombre de la carpeta</string>
+    <string name="custom_tile_menu_action_folder_appearance">Apariencia</string>
+    <string name="custom_tile_menu_action_sticker_outline_on">Añadir contorno</string>
+    <string name="custom_tile_menu_action_sticker_outline_off">Quitar contorno</string>
+    <string name="custom_tile_menu_action_sticker_outline_width">Cambiar grosor del contorno</string>
+    <string name="custom_tile_menu_action_sticker_outline_color">Cambiar color del contorno</string>
+    <string name="custom_tile_menu_action_edit_decor">Editar decoraciones</string>
+    <string name="custom_tile_menu_action_finish_decor">Terminar de editar decoraciones</string>
 </resources>

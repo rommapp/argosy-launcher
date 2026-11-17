@@ -169,8 +169,9 @@ class HomeMediaDelegate @Inject constructor(
             mediaRepository.observeFavorites()
                 .map { rows -> rows.map { it.itemId } }
                 .distinctUntilChanged()
-                .combine(availabilityVerifier.availability) { itemIds, verified ->
-                    toTiles(orderedItems(itemIds), verified)
+                .orderedItems()
+                .combine(availabilityVerifier.availability) { items, verified ->
+                    toTiles(items, verified)
                 }
                 .combine(inProgressEpisodes()) { tiles, inProgress ->
                     tiles.map { it.withResume(inProgress) }
@@ -189,8 +190,9 @@ class HomeMediaDelegate @Inject constructor(
     private fun observeTileItems(scope: CoroutineScope) {
         scope.launch {
             tileItemIds
-                .combine(availabilityVerifier.availability) { itemIds, verified ->
-                    toTiles(orderedItems(itemIds), verified)
+                .orderedItems()
+                .combine(availabilityVerifier.availability) { items, verified ->
+                    toTiles(items, verified)
                 }
                 .combine(inProgressEpisodes()) { tiles, inProgress ->
                     tiles.associate { tile -> tile.itemId to tile.withResume(inProgress) }
@@ -206,16 +208,13 @@ class HomeMediaDelegate @Inject constructor(
         tileItemIds.value = itemIds
     }
 
-    /**
-     * The stored items for [itemIds], kept in the order asked for. The read answers in whatever
-     * order the database finds them, and for the favourites row that order is the answer: it is the
-     * order they were marked in.
-     */
-    private suspend fun orderedItems(itemIds: List<String>): List<MediaItemEntity> {
-        if (itemIds.isEmpty()) return emptyList()
-        val byId = mediaRepository.getItems(itemIds).associateBy { it.itemId }
-        return itemIds.mapNotNull { byId[it] }
-    }
+    private fun Flow<List<String>>.orderedItems(): Flow<List<MediaItemEntity>> =
+        flatMapLatest { itemIds ->
+            mediaRepository.observeItems(itemIds).map { items ->
+                val byId = items.associateBy { it.itemId }
+                itemIds.mapNotNull { byId[it] }
+            }
+        }
 
     private fun observeLibraries(scope: CoroutineScope) {
         scope.launch {

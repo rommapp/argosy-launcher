@@ -41,6 +41,7 @@ import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.emitAll
 import kotlinx.coroutines.flow.first
@@ -166,6 +167,17 @@ class MediaRepository @Inject constructor(
         if (itemIds.isEmpty()) return emptyList()
         return itemIds.chunked(SQL_VARIABLE_LIMIT).flatMap { mediaItemDao.getByItemIds(owner, it) }
     }
+
+    fun observeItems(itemIds: List<String>): Flow<List<MediaItemEntity>> =
+        if (itemIds.isEmpty()) {
+            flowOf(emptyList())
+        } else {
+            scoped(emptyList()) { owner ->
+                combine(itemIds.chunked(SQL_VARIABLE_LIMIT).map { mediaItemDao.observeByItemIds(owner, it) }) {
+                    it.toList().flatten()
+                }
+            }
+        }
 
     fun observeStreams(itemId: String): Flow<List<MediaStreamEntity>> =
         scoped(emptyList()) { owner -> mediaStreamDao.observeByItem(owner, itemId) }

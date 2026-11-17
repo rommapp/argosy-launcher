@@ -57,6 +57,9 @@ interface MediaItemDao {
     @Query("SELECT * FROM media_items WHERE ownerUserId = :ownerUserId AND itemId IN (:itemIds)")
     suspend fun getByItemIds(ownerUserId: String, itemIds: List<String>): List<MediaItemEntity>
 
+    @Query("SELECT * FROM media_items WHERE ownerUserId = :ownerUserId AND itemId IN (:itemIds)")
+    fun observeByItemIds(ownerUserId: String, itemIds: List<String>): Flow<List<MediaItemEntity>>
+
     /**
      * Browsable titles sharing a genre and released near [yearLo]..[yearHi].
      *

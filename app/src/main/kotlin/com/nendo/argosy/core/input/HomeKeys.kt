@@ -2,6 +2,7 @@ package com.nendo.argosy.core.input
 
 import android.view.InputDevice
 import android.view.KeyEvent
+import com.nendo.argosy.util.AynThor
 
 /**
  * Every key Argosy reads as Home. Devices disagree on what their Home button sends: most send
@@ -22,10 +23,22 @@ object HomeKeys {
      */
     val RESERVED: Set<Int> = SYSTEM + KeyEvent.KEYCODE_BUTTON_MODE
 
-    fun isSystemHome(event: KeyEvent): Boolean = isSystemHome(event.keyCode, event.device)
+    /**
+     * Scancode of the AYN button on the AYN Thor. Its key layout maps it to
+     * [KeyEvent.KEYCODE_HOME], and the system opens the AYN menu only when it receives the
+     * original event, so on a Thor Argosy never reads it as Home.
+     */
+    const val THOR_AYN_BUTTON_SCANCODE = 194
 
-    fun isSystemHome(keyCode: Int, device: InputDevice?): Boolean = when (keyCode) {
-        KeyEvent.KEYCODE_HOME -> true
+    fun isSystemHome(event: KeyEvent): Boolean = isSystemHome(event.keyCode, event.device, event.scanCode)
+
+    fun isSystemHome(
+        keyCode: Int,
+        device: InputDevice?,
+        scanCode: Int = 0,
+        onAynThor: Boolean = AynThor.matches()
+    ): Boolean = when (keyCode) {
+        KeyEvent.KEYCODE_HOME -> !(onAynThor && scanCode == THOR_AYN_BUTTON_SCANCODE)
         KeyEvent.KEYCODE_MOVE_HOME -> device?.keyboardType != InputDevice.KEYBOARD_TYPE_ALPHABETIC
         else -> false
     }

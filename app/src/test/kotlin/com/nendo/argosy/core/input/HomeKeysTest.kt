@@ -21,6 +21,21 @@ class HomeKeysTest {
     }
 
     @Test
+    fun `the Thor's AYN button reaches the system although its layout maps it to Home`() {
+        assertFalse(
+            HomeKeys.isSystemHome(KeyEvent.KEYCODE_HOME, null, HomeKeys.THOR_AYN_BUTTON_SCANCODE, onAynThor = true)
+        )
+        assertTrue(HomeKeys.isSystemHome(KeyEvent.KEYCODE_HOME, null, 0x66, onAynThor = true))
+    }
+
+    @Test
+    fun `scancode 194 stays Home on every other device`() {
+        assertTrue(
+            HomeKeys.isSystemHome(KeyEvent.KEYCODE_HOME, null, HomeKeys.THOR_AYN_BUTTON_SCANCODE, onAynThor = false)
+        )
+    }
+
+    @Test
     fun `a handheld Home button sending MOVE_HOME is Home`() {
         assertTrue(HomeKeys.isSystemHome(KeyEvent.KEYCODE_MOVE_HOME, device(InputDevice.KEYBOARD_TYPE_NON_ALPHABETIC)))
         assertTrue(HomeKeys.isSystemHome(KeyEvent.KEYCODE_MOVE_HOME, null))

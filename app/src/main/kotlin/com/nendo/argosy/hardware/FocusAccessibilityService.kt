@@ -184,7 +184,8 @@ class FocusAccessibilityService : AccessibilityService() {
                 TAG,
                 "key ${KeyEvent.keyCodeToString(event.keyCode)} " +
                     "${if (event.action == KeyEvent.ACTION_DOWN) "down" else "up"} " +
-                    "device=${event.device?.name} systemHome=$systemHome consumedBy=${consumedBy ?: "none"}"
+                    "scanCode=${event.scanCode} device=${event.device?.name} " +
+                    "systemHome=$systemHome consumedBy=${consumedBy ?: "none"}"
             )
         }
         return consumedBy != null

@@ -190,6 +190,8 @@
     <string name="settings_installers_ime_enable_subtitle">Android 要求在系统设置中启用键盘</string>
     <string name="settings_installers_ime_select_title">选择当前键盘</string>
     <string name="settings_installers_ime_select_subtitle">将其设为输入键盘</string>
+    <string name="settings_installers_prereleases_title">包含预发布版本</string>
+    <string name="settings_installers_prereleases_subtitle">测试版和每夜版最新时也安装</string>
 
     <string name="settings_navigation_controller_layout_title">手柄布局</string>
     <string name="settings_navigation_controller_layout_auto">自动</string>

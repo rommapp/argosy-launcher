@@ -120,6 +120,10 @@
     <string name="settings_installers_ime_select_title">Choose Active Keyboard</string>
     <!-- Subtitle of that row. -->
     <string name="settings_installers_ime_select_subtitle">Pick it as the keyboard that types</string>
+    <!-- Toggle under a tracked repository. On, the newest release counts even when the repository marks it as a beta or nightly. -->
+    <string name="settings_installers_prereleases_title">Include Prereleases</string>
+    <!-- Subtitle of that toggle. -->
+    <string name="settings_installers_prereleases_subtitle">Install beta and nightly builds when they are newest</string>
     <!-- Row opening the sound settings. Noun. -->
     <string name="settings_main_audio_title">Audio</string>
     <!-- Second line of that row, listing what is inside. -->

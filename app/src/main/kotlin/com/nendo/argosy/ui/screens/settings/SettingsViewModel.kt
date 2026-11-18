@@ -1712,6 +1712,8 @@ class SettingsViewModel @Inject constructor(
         installerDelegate.moveAddRow(row)
     fun moveInstallerAddButton(delta: Int) = installerDelegate.moveAddButton(delta)
     fun confirmInstallerAdd() = installerDelegate.confirmAdd(viewModelScope)
+    fun toggleInstallerPrereleases(rowId: Long) =
+        installerDelegate.toggleIncludePrereleases(viewModelScope, rowId)
     fun requestInstallerRemove(rowId: Long) = installerDelegate.requestRemove(rowId)
     fun dismissInstallerRemove() = installerDelegate.dismissRemove()
     fun confirmInstallerRemove() = installerDelegate.confirmRemove(viewModelScope)

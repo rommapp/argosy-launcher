@@ -120,6 +120,8 @@
     <string name="settings_installers_ime_select_title">Escolher Teclado Ativo</string>
     <!-- Subtitle of that row. -->
     <string name="settings_installers_ime_select_subtitle">Selecione-o como o teclado que digita</string>
+    <string name="settings_installers_prereleases_title">Incluir pré-lançamentos</string>
+    <string name="settings_installers_prereleases_subtitle">Instalar versões beta e nightly quando forem as mais recentes</string>
     <!-- Row opening the sound settings. Noun. -->
     <string name="settings_main_audio_title">Áudio</string>
     <!-- Second line of that row, listing what is inside. -->

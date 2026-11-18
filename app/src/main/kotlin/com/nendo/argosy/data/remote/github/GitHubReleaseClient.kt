@@ -18,6 +18,7 @@ import javax.inject.Singleton
 private const val TAG = "GitHubReleaseClient"
 private const val API_BASE = "https://api.github.com/"
 private const val CACHE_TTL_SECONDS = 300L
+private const val PRERELEASE_PAGE_SIZE = 10
 
 sealed class ReleaseLookup {
     data class Found(val release: GitHubRelease) : ReleaseLookup()
@@ -63,9 +64,18 @@ class GitHubReleaseClient @Inject constructor() {
 
     fun budget(): GitHubBudget = budget
 
-    suspend fun latestRelease(owner: String, repo: String): ReleaseLookup =
+    /**
+     * The newest published release of [owner]/[repo]. With [includePrereleases] the newest
+     * non-draft release wins whether or not it is marked prerelease; without it, GitHub's own
+     * latest release, which never is.
+     */
+    suspend fun latestRelease(
+        owner: String,
+        repo: String,
+        includePrereleases: Boolean = false
+    ): ReleaseLookup =
         withContext(Dispatchers.IO) {
-            val key = "$owner/$repo"
+            val key = cacheKey(owner, repo, includePrereleases)
 
             mutex.withLock { cache[key] }
                 ?.takeIf { it.isFresh() }
@@ -73,31 +83,56 @@ class GitHubReleaseClient @Inject constructor() {
 
             exhaustedUntil()?.let { return@withContext ReleaseLookup.RateLimited(it) }
 
-            val response = try {
-                api.getRepoLatestRelease(owner, repo)
+            val lookup = try {
+                if (includePrereleases) newestListedRelease(owner, repo) else githubLatestRelease(owner, repo)
             } catch (e: Exception) {
                 Logger.warn(TAG, "Release lookup threw for $key: ${e.message}")
                 return@withContext ReleaseLookup.Failed(null)
             }
 
-            recordBudget(response)
-
-            when {
-                response.isSuccessful -> {
-                    val release = response.body()
-                        ?: return@withContext ReleaseLookup.Failed(response.code())
-                    mutex.withLock { cache[key] = CachedRelease(release, Instant.now()) }
-                    ReleaseLookup.Found(release)
-                }
-                response.code() == 404 -> ReleaseLookup.NotFound
-                isRateLimited(response) -> ReleaseLookup.RateLimited(budget.resetAt)
-                else -> ReleaseLookup.Failed(response.code())
+            if (lookup is ReleaseLookup.Found) {
+                mutex.withLock { cache[key] = CachedRelease(lookup.release, Instant.now()) }
             }
+            lookup
         }
 
-    suspend fun invalidate(owner: String, repo: String) {
-        mutex.withLock { cache.remove("$owner/$repo") }
+    private suspend fun githubLatestRelease(owner: String, repo: String): ReleaseLookup {
+        val response = api.getRepoLatestRelease(owner, repo)
+        recordBudget(response)
+        return when {
+            response.isSuccessful -> response.body()?.let { ReleaseLookup.Found(it) }
+                ?: ReleaseLookup.Failed(response.code())
+            else -> failedLookup(response)
+        }
     }
+
+    private suspend fun newestListedRelease(owner: String, repo: String): ReleaseLookup {
+        val response = api.getRepoReleases(owner, repo, perPage = PRERELEASE_PAGE_SIZE)
+        recordBudget(response)
+        return when {
+            response.isSuccessful -> {
+                val releases = response.body() ?: return ReleaseLookup.Failed(response.code())
+                releases.firstOrNull { !it.draft }?.let { ReleaseLookup.Found(it) } ?: ReleaseLookup.NotFound
+            }
+            else -> failedLookup(response)
+        }
+    }
+
+    private fun failedLookup(response: Response<*>): ReleaseLookup = when {
+        response.code() == 404 -> ReleaseLookup.NotFound
+        isRateLimited(response) -> ReleaseLookup.RateLimited(budget.resetAt)
+        else -> ReleaseLookup.Failed(response.code())
+    }
+
+    suspend fun invalidate(owner: String, repo: String) {
+        mutex.withLock {
+            cache.remove(cacheKey(owner, repo, includePrereleases = false))
+            cache.remove(cacheKey(owner, repo, includePrereleases = true))
+        }
+    }
+
+    private fun cacheKey(owner: String, repo: String, includePrereleases: Boolean): String =
+        if (includePrereleases) "$owner/$repo+prereleases" else "$owner/$repo"
 
     private fun exhaustedUntil(): Instant? {
         val remaining = budget.remaining ?: return null

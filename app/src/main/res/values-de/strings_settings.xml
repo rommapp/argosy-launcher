@@ -202,6 +202,8 @@
     <string name="settings_installers_ime_enable_subtitle">Android verlangt, dass die Tastatur in den Systemeinstellungen aktiviert wird</string>
     <string name="settings_installers_ime_select_title">Aktive Tastatur wählen</string>
     <string name="settings_installers_ime_select_subtitle">Sie als tippende Tastatur auswählen</string>
+    <string name="settings_installers_prereleases_title">Vorabversionen einbeziehen</string>
+    <string name="settings_installers_prereleases_subtitle">Beta- und Nightly-Builds installieren, wenn sie am neuesten sind</string>
 
     <string name="settings_navigation_controller_layout_title">Controller-Layout</string>
     <string name="settings_navigation_controller_layout_auto">Auto</string>

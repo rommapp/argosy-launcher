@@ -651,7 +651,8 @@ object EmulatorRegistry {
                 activityClass = "org.yuzu.yuzu_emu.activities.EmulationActivity",
             ),
             defaultLaunchMethod = LaunchMethod.SHELL,
-            downloadUrl = "https://github.com/JaviiDeveloper/eden-nx2-android/releases"
+            downloadUrl = "https://github.com/JaviiDeveloper/eden-nx2-android/releases",
+            releaseSource = ReleaseSource.GitHub("JaviiDeveloper/eden-nx2-android")
         ),
         EmulatorDef(
             id = "eden_duo",
@@ -662,7 +663,8 @@ object EmulatorRegistry {
                 activityClass = "org.yuzu.yuzu_emu.activities.EmulationActivity",
             ),
             defaultLaunchMethod = LaunchMethod.SHELL,
-            downloadUrl = "https://github.com/igawa6/eden-duo/releases"
+            downloadUrl = "https://github.com/igawa6/eden-duo/releases",
+            releaseSource = ReleaseSource.GitHub("igawa6/eden-duo")
         ),
         EmulatorDef(
             id = "lemon",
@@ -1101,7 +1103,8 @@ object EmulatorRegistry {
             packageName = "com.rfandango.haku_x",
             displayName = "hakuX",
             supportedPlatforms = setOf("xbox"),
-            downloadUrl = "https://github.com/rfandango/hakuX/releases"
+            downloadUrl = "https://github.com/rfandango/hakuX/releases",
+            releaseSource = ReleaseSource.GitHub("rfandango/hakuX")
         ),
 
         EmulatorDef(
@@ -1116,6 +1119,7 @@ object EmulatorRegistry {
             ),
             defaultLaunchMethod = LaunchMethod.SHELL,
             downloadUrl = "https://github.com/rfandango/XenDroid/releases",
+            releaseSource = ReleaseSource.GitHub("rfandango/XenDroid"),
             packagePatterns = listOf("xendroid.compose*")
         ),
         EmulatorDef(

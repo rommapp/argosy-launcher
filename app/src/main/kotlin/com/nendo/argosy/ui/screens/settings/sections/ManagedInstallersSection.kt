@@ -15,6 +15,7 @@ import androidx.compose.material.icons.filled.Keyboard
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Autorenew
 import androidx.compose.material.icons.filled.Download
+import androidx.compose.material.icons.filled.Science
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -29,6 +30,7 @@ import com.nendo.argosy.R
 import com.nendo.argosy.ui.components.ActionPreference
 import com.nendo.argosy.ui.components.FocusedScroll
 import com.nendo.argosy.ui.components.Modal
+import com.nendo.argosy.ui.components.SwitchPreference
 import com.nendo.argosy.ui.components.TextEntryModal
 import com.nendo.argosy.ui.primitives.ArgosyConfirmModalHost
 import com.nendo.argosy.ui.primitives.FocusIndicators
@@ -45,6 +47,7 @@ import com.nendo.argosy.ui.util.clickableNoFocus
 internal sealed class InstallerItem(val key: String) {
     data object AddRepo : InstallerItem("addRepo")
     data class Entry(val row: ManagedInstallerRow) : InstallerItem("installer-${row.id}")
+    data class Prereleases(val row: ManagedInstallerRow) : InstallerItem("prereleases-${row.id}")
     data class ImeEnable(val row: ManagedInstallerRow) : InstallerItem("ime-enable-${row.id}")
     data class ImeSelect(val row: ManagedInstallerRow) : InstallerItem("ime-select-${row.id}")
     data class Remove(val row: ManagedInstallerRow) : InstallerItem("remove-${row.id}")
@@ -54,6 +57,7 @@ internal fun installerItems(state: ManagedInstallersState): List<InstallerItem> 
     add(InstallerItem.AddRepo)
     state.rows.forEach { row ->
         add(InstallerItem.Entry(row))
+        add(InstallerItem.Prereleases(row))
         if (row.installed && row.packageName != null && isKeyboardRow(row)) {
             if (!row.imeEnabled) add(InstallerItem.ImeEnable(row))
             if (row.imeEnabled && !row.imeActive) add(InstallerItem.ImeSelect(row))
@@ -145,6 +149,15 @@ fun ManagedInstallersSection(uiState: SettingsUiState, viewModel: SettingsViewMo
                     onClick = { viewModel.installManagedInstaller(row.id) }
                 )
             }
+
+            is InstallerItem.Prereleases -> SwitchPreference(
+                title = stringResource(R.string.settings_installers_prereleases_title),
+                subtitle = stringResource(R.string.settings_installers_prereleases_subtitle),
+                icon = Icons.Default.Science,
+                isEnabled = item.row.includePrereleases,
+                isFocused = isFocused(index),
+                onToggle = { viewModel.toggleInstallerPrereleases(item.row.id) }
+            )
 
             is InstallerItem.ImeEnable -> ActionPreference(
                 title = stringResource(R.string.settings_installers_ime_enable_title),

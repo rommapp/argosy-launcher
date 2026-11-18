@@ -194,6 +194,8 @@
     <string name="settings_installers_ime_enable_subtitle">Android impose d\'activer le clavier depuis les paramètres système</string>
     <string name="settings_installers_ime_select_title">Choisir le clavier actif</string>
     <string name="settings_installers_ime_select_subtitle">Le définir comme clavier de saisie</string>
+    <string name="settings_installers_prereleases_title">Inclure les préversions</string>
+    <string name="settings_installers_prereleases_subtitle">Installer les versions bêta et nightly quand elles sont les plus récentes</string>
 
     <string name="settings_navigation_controller_layout_title">Disposition de la manette</string>
     <string name="settings_navigation_controller_layout_auto">Auto</string>

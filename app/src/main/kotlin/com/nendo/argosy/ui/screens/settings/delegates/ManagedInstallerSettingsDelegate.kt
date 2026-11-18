@@ -85,6 +85,18 @@ class ManagedInstallerSettingsDelegate @Inject constructor(
         }
     }
 
+    fun toggleIncludePrereleases(scope: CoroutineScope, rowId: Long) {
+        val current = _state.value.rows.firstOrNull { it.id == rowId } ?: return
+        scope.launch {
+            val updated = withContext(Dispatchers.IO) {
+                repository.setIncludePrereleases(rowId, !current.includePrereleases)
+            } ?: return@launch
+            load(scope)
+            withContext(Dispatchers.IO) { manager.refresh(listOf(updated)) }
+            load(scope)
+        }
+    }
+
     fun openAddModal() {
         _state.update {
             it.copy(
@@ -301,6 +313,7 @@ class ManagedInstallerSettingsDelegate @Inject constructor(
                 entity.latestSeenTag != entity.tagAtInstall,
             tagAtInstall = entity.tagAtInstall,
             latestSeenTag = entity.latestSeenTag,
+            includePrereleases = entity.includePrereleases,
             imeEnabled = isKeyboard && packageName != null && manager.isImeEnabled(packageName),
             imeActive = isKeyboard && packageName != null && manager.isImeActive(packageName)
         )

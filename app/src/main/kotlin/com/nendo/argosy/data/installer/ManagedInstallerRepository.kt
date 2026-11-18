@@ -68,6 +68,13 @@ class ManagedInstallerRepository @Inject constructor(
         )
     }
 
+    suspend fun setIncludePrereleases(id: Long, enabled: Boolean): ManagedInstallerEntity? {
+        val row = dao.getById(id) ?: return null
+        val updated = row.copy(includePrereleases = enabled)
+        dao.upsert(updated)
+        return updated
+    }
+
     suspend fun clearVariant(id: Long) {
         val row = dao.getById(id) ?: return
         dao.upsert(row.copy(assetVariant = null))

@@ -3,6 +3,7 @@ package com.nendo.argosy.ui.screens.settings
 import androidx.lifecycle.viewModelScope
 import com.nendo.argosy.data.local.entity.getDisplayName
 import com.nendo.argosy.ui.input.InputDispatcher.Companion.computeWrappedIndex
+import com.nendo.argosy.data.launcher.GameNativeLauncher
 import com.nendo.argosy.data.steam.SteamConnectionState
 import com.nendo.argosy.ui.input.InputResult
 import com.nendo.argosy.ui.input.UiShortcut
@@ -340,6 +341,10 @@ private fun routeInstallersConfirm(vm: SettingsViewModel, state: SettingsUiState
             vm.installManagedInstaller(item.row.id)
             InputResult.handled(SoundType.SELECT)
         }
+        is InstallerItem.Prereleases -> {
+            vm.toggleInstallerPrereleases(item.row.id)
+            InputResult.handled(SoundType.TOGGLE)
+        }
         is InstallerItem.ImeEnable -> {
             vm.openInstallerImeSettings()
             InputResult.handled(SoundType.SELECT)
@@ -523,7 +528,9 @@ private fun routeSavesConfirm(vm: SettingsViewModel, state: SettingsUiState): In
 private fun routeSteamConfirm(vm: SettingsViewModel, state: SettingsUiState): InputResult {
     when (val item = steamItemAtFocusIndex(state.focusedIndex, state.steam)) {
         SteamItem.PreLogin -> routeSteamPreLoginConfirm(vm, state)
-        SteamItem.GnInstall -> {}
+        SteamItem.GnInstall -> if (state.steam.downloadingLauncherId == null) {
+            vm.installSteamLauncher(GameNativeLauncher.registryId)
+        }
         SteamItem.SyncLibrary -> vm.syncSteamLibrary()
         SteamItem.AddManual -> vm.showAddSteamGameDialog()
         SteamItem.GameNativeLibrary -> {
@@ -551,15 +558,12 @@ private fun routeSteamConfirm(vm: SettingsViewModel, state: SettingsUiState): In
     return InputResult.HANDLED
 }
 
-/**
- * A GameNative install is handled by the card's own click. A visible QR means A cancels it,
- * and any idle state (disconnected, connected after a cancel, or errored) starts a fresh
- * connect plus QR auth rather than resuming a flow that is no longer running.
- */
 private fun routeSteamPreLoginConfirm(vm: SettingsViewModel, state: SettingsUiState) {
     val steam = state.steam
     when {
-        !steam.gnInstalled -> {}
+        !steam.gnInstalled -> if (steam.downloadingLauncherId == null) {
+            vm.installSteamLauncher(GameNativeLauncher.registryId)
+        }
         steam.qrUrl != null -> vm.cancelSteamQrAuth()
         !steam.authPolling && steam.connectionState != SteamConnectionState.CONNECTING -> {
             vm.connectToSteam()

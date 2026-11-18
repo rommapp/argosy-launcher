@@ -25,6 +25,6 @@ class Migration224To225Test {
     @Test
     fun `is registered and leaves no gap`() {
         assertEquals(Migration_224_225, MigrationRegistry.ALL.single { it.startVersion == 224 })
-        MigrationRegistry.assertContiguous(225)
+        MigrationRegistry.assertContiguous(MigrationRegistry.ALL.last().endVersion)
     }
 }

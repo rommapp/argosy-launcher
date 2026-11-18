@@ -192,6 +192,8 @@
     <string name="settings_installers_ime_enable_subtitle">Android कीबोर्ड को सिस्टम सेटिंग से ही चालू करने देता है</string>
     <string name="settings_installers_ime_select_title">सक्रिय कीबोर्ड चुनें</string>
     <string name="settings_installers_ime_select_subtitle">इसे टाइप करने वाला कीबोर्ड बनाएँ</string>
+    <string name="settings_installers_prereleases_title">प्री-रिलीज़ शामिल करें</string>
+    <string name="settings_installers_prereleases_subtitle">सबसे नए होने पर बीटा और नाइटली बिल्ड इंस्टॉल करें</string>
 
     <string name="settings_navigation_controller_layout_title">कंट्रोलर लेआउट</string>
     <string name="settings_navigation_controller_layout_auto">ऑटो</string>

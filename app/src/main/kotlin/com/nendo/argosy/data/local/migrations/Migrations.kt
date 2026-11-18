@@ -4359,6 +4359,14 @@ object Migration_224_225 : Migration(224, 225) {
     }
 }
 
+object Migration_225_226 : Migration(225, 226) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL(
+            "ALTER TABLE `managed_installers` ADD COLUMN `includePrereleases` INTEGER NOT NULL DEFAULT 0"
+        )
+    }
+}
+
 object Migration_203_204 : Migration(203, 204) {
     override fun migrate(db: SupportSQLiteDatabase) {
         db.execSQL(

@@ -1,8 +1,7 @@
 package com.nendo.argosy.ui.screens.settings.sections
 
-import android.content.Intent
 import android.graphics.Bitmap
-import android.net.Uri
+import com.nendo.argosy.data.launcher.GameNativeLauncher
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -281,13 +280,7 @@ fun SteamSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
                 SteamItem.PreLogin -> SteamPreLoginPane(
                     steam = steam,
                     isFocused = isFocused(item),
-                    onInstallGn = {
-                        val intent = Intent(
-                            Intent.ACTION_VIEW,
-                            Uri.parse("https://github.com/utkarshdalal/GameNative/releases")
-                        )
-                        context.startActivity(intent)
-                    },
+                    onInstallGn = { viewModel.installSteamLauncher(GameNativeLauncher.registryId) },
                     onCancelQr = { viewModel.cancelSteamQrAuth() },
                     onConnect = {
                         viewModel.connectToSteam()
@@ -323,17 +316,24 @@ fun SteamSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
                     )
                 }
 
-                SteamItem.GnInstall -> ActionPreference(
-                    icon = Icons.Default.Download,
-                    title = stringResource(R.string.settings_steam_gn_install_title),
-                    subtitle = stringResource(R.string.settings_steam_gn_install_subtitle),
-                    isFocused = isFocused(item),
-                    onClick = {
-                        val intent = Intent(Intent.ACTION_VIEW,
-                            Uri.parse("https://github.com/utkarshdalal/GameNative/releases"))
-                        context.startActivity(intent)
-                    }
-                )
+                SteamItem.GnInstall -> {
+                    val isGnDownloading = steam.downloadingLauncherId == GameNativeLauncher.registryId
+                    ActionPreference(
+                        icon = Icons.Default.Download,
+                        title = stringResource(R.string.settings_steam_gn_install_title),
+                        subtitle = when {
+                            isGnDownloading && steam.downloadProgress != null -> stringResource(
+                                R.string.settings_steam_launcher_downloading,
+                                (steam.downloadProgress * 100).toInt()
+                            )
+                            isGnDownloading -> stringResource(R.string.settings_steam_launcher_waiting)
+                            else -> stringResource(R.string.settings_steam_gn_install_subtitle)
+                        },
+                        isFocused = isFocused(item),
+                        isEnabled = !isDownloading,
+                        onClick = { viewModel.installSteamLauncher(GameNativeLauncher.registryId) }
+                    )
+                }
 
                 SteamItem.GnStorageWarning -> InfoPreference(
                     title = stringResource(R.string.settings_steam_gn_storage_warning_title),

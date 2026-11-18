@@ -23,5 +23,6 @@ data class ManagedInstallerEntity(
     val latestSeenTag: String? = null,
     val lastCheckedAt: Instant? = null,
     val locked: Boolean = false,
-    val sortOrder: Int = 0
+    val sortOrder: Int = 0,
+    val includePrereleases: Boolean = false
 )

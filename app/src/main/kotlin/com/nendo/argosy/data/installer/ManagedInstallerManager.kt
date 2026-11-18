@@ -178,7 +178,7 @@ class ManagedInstallerManager @Inject constructor(
 
     suspend fun refresh(rows: List<ManagedInstallerEntity>) {
         rows.forEach { row ->
-            when (val lookup = releaseClient.latestRelease(row.repoOwner, row.repoName)) {
+            when (val lookup = latestRelease(row)) {
                 is ReleaseLookup.Found -> repository.recordCheck(row.id, lookup.release.tagName)
                 ReleaseLookup.NotFound -> repository.recordCheck(row.id, null)
                 is ReleaseLookup.RateLimited -> return
@@ -186,6 +186,9 @@ class ManagedInstallerManager @Inject constructor(
             }
         }
     }
+
+    private suspend fun latestRelease(row: ManagedInstallerEntity): ReleaseLookup =
+        releaseClient.latestRelease(row.repoOwner, row.repoName, row.includePrereleases)
 
     fun install(row: ManagedInstallerEntity, chosenAsset: GitHubAsset? = null) {
         val current = _job.value
@@ -198,7 +201,7 @@ class ManagedInstallerManager @Inject constructor(
         _job.value = InstallerJob(row.id, InstallerJobState.Checking)
 
         scope.launch {
-            val release = when (val lookup = releaseClient.latestRelease(row.repoOwner, row.repoName)) {
+            val release = when (val lookup = latestRelease(row)) {
                 is ReleaseLookup.Found -> lookup.release
                 ReleaseLookup.NotFound -> return@launch fail(row.id, InstallerFailure.NOT_FOUND)
                 is ReleaseLookup.RateLimited -> return@launch fail(row.id, InstallerFailure.RATE_LIMITED)

@@ -204,6 +204,8 @@
     <string name="settings_installers_ime_enable_subtitle">Android exige activar el teclado desde los ajustes del sistema</string>
     <string name="settings_installers_ime_select_title">Elegir teclado activo</string>
     <string name="settings_installers_ime_select_subtitle">Selecciónalo como el teclado que escribe</string>
+    <string name="settings_installers_prereleases_title">Incluir versiones preliminares</string>
+    <string name="settings_installers_prereleases_subtitle">Instalar versiones beta y nightly cuando sean las más recientes</string>
 
     <string name="settings_navigation_controller_layout_title">Diseño del mando</string>
     <string name="settings_navigation_controller_layout_auto">Auto</string>

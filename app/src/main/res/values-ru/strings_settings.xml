@@ -195,6 +195,8 @@
     <string name="settings_installers_ime_enable_subtitle">Android разрешает включить клавиатуру только в настройках системы</string>
     <string name="settings_installers_ime_select_title">Выбрать активную клавиатуру</string>
     <string name="settings_installers_ime_select_subtitle">Назначьте её основной клавиатурой</string>
+    <string name="settings_installers_prereleases_title">Включать предрелизы</string>
+    <string name="settings_installers_prereleases_subtitle">Устанавливать бета- и ночные сборки, если они новее</string>
 
     <string name="settings_navigation_controller_layout_title">Раскладка контроллера</string>
     <string name="settings_navigation_controller_layout_auto">Авто</string>

@@ -493,6 +493,7 @@ data class ManagedInstallerRow(
     val updateAvailable: Boolean,
     val tagAtInstall: String?,
     val latestSeenTag: String?,
+    val includePrereleases: Boolean = false,
     val imeEnabled: Boolean = false,
     val imeActive: Boolean = false
 )

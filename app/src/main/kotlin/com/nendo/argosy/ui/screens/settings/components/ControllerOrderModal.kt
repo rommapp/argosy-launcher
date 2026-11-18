@@ -86,7 +86,7 @@ fun ControllerOrderModal(
             if (isDown && event.repeatCount > 0) return@listener true
             if (!isDown && event.action != KeyEvent.ACTION_UP) return@listener true
             val pad = event.device?.takeIf { it.isPhysicalGamepad() }
-            val outcome = controller.onPadKey(gamepadInputHandler?.mapKeyToEvent(event.keyCode), isDown, pad)
+            val outcome = controller.onPadKey(gamepadInputHandler?.mapKeyToEvent(event.keyCode, event.deviceId), isDown, pad)
             playFeedback(outcome)
             if (outcome == SeatKeyOutcome.READY || outcome == SeatKeyOutcome.CLOSE) currentOnDismiss.value()
             true

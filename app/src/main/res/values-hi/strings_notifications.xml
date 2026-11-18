@@ -150,6 +150,7 @@
     <string name="notif_gamelaunch_no_emulator">इस प्लेटफ़ॉर्म के लिए कोई एमुलेटर इंस्टॉल्ड नहीं है</string>
     <string name="notif_gamelaunch_busy_syncing">सिंक अभी चल रहा है। थोड़ी देर में फिर कोशिश करें।</string>
     <string name="notif_gamelaunch_busy_launching">एक और गेम अभी शुरू हो रहा है</string>
+    <string name="notif_gamelaunch_running_copy_not_closed">यह गेम अभी भी खुला है और बंद नहीं हो सका</string>
     <string name="notif_gamelaunch_no_rom_file">ROM फ़ाइल नहीं मिली</string>
     <string name="notif_gamelaunch_no_steam_launcher">Steam लॉन्चर इंस्टॉल्ड नहीं है</string>
     <string name="notif_gamelaunch_no_steam_launcher_installed">कोई Steam लॉन्चर इंस्टॉल नहीं है। सेटिंग्स &gt; Steam में एक इंस्टॉल करें।</string>

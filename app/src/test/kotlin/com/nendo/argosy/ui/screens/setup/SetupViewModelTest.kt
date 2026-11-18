@@ -4,10 +4,12 @@ import android.app.Application
 import com.nendo.argosy.DualScreenManager
 import com.nendo.argosy.DualScreenManagerHolder
 import com.nendo.argosy.R
+import com.nendo.argosy.core.input.ActivePad
 import com.nendo.argosy.core.input.ConnectedControllerTracker
 import com.nendo.argosy.core.input.ConnectedPad
 import com.nendo.argosy.core.input.SoundType
 import com.nendo.argosy.data.permissions.PermissionRegistry
+import com.nendo.argosy.data.preferences.ActiveControllerProfiles
 import com.nendo.argosy.data.preferences.UserPreferences
 import com.nendo.argosy.data.preferences.UserPreferencesRepository
 import com.nendo.argosy.data.remote.romm.ConnectionState
@@ -95,7 +97,8 @@ class SetupViewModelTest {
         coEvery { setupState.answerSaveSync(any()) } returns true
         every { registry.accessibilityScreen() } returns null
         every { controllerTracker.controllers } returns pads
-        every { controllerTracker.activeLayout } returns MutableStateFlow(null)
+        every { controllerTracker.activePad } returns MutableStateFlow(ActivePad(controllerId = null, layout = null))
+        every { controllerTracker.activeController } returns MutableStateFlow(null)
         every { romM.connectionState } returns connection
     }
 
@@ -117,7 +120,11 @@ class SetupViewModelTest {
             access = SetupAccessDelegate(application, registry, setupState).also { it.ioDispatcher = dispatcher },
             folders = SetupFoldersDelegate(probe, preferences, setupState).also { it.ioDispatcher = dispatcher },
             platforms = SetupPlatformsDelegate(romM, platformRepository, coreDownloads).also { it.ioDispatcher = dispatcher },
-            personalize = SetupPersonalizeDelegate(preferences, controllerTracker),
+            personalize = SetupPersonalizeDelegate(
+                preferences,
+                controllerTracker,
+                ActiveControllerProfiles(preferences, controllerTracker)
+            ),
             handoff = handoff
         )
     }

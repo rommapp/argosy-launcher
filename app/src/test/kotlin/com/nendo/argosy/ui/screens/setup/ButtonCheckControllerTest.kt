@@ -2,10 +2,11 @@ package com.nendo.argosy.ui.screens.setup
 
 import android.view.KeyEvent
 import com.nendo.argosy.R
+import com.nendo.argosy.core.input.ControllerProfile
 import com.nendo.argosy.core.input.SoundType
+import com.nendo.argosy.data.preferences.ActiveControllerProfile
+import com.nendo.argosy.data.preferences.ActiveControllerProfiles
 import com.nendo.argosy.data.preferences.SelectSwapMode
-import com.nendo.argosy.data.preferences.UserPreferences
-import com.nendo.argosy.data.preferences.UserPreferencesRepository
 import com.nendo.argosy.ui.components.InputButton
 import com.nendo.argosy.ui.input.GamepadEvent
 import com.nendo.argosy.ui.input.mapKeycodeToGamepadEvent
@@ -35,12 +36,12 @@ import org.junit.Test
 
 class ButtonCheckControllerTest {
 
-    private val preferences = mockk<UserPreferencesRepository>(relaxed = true)
+    private val preferences = mockk<ActiveControllerProfiles>(relaxed = true)
 
     private val holdMs = ComponentDefaults.Setup.checkExitHoldMs.toLong()
 
-    private fun TestScope.controller(prefs: UserPreferences = UserPreferences(), showsBack: Boolean = true): ButtonCheckController {
-        every { preferences.userPreferences } returns flowOf(prefs)
+    private fun TestScope.controller(profile: ControllerProfile = ControllerProfile(), showsBack: Boolean = true): ButtonCheckController {
+        every { preferences.active } returns flowOf(ActiveControllerProfile(controllerId = null, profile = profile, saved = false))
         return ButtonCheckController(preferences, this, showsBack).also { advanceUntilIdle() }
     }
 
@@ -229,7 +230,7 @@ class ButtonCheckControllerTest {
 
     @Test
     fun `left and right on a toggle never change it`() = runTest(StandardTestDispatcher()) {
-        val check = controller(UserPreferences(swapAB = true))
+        val check = controller(ControllerProfile(swapAB = true))
         check.focus(ButtonCheckFocus.SWAP_AB)
         check.move(-1, 0)
         check.move(1, 0)
@@ -241,7 +242,7 @@ class ButtonCheckControllerTest {
 
     @Test
     fun `the toggles start from the stored swaps`() = runTest(StandardTestDispatcher()) {
-        val check = controller(UserPreferences(swapXY = true, swapStartSelect = true))
+        val check = controller(ControllerProfile(swapXY = true, swapStartSelect = true))
         assertFalse(check.state.value.swapAB)
         assertTrue(check.state.value.swapXY)
         assertTrue(check.state.value.swapStartSelect)

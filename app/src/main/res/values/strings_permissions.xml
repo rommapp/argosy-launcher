@@ -129,6 +129,8 @@
     <string name="notif_permissions_revoked_body_overlay">Notices and the quick panel only appear while Argosy is on screen.</string>
     <!-- Notice body when Argosy's accessibility service was turned off. -->
     <string name="notif_permissions_revoked_body_accessibility">Home and button combos stop working while another app is open.</string>
+    <string name="notif_accessibility_unbound_title">Argosy\'s accessibility service isn\'t running</string>
+    <string name="notif_accessibility_unbound_body">Turn Argosy off and on in Accessibility settings to bring back Home, hold Back and button combos.</string>
     <!-- Notice body when Argosy lost its battery optimization exemption. -->
     <string name="notif_permissions_revoked_body_battery">Android may pause downloads and close Argosy during long sessions.</string>
 </resources>

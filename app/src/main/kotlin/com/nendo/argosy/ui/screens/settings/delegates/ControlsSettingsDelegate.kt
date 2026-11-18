@@ -3,9 +3,12 @@ package com.nendo.argosy.ui.screens.settings.delegates
 import android.app.Application
 import androidx.annotation.StringRes
 import com.nendo.argosy.R
+import com.nendo.argosy.data.preferences.ActiveControllerProfile
+import com.nendo.argosy.data.preferences.ActiveControllerProfiles
 import com.nendo.argosy.data.preferences.ControlsPreferences
 import com.nendo.argosy.data.preferences.MenuWrapMode
 import com.nendo.argosy.data.preferences.SelectSwapMode
+import com.nendo.argosy.data.preferences.UserPreferences
 import com.nendo.argosy.data.preferences.UserPreferencesRepository
 import com.nendo.argosy.core.input.ConnectedControllerTracker
 import com.nendo.argosy.core.input.DetectedLayout
@@ -35,13 +38,25 @@ class ControlsSettingsDelegate @Inject constructor(
     private val preferencesRepository: UserPreferencesRepository,
     private val hapticManager: HapticFeedbackManager,
     private val permissionHelper: PermissionHelper,
-    private val controllerTracker: ConnectedControllerTracker
+    private val controllerTracker: ConnectedControllerTracker,
+    private val activeControllerProfiles: ActiveControllerProfiles
 ) {
     private val _state = MutableStateFlow(ControlsState())
     val state: StateFlow<ControlsState> = _state.asStateFlow()
 
     fun updateState(newState: ControlsState) {
         _state.value = newState
+    }
+
+    fun activeControllerProfile(prefs: UserPreferences): ActiveControllerProfile =
+        activeControllerProfiles.current(prefs)
+
+    fun observeActiveControllerProfile(scope: CoroutineScope) {
+        scope.launch {
+            activeControllerProfiles.active.collect { active ->
+                _state.update { it.withActiveProfile(active) }
+            }
+        }
     }
 
     fun setHapticEnabled(scope: CoroutineScope, enabled: Boolean) {
@@ -64,24 +79,19 @@ class ControlsSettingsDelegate @Inject constructor(
     }
 
     fun setSwapAB(scope: CoroutineScope, enabled: Boolean) {
-        scope.launch {
-            preferencesRepository.setSwapAB(enabled)
-            _state.update { it.copy(swapAB = enabled) }
-        }
+        scope.launch { activeControllerProfiles.setSwapAB(enabled) }
     }
 
     fun setSwapXY(scope: CoroutineScope, enabled: Boolean) {
-        scope.launch {
-            preferencesRepository.setSwapXY(enabled)
-            _state.update { it.copy(swapXY = enabled) }
-        }
+        scope.launch { activeControllerProfiles.setSwapXY(enabled) }
     }
 
     fun setControllerLayout(scope: CoroutineScope, layout: String) {
-        scope.launch {
-            preferencesRepository.setControllerLayout(layout)
-            _state.update { it.copy(controllerLayout = layout) }
-        }
+        scope.launch { activeControllerProfiles.setControllerLayout(layout) }
+    }
+
+    fun forgetActiveController(scope: CoroutineScope) {
+        scope.launch { activeControllerProfiles.forgetActive() }
     }
 
     fun detectActiveController(): DetectionResult = controllerTracker.detectActive()
@@ -123,10 +133,7 @@ class ControlsSettingsDelegate @Inject constructor(
     }
 
     fun setSwapStartSelect(scope: CoroutineScope, enabled: Boolean) {
-        scope.launch {
-            preferencesRepository.setSwapStartSelect(enabled)
-            _state.update { it.copy(swapStartSelect = enabled) }
-        }
+        scope.launch { activeControllerProfiles.setSwapStartSelect(enabled) }
     }
 
     fun setSelectLCombo(scope: CoroutineScope, value: String) {
@@ -142,6 +149,14 @@ class ControlsSettingsDelegate @Inject constructor(
             _state.update { it.copy(selectRCombo = value) }
         }
     }
+
+    private fun ControlsState.withActiveProfile(active: ActiveControllerProfile): ControlsState = copy(
+        controllerLayout = active.profile.controllerLayout,
+        swapAB = active.profile.swapAB,
+        swapXY = active.profile.swapXY,
+        swapStartSelect = active.profile.swapStartSelect,
+        controllerProfileSaved = active.saved
+    )
 
     companion object {
         val LAYOUT_OPTIONS = listOf("auto", "xbox", "nintendo")

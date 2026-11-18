@@ -217,6 +217,8 @@
     <string name="settings_navigation_swap_xy_subtitle">Kontextmenü- und Zweitaktion-Taste tauschen</string>
     <string name="settings_navigation_swap_start_select_title">Start/Select tauschen</string>
     <string name="settings_navigation_swap_start_select_subtitle">Funktionen von Start und Select vertauschen</string>
+    <string name="settings_navigation_forget_controller_title">Diesen Controller vergessen</string>
+    <string name="settings_navigation_forget_controller_subtitle">Dieser Controller nutzt wieder das Standardlayout und die Standard-Tastentausche</string>
     <string name="settings_navigation_ignore_controller_touchpad_title">Touchpad im Spiel ignorieren</string>
     <string name="settings_navigation_ignore_controller_touchpad_subtitle">Das Touchpad eines Controllers kann den Launcher während eines Spiels nicht anklicken</string>
 
@@ -730,6 +732,9 @@
 
     <string name="settings_about_systemize_title">Abstürze bei anspruchsvollen Emulatoren verhindern</string>
     <string name="settings_about_systemize_subtitle">Argosy kann erzwungen beendet werden, wenn ein anspruchsvoller Emulator den Großteil des RAM belegt. Dies macht Argosy zu einer System-App, damit sie nicht mehr beendet wird. Erfordert Root.</string>
+    <string name="settings_about_unsystemize_title">Aus System-Apps entfernen</string>
+    <string name="settings_about_unsystemize_subtitle">Macht Argosy wieder zu einer normalen App, die sich deinstallieren lässt. Spiele, Spielstände und Einstellungen bleiben erhalten. Erfordert Root und einen Neustart.</string>
+    <string name="settings_about_system_image_subtitle">Das Android dieses Geräts enthält Argosy bereits als System-App, daher läuft Argosy auch bei anspruchsvollen Emulatoren weiter.</string>
     <string name="settings_about_restart_title">Argosy neu starten</string>
     <string name="settings_about_restart_subtitle">Launcher schließen und neu öffnen</string>
 
@@ -2487,7 +2492,7 @@
     <string name="settings_systemize_dialog_detected_device">Erkanntes Gerät: %1$s</string>
     <string name="settings_systemize_dialog_next_steps_heading">Nächste Schritte</string>
     <string name="settings_systemize_dialog_step_format">%1$d. %2$s</string>
-    <string name="settings_systemize_dialog_success_footnote">Erfordert ein gerootetes Gerät. Die Änderung ist umkehrbar: Entfernen Sie das Magisk-Modul \"Argosy Systemize\" und starten Sie neu. Falls Ihr Menütext abweicht, ist die Skriptdatei trotzdem korrekt - richten Sie Ihre Root-Ausführungsoption einfach darauf aus.</string>
+    <string name="settings_systemize_dialog_success_footnote">Erfordert ein gerootetes Gerät. Rückgängig machen Sie es später mit „Aus System-Apps entfernen“ auf dieser Seite, Ihre Daten bleiben dabei erhalten. Falls Ihr Menütext abweicht, ist die Skriptdatei trotzdem korrekt - richten Sie Ihre Root-Ausführungsoption einfach darauf aus.</string>
     <string name="settings_systemize_dialog_error_title">Skript konnte nicht gespeichert werden</string>
     <string name="settings_systemize_dialog_error_hint">Möglicherweise fehlt der Speicherzugriff. Erteilen Sie in der Einrichtung Zugriff auf alle Dateien und versuchen Sie es erneut.</string>
 
@@ -2502,6 +2507,12 @@
     <string name="settings_root_script_dialog_output_heading">Skriptausgabe</string>
     <string name="settings_root_script_dialog_reboot_hint">Starten Sie zum Abschließen neu und legen Sie dann Argosy als Standard-Launcher fest.</string>
     <string name="settings_root_script_dialog_reboot_button">Jetzt neu starten</string>
+    <string name="settings_root_script_dialog_unsystemize_reboot_hint">Zum Abschließen neu starten. Danach läuft Argosy als normale App.</string>
+    <string name="settings_root_script_backup_title">Aus den System-Apps entfernen?</string>
+    <string name="settings_root_script_backup_body">Schlägt die Umstellung auf eine normale App fehl, können zwischengespeicherte Bilder und nicht synchronisierte Spielstände verloren gehen.</string>
+    <string name="settings_root_script_backup_cancel_button">Abbrechen</string>
+    <string name="settings_root_script_backup_export_note">Deine Einstellungen wurden nach %1$s gesichert.</string>
+    <string name="settings_root_script_backup_continue_button">Fortfahren</string>
     <string name="settings_root_script_step_open_retroid">Öffnen Sie Settings > Advanced > Run script as Root</string>
     <string name="settings_root_script_step_open_ayn">Öffnen Sie Settings > Advanced Settings > Run script as Root</string>
     <string name="settings_root_script_step_open_ayaneo">Öffnen Sie Settings > Optimization Assistant > Root Script</string>

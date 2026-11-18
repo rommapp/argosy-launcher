@@ -50,6 +50,8 @@ import com.nendo.argosy.ui.input.SoundFeedbackManager
 import com.nendo.argosy.core.input.SoundType
 import com.nendo.argosy.core.notification.NotificationManager
 import com.nendo.argosy.core.notification.NotificationText
+import com.nendo.argosy.core.notification.showError
+import com.nendo.argosy.data.preferences.SettingsExportResult
 import com.nendo.argosy.R
 import com.nendo.argosy.ui.screens.settings.components.ScopedMapping
 import com.nendo.argosy.ui.screens.settings.delegates.AccountsSettingsDelegate
@@ -177,6 +179,7 @@ class SettingsViewModel @Inject constructor(
     internal val jellyfinConnectionManager: JellyfinConnectionManager,
     internal val streamingConfigStore: com.nendo.argosy.data.streaming.StreamingConfigStore,
     private val downloadFileStatusRepository: com.nendo.argosy.data.repository.DownloadFileStatusRepository,
+    activeControllerProfiles: com.nendo.argosy.data.preferences.ActiveControllerProfiles,
     radioController: com.nendo.argosy.hardware.RadioController
 ) : ViewModel() {
 
@@ -214,7 +217,7 @@ class SettingsViewModel @Inject constructor(
     )
 
     val buttonCheck = com.nendo.argosy.ui.screens.setup.components.ButtonCheckController(
-        preferences = preferencesRepository,
+        profiles = activeControllerProfiles,
         scope = viewModelScope,
         showsBack = false
     )
@@ -332,6 +335,7 @@ class SettingsViewModel @Inject constructor(
         permissionsDelegate.observeLockScreenArt(viewModelScope)
         permissionsDelegate.observePrivilegedAccess(viewModelScope)
         routeStartControllerDetectionPolling(this)
+        controlsDelegate.observeActiveControllerProfile(viewModelScope)
         installerDelegate.observeJobs(viewModelScope)
         viewModelScope.launch {
             appsRepository.packageChanges.collect { packageName ->
@@ -1656,6 +1660,7 @@ class SettingsViewModel @Inject constructor(
     fun setControllerLayout(layout: String) = controlsDelegate.setControllerLayout(viewModelScope, layout)
     fun refreshDetectedLayout() = controlsDelegate.refreshDetectedLayout()
     fun setSwapStartSelect(enabled: Boolean) = controlsDelegate.setSwapStartSelect(viewModelScope, enabled)
+    fun forgetActiveController() = controlsDelegate.forgetActiveController(viewModelScope)
     fun setQuickNavigation(enabled: Boolean) = controlsDelegate.setQuickNavigation(viewModelScope, enabled)
     fun setNavBarAutoHide(enabled: Boolean) = controlsDelegate.setNavBarAutoHide(viewModelScope, enabled)
     fun setIgnoreControllerTouchpad(enabled: Boolean) =
@@ -2168,23 +2173,58 @@ class SettingsViewModel @Inject constructor(
 
     fun applyRootScript(script: com.nendo.argosy.data.model.RootScript) {
         if (_uiState.value.rootScriptDialog is RootScriptDialogState.Running) return
-        val runner = com.nendo.argosy.util.RootScriptRunner
-        if (!runner.canRunDirectly) {
-            _uiState.update { it.copy(rootScriptDialog = RootScriptDialogState.Finished(runner.write(context, script))) }
+        if (script.asksForBackup) {
+            backUpBeforeRootScript(script)
             return
         }
+        runRootScript(script)
+    }
+
+    private fun backUpBeforeRootScript(script: com.nendo.argosy.data.model.RootScript) {
+        if (_uiState.value.rootScriptDialog != null) return
         _uiState.update { it.copy(rootScriptDialog = RootScriptDialogState.Running(script)) }
-        viewModelScope.launch(kotlinx.coroutines.Dispatchers.IO) {
-            val result = runner.run(context, script)
-            _uiState.update { it.copy(rootScriptDialog = RootScriptDialogState.Finished(result)) }
+        viewModelScope.launch {
+            when (val result = settingsBackupRepository.exportToFile()) {
+                is SettingsExportResult.Success -> _uiState.update {
+                    it.copy(rootScriptDialog = RootScriptDialogState.ConfirmBackup(script, result.path))
+                }
+                is SettingsExportResult.Error -> {
+                    _uiState.update { it.copy(rootScriptDialog = null) }
+                    notificationManager.showError(NotificationText.Raw(result.message))
+                }
+            }
         }
+    }
+
+    fun confirmRootScriptBackup() {
+        val dialog = _uiState.value.rootScriptDialog as? RootScriptDialogState.ConfirmBackup ?: return
+        runRootScript(dialog.script)
+    }
+
+    private fun runRootScript(script: com.nendo.argosy.data.model.RootScript) {
+        _uiState.update { it.copy(rootScriptDialog = RootScriptDialogState.Running(script)) }
+        viewModelScope.launch(kotlinx.coroutines.Dispatchers.IO) { finishRootScript(script) }
+    }
+
+    private fun finishRootScript(script: com.nendo.argosy.data.model.RootScript) {
+        val runner = com.nendo.argosy.util.RootScriptRunner
+        val result = if (runner.canRunDirectly) runner.run(context, script) else runner.write(context, script)
+        _uiState.update { it.copy(rootScriptDialog = RootScriptDialogState.Finished(result)) }
     }
 
     fun moveRootScriptFocus(direction: Int) {
         _uiState.update { state ->
-            val dialog = state.rootScriptDialog as? RootScriptDialogState.Finished ?: return@update state
-            if (!dialog.offersReboot) return@update state
-            state.copy(rootScriptDialog = dialog.copy(focusIndex = (dialog.focusIndex + direction).coerceIn(0, 1)))
+            val moved = when (val dialog = state.rootScriptDialog) {
+                is RootScriptDialogState.ConfirmBackup ->
+                    dialog.copy(focusIndex = (dialog.focusIndex + direction).coerceIn(
+                        RootScriptDialogState.ConfirmBackup.CANCEL_FOCUS,
+                        RootScriptDialogState.ConfirmBackup.CONTINUE_FOCUS
+                    ))
+                is RootScriptDialogState.Finished ->
+                    if (dialog.offersReboot) dialog.copy(focusIndex = (dialog.focusIndex + direction).coerceIn(0, 1)) else dialog
+                else -> dialog
+            }
+            state.copy(rootScriptDialog = moved)
         }
     }
 

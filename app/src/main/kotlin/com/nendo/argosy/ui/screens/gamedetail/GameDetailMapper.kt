@@ -34,7 +34,7 @@ fun GameEntity.toGameDetailUi(
     steamLauncherName: String? = null,
     isHidden: Boolean = false
 ): GameDetailUi {
-    val screenshots = screenshotRows.toScreenshotPairs()
+    val screenshots = screenshotEntries(videoNormalizedPath, screenshotRows)
     val effectiveBackground = art?.backgroundPath
         ?: screenshotRows.filter { it.isOfficial }.minByOrNull { it.position }?.sourceUrl
     return GameDetailUi(
@@ -69,6 +69,7 @@ fun GameEntity.toGameDetailUi(
         playCount = playCount,
         playTimeMinutes = playTimeMinutes,
         screenshots = screenshots,
+        videoPath = videoNormalizedPath,
         achievements = achievements,
         emulatorName = emulatorName,
         canPlay = canPlay,
@@ -97,9 +98,16 @@ fun GameEntity.toGameDetailUi(
     )
 }
 
-internal fun List<GameScreenshotEntity>.toScreenshotPairs(): List<ScreenshotPair> =
-    inDisplayOrder()
+internal fun screenshotEntries(
+    videoPath: String?,
+    screenshotRows: List<GameScreenshotEntity>
+): List<ScreenshotPair> {
+    val video = videoPath?.takeIf { it.isNotBlank() }
+        ?.let { ScreenshotPair(remoteUrl = it, cachedPath = null, isVideo = true) }
+    val shots = screenshotRows.inDisplayOrder()
         .map { row -> ScreenshotPair(remoteUrl = row.sourceUrl, cachedPath = row.cachedPath) }
+    return listOfNotNull(video) + shots
+}
 
 internal val GameEntity.hasSteamLauncherPin: Boolean
     get() = launcherSetManually && steamLauncher != null && steamLauncher != GameEntity.LAUNCHER_UNSPECIFIED

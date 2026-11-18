@@ -49,7 +49,7 @@ fun ShortcutCaptureModal(
             if (event.action == KeyEvent.ACTION_DOWN && event.repeatCount == 0) {
                 val device = event.device
                 val isBack = event.keyCode == KeyEvent.KEYCODE_BACK ||
-                    gamepadInputHandler?.mapKeyToEvent(event.keyCode) == GamepadEvent.Back
+                    gamepadInputHandler?.mapKeyToEvent(event.keyCode, event.deviceId) == GamepadEvent.Back
                 when {
                     isBack -> currentOnDismiss.value()
                     device == null || !device.actsAsGamepad() -> {}

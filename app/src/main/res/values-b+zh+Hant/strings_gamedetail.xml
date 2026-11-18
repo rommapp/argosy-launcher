@@ -90,6 +90,7 @@
 
     <string name="gamedetail_section_description_heading">簡介</string>
     <string name="gamedetail_section_screenshots_heading">截圖</string>
+    <string name="gamedetail_section_screenshots_video_label">遊戲影片</string>
     <string name="gamedetail_section_related_heading">相關遊戲</string>
     <string name="gamedetail_section_reviews_heading">評論</string>
     <string name="gamedetail_section_achievements_heading">成就</string>
@@ -144,6 +145,8 @@
     <string name="gamedetail_screenshot_viewer_footer_navigate">移動</string>
     <string name="gamedetail_screenshot_viewer_footer_close">關閉</string>
     <string name="gamedetail_screenshot_viewer_footer_set_background">設為背景</string>
+    <string name="gamedetail_screenshot_viewer_footer_play">播放</string>
+    <string name="gamedetail_screenshot_viewer_footer_pause">暫停</string>
 
     <string name="gamedetail_option_item_current_description">目前使用中</string>
     <string name="gamedetail_option_item_value">[%1$s]</string>

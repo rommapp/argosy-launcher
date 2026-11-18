@@ -16,14 +16,17 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.lifecycleScope
 import com.nendo.argosy.DualScreenManagerHolder
-import com.nendo.argosy.core.input.ControllerDetector
+import com.nendo.argosy.core.input.ControllerProfiles
+import com.nendo.argosy.core.input.forDevice
 import com.nendo.argosy.data.preferences.UserPreferencesRepository
 import com.nendo.argosy.ui.input.GamepadEvent
 import com.nendo.argosy.ui.input.InputResult
 import com.nendo.argosy.ui.input.LocalABIconsSwapped
 import com.nendo.argosy.ui.input.LocalSwapStartSelect
 import com.nendo.argosy.ui.input.LocalXYIconsSwapped
-import com.nendo.argosy.ui.input.mapKeycodeToGamepadEvent
+import com.nendo.argosy.ui.input.ButtonGlyphSwaps
+import com.nendo.argosy.ui.input.buttonGlyphSwaps
+import com.nendo.argosy.ui.input.gamepadEventFor
 import com.nendo.argosy.ui.theme.ALauncherTheme
 import com.nendo.argosy.util.DisplayAffinityHelper
 import com.nendo.argosy.util.hideSystemBars
@@ -93,10 +96,9 @@ class PlayerActivity : ComponentActivity() {
         dispatchGenericMotionEvent(event)
     }
 
-    private var swapAB by mutableStateOf(false)
-    private var swapXY by mutableStateOf(false)
-    private var swapStartSelect by mutableStateOf(false)
-    private var isNintendoLayout by mutableStateOf(false)
+    @Volatile
+    private var controllerProfiles = ControllerProfiles()
+    private var glyphSwaps by mutableStateOf(ButtonGlyphSwaps(ab = false, xy = false, startSelect = false))
     private var wasStopped = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -120,9 +122,9 @@ class PlayerActivity : ComponentActivity() {
         setContent {
             ALauncherTheme {
                 CompositionLocalProvider(
-                    LocalABIconsSwapped provides (isNintendoLayout xor swapAB),
-                    LocalXYIconsSwapped provides (isNintendoLayout xor swapXY),
-                    LocalSwapStartSelect provides swapStartSelect
+                    LocalABIconsSwapped provides glyphSwaps.ab,
+                    LocalXYIconsSwapped provides glyphSwaps.xy,
+                    LocalSwapStartSelect provides glyphSwaps.startSelect
                 ) {
                     PlayerScreen(viewModel)
                 }
@@ -266,7 +268,7 @@ class PlayerActivity : ComponentActivity() {
         val dsm = DualScreenManagerHolder.instance
         if (dsm != null && !dsm.claimInput(event)) return true
         connectedControllerTracker.noteInput(event)
-        val gamepadEvent = mapKeycodeToGamepadEvent(event.keyCode, swapAB, swapXY, swapStartSelect)
+        val gamepadEvent = controllerProfiles.forDevice(event.deviceId).gamepadEventFor(event.keyCode)
             ?: return super.dispatchKeyEvent(event)
         if (event.action == KeyEvent.ACTION_DOWN) {
             if (route(gamepadEvent).handled) return true
@@ -311,21 +313,13 @@ class PlayerActivity : ComponentActivity() {
         GamepadEvent.Home -> InputResult.UNHANDLED
     }
 
-    /**
-     * The swap preferences say which intent each physical button carries, and that is what the key
-     * dispatch is given. What the hints draw is a second question with a second answer: on a Nintendo
-     * pad the physical positions are already the other way round, so the glyph for an intent is
-     * swapped relative to the preference rather than by it.
-     */
     private fun observeButtonSwaps() {
         lifecycleScope.launch {
             userPreferencesRepository.preferences
-                .combine(connectedControllerTracker.activeLayout) { prefs, layout -> prefs to layout }
-                .collectLatest { (prefs, layout) ->
-                    swapAB = prefs.swapAB
-                    swapXY = prefs.swapXY
-                    swapStartSelect = prefs.swapStartSelect
-                    isNintendoLayout = ControllerDetector.isNintendoLayout(prefs.controllerLayout, layout)
+                .combine(connectedControllerTracker.activePad) { prefs, pad -> prefs to pad }
+                .collectLatest { (prefs, pad) ->
+                    controllerProfiles = prefs.controllerProfiles
+                    glyphSwaps = prefs.buttonGlyphSwaps(pad)
                 }
         }
     }

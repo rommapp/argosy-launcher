@@ -1,5 +1,8 @@
 package com.nendo.argosy.ui.components
 
+import com.nendo.argosy.core.input.ControllerProfile
+import com.nendo.argosy.data.preferences.ActiveControllerProfile
+import com.nendo.argosy.data.preferences.ActiveControllerProfiles
 import com.nendo.argosy.data.preferences.BuiltinEmulatorSettings
 import com.nendo.argosy.data.preferences.MenuWrapMode
 import com.nendo.argosy.data.preferences.UserPreferences
@@ -80,6 +83,11 @@ class QuickSettingsRootAccessTest {
             preferencesRepository = mockk<UserPreferencesRepository>(relaxed = true) {
                 every { userPreferences } returns flowOf(UserPreferences())
                 every { getBuiltinEmulatorSettings() } returns flowOf(BuiltinEmulatorSettings())
+            },
+            activeControllerProfiles = mockk<ActiveControllerProfiles>(relaxed = true) {
+                every { active } returns flowOf(
+                    ActiveControllerProfile(controllerId = null, profile = ControllerProfile(), saved = false)
+                )
             },
             brightnessController = mockk<BrightnessController>(relaxed = true) {
                 every { getBrightness() } returns DisplayBrightness(primary = 0.5f, secondary = null)

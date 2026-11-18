@@ -1,5 +1,8 @@
 package com.nendo.argosy.ui.components
 
+import com.nendo.argosy.core.input.ControllerProfile
+import com.nendo.argosy.data.preferences.ActiveControllerProfile
+import com.nendo.argosy.data.preferences.ActiveControllerProfiles
 import com.nendo.argosy.data.preferences.BuiltinEmulatorSettings
 import com.nendo.argosy.data.preferences.MenuWrapMode
 import com.nendo.argosy.data.preferences.UserPreferences
@@ -46,8 +49,13 @@ class QuickSettingsDeviceDispatcherTest {
         every { connectionState } returns MutableStateFlow(SocialConnectionState.Disconnected)
     }
 
+    private val activeControllerProfiles = mockk<ActiveControllerProfiles>(relaxed = true) {
+        every { active } returns flowOf(ActiveControllerProfile(controllerId = null, profile = ControllerProfile(), saved = false))
+    }
+
     private fun TestScope.controller(deviceDispatcher: TestDispatcher) = QuickSettingsController(
         preferencesRepository = preferencesRepository,
+        activeControllerProfiles = activeControllerProfiles,
         brightnessController = brightnessController,
         volumeController = volumeController,
         performanceResolver = mockk(relaxed = true),

@@ -9,12 +9,17 @@ import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.floatPreferencesKey
 import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
+import com.nendo.argosy.core.input.ControllerProfile
+import com.nendo.argosy.core.input.ControllerProfiles
 import com.nendo.argosy.core.input.SoundConfig
 import com.nendo.argosy.core.input.SoundType
+import com.nendo.argosy.util.Logger
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
+import org.json.JSONException
+import org.json.JSONObject
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlin.math.roundToInt
@@ -25,10 +30,7 @@ data class ControlsPreferences(
     val soundEnabled: Boolean = false,
     val soundVolume: Int = 40,
     val soundConfigs: Map<SoundType, SoundConfig> = emptyMap(),
-    val swapAB: Boolean = false,
-    val swapXY: Boolean = false,
-    val controllerLayout: String = "auto",
-    val swapStartSelect: Boolean = false,
+    val controllerProfiles: ControllerProfiles = ControllerProfiles(),
     val ambientAudioEnabled: Boolean = false,
     val ambientAudioVolume: Int = 50,
     val ambientAudioUri: String? = null,
@@ -75,6 +77,7 @@ class ControlsPreferencesRepository @Inject constructor(
         val SWAP_XY = booleanPreferencesKey("swap_xy")
         val CONTROLLER_LAYOUT = stringPreferencesKey("controller_layout")
         val SWAP_START_SELECT = booleanPreferencesKey("swap_start_select")
+        val CONTROLLER_PROFILES = stringPreferencesKey("controller_profiles")
         val AMBIENT_AUDIO_ENABLED = booleanPreferencesKey("ambient_audio_enabled")
         val AMBIENT_AUDIO_VOLUME = intPreferencesKey("ambient_audio_volume")
         val AMBIENT_AUDIO_URI = stringPreferencesKey("ambient_audio_uri")
@@ -105,10 +108,7 @@ class ControlsPreferencesRepository @Inject constructor(
             soundEnabled = prefs[Keys.SOUND_ENABLED] ?: false,
             soundVolume = prefs[Keys.SOUND_VOLUME] ?: 40,
             soundConfigs = parseSoundConfigs(prefs[Keys.SOUND_CONFIGS]),
-            swapAB = prefs[Keys.SWAP_AB] ?: false,
-            swapXY = prefs[Keys.SWAP_XY] ?: false,
-            controllerLayout = prefs[Keys.CONTROLLER_LAYOUT] ?: "auto",
-            swapStartSelect = prefs[Keys.SWAP_START_SELECT] ?: false,
+            controllerProfiles = controllerProfilesOf(prefs),
             ambientAudioEnabled = prefs[Keys.AMBIENT_AUDIO_ENABLED] ?: false,
             ambientAudioVolume = prefs[Keys.AMBIENT_AUDIO_VOLUME] ?: 50,
             ambientAudioUri = prefs[Keys.AMBIENT_AUDIO_URI],
@@ -216,20 +216,85 @@ class ControlsPreferencesRepository @Inject constructor(
         }
     }
 
-    suspend fun setSwapAB(enabled: Boolean) {
-        dataStore.edit { it[Keys.SWAP_AB] = enabled }
+    /**
+     * Applies [change] to the profile [controllerId] resolves to and saves the result under
+     * [controllerId] itself, in one DataStore transaction. A null [controllerId] edits the defaults.
+     */
+    suspend fun editControllerProfile(controllerId: String?, change: (ControllerProfile) -> ControllerProfile) {
+        dataStore.edit { prefs ->
+            val profiles = controllerProfilesOf(prefs)
+            if (controllerId == null) {
+                val updated = change(profiles.defaults)
+                prefs[Keys.CONTROLLER_LAYOUT] = updated.controllerLayout
+                prefs[Keys.SWAP_AB] = updated.swapAB
+                prefs[Keys.SWAP_XY] = updated.swapXY
+                prefs[Keys.SWAP_START_SELECT] = updated.swapStartSelect
+            } else {
+                val updated = change(profiles.forController(controllerId))
+                prefs[Keys.CONTROLLER_PROFILES] = serializeControllerProfiles(profiles.saved + (controllerId to updated))
+            }
+        }
     }
 
-    suspend fun setSwapXY(enabled: Boolean) {
-        dataStore.edit { it[Keys.SWAP_XY] = enabled }
+    /**
+     * Deletes the saved profile [controllerId] resolves to, exact or same-model. Does nothing when
+     * none applies.
+     */
+    suspend fun forgetControllerProfile(controllerId: String) {
+        dataStore.edit { prefs ->
+            val profiles = controllerProfilesOf(prefs)
+            val key = profiles.savedKeyFor(controllerId) ?: return@edit
+            val remaining = profiles.saved - key
+            if (remaining.isEmpty()) {
+                prefs.remove(Keys.CONTROLLER_PROFILES)
+            } else {
+                prefs[Keys.CONTROLLER_PROFILES] = serializeControllerProfiles(remaining)
+            }
+        }
     }
 
-    suspend fun setControllerLayout(layout: String) {
-        dataStore.edit { it[Keys.CONTROLLER_LAYOUT] = layout }
+    private fun controllerProfilesOf(prefs: Preferences): ControllerProfiles = ControllerProfiles(
+        defaults = ControllerProfile(
+            controllerLayout = prefs[Keys.CONTROLLER_LAYOUT] ?: ControllerProfile.LAYOUT_AUTO,
+            swapAB = prefs[Keys.SWAP_AB] ?: false,
+            swapXY = prefs[Keys.SWAP_XY] ?: false,
+            swapStartSelect = prefs[Keys.SWAP_START_SELECT] ?: false
+        ),
+        saved = parseControllerProfiles(prefs[Keys.CONTROLLER_PROFILES])
+    )
+
+    private fun parseControllerProfiles(raw: String?): Map<String, ControllerProfile> {
+        if (raw.isNullOrBlank()) return emptyMap()
+        val root = try {
+            JSONObject(raw)
+        } catch (e: JSONException) {
+            Logger.warn(TAG, "Unreadable controller profiles; pads use the defaults", e)
+            return emptyMap()
+        }
+        return root.keys().asSequence().mapNotNull { controllerId ->
+            val entry = root.optJSONObject(controllerId) ?: return@mapNotNull null
+            controllerId to ControllerProfile(
+                controllerLayout = entry.optString(PROFILE_LAYOUT, ControllerProfile.LAYOUT_AUTO),
+                swapAB = entry.optBoolean(PROFILE_SWAP_AB, false),
+                swapXY = entry.optBoolean(PROFILE_SWAP_XY, false),
+                swapStartSelect = entry.optBoolean(PROFILE_SWAP_START_SELECT, false)
+            )
+        }.toMap()
     }
 
-    suspend fun setSwapStartSelect(enabled: Boolean) {
-        dataStore.edit { it[Keys.SWAP_START_SELECT] = enabled }
+    private fun serializeControllerProfiles(profiles: Map<String, ControllerProfile>): String {
+        val root = JSONObject()
+        profiles.forEach { (controllerId, profile) ->
+            root.put(
+                controllerId,
+                JSONObject()
+                    .put(PROFILE_LAYOUT, profile.controllerLayout)
+                    .put(PROFILE_SWAP_AB, profile.swapAB)
+                    .put(PROFILE_SWAP_XY, profile.swapXY)
+                    .put(PROFILE_SWAP_START_SELECT, profile.swapStartSelect)
+            )
+        }
+        return root.toString()
     }
 
     suspend fun setAmbientAudioEnabled(enabled: Boolean) {
@@ -368,5 +433,13 @@ class ControlsPreferencesRepository @Inject constructor(
             }
             "${type.name}=$value"
         }
+    }
+
+    private companion object {
+        const val TAG = "ControlsPreferences"
+        const val PROFILE_LAYOUT = "layout"
+        const val PROFILE_SWAP_AB = "swap_ab"
+        const val PROFILE_SWAP_XY = "swap_xy"
+        const val PROFILE_SWAP_START_SELECT = "swap_start_select"
     }
 }

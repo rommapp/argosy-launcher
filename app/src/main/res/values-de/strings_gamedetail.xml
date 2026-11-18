@@ -97,6 +97,7 @@
 
     <string name="gamedetail_section_description_heading">BESCHREIBUNG</string>
     <string name="gamedetail_section_screenshots_heading">SCREENSHOTS</string>
+    <string name="gamedetail_section_screenshots_video_label">Gameplay-Video</string>
     <string name="gamedetail_section_related_heading">ÄHNLICHE SPIELE</string>
     <string name="gamedetail_section_reviews_heading">REZENSIONEN</string>
     <string name="gamedetail_section_achievements_heading">ERFOLGE</string>
@@ -164,6 +165,8 @@
     <string name="gamedetail_screenshot_viewer_footer_navigate">Navigieren</string>
     <string name="gamedetail_screenshot_viewer_footer_close">Schließen</string>
     <string name="gamedetail_screenshot_viewer_footer_set_background">Als Hintergrund festlegen</string>
+    <string name="gamedetail_screenshot_viewer_footer_play">Abspielen</string>
+    <string name="gamedetail_screenshot_viewer_footer_pause">Pausieren</string>
 
     <!-- ================================ Option rows =================================== -->
 

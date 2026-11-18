@@ -365,13 +365,30 @@ fun AboutSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
 
                 is AboutItem.SystemSpacer -> Spacer(modifier = Modifier.height(Dimens.spacingMd))
 
-                is AboutItem.SystemizeHelper -> ActionPreference(
-                    icon = Icons.Default.HealthAndSafety,
-                    title = stringResource(item.labelRes),
-                    subtitle = stringResource(R.string.settings_about_systemize_subtitle),
-                    isFocused = isFocused(item),
-                    onClick = { viewModel.applyRootScript(com.nendo.argosy.data.model.RootScript.SYSTEMIZE) }
-                )
+                is AboutItem.SystemizeHelper -> {
+                    val context = androidx.compose.ui.platform.LocalContext.current
+                    val systemState = remember(context) { com.nendo.argosy.util.SystemAppStatus.state(context) }
+                    ActionPreference(
+                        icon = Icons.Default.HealthAndSafety,
+                        title = stringResource(
+                            when (systemState) {
+                                com.nendo.argosy.util.SystemAppState.SYSTEMIZED -> R.string.settings_about_unsystemize_title
+                                else -> item.labelRes
+                            }
+                        ),
+                        subtitle = stringResource(
+                            when (systemState) {
+                                com.nendo.argosy.util.SystemAppState.ORDINARY -> R.string.settings_about_systemize_subtitle
+                                com.nendo.argosy.util.SystemAppState.SYSTEMIZED -> R.string.settings_about_unsystemize_subtitle
+                                com.nendo.argosy.util.SystemAppState.PART_OF_SYSTEM -> R.string.settings_about_system_image_subtitle
+                            }
+                        ),
+                        isFocused = isFocused(item),
+                        onClick = {
+                            com.nendo.argosy.util.SystemAppStatus.systemAppScript(context)?.let(viewModel::applyRootScript)
+                        }
+                    )
+                }
 
                 is AboutItem.RestartApp -> ActionPreference(
                     icon = Icons.Outlined.RestartAlt,

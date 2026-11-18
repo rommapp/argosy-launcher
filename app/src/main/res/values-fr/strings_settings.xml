@@ -209,6 +209,8 @@
     <string name="settings_navigation_swap_xy_subtitle">Inverser le menu contextuel et l\'action secondaire</string>
     <string name="settings_navigation_swap_start_select_title">Inverser Start/Select</string>
     <string name="settings_navigation_swap_start_select_subtitle">Inverser les fonctions des boutons Start et Select</string>
+    <string name="settings_navigation_forget_controller_title">Oublier cette manette</string>
+    <string name="settings_navigation_forget_controller_subtitle">Rétablir la disposition et les inversions de boutons par défaut pour cette manette</string>
     <string name="settings_navigation_ignore_controller_touchpad_title">Ignorer le pavé tactile en jeu</string>
     <string name="settings_navigation_ignore_controller_touchpad_subtitle">Le pavé tactile d\'une manette ne peut pas cliquer sur le launcher pendant une partie</string>
 
@@ -735,6 +737,9 @@
 
     <string name="settings_about_systemize_title">Empêcher les plantages sur émulateurs lourds</string>
     <string name="settings_about_systemize_subtitle">Argosy peut être fermé de force quand un émulateur exigeant utilise la majorité de la RAM. Ceci fait d\'Argosy une application système pour qu\'elle ne soit plus fermée. Nécessite le root.</string>
+    <string name="settings_about_unsystemize_title">Retirer des applications système</string>
+    <string name="settings_about_unsystemize_subtitle">Refait d\'Argosy une application ordinaire que l\'on peut désinstaller. Vos jeux, sauvegardes et réglages sont conservés. Nécessite le root et un redémarrage.</string>
+    <string name="settings_about_system_image_subtitle">L\'Android de cet appareil intègre déjà Argosy comme application système, il reste donc actif avec les émulateurs exigeants.</string>
     <string name="settings_about_restart_title">Redémarrer Argosy</string>
     <string name="settings_about_restart_subtitle">Fermer et rouvrir le lanceur</string>
 
@@ -2538,7 +2543,7 @@
     <string name="settings_systemize_dialog_detected_device">Appareil détecté : %1$s</string>
     <string name="settings_systemize_dialog_next_steps_heading">Étapes suivantes</string>
     <string name="settings_systemize_dialog_step_format">%1$d. %2$s</string>
-    <string name="settings_systemize_dialog_success_footnote">Nécessite un appareil rooté. Le changement est réversible : retirez le module Magisk nommé \"Argosy Systemize\" et redémarrez. Si le libellé de votre menu diffère, le fichier de script reste correct - pointez simplement votre option d\'exécution en root vers lui.</string>
+    <string name="settings_systemize_dialog_success_footnote">Nécessite un appareil rooté. Pour l\'annuler plus tard, utilisez Retirer des applications système sur cette page ; vos données sont conservées. Si le libellé de votre menu diffère, le fichier de script reste correct - pointez simplement votre option d\'exécution en root vers lui.</string>
     <string name="settings_systemize_dialog_error_title">Impossible d\'enregistrer le script</string>
     <string name="settings_systemize_dialog_error_hint">L\'accès au stockage est peut-être manquant. Accordez l\'accès à tous les fichiers dans la configuration et réessayez.</string>
 
@@ -2551,6 +2556,12 @@
     <string name="settings_root_script_dialog_output_heading">Sortie du script</string>
     <string name="settings_root_script_dialog_reboot_hint">Redémarrez pour terminer, puis définissez Argosy comme lanceur par défaut.</string>
     <string name="settings_root_script_dialog_reboot_button">Redémarrer maintenant</string>
+    <string name="settings_root_script_dialog_unsystemize_reboot_hint">Redémarrez pour terminer. Argosy fonctionnera ensuite comme une app ordinaire.</string>
+    <string name="settings_root_script_backup_title">Retirer des apps système ?</string>
+    <string name="settings_root_script_backup_body">Si le passage en app ordinaire échoue, vous risquez de perdre les images en cache et les sauvegardes non synchronisées.</string>
+    <string name="settings_root_script_backup_cancel_button">Annuler</string>
+    <string name="settings_root_script_backup_export_note">Vos réglages ont été sauvegardés dans %1$s.</string>
+    <string name="settings_root_script_backup_continue_button">Continuer</string>
     <string name="settings_root_script_step_open_retroid">Ouvrez Settings > Advanced > Run script as Root</string>
     <string name="settings_root_script_step_open_ayn">Ouvrez Settings > Advanced Settings > Run script as Root</string>
     <string name="settings_root_script_step_open_ayaneo">Ouvrez Settings > Optimization Assistant > Root Script</string>

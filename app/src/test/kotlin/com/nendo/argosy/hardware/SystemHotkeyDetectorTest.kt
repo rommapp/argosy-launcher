@@ -29,8 +29,11 @@ class SystemHotkeyDetectorTest {
     private var quickPanelOpens = 0
     private var runningOpens = 0
 
+    private val pad = 7
+    private var configFor: (Int) -> SystemHotkeyConfig = { config }
+
     private val detector = SystemHotkeyDetector(
-        config = { config },
+        config = { deviceId -> configFor(deviceId) },
         foreignAppInFront = { otherAppInFront },
         scheduleHold = { task, delayMs -> pending += (now + delayMs) to task },
         cancelHold = { task -> pending.removeAll { it.second === task } },
@@ -50,9 +53,9 @@ class SystemHotkeyDetectorTest {
         now = time
     }
 
-    private fun down(keyCode: Int, at: Long): Boolean {
+    private fun down(keyCode: Int, at: Long, deviceId: Int = pad): Boolean {
         advanceTo(at)
-        return detector.onKeyDown(keyCode, isRepeat = false)
+        return detector.onKeyDown(keyCode, isRepeat = false, deviceId = deviceId)
     }
 
     private fun up(keyCode: Int, at: Long): Boolean {
@@ -67,7 +70,7 @@ class SystemHotkeyDetectorTest {
         advanceTo(2050)
 
         assertEquals(listOf(SystemHotkeyAction.HOME), performed)
-        assertTrue(detector.onKeyDown(select, isRepeat = true))
+        assertTrue(detector.onKeyDown(select, isRepeat = true, deviceId = pad))
         assertTrue(up(start, at = 2100))
         assertTrue(up(select, at = 2150))
     }
@@ -89,7 +92,7 @@ class SystemHotkeyDetectorTest {
         assertTrue(down(b, at = 100))
         assertEquals(listOf(SystemHotkeyAction.BACK), performed)
 
-        assertTrue(detector.onKeyDown(b, isRepeat = true))
+        assertTrue(detector.onKeyDown(b, isRepeat = true, deviceId = pad))
         assertTrue(up(b, at = 200))
         assertFalse(up(select, at = 300))
     }
@@ -147,7 +150,7 @@ class SystemHotkeyDetectorTest {
     @Test
     fun `a lone select reaches the app down and up`() {
         assertFalse(down(select, at = 0))
-        assertFalse(detector.onKeyDown(select, isRepeat = true))
+        assertFalse(detector.onKeyDown(select, isRepeat = true, deviceId = pad))
         assertFalse(up(select, at = 3000))
 
         assertTrue(performed.isEmpty())
@@ -167,6 +170,30 @@ class SystemHotkeyDetectorTest {
         assertFalse(down(b, at = 50))
         assertTrue(down(a, at = 100))
         assertEquals(listOf(SystemHotkeyAction.BACK), performed)
+    }
+
+    @Test
+    fun `the back trigger follows the swap of the pad that starts the chord`() {
+        val swappedPad = 8
+        configFor = { deviceId ->
+            SystemHotkeyConfig.resolve(
+                enabled = true,
+                customHome = null,
+                customBack = null,
+                swapAB = deviceId == swappedPad,
+                swapStartSelect = false
+            )
+        }
+
+        assertFalse(down(select, at = 0, deviceId = swappedPad))
+        assertTrue(down(a, at = 100, deviceId = swappedPad))
+        up(a, at = 150)
+        up(select, at = 200)
+
+        assertFalse(down(select, at = 300))
+        assertFalse(down(a, at = 400))
+        assertTrue(down(b, at = 500))
+        assertEquals(listOf(SystemHotkeyAction.BACK, SystemHotkeyAction.BACK), performed)
     }
 
     @Test
@@ -194,7 +221,7 @@ class SystemHotkeyDetectorTest {
         assertTrue(down(guide, at = 0))
         advanceTo(1000)
         assertEquals(1, runningOpens)
-        assertTrue(detector.onKeyDown(guide, isRepeat = true))
+        assertTrue(detector.onKeyDown(guide, isRepeat = true, deviceId = pad))
         assertTrue(up(guide, at = 1500))
 
         assertTrue(performed.isEmpty())

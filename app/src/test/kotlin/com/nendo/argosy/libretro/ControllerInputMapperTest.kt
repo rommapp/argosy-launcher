@@ -15,6 +15,51 @@ class ControllerInputMapperTest {
         InputSource.Button(KeyEvent.KEYCODE_BUTTON_R1) to RetroButton.R
     )
 
+    private fun device(vendorId: Int, productId: Int, descriptor: String): android.view.InputDevice =
+        io.mockk.mockk {
+            io.mockk.every { this@mockk.vendorId } returns vendorId
+            io.mockk.every { this@mockk.productId } returns productId
+            io.mockk.every { this@mockk.descriptor } returns descriptor
+        }
+
+    private val swappedFaceButtons = mapOf<InputSource, Int>(
+        InputSource.Button(KeyEvent.KEYCODE_BUTTON_A) to RetroButton.B,
+        InputSource.Button(KeyEvent.KEYCODE_BUTTON_B) to RetroButton.A
+    )
+
+    @Test
+    fun `a second node of the same controller model uses the loaded mapping`() {
+        val mapper = ControllerInputMapper()
+        mapper.setExtendedMappings(mapOf("1234:5678:gamepad-node" to swappedFaceButtons))
+
+        assertEquals(
+            KeyEvent.KEYCODE_BUTTON_B,
+            mapper.mapKey(device(1234, 5678, "key-node"), KeyEvent.KEYCODE_BUTTON_A)
+        )
+    }
+
+    @Test
+    fun `a different controller model keeps its own keys`() {
+        val mapper = ControllerInputMapper()
+        mapper.setExtendedMappings(mapOf("1234:5678:gamepad-node" to swappedFaceButtons))
+
+        assertEquals(
+            KeyEvent.KEYCODE_BUTTON_A,
+            mapper.mapKey(device(1111, 2222, "other-pad"), KeyEvent.KEYCODE_BUTTON_A)
+        )
+    }
+
+    @Test
+    fun `a device with no vendor or product never borrows a mapping`() {
+        val mapper = ControllerInputMapper()
+        mapper.setExtendedMappings(mapOf("0:0:virtual" to swappedFaceButtons))
+
+        assertEquals(
+            KeyEvent.KEYCODE_BUTTON_A,
+            mapper.mapKey(device(0, 0, "another-virtual"), KeyEvent.KEYCODE_BUTTON_A)
+        )
+    }
+
     @Test
     fun `mapped button resolves to its retro button`() {
         assertEquals(

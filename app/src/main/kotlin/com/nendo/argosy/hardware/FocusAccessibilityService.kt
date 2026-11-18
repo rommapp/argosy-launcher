@@ -20,6 +20,7 @@ import com.nendo.argosy.ArgosyActivity
 import com.nendo.argosy.ArgosyHomeIntent
 import com.nendo.argosy.DualScreenManagerHolder
 import com.nendo.argosy.core.input.HomeKeys
+import com.nendo.argosy.core.input.forDevice
 import com.nendo.argosy.data.emulator.EmulatorRegistry
 import com.nendo.argosy.data.emulator.PlaySessionTracker
 import com.nendo.argosy.data.emulator.background.BackgroundGames
@@ -58,7 +59,7 @@ class FocusAccessibilityService : AccessibilityService() {
     private val handler = Handler(Looper.getMainLooper())
     @Volatile private var quickPanelEnabled = false
     @Volatile private var homeButtonInGames = true
-    @Volatile private var systemHotkeys = SystemHotkeyConfig.DISABLED
+    @Volatile private var systemHotkeysFor: (Int) -> SystemHotkeyConfig = { SystemHotkeyConfig.DISABLED }
     private var homeRoutedToGame = false
     private var homeClosedResume = false
     private var homeTakenFromGame = false
@@ -92,7 +93,7 @@ class FocusAccessibilityService : AccessibilityService() {
             onHold = { quickPanelOverlay.show(gameDisplayId(), resultOwner = null) }
         ),
         hotkeys = SystemHotkeyDetector(
-            config = { systemHotkeys },
+            config = { deviceId -> systemHotkeysFor(deviceId) },
             foreignAppInFront = {
                 foreground.otherAppInFront && !quickPanelOverlay.isOpen.value && !resumeOverlay.isOpen.value
             },
@@ -140,16 +141,21 @@ class FocusAccessibilityService : AccessibilityService() {
         scope.launch {
             preferencesRepository.userPreferences
                 .map { prefs ->
-                    SystemHotkeyConfig.resolve(
-                        enabled = prefs.systemHotkeysEnabled,
-                        customHome = prefs.systemHomeCombo,
-                        customBack = prefs.systemBackCombo,
-                        swapAB = prefs.swapAB,
-                        swapStartSelect = prefs.swapStartSelect
-                    )
+                    Triple(prefs.systemHotkeysEnabled, prefs.systemHomeCombo to prefs.systemBackCombo, prefs.controllerProfiles)
                 }
                 .distinctUntilChanged()
-                .collect { systemHotkeys = it }
+                .collect { (enabled, combos, profiles) ->
+                    systemHotkeysFor = { deviceId ->
+                        val profile = profiles.forDevice(deviceId)
+                        SystemHotkeyConfig.resolve(
+                            enabled = enabled,
+                            customHome = combos.first,
+                            customBack = combos.second,
+                            swapAB = profile.swapAB,
+                            swapStartSelect = profile.swapStartSelect
+                        )
+                    }
+                }
         }
         Logger.info(TAG, "Accessibility service connected in $packageName")
     }
@@ -166,45 +172,13 @@ class FocusAccessibilityService : AccessibilityService() {
 
     override fun onKeyEvent(event: KeyEvent): Boolean {
         val systemHome = HomeKeys.isSystemHome(event)
-        if (event.action == KeyEvent.ACTION_DOWN && event.repeatCount == 0 &&
-            (systemHome || event.keyCode == KeyEvent.KEYCODE_BACK)
-        ) {
-            Logger.info(TAG, "gates ${gateSnapshot()}")
+        return when {
+            systemHome && closesResumeOverlay(event) -> true
+            systemHome && routesHomeToGame(event) -> true
+            systemHome && takesHomeFromExternalGame(event) -> true
+            systemHome && takesHomeFromArgosy(event) -> true
+            else -> keyFilter.onKey(event.keyCode, event.action, event.repeatCount, event.deviceId)
         }
-        val consumedBy = when {
-            systemHome && closesResumeOverlay(event) -> "resumeOverlay"
-            systemHome && routesHomeToGame(event) -> "builtInGame"
-            systemHome && takesHomeFromExternalGame(event) -> "externalGame"
-            systemHome && takesHomeFromArgosy(event) -> "argosy"
-            keyFilter.onKey(event.keyCode, event.action, event.repeatCount) -> "keyFilter"
-            else -> null
-        }
-        if (event.repeatCount == 0 && logsKey(event, systemHome, consumedBy)) {
-            Logger.info(
-                TAG,
-                "key ${KeyEvent.keyCodeToString(event.keyCode)} " +
-                    "${if (event.action == KeyEvent.ACTION_DOWN) "down" else "up"} " +
-                    "scanCode=${event.scanCode} device=${event.device?.name} " +
-                    "systemHome=$systemHome consumedBy=${consumedBy ?: "none"}"
-            )
-        }
-        return consumedBy != null
-    }
-
-    private fun logsKey(event: KeyEvent, systemHome: Boolean, consumedBy: String?): Boolean =
-        systemHome || consumedBy != null || event.keyCode == KeyEvent.KEYCODE_BACK ||
-            KeyEvent.isGamepadButton(event.keyCode)
-
-    private fun gateSnapshot(): String {
-        val session = playSessionTracker.activeSession.value
-        return "package=$packageName root=${RootShell.isAvailable} " +
-            "defaultHome=${SecondaryHomeComponent.isDefaultHome(this)} " +
-            "otherAppInFront=${foreground.otherAppInFront} foreground=${foreground.foregroundPackage} " +
-            "session=${session?.emulatorPackage} sessionInFront=${externalSessionInFront()} " +
-            "gameDisplay=${gameDisplayId()} " +
-            "keyguard=${getSystemService(KeyguardManager::class.java)?.isKeyguardLocked} " +
-            "quickPanelInEmulators=$quickPanelEnabled homeButtonInGames=$homeButtonInGames quickPanelOpen=${quickPanelOverlay.isOpen.value} " +
-            "resumeOpen=${resumeOverlay.isOpen.value} systemHotkeys=$systemHotkeys"
     }
 
     private fun takesHomeFromExternalGame(event: KeyEvent): Boolean = when (event.action) {

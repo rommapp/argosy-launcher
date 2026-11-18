@@ -459,6 +459,8 @@
     <string name="settings_navigation_swap_start_select_title">Trocar Start/Select</string>
     <!-- Second line of that row. -->
     <string name="settings_navigation_swap_start_select_subtitle">Inverter as funções dos botões Start e Select</string>
+    <string name="settings_navigation_forget_controller_title">Esquecer este controle</string>
+    <string name="settings_navigation_forget_controller_subtitle">Voltar este controle ao layout e às inversões de botões padrão</string>
     <!-- Row title. Switch: while a game runs, the touchpad on a PlayStation-style controller does
          not act as a mouse on the launcher. -->
     <string name="settings_navigation_ignore_controller_touchpad_title">Ignorar Touchpad nos Jogos</string>
@@ -1376,6 +1378,9 @@
     <!-- Second line of that row. "Rooted" describes a device whose owner has full system access.
           "RAM" is the device's working memory. -->
     <string name="settings_about_systemize_subtitle">O Argosy pode ser forçado a fechar quando um emulador exigente usa a maior parte da RAM. Isso torna o Argosy um app do sistema para que não seja mais encerrado. Precisa de root.</string>
+    <string name="settings_about_unsystemize_title">Remover dos apps do sistema</string>
+    <string name="settings_about_unsystemize_subtitle">Torna o Argosy um app comum de novo para que possa ser desinstalado. Seus jogos, saves e configurações ficam. Precisa de root e de uma reinicialização.</string>
+    <string name="settings_about_system_image_subtitle">O Android deste dispositivo já inclui o Argosy como app do sistema, então ele continua rodando com emuladores exigentes.</string>
     <!-- Row that closes and reopens the app. Verb. -->
     <string name="settings_about_restart_title">Reiniciar o Argosy</string>
     <!-- Second line of that row. -->
@@ -3790,7 +3795,7 @@
     <string name="settings_systemize_dialog_detected_device">Dispositivo detectado: %1$s</string>
     <string name="settings_systemize_dialog_next_steps_heading">Próximos passos</string>
     <string name="settings_systemize_dialog_step_format">%1$d. %2$s</string>
-    <string name="settings_systemize_dialog_success_footnote">Necessita de um dispositivo com root. A alteração é reversível: remova o módulo Magisk chamado &quot;Argosy Systemize&quot; e reinicie. Se o texto do menu for diferente, o arquivo do script ainda está correto; basta apontar a opção de executar como root para ele.</string>
+    <string name="settings_systemize_dialog_success_footnote">Necessita de um dispositivo com root. Para desfazer depois, use Remover dos apps do sistema nesta página; seus dados ficam. Se o texto do menu for diferente, o arquivo do script ainda está correto; basta apontar a opção de executar como root para ele.</string>
     <string name="settings_systemize_dialog_error_title">Não foi possível salvar o script</string>
     <string name="settings_systemize_dialog_error_hint">O acesso ao armazenamento pode estar indisponível. Conceda acesso a todos os arquivos nas configurações e tente novamente.</string>
     <string name="settings_root_script_write_failed">Não foi possível gravar o script</string>
@@ -3982,6 +3987,12 @@
     <string name="settings_root_script_dialog_output_heading">Saída do script</string>
     <string name="settings_root_script_dialog_reboot_hint">Reinicie para finalizar e defina o Argosy como seu launcher padrão.</string>
     <string name="settings_root_script_dialog_reboot_button">Reiniciar agora</string>
+    <string name="settings_root_script_dialog_unsystemize_reboot_hint">Reinicie para concluir. Depois disso, o Argosy funcionará como um app comum.</string>
+    <string name="settings_root_script_backup_title">Remover dos apps do sistema?</string>
+    <string name="settings_root_script_backup_body">Se a mudança para app comum falhar, você pode perder as imagens em cache e os saves não sincronizados.</string>
+    <string name="settings_root_script_backup_cancel_button">Cancelar</string>
+    <string name="settings_root_script_backup_export_note">Suas configurações foram salvas em backup em %1$s.</string>
+    <string name="settings_root_script_backup_continue_button">Continuar</string>
     <string name="settings_root_script_step_open_generic">Abra a configuração de \"executar script como root\" do seu dispositivo</string>
     <string name="settings_root_script_step_select">Selecione \"%1$s\" no armazenamento interno</string>
     <string name="settings_root_script_step_run_reboot">Execute-o e reinicie quando terminar</string>

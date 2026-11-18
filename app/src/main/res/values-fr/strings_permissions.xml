@@ -53,5 +53,7 @@
     <string name="notif_permissions_revoked_body_notifications">Android peut fermer Argosy pendant le jeu.</string>
     <string name="notif_permissions_revoked_body_overlay">Les avis et le panneau rapide n\'apparaissent que lorsque Argosy est à l\'écran.</string>
     <string name="notif_permissions_revoked_body_accessibility">Accueil et les combinaisons de boutons ne fonctionnent plus lorsqu\'une autre appli est ouverte.</string>
+    <string name="notif_accessibility_unbound_title">Le service d\'accessibilité d\'Argosy ne fonctionne pas</string>
+    <string name="notif_accessibility_unbound_body">Désactivez puis réactivez Argosy dans les paramètres d\'accessibilité pour retrouver Accueil, l\'appui long sur Retour et les combinaisons de boutons.</string>
     <string name="notif_permissions_revoked_body_battery">Android peut suspendre les téléchargements et fermer Argosy lors de longues sessions.</string>
 </resources>

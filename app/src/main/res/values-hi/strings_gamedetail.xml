@@ -96,6 +96,7 @@
 
     <string name="gamedetail_section_description_heading">विवरण</string>
     <string name="gamedetail_section_screenshots_heading">स्क्रीनशॉट</string>
+    <string name="gamedetail_section_screenshots_video_label">गेमप्ले वीडियो</string>
     <string name="gamedetail_section_related_heading">संबंधित गेम</string>
     <string name="gamedetail_section_reviews_heading">समीक्षाएं</string>
     <string name="gamedetail_section_achievements_heading">अचीवमेंट्स</string>
@@ -163,6 +164,8 @@
     <string name="gamedetail_screenshot_viewer_footer_navigate">नेविगेट</string>
     <string name="gamedetail_screenshot_viewer_footer_close">बंद करें</string>
     <string name="gamedetail_screenshot_viewer_footer_set_background">बैकग्राउंड सेट करें</string>
+    <string name="gamedetail_screenshot_viewer_footer_play">चलाएं</string>
+    <string name="gamedetail_screenshot_viewer_footer_pause">रोकें</string>
 
     <!-- ================================ Option rows =================================== -->
 

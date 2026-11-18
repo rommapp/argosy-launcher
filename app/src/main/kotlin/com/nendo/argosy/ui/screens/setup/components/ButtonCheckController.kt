@@ -2,7 +2,7 @@ package com.nendo.argosy.ui.screens.setup.components
 
 import android.view.KeyEvent
 import com.nendo.argosy.core.input.SoundType
-import com.nendo.argosy.data.preferences.UserPreferencesRepository
+import com.nendo.argosy.data.preferences.ActiveControllerProfiles
 import com.nendo.argosy.ui.components.InputButton
 import com.nendo.argosy.ui.input.GamepadEvent
 import com.nendo.argosy.ui.input.HapticPattern
@@ -148,7 +148,7 @@ private val BOUNDARY = InputResult(
 private val SILENT = InputResult.handled(SoundType.SILENT)
 
 class ButtonCheckController(
-    private val preferences: UserPreferencesRepository,
+    private val profiles: ActiveControllerProfiles,
     private val scope: CoroutineScope,
     showsBack: Boolean = true
 ) {
@@ -161,9 +161,10 @@ class ButtonCheckController(
 
     init {
         scope.launch {
-            preferences.userPreferences.collect { prefs ->
+            profiles.active.collect { active ->
+                val profile = active.profile
                 _state.update {
-                    it.copy(swapAB = prefs.swapAB, swapXY = prefs.swapXY, swapStartSelect = prefs.swapStartSelect)
+                    it.copy(swapAB = profile.swapAB, swapXY = profile.swapXY, swapStartSelect = profile.swapStartSelect)
                 }
             }
         }
@@ -339,9 +340,9 @@ class ButtonCheckController(
         }
         scope.launch {
             when (toggle) {
-                ButtonCheckFocus.SWAP_AB -> preferences.setSwapAB(on)
-                ButtonCheckFocus.SWAP_XY -> preferences.setSwapXY(on)
-                ButtonCheckFocus.SWAP_START_SELECT -> preferences.setSwapStartSelect(on)
+                ButtonCheckFocus.SWAP_AB -> profiles.setSwapAB(on)
+                ButtonCheckFocus.SWAP_XY -> profiles.setSwapXY(on)
+                ButtonCheckFocus.SWAP_START_SELECT -> profiles.setSwapStartSelect(on)
                 else -> Unit
             }
         }

@@ -211,7 +211,8 @@ class ArgosyViewModel @Inject constructor(
     val permissionSheets: com.nendo.argosy.data.permissions.PermissionSheetController,
     private val powerActions: com.nendo.argosy.hardware.PowerActions,
     private val syncQueueManager: com.nendo.argosy.data.sync.SyncQueueManager,
-    private val activityHistory: com.nendo.argosy.core.notification.ActivityHistory
+    private val activityHistory: com.nendo.argosy.core.notification.ActivityHistory,
+    private val activeControllerProfiles: com.nendo.argosy.data.preferences.ActiveControllerProfiles
 ) : ViewModel() {
 
     val runningGamesUi: StateFlow<com.nendo.argosy.ui.common.RunningGamesUi> = runningGames.state
@@ -338,12 +339,12 @@ class ArgosyViewModel @Inject constructor(
 
     val uiState: StateFlow<ArgosyUiState> = combine(
         preferencesRepository.userPreferences,
-        connectedControllerTracker.activeLayout,
+        connectedControllerTracker.activePad,
         launcherStartup.complete,
         launcherStartup.status,
         setupStateRepository.needsSetup
-    ) { prefs, detectedLayout, startupDone, status, needsSetup ->
-        val glyphSwaps = prefs.buttonGlyphSwaps(detectedLayout)
+    ) { prefs, activePad, startupDone, status, needsSetup ->
+        val glyphSwaps = prefs.buttonGlyphSwaps(activePad)
         ArgosyUiState(
             setupIncomplete = needsSetup,
             isLoading = !startupDone,
@@ -370,6 +371,7 @@ class ArgosyViewModel @Inject constructor(
 
     val quickSettings = QuickSettingsController(
         preferencesRepository = preferencesRepository,
+        activeControllerProfiles = activeControllerProfiles,
         brightnessController = brightnessController,
         volumeController = volumeController,
         performanceResolver = performanceResolver,

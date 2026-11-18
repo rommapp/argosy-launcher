@@ -224,12 +224,16 @@ class ArgosyApp : Application(), Configuration.Provider, ImageLoaderFactory {
     @Inject
     lateinit var permissionWatch: com.nendo.argosy.data.permissions.PermissionWatch
 
+    @Inject
+    lateinit var accessibilityRebind: com.nendo.argosy.hardware.AccessibilityRebind
+
     private val lastForegroundSteamRefreshAt = AtomicLong(NEVER_REFRESHED)
 
     private val foregroundObserver = object : androidx.lifecycle.DefaultLifecycleObserver {
         override fun onStart(owner: androidx.lifecycle.LifecycleOwner) {
             appScope.launch { quayPassCredentialManager.refreshIfNeeded() }
             appScope.launch { refreshSteamInstallationsIfStale(SystemClock.elapsedRealtime()) }
+            appScope.launch { accessibilityRebind.recoverIfUnbound() }
         }
     }
 

@@ -16,9 +16,9 @@ import com.nendo.argosy.data.diagnostics.DiagnosticsExportResult
 import com.nendo.argosy.data.diagnostics.DiagnosticsExporter
 import com.nendo.argosy.data.diagnostics.DisplayDiagnostics
 import com.nendo.argosy.data.model.DisplaySnapshot
+import com.nendo.argosy.data.preferences.ActiveControllerProfiles
 import com.nendo.argosy.data.preferences.AppPreferencesRepository
 import com.nendo.argosy.data.preferences.SyncPreferencesRepository
-import com.nendo.argosy.data.preferences.UserPreferencesRepository
 import com.nendo.argosy.data.remote.github.UpdateState
 import com.nendo.argosy.data.repository.InputConfigRepository
 import com.nendo.argosy.data.update.AppUpdateManager
@@ -73,7 +73,7 @@ data class AboutToolsState(
  * open tool holds the input stack through its own handler.
  */
 class AboutToolsDelegate @Inject constructor(
-    private val preferencesRepository: UserPreferencesRepository,
+    private val activeControllerProfiles: ActiveControllerProfiles,
     private val inputConfigRepository: InputConfigRepository,
     private val controllerTracker: ConnectedControllerTracker,
     private val appUpdateManager: AppUpdateManager,
@@ -96,7 +96,7 @@ class AboutToolsDelegate @Inject constructor(
 
     fun bind(scope: CoroutineScope) {
         this.scope = scope
-        buttonCheck = ButtonCheckController(preferencesRepository, scope, showsBack = false)
+        buttonCheck = ButtonCheckController(activeControllerProfiles, scope, showsBack = false)
         scope.launch {
             buttonCheck.state.collect { check ->
                 if (_state.value.controllerTestOpen && !check.capturesKeys) closeControllerTest()

@@ -53,5 +53,7 @@
     <string name="notif_permissions_revoked_body_notifications">Android 可能會在遊玩時關閉 Argosy。</string>
     <string name="notif_permissions_revoked_body_overlay">提示和快速面板只會在 Argosy 顯示時出現。</string>
     <string name="notif_permissions_revoked_body_accessibility">開啟其他應用程式時，主畫面鍵和組合鍵將無法使用。</string>
+    <string name="notif_accessibility_unbound_title">Argosy 的無障礙服務未在執行</string>
+    <string name="notif_accessibility_unbound_body">在無障礙設定中關閉再開啟 Argosy，即可恢復主畫面鍵、長按返回鍵和組合鍵。</string>
     <string name="notif_permissions_revoked_body_battery">長時間遊玩時，Android 可能會暫停下載並關閉 Argosy。</string>
 </resources>

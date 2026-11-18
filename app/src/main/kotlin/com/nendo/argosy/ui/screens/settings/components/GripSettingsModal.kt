@@ -69,7 +69,7 @@ fun GripSettingsModal(
                 if (event.action == KeyEvent.ACTION_DOWN) {
                     val visible = currentRows.value
                     val row = visible.getOrNull(focusedIndex)
-                    when (gamepadInputHandler?.mapKeyToEvent(event.keyCode)) {
+                    when (gamepadInputHandler?.mapKeyToEvent(event.keyCode, event.deviceId)) {
                         GamepadEvent.Back -> currentOnDismiss.value()
                         GamepadEvent.Up ->
                             focusedIndex = (focusedIndex - 1).coerceAtLeast(0)

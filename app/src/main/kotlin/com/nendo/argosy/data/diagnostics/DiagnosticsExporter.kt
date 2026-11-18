@@ -9,6 +9,7 @@ import com.nendo.argosy.BuildConfig
 import com.nendo.argosy.data.emulator.EmulatorDetector
 import com.nendo.argosy.data.model.DisplaySnapshot
 import com.nendo.argosy.data.preferences.AppPreferencesRepository
+import com.nendo.argosy.data.preferences.ControlsPreferencesRepository
 import com.nendo.argosy.data.repository.InputConfigRepository
 import com.nendo.argosy.data.storage.FileAccessLayer
 import com.nendo.argosy.data.storage.FileInfo
@@ -44,7 +45,8 @@ class DiagnosticsExporter @Inject constructor(
     private val appPreferences: AppPreferencesRepository,
     private val fileAccessLayer: FileAccessLayer,
     private val emulatorDetector: EmulatorDetector,
-    private val inputConfigRepository: InputConfigRepository
+    private val inputConfigRepository: InputConfigRepository,
+    private val controlsPreferences: ControlsPreferencesRepository
 ) {
 
     suspend fun export(displays: List<DisplaySnapshot>): DiagnosticsExportResult = withContext(Dispatchers.IO) {
@@ -119,14 +121,26 @@ class DiagnosticsExporter @Inject constructor(
         )
     }
 
-    private suspend fun controllersText(secrets: Set<String>): String =
-        inputConfigRepository.getConnectedControllers().joinToString(BLOCK_SEPARATOR) { pad ->
+    private suspend fun controllersText(secrets: Set<String>): String {
+        val profiles = controlsPreferences.preferences.first().controllerProfiles
+        return inputConfigRepository.getConnectedControllers().joinToString(BLOCK_SEPARATOR) { pad ->
+            val savedKey = profiles.savedKeyFor(pad.controllerId)
+            val profile = profiles.forController(pad.controllerId)
             lines(
                 "device_id" to pad.deviceId,
                 "name" to DiagnosticsRedactor.redactText(pad.name, secrets),
                 "vendor_id" to hex(pad.vendorId),
                 "product_id" to hex(pad.productId),
-                "layout" to pad.detectedLayout?.name
+                "layout" to pad.detectedLayout?.name,
+                "profile" to when (savedKey) {
+                    null -> PROFILE_DEFAULTS
+                    pad.controllerId -> PROFILE_SAVED
+                    else -> PROFILE_SAME_MODEL
+                },
+                "profile_layout" to profile.controllerLayout,
+                "profile_swap_ab" to profile.swapAB,
+                "profile_swap_xy" to profile.swapXY,
+                "profile_swap_start_select" to profile.swapStartSelect
             )
         }.let { text ->
             val seats = inputConfigRepository.getControllerOrder()
@@ -135,6 +149,7 @@ class DiagnosticsExporter @Inject constructor(
                 }
             listOf(text, seats).filter { it.isNotBlank() }.joinToString(BLOCK_SEPARATOR)
         }
+    }
 
     private suspend fun emulatorsText(): String =
         emulatorDetector.detectEmulators().joinToString(LINE_SEPARATOR) { emulator ->
@@ -225,6 +240,9 @@ class DiagnosticsExporter @Inject constructor(
         const val ENTRY_CONTROLLERS = "controllers.txt"
         const val ENTRY_EMULATORS = "emulators.txt"
         const val ENTRY_SETTINGS = "settings.txt"
+        const val PROFILE_DEFAULTS = "defaults"
+        const val PROFILE_SAVED = "saved"
+        const val PROFILE_SAME_MODEL = "same_model"
         val TIMESTAMP: DateTimeFormatter = DateTimeFormatter.ofPattern("yyyyMMdd-HHmmss")
     }
 }

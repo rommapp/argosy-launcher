@@ -490,6 +490,12 @@
     <string name="settings_navigation_swap_start_select_title">Swap Start/Select</string>
     <!-- Second line of that row. -->
     <string name="settings_navigation_swap_start_select_subtitle">Flip the Start and Select button functions</string>
+    <!-- Row title. Action: delete the layout and button swaps saved for the controller in use, so it
+         reads like any controller without saved settings again. "Forget" as in a phone forgetting a
+         paired device. -->
+    <string name="settings_navigation_forget_controller_title">Forget This Controller</string>
+    <!-- Second line of that row. -->
+    <string name="settings_navigation_forget_controller_subtitle">Return this controller to the default layout and button swaps</string>
     <!-- Row title. Switch: while a game runs, the touchpad on a PlayStation-style controller does
          not act as a mouse on the launcher. -->
     <string name="settings_navigation_ignore_controller_touchpad_title">Ignore Touchpad In Games</string>
@@ -1422,6 +1428,9 @@
     <!-- Second line of that row. "Rooted" describes a device whose owner has full system access.
          "RAM" is the device's working memory. -->
     <string name="settings_about_systemize_subtitle">Argosy can be force-closed when a demanding emulator uses most of the RAM. This makes Argosy a system app so it is no longer killed. Needs root.</string>
+    <string name="settings_about_unsystemize_title">Remove From System Apps</string>
+    <string name="settings_about_unsystemize_subtitle">Makes Argosy an ordinary app again so it can be uninstalled. Your games, saves and settings stay. Needs root and a reboot.</string>
+    <string name="settings_about_system_image_subtitle">This device\'s Android build includes Argosy as a system app, so it already keeps running under heavy emulators.</string>
     <!-- Row that closes and reopens the app. Verb. -->
     <string name="settings_about_restart_title">Restart Argosy</string>
     <!-- Second line of that row. -->
@@ -4791,7 +4800,7 @@
     <string name="settings_systemize_dialog_step_format">%1$d. %2$s</string>
     <!-- Closing note on the success screen. "Argosy Systemize" is the literal Magisk module
          name and must stay exactly as written, including the quote marks. -->
-    <string name="settings_systemize_dialog_success_footnote">Needs a rooted device. The change is reversible: remove the Magisk module named \"Argosy Systemize\" and reboot. If your menu wording differs, the script file is still correct - just point your run-as-root option at it.</string>
+    <string name="settings_systemize_dialog_success_footnote">Needs a rooted device. To undo it later, use Remove From System Apps on this page, which keeps your data. If your menu wording differs, the script file is still correct - just point your run-as-root option at it.</string>
     <!-- Error title: the script file could not be written. -->
     <string name="settings_systemize_dialog_error_title">Couldn\'t Save Script</string>
     <!-- Suggested fix shown under the error detail. -->
@@ -4820,6 +4829,17 @@
     <string name="settings_root_script_dialog_reboot_hint">Reboot to finish, then set Argosy as your default launcher.</string>
     <!-- Button label. Restarts the device now. -->
     <string name="settings_root_script_dialog_reboot_button">Reboot Now</string>
+    <!-- Note under a successful Remove From System Apps run that still needs a restart. -->
+    <string name="settings_root_script_dialog_unsystemize_reboot_hint">Reboot to finish. Argosy then runs as an ordinary app.</string>
+    <!-- Title of the prompt shown before Remove From System Apps runs. -->
+    <string name="settings_root_script_backup_title">Remove From System Apps?</string>
+    <string name="settings_root_script_backup_body">If the move to an ordinary app fails, you may lose cached art and any saves that haven\'t synced.</string>
+    <!-- Button label. Closes the prompt without running anything. -->
+    <string name="settings_root_script_backup_cancel_button">Cancel</string>
+    <!-- %1$s is the path of the settings backup file Argosy just wrote. -->
+    <string name="settings_root_script_backup_export_note">Your settings were backed up to %1$s.</string>
+    <!-- Button label. Starts the removal. -->
+    <string name="settings_root_script_backup_continue_button">Continue</string>
     <!-- Manual setup steps when the script has to be run by hand. Menu paths are the device
          vendor's own wording; keep the ">" separators. -->
     <string name="settings_root_script_step_open_retroid">Open Settings > Advanced > Run script as Root</string>

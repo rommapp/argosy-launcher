@@ -95,8 +95,10 @@ import com.nendo.argosy.ui.input.LocalSwapStartSelect
 import com.nendo.argosy.ui.input.LocalXYIconsSwapped
 import com.nendo.argosy.ui.input.SoundFeedbackManager
 import com.nendo.argosy.ui.input.buttonGlyphSwaps
-import com.nendo.argosy.ui.input.mapKeycodeToGamepadEvent
+import com.nendo.argosy.ui.input.gamepadEventFor
 import com.nendo.argosy.ui.input.GamepadEvent
+import com.nendo.argosy.core.input.forDevice
+import com.nendo.argosy.data.preferences.ActiveControllerProfiles
 import com.nendo.argosy.ui.theme.ALauncherTheme
 import com.nendo.argosy.ui.theme.ThemeViewModel
 import com.nendo.argosy.util.hideWindowSystemBars
@@ -158,7 +160,8 @@ class QuickPanelOverlay @Inject constructor(
     private val powerActions: PowerActions,
     private val downloadManager: DownloadManager,
     private val syncQueueManager: SyncQueueManager,
-    private val activityHistory: ActivityHistory
+    private val activityHistory: ActivityHistory,
+    private val activeControllerProfiles: ActiveControllerProfiles
 ) {
     private val _isOpen = MutableStateFlow(false)
     val isOpen: StateFlow<Boolean> = _isOpen.asStateFlow()
@@ -234,6 +237,7 @@ class QuickPanelOverlay @Inject constructor(
         private val connections = QuickConnectionsController(radioController, scope)
         private val settings = QuickSettingsController(
             preferencesRepository = preferencesRepository,
+            activeControllerProfiles = activeControllerProfiles,
             brightnessController = brightnessController,
             volumeController = volumeController,
             performanceResolver = performanceResolver,
@@ -334,8 +338,8 @@ class QuickPanelOverlay @Inject constructor(
         @Composable
         private fun PanelContent() {
             val preferences by prefs.collectAsState()
-            val activeLayout by controllerTracker.activeLayout.collectAsState()
-            val swaps = remember(preferences, activeLayout) { preferences.buttonGlyphSwaps(activeLayout) }
+            val activePad by controllerTracker.activePad.collectAsState()
+            val swaps = remember(preferences, activePad) { preferences.buttonGlyphSwaps(activePad) }
             val state by settings.state.collectAsState()
             val page by settings.page.collectAsState()
             val focusIndex by settings.focusIndex.collectAsState()
@@ -434,13 +438,9 @@ class QuickPanelOverlay @Inject constructor(
 
             override fun dispatchKeyEvent(event: KeyEvent): Boolean {
                 if (event.action != KeyEvent.ACTION_DOWN || exiting || !shown.value) return true
-                val swaps = prefs.value
-                val gamepadEvent = mapKeycodeToGamepadEvent(
-                    event.keyCode,
-                    swaps.swapAB,
-                    swaps.swapXY,
-                    swaps.swapStartSelect
-                ) ?: return super.dispatchKeyEvent(event)
+                val gamepadEvent = prefs.value.controllerProfiles.forDevice(event.deviceId)
+                    .gamepadEventFor(event.keyCode)
+                    ?: return super.dispatchKeyEvent(event)
                 if (gamepadEvent == GamepadEvent.Back && event.repeatCount > 0) return true
                 dispatcher.dispatch(GamepadInput(gamepadEvent, isRepeat = event.repeatCount > 0))
                 return true

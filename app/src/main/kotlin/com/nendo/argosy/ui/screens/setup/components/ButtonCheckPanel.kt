@@ -97,7 +97,7 @@ fun ButtonCheckKeyCapture(
     DisposableEffect(interceptor, controller, state.capturesKeys) {
         if (!state.capturesKeys || interceptor == null) return@DisposableEffect onDispose {}
         interceptor.setRawKeyEventFilter { event ->
-            val button = checkedPadButton(event.keyCode, interceptor::mapKeyToEvent)
+            val button = checkedPadButton(event.keyCode) { keyCode -> interceptor.mapKeyToEvent(keyCode, event.deviceId) }
             if (button != null && event.action == KeyEvent.ACTION_DOWN && controller.state.value.testing) {
                 currentOnPadDevice?.invoke(event.deviceId)
             }

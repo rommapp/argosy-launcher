@@ -688,15 +688,17 @@ internal fun routeLoadSettings(vm: SettingsViewModel) {
             DetectedLayout.NINTENDO -> "Nintendo"
             null -> null
         }
+        val activeController = vm.controlsDelegate.activeControllerProfile(prefs)
         vm.controlsDelegate.updateState(ControlsState(
             hapticEnabled = prefs.hapticEnabled,
             vibrationStrength = prefs.hapticStrength,
-            controllerLayout = prefs.controllerLayout,
+            controllerLayout = activeController.profile.controllerLayout,
             detectedLayout = detectedLayoutName,
             detectedDeviceName = detectionResult.deviceName,
-            swapAB = prefs.swapAB,
-            swapXY = prefs.swapXY,
-            swapStartSelect = prefs.swapStartSelect,
+            swapAB = activeController.profile.swapAB,
+            swapXY = activeController.profile.swapXY,
+            swapStartSelect = activeController.profile.swapStartSelect,
+            controllerProfileSaved = activeController.saved,
             selectLCombo = prefs.selectLCombo,
             selectRCombo = prefs.selectRCombo,
             hasSecondaryDisplay = vm.displayAffinityHelper.hasSecondaryDisplay,

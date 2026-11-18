@@ -2,6 +2,7 @@ package com.nendo.argosy.ui.screens.setup
 
 import com.nendo.argosy.core.input.ConnectedControllerTracker
 import com.nendo.argosy.core.input.ControllerDetector
+import com.nendo.argosy.data.preferences.ActiveControllerProfiles
 import com.nendo.argosy.data.preferences.BoxArtShape
 import com.nendo.argosy.data.preferences.LibraryLayout
 import com.nendo.argosy.data.preferences.ThemeMode
@@ -14,6 +15,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.update
@@ -34,7 +36,8 @@ data class SetupPersonalizeState(
  */
 class SetupPersonalizeDelegate @Inject constructor(
     private val preferencesRepository: UserPreferencesRepository,
-    private val controllerTracker: ConnectedControllerTracker
+    private val controllerTracker: ConnectedControllerTracker,
+    private val activeControllerProfiles: ActiveControllerProfiles
 ) {
     private val _state = MutableStateFlow(SetupPersonalizeState())
     val state: StateFlow<SetupPersonalizeState> = _state.asStateFlow()
@@ -47,7 +50,7 @@ class SetupPersonalizeDelegate @Inject constructor(
 
     fun bind(scope: CoroutineScope) {
         this.scope = scope
-        buttonCheck = ButtonCheckController(preferencesRepository, scope)
+        buttonCheck = ButtonCheckController(activeControllerProfiles, scope)
         scope.launch {
             controllerTracker.controllers.map { it.isNotEmpty() }.distinctUntilChanged().collect { connected ->
                 _state.update { it.copy(gamepadConnected = connected) }
@@ -57,11 +60,16 @@ class SetupPersonalizeDelegate @Inject constructor(
             buttonCheck.state.collect { check -> _state.update { it.copy(buttonCheck = check) } }
         }
         scope.launch {
+            combine(activeControllerProfiles.active, controllerTracker.activePad) { active, pad ->
+                ControllerDetector.isNintendoLayout(active.profile.controllerLayout, pad.layout)
+            }.distinctUntilChanged().collect { nintendo ->
+                _state.update { it.copy(controllerNintendo = nintendo) }
+            }
+        }
+        scope.launch {
             preferencesRepository.userPreferences.collect { prefs ->
-                val nintendo = ControllerDetector.isNintendoLayout(prefs.controllerLayout, controllerTracker.activeLayout.value)
                 _state.update {
                     it.copy(
-                        controllerNintendo = nintendo,
                         look = SetupLookState(
                             themeMode = prefs.themeMode,
                             primaryColor = prefs.primaryColor,
@@ -79,7 +87,7 @@ class SetupPersonalizeDelegate @Inject constructor(
 
     fun selectLayout(nintendo: Boolean) {
         _state.update { it.copy(controllerNintendo = nintendo) }
-        scope.launch { preferencesRepository.setControllerLayout(if (nintendo) LAYOUT_NINTENDO else LAYOUT_XBOX) }
+        scope.launch { activeControllerProfiles.setControllerLayout(if (nintendo) LAYOUT_NINTENDO else LAYOUT_XBOX) }
     }
 
     fun setThemeMode(mode: ThemeMode) {

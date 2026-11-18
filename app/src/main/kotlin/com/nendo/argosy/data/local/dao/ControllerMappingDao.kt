@@ -25,6 +25,12 @@ interface ControllerMappingDao {
     @Query("SELECT * FROM controller_mappings WHERE vendorId = :vendorId AND productId = :productId AND platformId IS NULL LIMIT 1")
     suspend fun getByVendorAndProduct(vendorId: Int, productId: Int): ControllerMappingEntity?
 
+    @Query("SELECT * FROM controller_mappings WHERE vendorId = :vendorId AND productId = :productId AND platformId = :platformId AND isAutoDetected = 0 ORDER BY updatedAt DESC LIMIT 1")
+    suspend fun getUserMappingByVendorAndProduct(vendorId: Int, productId: Int, platformId: String): ControllerMappingEntity?
+
+    @Query("SELECT * FROM controller_mappings WHERE vendorId = :vendorId AND productId = :productId AND platformId IS NULL AND isAutoDetected = 0 ORDER BY updatedAt DESC LIMIT 1")
+    suspend fun getUserMappingByVendorAndProductGlobal(vendorId: Int, productId: Int): ControllerMappingEntity?
+
     @Upsert
     suspend fun upsert(mapping: ControllerMappingEntity)
 

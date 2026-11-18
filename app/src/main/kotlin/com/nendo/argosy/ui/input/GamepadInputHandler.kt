@@ -5,7 +5,10 @@ import android.view.InputEvent
 import android.view.KeyEvent
 import android.view.MotionEvent
 import com.nendo.argosy.core.input.ConnectedControllerTracker
+import com.nendo.argosy.core.input.ControllerProfile
+import com.nendo.argosy.core.input.ControllerProfiles
 import com.nendo.argosy.core.input.HomeKeys
+import com.nendo.argosy.core.input.forDevice
 import com.nendo.argosy.core.input.VirtualPad
 import com.nendo.argosy.data.preferences.UserPreferencesRepository
 import com.nendo.argosy.hardware.SystemHotkeyDetector
@@ -33,7 +36,12 @@ interface RawInputInterceptor {
      */
     fun setRawKeyEventFilter(filter: ((KeyEvent) -> Boolean)?)
     fun setRawMotionEventListener(listener: ((MotionEvent) -> Boolean)?)
-    fun mapKeyToEvent(keyCode: Int): GamepadEvent?
+
+    /**
+     * The event [keyCode] dispatches as when it comes from the input device [deviceId], read
+     * through that pad's button swaps.
+     */
+    fun mapKeyToEvent(keyCode: Int, deviceId: Int): GamepadEvent?
 }
 
 data class GamepadInput(
@@ -85,9 +93,8 @@ class GamepadInputHandler @Inject constructor(
     private val _shortcutEvents = Channel<UiShortcut>(Channel.BUFFERED)
     private val scope = SafeCoroutineScope(Dispatchers.Main.immediate, "GamepadInputHandler")
 
-    private var swapAB = false
-    private var swapXY = false
-    private var swapStartSelect = false
+    @Volatile
+    private var controllerProfiles = ControllerProfiles()
     private var openNavigationKey: Int? = null
     private var openQuickPanelKey: Int? = null
 
@@ -103,9 +110,7 @@ class GamepadInputHandler @Inject constructor(
     init {
         scope.launch {
             preferencesRepository.preferences.collect { prefs ->
-                swapAB = prefs.swapAB
-                swapXY = prefs.swapXY
-                swapStartSelect = prefs.swapStartSelect
+                controllerProfiles = prefs.controllerProfiles
                 selectModifier.comboMap = SelectModifier.comboMapFrom(prefs.selectLCombo, prefs.selectRCombo)
                 openNavigationKey = prefs.openNavigationKey.takeIf(UiShortcutKeys::isBindable)
                 openQuickPanelKey = prefs.openQuickPanelKey.takeIf(UiShortcutKeys::isBindable)
@@ -348,7 +353,7 @@ class GamepadInputHandler @Inject constructor(
         if (claimShortcutKey(event)) return true
         if (HomeKeys.isHome(event)) return handleHomeKey(event)
 
-        val gamepadEvent = mapKeyToEvent(event.keyCode) ?: return false
+        val gamepadEvent = mapKeyToEvent(event.keyCode, event.deviceId) ?: return false
 
         if (gamepadEvent == GamepadEvent.Back && handleBackPress(event)) return true
 
@@ -523,11 +528,16 @@ class GamepadInputHandler @Inject constructor(
         _events.tryEmit(GamepadInput(event, isRepeat, signature))
     }
 
-    override fun mapKeyToEvent(keyCode: Int): GamepadEvent? =
-        mapKeycodeToGamepadEvent(keyCode, swapAB, swapXY, swapStartSelect)
+    override fun mapKeyToEvent(keyCode: Int, deviceId: Int): GamepadEvent? =
+        profileForDevice(deviceId).gamepadEventFor(keyCode)
+
+    private fun profileForDevice(deviceId: Int): ControllerProfile = controllerProfiles.forDevice(deviceId)
 }
 
 const val LONG_PRESS_THRESHOLD_MS = 500L
+
+fun ControllerProfile.gamepadEventFor(keyCode: Int): GamepadEvent? =
+    mapKeycodeToGamepadEvent(keyCode, swapAB, swapXY, swapStartSelect)
 
 fun mapKeycodeToGamepadEvent(
     keyCode: Int,

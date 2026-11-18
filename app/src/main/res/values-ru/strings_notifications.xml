@@ -136,6 +136,7 @@
     <string name="notif_gamelaunch_no_emulator">Для этой платформы не установлен эмулятор</string>
     <string name="notif_gamelaunch_busy_syncing">Синхронизация ещё идёт. Попробуйте чуть позже.</string>
     <string name="notif_gamelaunch_busy_launching">Другая игра ещё запускается</string>
+    <string name="notif_gamelaunch_running_copy_not_closed">Эта игра всё ещё открыта, и её не удалось закрыть</string>
     <string name="notif_gamelaunch_no_rom_file">Файл ROM не найден</string>
     <string name="notif_gamelaunch_no_steam_launcher">Лаунчер Steam не установлен</string>
     <string name="notif_gamelaunch_no_steam_launcher_installed">Лаунчер Steam не установлен. Установите его в разделе Настройки &gt; Steam.</string>

@@ -53,5 +53,7 @@
     <string name="notif_permissions_revoked_body_notifications">Android может закрыть Argosy во время игры.</string>
     <string name="notif_permissions_revoked_body_overlay">Уведомления и быстрая панель появляются, только пока Argosy на экране.</string>
     <string name="notif_permissions_revoked_body_accessibility">Кнопка «Домой» и сочетания кнопок не работают, пока открыто другое приложение.</string>
+    <string name="notif_accessibility_unbound_title">Служба специальных возможностей Argosy не работает</string>
+    <string name="notif_accessibility_unbound_body">Выключите и снова включите Argosy в настройках специальных возможностей, чтобы вернуть кнопку «Домой», долгое нажатие «Назад» и сочетания кнопок.</string>
     <string name="notif_permissions_revoked_body_battery">Android может приостанавливать загрузки и закрывать Argosy во время долгих сессий.</string>
 </resources>

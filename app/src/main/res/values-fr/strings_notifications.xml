@@ -131,6 +131,7 @@
     <string name="notif_gamelaunch_no_emulator">Aucun émulateur installé pour cette plateforme</string>
     <string name="notif_gamelaunch_busy_syncing">La synchronisation est toujours en cours. Réessayez dans un instant.</string>
     <string name="notif_gamelaunch_busy_launching">Un autre jeu est encore en cours de lancement</string>
+    <string name="notif_gamelaunch_running_copy_not_closed">Ce jeu est toujours ouvert et n\'a pas pu être fermé</string>
     <string name="notif_gamelaunch_no_rom_file">Fichier ROM introuvable</string>
     <string name="notif_gamelaunch_no_steam_launcher">Lanceur Steam non installé</string>
     <string name="notif_gamelaunch_no_steam_launcher_installed">Aucun lanceur Steam installé. Installez-en un dans Réglages &gt; Steam.</string>

@@ -79,6 +79,12 @@ internal sealed class NavigationItem(
     data object SwapXY : Row("swapXY", "controller", R.string.settings_navigation_swap_xy_title)
     data object SwapStartSelect :
         Row("swapStartSelect", "controller", R.string.settings_navigation_swap_start_select_title)
+    data object ForgetController : Row(
+        key = "forgetController",
+        section = "controller",
+        labelRes = R.string.settings_navigation_forget_controller_title,
+        visibleWhen = { it.controllerProfileSaved }
+    )
     data object CheckButtons :
         Row("checkButtons", "controller", R.string.settings_navigation_check_buttons_title)
     data object IgnoreControllerTouchpad : Row(
@@ -180,7 +186,8 @@ internal sealed class NavigationItem(
         val ALL: List<NavigationItem>
             get() = listOf(
                 ControllerHeader,
-                ControllerLayout, SwapAB, SwapXY, SwapStartSelect, CheckButtons, IgnoreControllerTouchpad,
+                ControllerLayout, SwapAB, SwapXY, SwapStartSelect, ForgetController, CheckButtons,
+                IgnoreControllerTouchpad,
                 FeedbackSpacer, FeedbackHeader,
                 HapticFeedback, VibrationStrength,
                 MenusSpacer, MenusHeader,
@@ -233,13 +240,14 @@ fun NavigationSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
     val context = LocalContext.current
 
     val visibleItems = remember(
-        controls.hapticEnabled, controls.hasSecondaryDisplay, controls.quickNavigation, controls.systemHotkeysEnabled
+        controls.hapticEnabled, controls.hasSecondaryDisplay, controls.quickNavigation, controls.systemHotkeysEnabled,
+        controls.controllerProfileSaved
     ) {
         navigationLayout.visibleItems(controls)
     }
     val sections = remember(
         controls.hapticEnabled, controls.hasSecondaryDisplay, controls.quickNavigation, controls.systemHotkeysEnabled,
-        context
+        controls.controllerProfileSaved, context
     ) {
         navigationLayout.buildSections(controls, context)
     }
@@ -307,6 +315,13 @@ fun NavigationSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
                 isEnabled = controls.swapStartSelect,
                 isFocused = isFocused(item),
                 onToggle = { viewModel.setSwapStartSelect(it) }
+            )
+
+            is NavigationItem.ForgetController -> ActionPreference(
+                title = stringResource(item.labelRes),
+                subtitle = stringResource(R.string.settings_navigation_forget_controller_subtitle),
+                isFocused = isFocused(item),
+                onClick = { viewModel.forgetActiveController() }
             )
 
             is NavigationItem.CheckButtons -> NavigationPreference(

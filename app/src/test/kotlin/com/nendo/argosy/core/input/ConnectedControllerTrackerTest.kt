@@ -48,11 +48,12 @@ class ConnectedControllerTrackerTest {
     @Test
     fun `glyph layout follows the pad that last sent input`() = runBlocking {
         val tracker = ConnectedControllerTracker(context)
-        assertEquals(DetectedLayout.XBOX, tracker.activeLayout.value)
+        assertEquals(ActivePad(controllerId = null, layout = DetectedLayout.XBOX), tracker.activePad.value)
 
         tracker.noteInput(keyDown(nintendoPad))
         awaitLayout(tracker, DetectedLayout.NINTENDO)
         assertEquals("Pad nintendo", tracker.detectActive().deviceName)
+        assertEquals(controllerIdOf(nintendoPad), tracker.activePad.value.controllerId)
 
         tracker.noteInput(keyDown(xboxPad))
         awaitLayout(tracker, DetectedLayout.XBOX)
@@ -94,7 +95,7 @@ class ConnectedControllerTrackerTest {
     }
 
     private suspend fun awaitLayout(tracker: ConnectedControllerTracker, layout: DetectedLayout) {
-        withTimeout(5_000) { tracker.activeLayout.first { it == layout } }
+        withTimeout(5_000) { tracker.activePad.first { it.layout == layout } }
     }
 
     private fun connected(vararg devices: InputDevice) {

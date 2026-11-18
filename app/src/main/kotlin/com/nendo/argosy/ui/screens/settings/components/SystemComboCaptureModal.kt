@@ -53,7 +53,7 @@ fun SystemComboCaptureModal(
                     KeyEvent.ACTION_UP -> if (key in heldKeys) {
                         heldKeys = heldKeys - key
                         val loneBack = chordPeak == 1 &&
-                            gamepadInputHandler?.mapKeyToEvent(key) == GamepadEvent.Back
+                            gamepadInputHandler?.mapKeyToEvent(key, event.deviceId) == GamepadEvent.Back
                         if (heldKeys.isEmpty()) chordPeak = 0
                         if (loneBack) currentOnDismiss.value()
                     }

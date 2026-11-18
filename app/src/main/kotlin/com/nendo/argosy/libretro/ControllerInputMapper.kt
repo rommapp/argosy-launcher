@@ -40,12 +40,20 @@ class ControllerInputMapper : KeyMapper {
     }
 
     override fun mapKey(device: InputDevice, keyCode: Int): Int =
-        resolveMappedKey(extendedMappings[controllerIdOf(device)], keyCode, platformSlug)
+        resolveMappedKey(mappingFor(device), keyCode, platformSlug)
+
+    private fun mappingFor(device: InputDevice): Map<InputSource, Int>? {
+        val controllerId = controllerIdOf(device)
+        extendedMappings[controllerId]?.let { return it }
+        if (device.vendorId == 0 && device.productId == 0) return null
+        val model = "${device.vendorId}:${device.productId}:"
+        return extendedMappings.entries.firstOrNull { it.key.startsWith(model) }?.value
+    }
 
     fun processMotionEvent(event: MotionEvent): List<SyntheticKeyEvent> {
         val device = event.device ?: return emptyList()
         val controllerId = controllerIdOf(device)
-        val mapping = extendedMappings[controllerId] ?: return emptyList()
+        val mapping = mappingFor(device) ?: return emptyList()
 
         val port = portResolver?.invoke(device) ?: 0
         val results = mutableListOf<SyntheticKeyEvent>()
@@ -90,7 +98,7 @@ class ControllerInputMapper : KeyMapper {
     }
 
     fun hasAnalogMappingForAxis(device: InputDevice, axis: Int): Boolean {
-        val mapping = extendedMappings[controllerIdOf(device)] ?: return false
+        val mapping = mappingFor(device) ?: return false
         return mapping.keys.any { it is InputSource.AnalogDirection && it.axis == axis }
     }
 
@@ -99,7 +107,7 @@ class ControllerInputMapper : KeyMapper {
      * was resolved or the key is unbound within it.
      */
     fun retroButtonFor(device: InputDevice, keyCode: Int): Int? =
-        extendedMappings[controllerIdOf(device)]
+        mappingFor(device)
             ?.takeIf { it.isNotEmpty() }
             ?.get(InputSource.Button(keyCode))
 

@@ -423,7 +423,7 @@ class ArgosyActivity : ComponentActivity() {
                             val preferences = dualScreenManager.preferencesRepository.userPreferences
                             com.nendo.argosy.ui.input.ProvideButtonGlyphs(
                                 preferences,
-                                connectedControllerTracker.activeLayout
+                                connectedControllerTracker.activePad
                             ) {
                                 com.nendo.argosy.ui.components.ProvideStatusBarItems(preferences) {
                                     val ownDisplay = androidx.compose.ui.platform.LocalView.current.display?.displayId
@@ -557,9 +557,7 @@ class ArgosyActivity : ComponentActivity() {
                     event.keyCode,
                     event.action,
                     event.repeatCount,
-                    sessionStateStore.getSwapAB(),
-                    sessionStateStore.getSwapXY(),
-                    sessionStateStore.getSwapStartSelect()
+                    event.deviceId
                 )
             }
             return true
@@ -661,9 +659,7 @@ class ArgosyActivity : ComponentActivity() {
                 keyCode,
                 KeyEvent.ACTION_DOWN,
                 if (isRepeat) 1 else 0,
-                sessionStateStore.getSwapAB(),
-                sessionStateStore.getSwapXY(),
-                sessionStateStore.getSwapStartSelect()
+                android.view.KeyCharacterMap.VIRTUAL_KEYBOARD
             )
             return
         }

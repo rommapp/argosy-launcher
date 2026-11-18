@@ -115,6 +115,7 @@ class SteamLibraryManager @Inject constructor(
     private val pendingPackageIds = mutableSetOf<Int>()
     private val pendingAppIds = mutableSetOf<Int>()
     private val packageToAppIds = mutableMapOf<Int, List<Int>>()
+    private val packageAccessTokens = mutableMapOf<Int, Long>()
     private var gamesAdded = 0
     private var gamesUpdated = 0
     private var currentAccountId: Long? = null
@@ -247,6 +248,8 @@ class SteamLibraryManager @Inject constructor(
             pendingPackageIds.addAll(packageIds)
             pendingAppIds.clear()
             packageToAppIds.clear()
+            packageAccessTokens.clear()
+            licenses.forEach { packageAccessTokens[it.packageID] = it.accessToken }
             gamesAdded = 0
             gamesUpdated = 0
             picsFailures = 0
@@ -266,7 +269,7 @@ class SteamLibraryManager @Inject constructor(
         for ((index, batch) in batches.withIndex()) {
             if (steamApps !== apps) return endSyncDisconnected()
             val responses = fetchProductInfo("package", batch) {
-                apps.picsGetProductInfo(emptyList(), batch.map { PICSRequest(it) })
+                apps.picsGetProductInfo(emptyList(), batch.map { PICSRequest(it, packageAccessTokens[it] ?: 0L) })
             }
             responses.forEach { handlePackageInfo(it) }
             skipUnresolved("package", batch, responses.flatMap { it.unknownPackages }, pendingPackageIds)
@@ -297,6 +300,22 @@ class SteamLibraryManager @Inject constructor(
         picsFailures++
         Log.e(TAG, "PICS $kind request for ${batch.size} ids failed", e)
         emptyList()
+    }
+
+    private suspend fun fetchAppAccessTokens(apps: SteamApps, batch: List<Int>): Map<Int, Long> = try {
+        withTimeout(PICS_REQUEST_TIMEOUT_MS) {
+            apps.picsGetAccessTokens(batch, emptyList()).toFuture().await().appTokens
+        }
+    } catch (e: CancellationException) {
+        if (e is TimeoutCancellationException) {
+            Log.w(TAG, "PICS access tokens for ${batch.size} apps timed out")
+            emptyMap()
+        } else {
+            throw e
+        }
+    } catch (e: Exception) {
+        Log.w(TAG, "PICS access tokens for ${batch.size} apps failed", e)
+        emptyMap()
     }
 
     private fun skipUnresolved(kind: String, batch: List<Int>, unknownIds: List<Int>, pending: MutableSet<Int>) {
@@ -389,8 +408,9 @@ class SteamLibraryManager @Inject constructor(
         val batches = appIds.chunked(APP_BATCH_SIZE)
         for ((index, batch) in batches.withIndex()) {
             if (steamApps !== apps) return endSyncDisconnected()
+            val tokens = fetchAppAccessTokens(apps, batch)
             val responses = fetchProductInfo("app", batch) {
-                apps.picsGetProductInfo(batch.map { PICSRequest(it) }, emptyList())
+                apps.picsGetProductInfo(batch.map { PICSRequest(it, tokens[it] ?: 0L) }, emptyList())
             }
             responses.forEach { handleAppInfo(it) }
             skipUnresolved("app", batch, responses.flatMap { it.unknownApps }, pendingAppIds)
@@ -410,6 +430,7 @@ class SteamLibraryManager @Inject constructor(
                 val appType = common["type"]?.asString()?.lowercase()
 
                 if (appType != "game") {
+                    Log.d(TAG, "Skipping app $appId type=${appType ?: "none"} name=${common["name"]?.asString()}")
                     pendingAppIds.remove(appId)
                     continue
                 }

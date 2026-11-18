@@ -194,6 +194,8 @@
     <string name="settings_navigation_swap_xy_subtitle">交換選單鍵與次要動作鍵</string>
     <string name="settings_navigation_swap_start_select_title">交換Start／Select鍵</string>
     <string name="settings_navigation_swap_start_select_subtitle">交換Start鍵與Select鍵的功能</string>
+    <string name="settings_navigation_forget_controller_title">忘記此控制器</string>
+    <string name="settings_navigation_forget_controller_subtitle">讓此控制器恢復預設配置與按鍵交換設定</string>
     <string name="settings_navigation_ignore_controller_touchpad_title">遊戲中忽略觸控板</string>
     <string name="settings_navigation_ignore_controller_touchpad_subtitle">遊戲執行時，控制器觸控板無法點擊啟動器</string>
 
@@ -674,6 +676,9 @@
 
     <string name="settings_about_systemize_title">防止高負載模擬器當機</string>
     <string name="settings_about_systemize_subtitle">當高負載模擬器占用大部分記憶體時，Argosy可能會被強制關閉。這會將Argosy設為系統應用程式，使其不再被關閉。需要root權限。</string>
+    <string name="settings_about_unsystemize_title">從系統應用程式中移除</string>
+    <string name="settings_about_unsystemize_subtitle">讓Argosy重新成為一般應用程式，以便解除安裝。遊戲、存檔和設定都會保留。需要root權限並重新啟動。</string>
+    <string name="settings_about_system_image_subtitle">此裝置的Android已將Argosy內建為系統應用程式，因此在高負載模擬器下也會持續執行。</string>
     <string name="settings_about_restart_title">重新啟動Argosy</string>
     <string name="settings_about_restart_subtitle">關閉並重新開啟啟動器</string>
 
@@ -2272,7 +2277,7 @@
     <string name="settings_systemize_dialog_detected_device">偵測到的裝置：%1$s</string>
     <string name="settings_systemize_dialog_next_steps_heading">後續步驟</string>
     <string name="settings_systemize_dialog_step_format">%1$d. %2$s</string>
-    <string name="settings_systemize_dialog_success_footnote">需要已取得root權限的裝置。此變更可以復原：移除名為「Argosy Systemize」的Magisk模組並重新開機即可。若您的選單文字不同，指令碼檔案仍然正確，只需將您的root執行選項指向該檔案即可。</string>
+    <string name="settings_systemize_dialog_success_footnote">需要已取得root權限的裝置。之後如需復原，請在本頁使用「從系統應用程式中移除」，資料會保留。若您的選單文字不同，指令碼檔案仍然正確，只需將您的root執行選項指向該檔案即可。</string>
     <string name="settings_systemize_dialog_error_title">無法儲存指令碼</string>
     <string name="settings_systemize_dialog_error_hint">可能缺少儲存空間存取權限。請在設定中授予所有檔案存取權限後再試一次。</string>
 
@@ -2285,6 +2290,12 @@
     <string name="settings_root_script_dialog_output_heading">指令碼輸出</string>
     <string name="settings_root_script_dialog_reboot_hint">重新開機以完成設定，然後將Argosy設為預設啟動器。</string>
     <string name="settings_root_script_dialog_reboot_button">立即重新開機</string>
+    <string name="settings_root_script_dialog_unsystemize_reboot_hint">重新開機後即完成。之後 Argosy 會以一般應用程式執行。</string>
+    <string name="settings_root_script_backup_title">要從系統應用程式中移除嗎？</string>
+    <string name="settings_root_script_backup_body">如果轉為一般應用程式失敗，你可能會遺失快取的圖片和尚未同步的存檔。</string>
+    <string name="settings_root_script_backup_cancel_button">取消</string>
+    <string name="settings_root_script_backup_export_note">你的設定已備份到 %1$s。</string>
+    <string name="settings_root_script_backup_continue_button">繼續</string>
     <string name="settings_root_script_step_open_retroid">開啟 Settings > Advanced > Run script as Root</string>
     <string name="settings_root_script_step_open_ayn">開啟 Settings > Advanced Settings > Run script as Root</string>
     <string name="settings_root_script_step_open_ayaneo">開啟 Settings > Optimization Assistant > Root Script</string>

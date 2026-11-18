@@ -20,7 +20,8 @@ import javax.inject.Inject
 data class ScreenshotState(
     val focusedScreenshotIndex: Int = 0,
     val showScreenshotViewer: Boolean = false,
-    val viewerScreenshotIndex: Int = 0
+    val viewerScreenshotIndex: Int = 0,
+    val viewerVideoPaused: Boolean = false
 )
 
 class ScreenshotDelegate @Inject constructor(
@@ -53,7 +54,8 @@ class ScreenshotDelegate @Inject constructor(
         _state.update {
             it.copy(
                 showScreenshotViewer = true,
-                viewerScreenshotIndex = viewerIndex.coerceIn(0, screenshots.size - 1)
+                viewerScreenshotIndex = viewerIndex.coerceIn(0, screenshots.size - 1),
+                viewerVideoPaused = false
             )
         }
     }
@@ -62,7 +64,8 @@ class ScreenshotDelegate @Inject constructor(
         _state.update { state ->
             state.copy(
                 showScreenshotViewer = false,
-                focusedScreenshotIndex = state.viewerScreenshotIndex
+                focusedScreenshotIndex = state.viewerScreenshotIndex,
+                viewerVideoPaused = false
             )
         }
     }
@@ -71,7 +74,14 @@ class ScreenshotDelegate @Inject constructor(
         if (screenshots.isEmpty()) return
         _state.update { state ->
             val newIndex = (state.viewerScreenshotIndex + delta).mod(screenshots.size)
-            state.copy(viewerScreenshotIndex = newIndex)
+            state.copy(viewerScreenshotIndex = newIndex, viewerVideoPaused = false)
+        }
+    }
+
+    fun toggleViewerVideoPlayback(screenshots: List<ScreenshotPair>) {
+        _state.update { state ->
+            if (screenshots.getOrNull(state.viewerScreenshotIndex)?.isVideo != true) return@update state
+            state.copy(viewerVideoPaused = !state.viewerVideoPaused)
         }
     }
 
@@ -82,6 +92,7 @@ class ScreenshotDelegate @Inject constructor(
         onSuccess: () -> Unit
     ) {
         val screenshot = screenshots.getOrNull(_state.value.viewerScreenshotIndex) ?: return
+        if (screenshot.isVideo) return
         val screenshotPath = screenshot.cachedPath ?: screenshot.remoteUrl
 
         scope.launch {

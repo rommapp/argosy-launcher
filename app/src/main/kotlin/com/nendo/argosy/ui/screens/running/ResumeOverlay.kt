@@ -33,6 +33,7 @@ import com.nendo.argosy.ArgosyHomeIntent
 import com.nendo.argosy.core.input.ConnectedControllerTracker
 import com.nendo.argosy.core.input.HomeKeys
 import com.nendo.argosy.core.input.SoundType
+import com.nendo.argosy.core.input.forDevice
 import com.nendo.argosy.data.cache.ImageCacheManager
 import com.nendo.argosy.data.preferences.UserPreferences
 import com.nendo.argosy.data.preferences.UserPreferencesRepository
@@ -54,7 +55,7 @@ import com.nendo.argosy.ui.input.LocalSwapStartSelect
 import com.nendo.argosy.ui.input.LocalXYIconsSwapped
 import com.nendo.argosy.ui.input.SoundFeedbackManager
 import com.nendo.argosy.ui.input.buttonGlyphSwaps
-import com.nendo.argosy.ui.input.mapKeycodeToGamepadEvent
+import com.nendo.argosy.ui.input.gamepadEventFor
 import com.nendo.argosy.ui.theme.ALauncherTheme
 import com.nendo.argosy.ui.theme.LocalArgosyTheme
 import com.nendo.argosy.ui.theme.ThemeViewModel
@@ -309,8 +310,8 @@ class ResumeOverlay @Inject constructor(
         @Composable
         private fun OverlayContent() {
             val preferences by prefs.collectAsState()
-            val activeLayout by controllerTracker.activeLayout.collectAsState()
-            val swaps = remember(preferences, activeLayout) { preferences.buttonGlyphSwaps(activeLayout) }
+            val activePad by controllerTracker.activePad.collectAsState()
+            val swaps = remember(preferences, activePad) { preferences.buttonGlyphSwaps(activePad) }
             val isShown by shown.collectAsState()
             val isLeaving by leaving.collectAsState()
             val behind by screenBehind.collectAsState()
@@ -378,13 +379,9 @@ class ResumeOverlay @Inject constructor(
                     if (event.action == KeyEvent.ACTION_DOWN && event.repeatCount == 0) close(this@Session)
                     return true
                 }
-                val swaps = prefs.value
-                val gamepadEvent = mapKeycodeToGamepadEvent(
-                    event.keyCode,
-                    swaps.swapAB,
-                    swaps.swapXY,
-                    swaps.swapStartSelect
-                ) ?: return super.dispatchKeyEvent(event)
+                val gamepadEvent = prefs.value.controllerProfiles.forDevice(event.deviceId)
+                    .gamepadEventFor(event.keyCode)
+                    ?: return super.dispatchKeyEvent(event)
                 if (gamepadEvent == GamepadEvent.Confirm) return onConfirmKey(event)
                 if (event.action != KeyEvent.ACTION_DOWN) return true
                 if (gamepadEvent == GamepadEvent.Back && event.repeatCount > 0) return true

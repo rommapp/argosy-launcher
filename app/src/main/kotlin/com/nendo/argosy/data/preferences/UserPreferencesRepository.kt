@@ -2,6 +2,8 @@ package com.nendo.argosy.data.preferences
 
 import com.nendo.argosy.data.cache.GradientPreset
 import com.nendo.argosy.data.emulator.LaunchOrigin
+import com.nendo.argosy.core.input.ControllerProfile
+import com.nendo.argosy.core.input.ControllerProfiles
 import com.nendo.argosy.core.input.SoundConfig
 import com.nendo.argosy.ui.theme.generated.ComponentDefaults
 import com.nendo.argosy.core.input.SoundType
@@ -98,10 +100,7 @@ class UserPreferencesRepository @Inject constructor(
             hapticStrength = controls.hapticStrength,
             soundEnabled = controls.soundEnabled,
             soundVolume = controls.soundVolume,
-            swapAB = controls.swapAB,
-            swapXY = controls.swapXY,
-            controllerLayout = controls.controllerLayout,
-            swapStartSelect = controls.swapStartSelect,
+            controllerProfiles = controls.controllerProfiles,
             selectLCombo = controls.selectLCombo,
             selectRCombo = controls.selectRCombo,
             menuWrapMode = controls.menuWrapMode,
@@ -535,10 +534,9 @@ class UserPreferencesRepository @Inject constructor(
     suspend fun setSoundVolume(volume: Int) = controlsPrefs.setSoundVolume(volume)
     suspend fun setSoundConfigs(configs: Map<SoundType, SoundConfig>) = controlsPrefs.setSoundConfigs(configs)
     suspend fun setSoundConfig(type: SoundType, config: SoundConfig?) = controlsPrefs.setSoundConfig(type, config)
-    suspend fun setSwapAB(enabled: Boolean) = controlsPrefs.setSwapAB(enabled)
-    suspend fun setSwapXY(enabled: Boolean) = controlsPrefs.setSwapXY(enabled)
-    suspend fun setControllerLayout(layout: String) = controlsPrefs.setControllerLayout(layout)
-    suspend fun setSwapStartSelect(enabled: Boolean) = controlsPrefs.setSwapStartSelect(enabled)
+    suspend fun editControllerProfile(controllerId: String?, change: (ControllerProfile) -> ControllerProfile) =
+        controlsPrefs.editControllerProfile(controllerId, change)
+    suspend fun forgetControllerProfile(controllerId: String) = controlsPrefs.forgetControllerProfile(controllerId)
     suspend fun setSelectLCombo(value: String) = controlsPrefs.setSelectLCombo(value)
     suspend fun setSelectRCombo(value: String) = controlsPrefs.setSelectRCombo(value)
     suspend fun setAmbientAudioEnabled(enabled: Boolean) = controlsPrefs.setAmbientAudioEnabled(enabled)
@@ -926,10 +924,7 @@ data class UserPreferences(
     val hapticStrength: Float = ControlsPreferences.DEFAULT_HAPTIC_STRENGTH,
     val soundEnabled: Boolean = false,
     val soundVolume: Int = 40,
-    val swapAB: Boolean = false,
-    val swapXY: Boolean = false,
-    val controllerLayout: String = "auto",
-    val swapStartSelect: Boolean = false,
+    val controllerProfiles: ControllerProfiles = ControllerProfiles(),
     val selectLCombo: String = "quick_menu",
     val selectRCombo: String = "quick_settings",
     val menuWrapMode: MenuWrapMode = MenuWrapMode.HARD_STOP,

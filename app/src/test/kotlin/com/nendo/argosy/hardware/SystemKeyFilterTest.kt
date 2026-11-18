@@ -40,10 +40,12 @@ class SystemKeyFilterTest {
         )
     )
 
-    private fun down(keyCode: Int, repeatCount: Int = 0) =
-        filter.onKey(keyCode, KeyEvent.ACTION_DOWN, repeatCount)
+    private val pad = 7
 
-    private fun up(keyCode: Int) = filter.onKey(keyCode, KeyEvent.ACTION_UP, 0)
+    private fun down(keyCode: Int, repeatCount: Int = 0) =
+        filter.onKey(keyCode, KeyEvent.ACTION_DOWN, repeatCount, pad)
+
+    private fun up(keyCode: Int) = filter.onKey(keyCode, KeyEvent.ACTION_UP, 0, pad)
 
     @Test
     fun `a back tap still replays through the back gate`() {
@@ -88,7 +90,7 @@ class SystemKeyFilterTest {
 
     @Test
     fun `other actions pass untouched`() {
-        assertFalse(filter.onKey(KeyEvent.KEYCODE_BUTTON_MODE, KeyEvent.ACTION_MULTIPLE, 0))
+        assertFalse(filter.onKey(KeyEvent.KEYCODE_BUTTON_MODE, KeyEvent.ACTION_MULTIPLE, 0, pad))
         assertTrue(performed.isEmpty())
     }
 }

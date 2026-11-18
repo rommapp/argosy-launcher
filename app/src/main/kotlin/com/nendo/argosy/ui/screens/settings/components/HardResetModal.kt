@@ -89,7 +89,7 @@ fun HardResetModal(
 
     DisposableEffect(gamepadInputHandler) {
         val listener: (KeyEvent) -> Boolean = { event ->
-            val mapped = gamepadInputHandler?.mapKeyToEvent(event.keyCode)
+            val mapped = gamepadInputHandler?.mapKeyToEvent(event.keyCode, event.deviceId)
             when {
                 currentResetting -> {}
                 mapped == GamepadEvent.Confirm -> when (event.action) {

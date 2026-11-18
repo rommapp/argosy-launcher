@@ -53,5 +53,7 @@
     <string name="notif_permissions_revoked_body_notifications">Android kann Argosy während des Spielens beenden.</string>
     <string name="notif_permissions_revoked_body_overlay">Hinweise und das Schnellmenü erscheinen nur, solange Argosy angezeigt wird.</string>
     <string name="notif_permissions_revoked_body_accessibility">Home und Tastenkombinationen funktionieren nicht, solange eine andere App geöffnet ist.</string>
+    <string name="notif_accessibility_unbound_title">Der Bedienungshilfen-Dienst von Argosy läuft nicht</string>
+    <string name="notif_accessibility_unbound_body">Schalte Argosy in den Bedienungshilfen aus und wieder ein, damit Home, langes Drücken von Zurück und Tastenkombinationen wieder funktionieren.</string>
     <string name="notif_permissions_revoked_body_battery">Android kann Downloads pausieren und Argosy bei langen Sitzungen beenden.</string>
 </resources>

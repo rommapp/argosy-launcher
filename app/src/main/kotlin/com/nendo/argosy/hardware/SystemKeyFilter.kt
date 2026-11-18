@@ -6,11 +6,11 @@ class SystemKeyFilter(
     private val backGate: BackHoldGate,
     private val hotkeys: SystemHotkeyDetector
 ) {
-    fun onKey(keyCode: Int, action: Int, repeatCount: Int): Boolean {
+    fun onKey(keyCode: Int, action: Int, repeatCount: Int, deviceId: Int): Boolean {
         val isRepeat = repeatCount > 0
         val isBack = keyCode == KeyEvent.KEYCODE_BACK
         return when (action) {
-            KeyEvent.ACTION_DOWN -> if (isBack) backGate.onDown(isRepeat) else hotkeys.onKeyDown(keyCode, isRepeat)
+            KeyEvent.ACTION_DOWN -> if (isBack) backGate.onDown(isRepeat) else hotkeys.onKeyDown(keyCode, isRepeat, deviceId)
             KeyEvent.ACTION_UP -> if (isBack) backGate.onUp() else hotkeys.onKeyUp(keyCode)
             else -> false
         }

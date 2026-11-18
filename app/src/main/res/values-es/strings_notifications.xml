@@ -131,6 +131,7 @@
     <string name="notif_gamelaunch_no_emulator">No hay ningún emulador instalado para esta plataforma</string>
     <string name="notif_gamelaunch_busy_syncing">La sincronización sigue en curso. Inténtalo de nuevo en un momento.</string>
     <string name="notif_gamelaunch_busy_launching">Otro juego se está iniciando todavía</string>
+    <string name="notif_gamelaunch_running_copy_not_closed">Este juego sigue abierto y no se pudo cerrar</string>
     <string name="notif_gamelaunch_no_rom_file">Archivo ROM no encontrado</string>
     <string name="notif_gamelaunch_no_steam_launcher">Launcher de Steam no instalado</string>
     <string name="notif_gamelaunch_no_steam_launcher_installed">No hay ningún launcher de Steam instalado. Instala uno en Ajustes &gt; Steam.</string>

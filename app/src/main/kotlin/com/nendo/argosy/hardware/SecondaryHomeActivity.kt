@@ -42,7 +42,6 @@ import com.nendo.argosy.ui.dualscreen.CompanionDetailScreen
 import com.nendo.argosy.ui.input.GamepadEvent
 import com.nendo.argosy.ui.input.InputResult
 import com.nendo.argosy.ui.input.SelectModifier
-import com.nendo.argosy.ui.input.mapKeycodeToGamepadEvent
 import com.nendo.argosy.util.Logger
 import com.nendo.argosy.util.PermissionHelper
 import com.nendo.argosy.util.LauncherSystemBars
@@ -103,10 +102,6 @@ class SecondaryHomeActivity :
 
     private val isShowcaseRole: Boolean
         get() = ::dsm.isInitialized && dsm.isRolesSwapped.value
-
-    var swapAB = false; private set
-    var swapXY = false; private set
-    var swapStartSelect = false; private set
 
     private val selectModifier = SelectModifier()
 
@@ -190,7 +185,7 @@ class SecondaryHomeActivity :
                 ) {
                     com.nendo.argosy.ui.input.ProvideButtonGlyphs(
                         dsm.preferencesRepository.userPreferences,
-                        connectedControllerTracker.activeLayout
+                        connectedControllerTracker.activePad
                     ) {
                         CompanionRoleContent()
                     }
@@ -591,22 +586,23 @@ class SecondaryHomeActivity :
         keyCode: Int,
         action: Int,
         repeatCount: Int,
-        swapAB: Boolean,
-        swapXY: Boolean,
-        swapStartSelect: Boolean
+        deviceId: Int
     ) {
         if (yieldsKeysToMediaPlayer()) {
             val forward = dsm.mediaPlayerKeyDispatcher
             if (forward != null) {
-                val time = android.os.SystemClock.uptimeMillis()
-                forward(android.view.KeyEvent(time, time, action, keyCode, repeatCount))
+                forward(forwardedKeyEvent(keyCode, action, repeatCount, deviceId))
                 return
             }
         }
-        val time = android.os.SystemClock.uptimeMillis()
-        val forwarded = android.view.KeyEvent(time, time, action, keyCode, repeatCount)
+        val forwarded = forwardedKeyEvent(keyCode, action, repeatCount, deviceId)
         if (gamepadInputHandler.handleKeyEvent(forwarded)) return
         super.dispatchKeyEvent(forwarded)
+    }
+
+    private fun forwardedKeyEvent(keyCode: Int, action: Int, repeatCount: Int, deviceId: Int): android.view.KeyEvent {
+        val time = android.os.SystemClock.uptimeMillis()
+        return android.view.KeyEvent(time, time, action, keyCode, repeatCount, 0, deviceId, 0)
     }
 
     /**

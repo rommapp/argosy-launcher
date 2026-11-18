@@ -1077,6 +1077,7 @@ private fun routeNavigationConfirm(vm: SettingsViewModel, state: SettingsUiState
             vm.setSwapStartSelect(swapped)
             return InputResult.toggled(swapped)
         }
+        NavigationItem.ForgetController -> vm.forgetActiveController()
         NavigationItem.CheckButtons -> {
             vm.openButtonCheck()
             return InputResult.handled(SoundType.OPEN_MODAL)
@@ -1267,7 +1268,8 @@ private fun routeAboutConfirm(vm: SettingsViewModel, state: SettingsUiState): In
             vm.requestImportSettings()
             return InputResult.handled(SoundType.OPEN_MODAL)
         }
-        AboutItem.SystemizeHelper -> vm.applyRootScript(com.nendo.argosy.data.model.RootScript.SYSTEMIZE)
+        AboutItem.SystemizeHelper ->
+            com.nendo.argosy.util.SystemAppStatus.systemAppScript(vm.context)?.let(vm::applyRootScript)
         AboutItem.RestartApp -> vm.restartApp()
         else -> {}
     }

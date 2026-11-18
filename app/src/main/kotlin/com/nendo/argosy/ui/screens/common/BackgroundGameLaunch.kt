@@ -123,6 +123,20 @@ class BackgroundGameLaunch @Inject constructor(
         return true
     }
 
+    /**
+     * Saves and closes the game slot already running [gameId] (and [variantFileId]), so a fresh
+     * start never runs beside it. True when no slot holds the game or the slot closed; false when
+     * it did not close in time.
+     */
+    suspend fun closeSlotHolding(gameId: Long, variantFileId: Long?): Boolean {
+        val held = backgroundGames.builtInApps().firstOrNull { app ->
+            (app.slotIndex ?: 0) > 0 && app.game?.gameId == gameId && app.game.variantFileId == variantFileId
+        } ?: return true
+        Logger.info(TAG, "closing slot ${held.slotIndex} holding gameId=$gameId before a fresh start")
+        backgroundGames.close(held)
+        return awaitSlotClosed(held)
+    }
+
     private suspend fun makeRoomQuestion(launchingTitle: String?, open: List<RunningApp>): LaunchStep.MakeRoom {
         val snapshots = taskSnapshots.fetch(open.map { it.taskId })
         val candidates = open.mapNotNull { app ->

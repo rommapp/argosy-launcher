@@ -312,6 +312,7 @@
     <string name="notif_gamelaunch_no_emulator">No emulator installed for this platform</string>
     <string name="notif_gamelaunch_busy_syncing">Sync is still running. Try again in a moment.</string>
     <string name="notif_gamelaunch_busy_launching">Another game is still starting</string>
+    <string name="notif_gamelaunch_running_copy_not_closed">This game is still open and could not be closed</string>
     <string name="notif_gamelaunch_no_rom_file">ROM file not found</string>
     <string name="notif_gamelaunch_no_steam_launcher">Steam launcher not installed</string>
     <string name="notif_gamelaunch_no_steam_launcher_installed">No Steam launcher installed. Install one in Settings &gt; Steam.</string>

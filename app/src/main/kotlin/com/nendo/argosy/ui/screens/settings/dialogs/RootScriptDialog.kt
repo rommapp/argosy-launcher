@@ -47,6 +47,7 @@ fun RootScriptDialog(
     state: RootScriptDialogState,
     onMoveFocus: (Int) -> Unit,
     onReboot: () -> Unit,
+    onConfirmBackup: () -> Unit,
     onDismiss: () -> Unit
 ) {
     val theme = LocalArgosyTheme.current
@@ -56,6 +57,7 @@ fun RootScriptDialog(
     val currentState by rememberUpdatedState(state)
     val currentOnMoveFocus by rememberUpdatedState(onMoveFocus)
     val currentOnReboot by rememberUpdatedState(onReboot)
+    val currentOnConfirmBackup by rememberUpdatedState(onConfirmBackup)
     val currentOnDismiss by rememberUpdatedState(onDismiss)
 
     val inputHandler = remember {
@@ -85,6 +87,14 @@ fun RootScriptDialog(
             }
 
             override fun onConfirm(): InputResult {
+                (currentState as? RootScriptDialogState.ConfirmBackup)?.let { confirm ->
+                    if (confirm.focusIndex == RootScriptDialogState.ConfirmBackup.CONTINUE_FOCUS) {
+                        currentOnConfirmBackup()
+                    } else {
+                        currentOnDismiss()
+                    }
+                    return InputResult.HANDLED
+                }
                 val finished = currentState as? RootScriptDialogState.Finished ?: return InputResult.HANDLED
                 if (finished.offersReboot && finished.focusIndex == REBOOT_FOCUS_INDEX) {
                     currentOnReboot()
@@ -129,12 +139,35 @@ fun RootScriptDialog(
                     .verticalScroll(scrollState)
             ) {
                 when (state) {
+                    is RootScriptDialogState.ConfirmBackup -> ConfirmBackupContent(state.backupPath)
                     is RootScriptDialogState.Running -> RunningContent()
                     is RootScriptDialogState.Finished -> when (val result = state.result) {
                         is RootScriptResult.Ran -> RanContent(result)
                         is RootScriptResult.Written -> WrittenContent(result)
                         is RootScriptResult.Error -> ErrorContent(result)
                     }
+                }
+            }
+
+            if (state is RootScriptDialogState.ConfirmBackup) {
+                HorizontalDivider(color = theme.hairlineLow)
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = Dimens.spacingSm, vertical = Dimens.spacingXs),
+                    horizontalArrangement = Arrangement.spacedBy(Dimens.spacingSm, Alignment.End)
+                ) {
+                    ActionButton(
+                        label = stringResource(R.string.settings_root_script_backup_cancel_button),
+                        onClick = onDismiss,
+                        focused = state.focusIndex == RootScriptDialogState.ConfirmBackup.CANCEL_FOCUS
+                    )
+                    ActionButton(
+                        label = stringResource(R.string.settings_root_script_backup_continue_button),
+                        onClick = onConfirmBackup,
+                        primary = true,
+                        focused = state.focusIndex == RootScriptDialogState.ConfirmBackup.CONTINUE_FOCUS
+                    )
                 }
             }
 
@@ -163,6 +196,33 @@ fun RootScriptDialog(
                 }
             }
         }
+    }
+}
+
+@Composable
+private fun ConfirmBackupContent(backupPath: String) {
+    val theme = LocalArgosyTheme.current
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(Dimens.spacingLg),
+        verticalArrangement = Arrangement.spacedBy(Dimens.spacingSm)
+    ) {
+        Text(
+            text = stringResource(R.string.settings_root_script_backup_title),
+            style = MaterialTheme.typography.titleLarge,
+            color = theme.textPrimary
+        )
+        Text(
+            text = stringResource(R.string.settings_root_script_backup_export_note, backupPath),
+            style = MaterialTheme.typography.bodyMedium,
+            color = theme.textPrimary
+        )
+        Text(
+            text = stringResource(R.string.settings_root_script_backup_body),
+            style = MaterialTheme.typography.bodyMedium,
+            color = theme.textPrimary
+        )
     }
 }
 
@@ -207,7 +267,12 @@ private fun RanContent(result: RootScriptResult.Ran) {
         )
         if (result.outcome == RootScriptOutcome.OK && result.script.needsReboot) {
             Text(
-                text = stringResource(R.string.settings_root_script_dialog_reboot_hint),
+                text = stringResource(
+                    when (result.script) {
+                        RootScript.SYSTEMIZE -> R.string.settings_root_script_dialog_reboot_hint
+                        RootScript.UNSYSTEMIZE -> R.string.settings_root_script_dialog_unsystemize_reboot_hint
+                    }
+                ),
                 style = MaterialTheme.typography.bodyMedium,
                 color = theme.textPrimary
             )

@@ -34,8 +34,8 @@ class LibretroGamepadInputHandler(
         rawMotionEventListener = listener
     }
 
-    override fun mapKeyToEvent(keyCode: Int): GamepadEvent? =
-        menuInputHandler.mapKeyToEvent(keyCode)
+    override fun mapKeyToEvent(keyCode: Int, deviceId: Int): GamepadEvent? =
+        menuInputHandler.mapKeyToEvent(keyCode, deviceId)
 
     fun handleKeyEvent(event: KeyEvent): Boolean {
         rawKeyEventListener?.let { listener ->
@@ -45,7 +45,7 @@ class LibretroGamepadInputHandler(
 
         if (event.action != KeyEvent.ACTION_DOWN) return false
 
-        val gamepadEvent = menuInputHandler.mapKeyToEvent(event.keyCode) ?: return false
+        val gamepadEvent = menuInputHandler.mapKeyToEvent(event.keyCode, event.deviceId) ?: return false
         return dispatch(GamepadInput(gamepadEvent, isRepeat = event.repeatCount > 0))
     }
 

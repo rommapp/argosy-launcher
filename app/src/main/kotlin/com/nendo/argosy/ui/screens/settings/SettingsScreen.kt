@@ -825,6 +825,7 @@ fun SettingsScreen(
                 state = dialog,
                 onMoveFocus = viewModel::moveRootScriptFocus,
                 onReboot = viewModel::rebootAfterRootScript,
+                onConfirmBackup = viewModel::confirmRootScriptBackup,
                 onDismiss = viewModel::dismissRootScriptDialog
             )
         }

@@ -5,6 +5,9 @@ import com.nendo.argosy.data.local.entity.GameScreenshotEntity
 import com.nendo.argosy.data.local.entity.ScreenshotSource
 import com.nendo.argosy.data.model.GameSource
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class GameDetailScreenshotMappingTest {
@@ -32,13 +35,57 @@ class GameDetailScreenshotMappingTest {
         rommScreenshotId = id
     )
 
-    private fun detail(rows: List<GameScreenshotEntity>) = game.toGameDetailUi(
+    private val videoPath = "roms/42/video/normalized.mp4"
+
+    private fun detail(rows: List<GameScreenshotEntity>, entity: GameEntity = game) = entity.toGameDetailUi(
         art = null,
         screenshotRows = rows,
         platformName = "SNES",
         emulatorName = null,
         canPlay = false
     )
+
+    @Test
+    fun `a gameplay video leads the strip ahead of every screenshot`() {
+        val shots = detail(listOf(official), game.copy(videoNormalizedPath = videoPath)).screenshots
+
+        assertEquals(listOf(videoPath, "https://cdn/a.jpg"), shots.map { it.remoteUrl })
+        assertEquals(listOf(true, false), shots.map { it.isVideo })
+        assertNull(shots.first().cachedPath)
+    }
+
+    @Test
+    fun `a game with only a gameplay video still has one strip entry`() {
+        val shots = detail(emptyList(), game.copy(videoNormalizedPath = videoPath)).screenshots
+
+        assertTrue(shots.single().isVideo)
+    }
+
+    @Test
+    fun `a game without a gameplay video has no video entry`() {
+        val shots = detail(listOf(official), game.copy(youtubeVideoId = "abc123")).screenshots
+
+        assertFalse(shots.any { it.isVideo })
+        assertEquals(listOf("https://cdn/a.jpg"), shots.map { it.remoteUrl })
+    }
+
+    @Test
+    fun `a blank video path adds no entry`() {
+        assertTrue(detail(emptyList(), game.copy(videoNormalizedPath = " ")).screenshots.isEmpty())
+    }
+
+    @Test
+    fun `refreshing the gallery keeps the gameplay video first`() {
+        val loaded = detail(listOf(official), game.copy(videoNormalizedPath = videoPath))
+
+        val refreshed = screenshotEntries(loaded.videoPath, listOf(official, gallery(ScreenshotSource.OWN, 0, 9L)))
+
+        assertEquals(
+            listOf(videoPath, "https://romm/api/screenshots/9/content", "https://cdn/a.jpg"),
+            refreshed.map { it.remoteUrl }
+        )
+        assertTrue(refreshed.first().isVideo)
+    }
 
     @Test
     fun `own shots lead, other users' follow, official screenshots close the list`() {

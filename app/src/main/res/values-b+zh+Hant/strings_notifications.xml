@@ -121,6 +121,7 @@
     <string name="notif_gamelaunch_no_emulator">此平台未安裝任何模擬器</string>
     <string name="notif_gamelaunch_busy_syncing">同步仍在進行中，請稍後再試。</string>
     <string name="notif_gamelaunch_busy_launching">另一款遊戲仍在啟動中</string>
+    <string name="notif_gamelaunch_running_copy_not_closed">這款遊戲仍在執行，無法關閉</string>
     <string name="notif_gamelaunch_no_rom_file">找不到ROM檔案</string>
     <string name="notif_gamelaunch_no_steam_launcher">尚未安裝Steam啟動程式</string>
     <string name="notif_gamelaunch_no_steam_launcher_installed">尚未安裝 Steam 啟動程式。請前往設定 &gt; Steam 安裝。</string>

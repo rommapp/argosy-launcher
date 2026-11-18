@@ -69,10 +69,11 @@ object SystemHotkeyCombos {
  * Global Home, Back and quick panel from controller combos while another app is in front; true
  * marks a consumed event. While [quickPanelAvailable], the Back combo fires Back on release and
  * opens the quick panel once held for [BACK_COMBO_HOLD_MS]. A guide tap goes Home and a guide
- * held for [GUIDE_HOLD_MS] calls [openRunning].
+ * held for [GUIDE_HOLD_MS] calls [openRunning]. [config] receives the input device id of the
+ * pressed key, and a chord keeps the config of the key that started it.
  */
 class SystemHotkeyDetector(
-    private val config: () -> SystemHotkeyConfig,
+    private val config: (Int) -> SystemHotkeyConfig,
     private val foreignAppInFront: () -> Boolean,
     private val scheduleHold: (Runnable, Long) -> Unit,
     private val cancelHold: (Runnable) -> Unit,
@@ -107,10 +108,10 @@ class SystemHotkeyDetector(
         openRunning()
     }
 
-    fun onKeyDown(keyCode: Int, isRepeat: Boolean): Boolean {
+    fun onKeyDown(keyCode: Int, isRepeat: Boolean, deviceId: Int): Boolean {
         if (isRepeat) return keyCode in consumedUps
-        if (!(chord ?: config()).tracks(keyCode)) return false
-        if (held.isEmpty()) chord = config().takeIf { it.enabled && foreignAppInFront() }
+        if (!(chord ?: config(deviceId)).tracks(keyCode)) return false
+        if (held.isEmpty()) chord = config(deviceId).takeIf { it.enabled && foreignAppInFront() }
         held += keyCode
         val active = chord ?: return false
         return when {

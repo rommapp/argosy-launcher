@@ -40,14 +40,19 @@ import com.nendo.argosy.data.streaming.StreamEndReason
 import com.nendo.argosy.data.streaming.StreamPhase
 import com.nendo.argosy.data.streaming.StreamSession
 import com.nendo.argosy.data.streaming.StreamSessionManager
+import com.nendo.argosy.core.input.ConnectedControllerTracker
+import com.nendo.argosy.core.input.ControllerProfiles
 import com.nendo.argosy.core.input.HomeKeys
 import com.nendo.argosy.core.input.SoundType
+import com.nendo.argosy.core.input.forDevice
+import com.nendo.argosy.ui.input.ButtonGlyphSwaps
 import com.nendo.argosy.ui.input.GamepadEvent
 import com.nendo.argosy.ui.input.SoundFeedbackManager
 import com.nendo.argosy.ui.input.LocalABIconsSwapped
 import com.nendo.argosy.ui.input.LocalSwapStartSelect
 import com.nendo.argosy.ui.input.LocalXYIconsSwapped
-import com.nendo.argosy.ui.input.mapKeycodeToGamepadEvent
+import com.nendo.argosy.ui.input.buttonGlyphSwaps
+import com.nendo.argosy.ui.input.gamepadEventFor
 import com.nendo.argosy.ui.theme.ALauncherTheme
 import com.nendo.argosy.util.hideSystemBars
 import com.nendo.argosy.util.installImmersiveMode
@@ -56,6 +61,7 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.update
@@ -93,6 +99,9 @@ class StreamPlayerActivity : ComponentActivity() {
     @Inject
     lateinit var quickPanelOverlay: com.nendo.argosy.ui.quickpanel.QuickPanelOverlay
 
+    @Inject
+    lateinit var connectedControllerTracker: ConnectedControllerTracker
+
     private lateinit var webView: WebView
     private lateinit var overlay: ComposeView
     private val uiState = MutableStateFlow(StreamPlayerUiState())
@@ -108,9 +117,9 @@ class StreamPlayerActivity : ComponentActivity() {
         }
     }
     private var roomOrigin: String? = null
-    private var swapAB by mutableStateOf(false)
-    private var swapXY by mutableStateOf(false)
-    private var swapStartSelect by mutableStateOf(false)
+    @Volatile
+    private var controllerProfiles = ControllerProfiles()
+    private var glyphSwaps by mutableStateOf(ButtonGlyphSwaps(ab = false, xy = false, startSelect = false))
     private var backHoldJob: Job? = null
     private var backHoldFired = false
     private var noticeJob: Job? = null
@@ -170,9 +179,9 @@ class StreamPlayerActivity : ComponentActivity() {
             setContent {
                 ALauncherTheme {
                     CompositionLocalProvider(
-                        LocalABIconsSwapped provides swapAB,
-                        LocalXYIconsSwapped provides swapXY,
-                        LocalSwapStartSelect provides swapStartSelect
+                        LocalABIconsSwapped provides glyphSwaps.ab,
+                        LocalXYIconsSwapped provides glyphSwaps.xy,
+                        LocalSwapStartSelect provides glyphSwaps.startSelect
                     ) {
                         val state by uiState.collectAsState()
                         StreamPlayerOverlay(
@@ -341,11 +350,12 @@ class StreamPlayerActivity : ComponentActivity() {
 
     private fun readButtonSwaps() {
         lifecycleScope.launch {
-            userPreferencesRepository.preferences.collectLatest { prefs ->
-                swapAB = prefs.swapAB
-                swapXY = prefs.swapXY
-                swapStartSelect = prefs.swapStartSelect
-            }
+            userPreferencesRepository.preferences
+                .combine(connectedControllerTracker.activePad) { prefs, activePad -> prefs to activePad }
+                .collectLatest { (prefs, activePad) ->
+                    controllerProfiles = prefs.controllerProfiles
+                    glyphSwaps = prefs.buttonGlyphSwaps(activePad)
+                }
         }
     }
 
@@ -444,6 +454,7 @@ class StreamPlayerActivity : ComponentActivity() {
         val dsm = DualScreenManagerHolder.instance
         val claimed = dsm == null || dsm.claimInput(event)
         if (!claimed) return true
+        connectedControllerTracker.noteInput(event)
         return handleKey(event)
     }
 
@@ -454,7 +465,7 @@ class StreamPlayerActivity : ComponentActivity() {
         if (event.keyCode == KeyEvent.KEYCODE_BACK && !uiState.value.capturesInput) return onBackKey(event)
         if (uiState.value.capturesInput) {
             if (event.action == KeyEvent.ACTION_DOWN && event.repeatCount == 0) {
-                mapKeycodeToGamepadEvent(event.keyCode, swapAB, swapXY, swapStartSelect)?.let(::routeOverlay)
+                controllerProfiles.forDevice(event.deviceId).gamepadEventFor(event.keyCode)?.let(::routeOverlay)
             }
             return true
         }

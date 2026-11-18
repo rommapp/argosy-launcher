@@ -91,7 +91,7 @@ private fun SnapshotDeleteOverlay(confirm: SnapshotConfirmUi.Delete, actions: Sn
 
     DisposableEffect(gamepadInputHandler) {
         val listener: (KeyEvent) -> Boolean = { event ->
-            val mapped = gamepadInputHandler?.mapKeyToEvent(event.keyCode)
+            val mapped = gamepadInputHandler?.mapKeyToEvent(event.keyCode, event.deviceId)
             when {
                 mapped == GamepadEvent.Confirm -> when (event.action) {
                     KeyEvent.ACTION_DOWN -> tracker.onConfirmKeyDown(isRepeat = event.repeatCount > 0)

@@ -411,7 +411,8 @@ class GameDetailViewModel @Inject constructor(
                     it.copy(
                         focusedScreenshotIndex = ssState.focusedScreenshotIndex,
                         showScreenshotViewer = ssState.showScreenshotViewer,
-                        viewerScreenshotIndex = ssState.viewerScreenshotIndex
+                        viewerScreenshotIndex = ssState.viewerScreenshotIndex,
+                        viewerVideoPaused = ssState.viewerVideoPaused
                     )
                 }
             }
@@ -980,10 +981,9 @@ class GameDetailViewModel @Inject constructor(
     private fun refreshGalleryScreenshotsInBackground(gameId: Long, rommId: Long, downloadEnabled: Boolean) {
         viewModelScope.launch {
             val rows = romMRepository.refreshGalleryScreenshots(gameId, rommId, downloadEnabled) ?: return@launch
-            val screenshots = rows.toScreenshotPairs()
             _uiState.update { state ->
                 val game = state.game?.takeIf { it.id == gameId } ?: return@update state
-                state.copy(game = game.copy(screenshots = screenshots))
+                state.copy(game = game.copy(screenshots = screenshotEntries(game.videoPath, rows)))
             }
         }
     }
@@ -1627,6 +1627,10 @@ class GameDetailViewModel @Inject constructor(
         ) { loadGame(currentGameId) }
     }
 
+    fun toggleViewerVideoPlayback() {
+        screenshotDelegate.toggleViewerVideoPlayback(_uiState.value.game?.screenshots ?: emptyList())
+    }
+
     // --- Save management delegate forwarding ---
 
     fun showSaveCacheDialog() {
@@ -2005,9 +2009,9 @@ class GameDetailViewModel @Inject constructor(
 
     private fun screenshotCandidates(slot: ArtSlot): List<ArtCandidate> {
         if (!slot.pickerConfig.offersScreenshots) return emptyList()
-        return _uiState.value.game?.screenshots.orEmpty().map { shot ->
-            ArtCandidate(source = shot.cachedPath ?: shot.remoteUrl)
-        }
+        return _uiState.value.game?.screenshots.orEmpty()
+            .filterNot { it.isVideo }
+            .map { shot -> ArtCandidate(source = shot.cachedPath ?: shot.remoteUrl) }
     }
 
     fun setArtPickerQuery(query: String) = pickerModalDelegate.setArtPickerQuery(query)
@@ -2860,6 +2864,7 @@ class GameDetailViewModel @Inject constructor(
                 saveState.showStateReplaceAutoConfirmation -> confirmReplaceAutoWithSlot()
                 saveState.showScreenshotPreview -> dismissScreenshotPreview()
                 saveState.isVisible -> confirmSaveCacheSelection()
+                state.isViewerOnVideo -> toggleViewerVideoPlayback()
                 state.showScreenshotViewer -> closeScreenshotViewer()
                 state.showAchievementList -> {}
                 state.showReviewList -> confirmReviewListSelection()
@@ -2984,7 +2989,10 @@ class GameDetailViewModel @Inject constructor(
             if (saveState.isVisible && !saveState.showRestoreConfirmation && !saveState.showRenameDialog && !saveState.showDeleteConfirmation && !saveState.showMigrateConfirmation && !saveState.showDeleteLegacyConfirmation) {
                 saveChannelTertiaryAction(); return InputResult.HANDLED
             }
-            if (state.showScreenshotViewer) { setCurrentScreenshotAsBackground(); return InputResult.HANDLED }
+            if (state.showScreenshotViewer) {
+                if (!state.isViewerOnVideo) setCurrentScreenshotAsBackground()
+                return InputResult.HANDLED
+            }
             if (state.downloadStatus == GameDownloadStatus.DOWNLOADED && state.game?.isBuiltInEmulator == true) { showPlayOptions(); return InputResult.HANDLED }
             if (state.hasSocialAccount && state.game?.igdbId != null) { togglePrivacy(); return InputResult.HANDLED }
             return InputResult.UNHANDLED

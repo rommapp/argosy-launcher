@@ -5,7 +5,9 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import com.nendo.argosy.core.input.ActivePad
 import com.nendo.argosy.core.input.ControllerDetector
+import com.nendo.argosy.core.input.ControllerProfile
 import com.nendo.argosy.core.input.DetectedLayout
 import com.nendo.argosy.data.preferences.UserPreferences
 import com.nendo.argosy.ui.components.InputButton
@@ -41,7 +43,7 @@ fun InputButton.positionUnder(swaps: ButtonGlyphSwaps): ControllerPosition? = wh
 fun ControllerPosition.intentButton(swaps: ButtonGlyphSwaps): InputButton =
     POSITIONED_BUTTONS.first { it.positionUnder(swaps) == this }
 
-fun UserPreferences.buttonGlyphSwaps(detected: DetectedLayout?): ButtonGlyphSwaps {
+fun ControllerProfile.buttonGlyphSwaps(detected: DetectedLayout?): ButtonGlyphSwaps {
     val nintendo = ControllerDetector.isNintendoLayout(controllerLayout, detected)
     return ButtonGlyphSwaps(
         ab = nintendo xor swapAB,
@@ -50,20 +52,23 @@ fun UserPreferences.buttonGlyphSwaps(detected: DetectedLayout?): ButtonGlyphSwap
     )
 }
 
+fun UserPreferences.buttonGlyphSwaps(pad: ActivePad): ButtonGlyphSwaps =
+    controllerProfiles.forController(pad.controllerId).buttonGlyphSwaps(pad.layout)
+
 /**
  * Supplies the glyph swap locals to [content] for a surface that is not hosted inside `ArgosyApp`.
- * [detectedLayout] is the active controller's layout.
+ * [activePad] is the pad that last sent input.
  */
 @Composable
 fun ProvideButtonGlyphs(
     preferences: Flow<UserPreferences>,
-    detectedLayout: StateFlow<DetectedLayout?>,
+    activePad: StateFlow<ActivePad>,
     content: @Composable () -> Unit
 ) {
     val prefs by preferences.collectAsState(initial = null)
-    val layout by detectedLayout.collectAsState()
-    val swaps = remember(prefs, layout) {
-        prefs?.buttonGlyphSwaps(layout)
+    val pad by activePad.collectAsState()
+    val swaps = remember(prefs, pad) {
+        prefs?.buttonGlyphSwaps(pad)
             ?: ButtonGlyphSwaps(ab = false, xy = false, startSelect = false)
     }
     CompositionLocalProvider(

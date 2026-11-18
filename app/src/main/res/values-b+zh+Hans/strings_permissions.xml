@@ -53,5 +53,7 @@
     <string name="notif_permissions_revoked_body_notifications">Android 可能会在游戏时关闭 Argosy。</string>
     <string name="notif_permissions_revoked_body_overlay">提示和快捷面板只会在 Argosy 显示时出现。</string>
     <string name="notif_permissions_revoked_body_accessibility">打开其他应用时，主页键和组合键将无法使用。</string>
+    <string name="notif_accessibility_unbound_title">Argosy 的无障碍服务未在运行</string>
+    <string name="notif_accessibility_unbound_body">在无障碍设置中关闭再开启 Argosy，即可恢复主页键、长按返回键和组合键。</string>
     <string name="notif_permissions_revoked_body_battery">长时间游戏时，Android 可能会暂停下载并关闭 Argosy。</string>
 </resources>

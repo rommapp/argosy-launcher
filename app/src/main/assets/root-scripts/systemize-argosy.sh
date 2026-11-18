@@ -23,7 +23,7 @@
 # updates installed normally, and uninstalling an update reverts the app to the
 # version this script captured.
 
-PKG="com.nendo.argosy"
+PKG="${1:-com.nendo.argosy}"
 MODULE_ID="argosy_systemize"
 
 LOG=""
@@ -82,6 +82,22 @@ copy_apks() {
     done
     [ "$count" -gt 0 ] || return 1
     log "copied $count apk(s) to $dest"
+    copy_native_libs "$dest" || return 1
+    return 0
+}
+
+copy_native_libs() {
+    dest="$1"
+    libs="$(dirname "$APK")/lib"
+    if [ ! -d "$libs" ]; then
+        log "no extracted native libraries; the apk carries its own"
+        return 0
+    fi
+    rm -rf "$dest/lib"
+    cp -r "$libs" "$dest/lib" || return 1
+    find "$dest/lib" -type d -exec chmod 755 {} \;
+    find "$dest/lib" -type f -exec chmod 644 {} \;
+    log "copied native libraries ($(ls "$dest/lib" | tr '\n' ' ')) to $dest/lib"
     return 0
 }
 

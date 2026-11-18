@@ -503,7 +503,7 @@ fun ScreenshotsSection(
     val cacheManager = com.nendo.argosy.ui.common.LocalImageCacheManager.current
     LaunchedEffect(gameId, cacheEnabled, screenshots) {
         if (!cacheEnabled || cacheManager == null || gameId == 0L) return@LaunchedEffect
-        if (screenshots.any { it.cachedPath == null }) {
+        if (screenshots.any { !it.isVideo && it.cachedPath == null }) {
             cacheManager.queueScreenshotCacheByGameId(gameId)
         }
     }
@@ -572,7 +572,13 @@ fun ScreenshotsSection(
                         }
                         .background(MaterialTheme.colorScheme.surfaceVariant)
                 ) {
-                    if (useRemote) {
+                    if (screenshot.isVideo) {
+                        VideoEntryPlaceholder(
+                            iconSize = Dimens.iconLg,
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.fillMaxSize()
+                        )
+                    } else if (useRemote) {
                         ScreenshotImage(
                             model = screenshot.remoteUrl,
                             contentDescription = null,

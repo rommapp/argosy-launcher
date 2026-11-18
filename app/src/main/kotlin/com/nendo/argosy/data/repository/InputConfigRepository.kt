@@ -124,6 +124,24 @@ class InputConfigRepository @Inject constructor(
             controllerMappingDao.getByControllerIdAndPlatform(controllerId, platformId)?.let { return it }
         }
         return controllerMappingDao.getByControllerIdGlobal(controllerId)
+            ?: findSameModelUserMapping(controllerId, platformId)
+    }
+
+    private suspend fun findSameModelUserMapping(controllerId: String, platformId: String?): ControllerMappingEntity? {
+        val (vendorId, productId) = vendorAndProductOf(controllerId) ?: return null
+        val found = platformId?.let { controllerMappingDao.getUserMappingByVendorAndProduct(vendorId, productId, it) }
+            ?: controllerMappingDao.getUserMappingByVendorAndProductGlobal(vendorId, productId)
+            ?: return null
+        Logger.info(TAG, "No mapping saved for $controllerId; using ${found.controllerId} from the same controller model")
+        return found
+    }
+
+    private fun vendorAndProductOf(controllerId: String): Pair<Int, Int>? {
+        val parts = controllerId.split(':')
+        val vendorId = parts.getOrNull(0)?.toIntOrNull() ?: return null
+        val productId = parts.getOrNull(1)?.toIntOrNull() ?: return null
+        if (vendorId == 0 && productId == 0) return null
+        return vendorId to productId
     }
 
     private suspend fun findExactMapping(controllerId: String, platformId: String?): ControllerMappingEntity? {

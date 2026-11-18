@@ -56,13 +56,6 @@ class MainActivityPreferencesObserver(
                 }
                 previousPrimaryColor = prefs.primaryColor
 
-                sessionStateStore.setInputSwapPreferences(
-                    swapAB = prefs.swapAB,
-                    swapXY = prefs.swapXY,
-                    swapStartSelect = prefs.swapStartSelect,
-                    controllerLayout = prefs.controllerLayout
-                )
-
                 if (prefs.dualScreenEnabled != previousDualScreenEnabled) {
                     displayAffinityHelper.dualScreenEnabled = prefs.dualScreenEnabled
                     sessionStateStore.setDualScreenEnabled(prefs.dualScreenEnabled)

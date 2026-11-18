@@ -91,6 +91,7 @@
 
     <string name="gamedetail_section_description_heading">ОПИСАНИЕ</string>
     <string name="gamedetail_section_screenshots_heading">СКРИНШОТЫ</string>
+    <string name="gamedetail_section_screenshots_video_label">Видео геймплея</string>
     <string name="gamedetail_section_related_heading">ПОХОЖИЕ ИГРЫ</string>
     <string name="gamedetail_section_reviews_heading">ОТЗЫВЫ</string>
     <string name="gamedetail_section_achievements_heading">ДОСТИЖЕНИЯ</string>
@@ -154,6 +155,8 @@
     <string name="gamedetail_screenshot_viewer_footer_navigate">Навигация</string>
     <string name="gamedetail_screenshot_viewer_footer_close">Закрыть</string>
     <string name="gamedetail_screenshot_viewer_footer_set_background">Сделать фоном</string>
+    <string name="gamedetail_screenshot_viewer_footer_play">Воспроизвести</string>
+    <string name="gamedetail_screenshot_viewer_footer_pause">Пауза</string>
 
     <string name="gamedetail_option_item_current_description">Текущий</string>
     <string name="gamedetail_option_item_value">[%1$s]</string>

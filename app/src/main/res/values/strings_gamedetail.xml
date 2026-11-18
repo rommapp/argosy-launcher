@@ -270,6 +270,10 @@
     <string name="gamedetail_section_description_heading">DESCRIPTION</string>
     <!-- Heading over the strip of in-game pictures. Noun, plural. Rendered in caps in English. -->
     <string name="gamedetail_section_screenshots_heading">SCREENSHOTS</string>
+    <!-- Label on the first tile of the screenshot strip, and in the viewer while that clip loads
+         or is paused, when the game has a gameplay video. Noun phrase: a recording of the game
+         being played. -->
+    <string name="gamedetail_section_screenshots_video_label">Gameplay video</string>
     <!-- Heading over the strip of other games from the same series or publisher. Noun phrase.
          Rendered in caps in English. -->
     <string name="gamedetail_section_related_heading">RELATED GAMES</string>
@@ -504,6 +508,11 @@
     <!-- Footer hint in the viewer. Verb phrase: uses the picture on screen as the game page's
          backdrop. -->
     <string name="gamedetail_screenshot_viewer_footer_set_background">Set Background</string>
+    <!-- Footer hint in the viewer while the gameplay video is paused. Media verb: resumes the
+         video. Not the verb that launches the game. -->
+    <string name="gamedetail_screenshot_viewer_footer_play">Play</string>
+    <!-- Footer hint in the viewer while the gameplay video plays. Verb: pauses the video. -->
+    <string name="gamedetail_screenshot_viewer_footer_pause">Pause</string>
 
     <!-- ================================ Option rows =================================== -->
 

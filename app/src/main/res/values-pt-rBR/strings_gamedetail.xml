@@ -88,6 +88,7 @@
 
     <string name="gamedetail_section_description_heading">DESCRIÇÃO</string>
     <string name="gamedetail_section_screenshots_heading">CAPTURAS DE TELA</string>
+    <string name="gamedetail_section_screenshots_video_label">Vídeo de gameplay</string>
     <string name="gamedetail_section_related_heading">JOGOS RELACIONADOS</string>
     <string name="gamedetail_section_reviews_heading">AVALIAÇÕES</string>
     <string name="gamedetail_section_achievements_heading">CONQUISTAS</string>
@@ -206,6 +207,8 @@
     <string name="gamedetail_screenshot_viewer_footer_navigate">Navegar</string>
     <string name="gamedetail_screenshot_viewer_footer_close">Fechar</string>
     <string name="gamedetail_screenshot_viewer_footer_set_background">Usar como plano de fundo</string>
+    <string name="gamedetail_screenshot_viewer_footer_play">Reproduzir</string>
+    <string name="gamedetail_screenshot_viewer_footer_pause">Pausar</string>
 
     <string name="gamedetail_option_item_current_description">Atual</string>
     <string name="gamedetail_option_item_value">[%1$s]</string>

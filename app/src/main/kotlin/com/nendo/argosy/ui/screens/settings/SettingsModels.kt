@@ -436,6 +436,7 @@ data class ControlsState(
     val swapAB: Boolean = false,
     val swapXY: Boolean = false,
     val swapStartSelect: Boolean = false,
+    val controllerProfileSaved: Boolean = false,
     val selectLCombo: String = "quick_menu",
     val selectRCombo: String = "quick_settings",
     val hasUsageStatsPermission: Boolean = false,
@@ -693,6 +694,16 @@ data class LaunchArgsModalState(
 )
 
 sealed interface RootScriptDialogState {
+    data class ConfirmBackup(
+        val script: com.nendo.argosy.data.model.RootScript,
+        val backupPath: String,
+        val focusIndex: Int = CANCEL_FOCUS
+    ) : RootScriptDialogState {
+        companion object {
+            const val CANCEL_FOCUS = 0
+            const val CONTINUE_FOCUS = 1
+        }
+    }
     data class Running(val script: com.nendo.argosy.data.model.RootScript) : RootScriptDialogState
     data class Finished(
         val result: com.nendo.argosy.data.model.RootScriptResult,

@@ -2,6 +2,7 @@ package com.nendo.argosy.ui.components
 
 import com.nendo.argosy.DualScreenManagerHolder
 import com.nendo.argosy.core.input.SoundType
+import com.nendo.argosy.data.preferences.ActiveControllerProfiles
 import com.nendo.argosy.data.preferences.ControlsPreferences
 import com.nendo.argosy.data.preferences.MenuWrapMode
 import com.nendo.argosy.data.preferences.ScreenOrientationMode
@@ -108,6 +109,7 @@ private data class PageReadings(
  */
 class QuickSettingsController(
     private val preferencesRepository: UserPreferencesRepository,
+    private val activeControllerProfiles: ActiveControllerProfiles,
     private val brightnessController: BrightnessController,
     private val volumeController: VolumeController,
     private val performanceResolver: DevicePerformanceResolver,
@@ -186,12 +188,13 @@ class QuickSettingsController(
         .distinctUntilChanged()
 
     val state: StateFlow<QuickSettingsState> = combine(
-        preferencesRepository.userPreferences,
+        combine(preferencesRepository.userPreferences, activeControllerProfiles.active, ::Pair),
         hudEnabled,
         socialRepository.connectionState,
         combine(device, levels, dualScreen, hardware, ::DeviceReadings),
         combine(power.state, activityWhileOpen, ::PageReadings)
-    ) { prefs, hud, social, (deviceSettings, displayLevels, screens, hardwareStats), (powerState, activityState) ->
+    ) { (prefs, activeController), hud, social, (deviceSettings, displayLevels, screens, hardwareStats), (powerState, activityState) ->
+        val controllerProfile = activeController.profile
         QuickSettingsState(
             themeMode = prefs.themeMode,
             screenOrientation = prefs.screenOrientation,
@@ -199,9 +202,9 @@ class QuickSettingsController(
             soundEnabled = prefs.soundEnabled,
             hapticEnabled = prefs.hapticEnabled,
             vibrationStrength = prefs.hapticStrength,
-            swapAB = prefs.swapAB,
-            swapXY = prefs.swapXY,
-            swapStartSelect = prefs.swapStartSelect,
+            swapAB = controllerProfile.swapAB,
+            swapXY = controllerProfile.swapXY,
+            swapStartSelect = controllerProfile.swapStartSelect,
             fanMode = deviceSettings.fanMode,
             fanSpeed = deviceSettings.fanSpeed,
             fanSupported = deviceSettings.fanSupported,
@@ -328,15 +331,15 @@ class QuickSettingsController(
     }
 
     fun setSwapAB(enabled: Boolean) {
-        scope.launch { preferencesRepository.setSwapAB(enabled) }
+        scope.launch { activeControllerProfiles.setSwapAB(enabled) }
     }
 
     fun setSwapXY(enabled: Boolean) {
-        scope.launch { preferencesRepository.setSwapXY(enabled) }
+        scope.launch { activeControllerProfiles.setSwapXY(enabled) }
     }
 
     fun setSwapStartSelect(enabled: Boolean) {
-        scope.launch { preferencesRepository.setSwapStartSelect(enabled) }
+        scope.launch { activeControllerProfiles.setSwapStartSelect(enabled) }
     }
 
     fun setHudEnabled(enabled: Boolean) {

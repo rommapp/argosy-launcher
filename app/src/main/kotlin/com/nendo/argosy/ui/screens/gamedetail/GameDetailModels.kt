@@ -10,9 +10,15 @@ import com.nendo.argosy.ui.common.savechannel.SaveChannelState
 import com.nendo.argosy.ui.screens.common.SyncOverlayState
 import com.nendo.argosy.ui.screens.gamedetail.components.SaveStatusInfo
 
+/**
+ * One entry of the game page's screenshot strip and viewer. A video entry is the game's RomM
+ * gameplay video: [remoteUrl] holds its server resource path, [cachedPath] is always null, and it
+ * is never decoded as an image, cached as a screenshot, or offered as artwork.
+ */
 data class ScreenshotPair(
     val remoteUrl: String,
-    val cachedPath: String?
+    val cachedPath: String?,
+    val isVideo: Boolean = false
 )
 
 data class UpdateFileUi(
@@ -91,6 +97,7 @@ data class GameDetailUi(
     val playCount: Int,
     val playTimeMinutes: Int,
     val screenshots: List<ScreenshotPair>,
+    val videoPath: String? = null,
     val achievements: List<AchievementUi> = emptyList(),
     val emulatorName: String?,
     val canPlay: Boolean,
@@ -334,6 +341,7 @@ data class GameDetailUiState(
     val focusedScreenshotIndex: Int = 0,
     val showScreenshotViewer: Boolean = false,
     val viewerScreenshotIndex: Int = 0,
+    val viewerVideoPaused: Boolean = false,
     val repairedBackgroundPath: String? = null,
     val showExtractionFailedPrompt: Boolean = false,
     val extractionFailedInfo: ExtractionFailedInfo? = null,
@@ -369,6 +377,9 @@ data class GameDetailUiState(
     // Convenience accessors for backward compatibility
     val showSaveCacheDialog: Boolean get() = saveChannel.isVisible
     val showRenameDialog: Boolean get() = saveChannel.showRenameDialog
+
+    val isViewerOnVideo: Boolean
+        get() = showScreenshotViewer && game?.screenshots?.getOrNull(viewerScreenshotIndex)?.isVideo == true
 
     /**
      * Which menu rows this state shows. The menu's focus index is resolved against it everywhere,

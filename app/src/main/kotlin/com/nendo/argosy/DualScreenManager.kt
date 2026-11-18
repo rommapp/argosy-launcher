@@ -855,15 +855,14 @@ class DualScreenManager(
         /**
          * A key from the primary display. [action] and [repeatCount] come straight from the source
          * event because the companion cannot tell a tap from a hold without them, and a forwarded
-         * down-only stream makes every press look instantaneous.
+         * down-only stream makes every press look instantaneous. [deviceId] is the source pad, whose
+         * button swaps the companion reads the key through.
          */
         fun onForwardKey(
             keyCode: Int,
             action: Int,
             repeatCount: Int,
-            swapAB: Boolean,
-            swapXY: Boolean,
-            swapStartSelect: Boolean
+            deviceId: Int
         )
         fun refocusSelf()
         fun onDownloadCompleted(gameId: Long)

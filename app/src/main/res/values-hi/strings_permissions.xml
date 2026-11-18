@@ -53,5 +53,7 @@
     <string name="notif_permissions_revoked_body_notifications">खेलते समय Android, Argosy को बंद कर सकता है।</string>
     <string name="notif_permissions_revoked_body_overlay">सूचनाएं और क्विक पैनल केवल तभी दिखते हैं जब Argosy स्क्रीन पर हो।</string>
     <string name="notif_permissions_revoked_body_accessibility">कोई दूसरा ऐप खुला होने पर होम और बटन कॉम्बो काम नहीं करते।</string>
+    <string name="notif_accessibility_unbound_title">Argosy की एक्सेसिबिलिटी सेवा नहीं चल रही है</string>
+    <string name="notif_accessibility_unbound_body">होम, बैक को दबाए रखना और बटन कॉम्बो वापस लाने के लिए एक्सेसिबिलिटी सेटिंग में Argosy को बंद करके फिर चालू करें।</string>
     <string name="notif_permissions_revoked_body_battery">लंबे सत्रों में Android डाउनलोड रोक सकता है और Argosy को बंद कर सकता है।</string>
 </resources>

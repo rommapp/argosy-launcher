@@ -813,7 +813,7 @@ open class LibretroActivity : ComponentActivity() {
         }
     }
 
-    private fun padIntentOf(keyCode: Int): PadIntent = when (menuInputHandler.mapKeyToEvent(keyCode)) {
+    private fun padIntentOf(event: KeyEvent): PadIntent = when (menuInputHandler.mapKeyToEvent(event.keyCode, event.deviceId)) {
         com.nendo.argosy.ui.input.GamepadEvent.Confirm -> PadIntent.CONFIRM
         com.nendo.argosy.ui.input.GamepadEvent.Back -> PadIntent.BACK
         else -> PadIntent.OTHER
@@ -827,7 +827,7 @@ open class LibretroActivity : ComponentActivity() {
             name = device.name.orEmpty(),
             keyCode = event.keyCode,
             isDown = event.action == KeyEvent.ACTION_DOWN,
-            intent = padIntentOf(event.keyCode)
+            intent = padIntentOf(event)
         )
     }
 
@@ -1064,17 +1064,13 @@ open class LibretroActivity : ComponentActivity() {
         val inputPrefs = launchPreferences
         menuWrapMode = inputPrefs.menuWrapMode
         lifecycleScope.launch {
-            connectedControllerTracker.activeLayout.collect { layout ->
-                applyGlyphSwaps(inputPrefs.buttonGlyphSwaps(layout))
+            connectedControllerTracker.activePad.collect { pad ->
+                applyGlyphSwaps(inputPrefs.buttonGlyphSwaps(pad))
             }
         }
         connectedControllers = inputConfigRepository.observeConnectedControllers()
             .stateIn(lifecycleScope, SharingStarted.Eagerly, emptyList())
-        menuInputHandler = LibretroMenuInputHandler(
-            inputPrefs.swapAB,
-            inputPrefs.swapXY,
-            inputPrefs.swapStartSelect
-        )
+        menuInputHandler = LibretroMenuInputHandler(inputPrefs.controllerProfiles)
         com.nendo.argosy.ui.input.applyFeedbackPreferences(inputPrefs, hapticManager, soundManager)
         gamepadInputBridge = LibretroGamepadInputHandler(
             menuInputHandler = menuInputHandler,
@@ -3582,7 +3578,7 @@ open class LibretroActivity : ComponentActivity() {
                 return true
             }
             if (gamepadInputBridge.handleKeyEvent(event)) return true
-            if (menuInputHandler.mapKeyToEvent(event.keyCode) != null) return true
+            if (menuInputHandler.mapKeyToEvent(event.keyCode, event.deviceId) != null) return true
         }
         return super.dispatchKeyEvent(event)
     }
@@ -4158,6 +4154,11 @@ open class LibretroActivity : ComponentActivity() {
         splitRow?.let { applySidePanelSplit(it) }
     }
 
+    private fun refreshMappingsForDeviceChange() {
+        if (!::inputConfig.isInitialized) return
+        lifecycleScope.launch { inputConfig.refreshInputMappings() }
+    }
+
     private fun refreshGamepadPresence() {
         val connected = com.nendo.argosy.core.input.ControllerDetector.isAnyGamepadConnected()
         if (connected != isGamepadConnectedState) {
@@ -4170,7 +4171,10 @@ open class LibretroActivity : ComponentActivity() {
     private fun registerGamepadDetection() {
         val im = getSystemService(android.hardware.input.InputManager::class.java) ?: return
         val listener = object : android.hardware.input.InputManager.InputDeviceListener {
-            override fun onInputDeviceAdded(deviceId: Int) = refreshGamepadPresence()
+            override fun onInputDeviceAdded(deviceId: Int) {
+                refreshGamepadPresence()
+                refreshMappingsForDeviceChange()
+            }
             override fun onInputDeviceRemoved(deviceId: Int) {
                 releaseCoreHeldKeys()
                 if (::inputConfig.isInitialized) {
@@ -4184,7 +4188,10 @@ open class LibretroActivity : ComponentActivity() {
                 }
                 refreshGamepadPresence()
             }
-            override fun onInputDeviceChanged(deviceId: Int) = refreshGamepadPresence()
+            override fun onInputDeviceChanged(deviceId: Int) {
+                refreshGamepadPresence()
+                refreshMappingsForDeviceChange()
+            }
         }
         inputDeviceListener = listener
         im.registerInputDeviceListener(listener, null)

@@ -1356,7 +1356,9 @@ private fun GameDetailModals(
             currentIndex = uiState.viewerScreenshotIndex,
             onNavigate = viewModel::moveViewerIndex,
             onDismiss = viewModel::closeScreenshotViewer,
-            onSetBackground = viewModel::setCurrentScreenshotAsBackground
+            onSetBackground = viewModel::setCurrentScreenshotAsBackground,
+            videoPaused = uiState.viewerVideoPaused,
+            onToggleVideo = viewModel::toggleViewerVideoPlayback
         )
     }
 

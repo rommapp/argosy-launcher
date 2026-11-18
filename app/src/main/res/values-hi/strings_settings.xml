@@ -207,6 +207,8 @@
     <string name="settings_navigation_swap_xy_subtitle">कॉन्टेक्स्ट मेनू और सेकेंडरी एक्शन बदलें</string>
     <string name="settings_navigation_swap_start_select_title">Start/Select बदलें</string>
     <string name="settings_navigation_swap_start_select_subtitle">Start और Select बटन के काम आपस में बदलें</string>
+    <string name="settings_navigation_forget_controller_title">इस कंट्रोलर को भूलें</string>
+    <string name="settings_navigation_forget_controller_subtitle">इस कंट्रोलर को डिफ़ॉल्ट लेआउट और बटन अदला-बदली पर वापस लाएँ</string>
     <string name="settings_navigation_ignore_controller_touchpad_title">गेम में टचपैड अनदेखा करें</string>
     <string name="settings_navigation_ignore_controller_touchpad_subtitle">गेम चलते समय कंट्रोलर का टचपैड लॉन्चर पर क्लिक नहीं कर सकता</string>
 
@@ -720,6 +722,9 @@
 
     <string name="settings_about_systemize_title">भारी एमुलेटर पर क्रैश रोकें</string>
     <string name="settings_about_systemize_subtitle">जब कोई भारी एमुलेटर ज़्यादातर RAM का उपयोग करता है तो Argosy फ़ोर्स-क्लोज़ हो सकता है। यह Argosy को सिस्टम ऐप बना देता है ताकि इसे अब बंद न किया जाए। रूट चाहिए।</string>
+    <string name="settings_about_unsystemize_title">सिस्टम ऐप से हटाएँ</string>
+    <string name="settings_about_unsystemize_subtitle">Argosy को फिर से सामान्य ऐप बनाता है ताकि इसे अनइंस्टॉल किया जा सके। आपके गेम, सेव और सेटिंग बनी रहती हैं। रूट और रीबूट चाहिए।</string>
+    <string name="settings_about_system_image_subtitle">इस डिवाइस के Android में Argosy पहले से सिस्टम ऐप के रूप में शामिल है, इसलिए यह भारी एमुलेटर के दौरान भी चलता रहता है।</string>
     <string name="settings_about_restart_title">Argosy रीस्टार्ट करें</string>
     <string name="settings_about_restart_subtitle">लॉन्चर बंद करके फिर से खोलें</string>
 
@@ -2477,7 +2482,7 @@
     <string name="settings_systemize_dialog_detected_device">पहचाना गया डिवाइस: %1$s</string>
     <string name="settings_systemize_dialog_next_steps_heading">अगले कदम</string>
     <string name="settings_systemize_dialog_step_format">%1$d. %2$s</string>
-    <string name="settings_systemize_dialog_success_footnote">रूटेड डिवाइस चाहिए। यह बदलाव पूर्ववत किया जा सकता है: \"Argosy Systemize\" नाम का Magisk मॉड्यूल हटाएँ और रीबूट करें। अगर आपके मेनू में शब्द अलग हैं, तो भी स्क्रिप्ट फ़ाइल सही है - बस अपने run-as-root विकल्प को उसी पर सेट करें।</string>
+    <string name="settings_systemize_dialog_success_footnote">रूटेड डिवाइस चाहिए। बाद में इसे पूर्ववत करने के लिए इसी पेज पर \"सिस्टम ऐप से हटाएँ\" का उपयोग करें, आपका डेटा बना रहता है। अगर आपके मेनू में शब्द अलग हैं, तो भी स्क्रिप्ट फ़ाइल सही है - बस अपने run-as-root विकल्प को उसी पर सेट करें।</string>
     <string name="settings_systemize_dialog_error_title">स्क्रिप्ट सेव नहीं हो सकी</string>
     <string name="settings_systemize_dialog_error_hint">स्टोरेज एक्सेस गुम हो सकता है। सेटअप में सभी फ़ाइलों तक एक्सेस दें और फिर से कोशिश करें।</string>
 
@@ -2492,6 +2497,12 @@
     <string name="settings_root_script_dialog_output_heading">स्क्रिप्ट आउटपुट</string>
     <string name="settings_root_script_dialog_reboot_hint">पूरा करने के लिए रीबूट करें, फिर Argosy को अपना डिफ़ॉल्ट लॉन्चर सेट करें।</string>
     <string name="settings_root_script_dialog_reboot_button">अभी रीबूट करें</string>
+    <string name="settings_root_script_dialog_unsystemize_reboot_hint">पूरा करने के लिए रीबूट करें। इसके बाद Argosy एक सामान्य ऐप की तरह चलेगा।</string>
+    <string name="settings_root_script_backup_title">सिस्टम ऐप्स से हटाएँ?</string>
+    <string name="settings_root_script_backup_body">अगर सामान्य ऐप में बदलना विफल हुआ, तो कैश की गई इमेज और बिना सिंक हुए सेव खो सकते हैं।</string>
+    <string name="settings_root_script_backup_cancel_button">रद्द करें</string>
+    <string name="settings_root_script_backup_export_note">आपकी सेटिंग्स का बैकअप %1$s में ले लिया गया है।</string>
+    <string name="settings_root_script_backup_continue_button">जारी रखें</string>
     <string name="settings_root_script_step_open_retroid">Settings > Advanced > Run script as Root खोलें</string>
     <string name="settings_root_script_step_open_ayn">Settings > Advanced Settings > Run script as Root खोलें</string>
     <string name="settings_root_script_step_open_ayaneo">Settings > Optimization Assistant > Root Script खोलें</string>

@@ -327,7 +327,7 @@ fun InputMappingModal(
 
     val keyListener: (KeyEvent) -> Boolean = { event ->
         val isBackKey = event.keyCode == KeyEvent.KEYCODE_BACK ||
-            gamepadInputHandler?.mapKeyToEvent(event.keyCode) == GamepadEvent.Back
+            gamepadInputHandler?.mapKeyToEvent(event.keyCode, event.deviceId) == GamepadEvent.Back
         if (suppressBackUntilRelease && isBackKey) {
             if (event.action == KeyEvent.ACTION_UP) suppressBackUntilRelease = false
             true
@@ -336,7 +336,7 @@ fun InputMappingModal(
                 is InputMappingState.ControllerList,
                 is InputMappingState.PlatformMapping -> {
                     if (event.action == KeyEvent.ACTION_DOWN) {
-                        gamepadInputHandler?.mapKeyToEvent(event.keyCode)?.let(navigate)
+                        gamepadInputHandler?.mapKeyToEvent(event.keyCode, event.deviceId)?.let(navigate)
                     }
                 }
                 is InputMappingState.Recording -> {

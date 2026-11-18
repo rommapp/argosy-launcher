@@ -840,9 +840,22 @@ class GameLaunchDelegate @Inject constructor(
                     android.util.Log.d("GameLaunchDelegate", "launchSimple: ending session for game ${it.gameId} before fresh launch")
                     evictSessionReturningStopped(it)
                 }
+                val emulatorPackage = game?.let {
+                    emulatorResolver.getEmulatorPackageForGame(it.id, it.platformId, it.platformSlug)
+                }
+                if (game != null && emulatorPackage == EmulatorRegistry.BUILTIN_PACKAGE &&
+                    !backgroundGameLaunch.closeSlotHolding(
+                        game.id,
+                        variantFileId ?: variantResolver.resolveVariant(game)?.id
+                    )
+                ) {
+                    notificationManager.showError(NotificationText.Res(R.string.notif_gamelaunch_running_copy_not_closed))
+                    callbacks.onLaunchFailed()
+                    return@launch
+                }
                 val cleared = game == null || emulatorClearedForLaunch(
                     ticket,
-                    emulatorResolver.getEmulatorPackageForGame(game.id, game.platformId, game.platformSlug),
+                    emulatorPackage,
                     stoppedPackage,
                     noTrackedSession = activeSession == null || activeSession.isStream,
                     platformSlug = game.platformSlug

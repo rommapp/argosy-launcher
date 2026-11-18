@@ -34,6 +34,13 @@ private const val CONNECT_SETTLE_MS = 1_500L
 fun controllerIdOf(device: InputDevice): String =
     "${device.vendorId}:${device.productId}:${device.descriptor}"
 
+/**
+ * The profile for the input device [deviceId], or [ControllerProfiles.defaults] when the device is
+ * gone or has none. Reads only the in-process device cache and the in-memory profiles.
+ */
+fun ControllerProfiles.forDevice(deviceId: Int): ControllerProfile =
+    forController(InputDevice.getDevice(deviceId)?.let(::controllerIdOf))
+
 @Singleton
 class ConnectedControllerTracker @Inject constructor(
     @ApplicationContext private val context: Context
@@ -71,13 +78,14 @@ class ConnectedControllerTracker @Inject constructor(
     val activeController: StateFlow<ActiveController?> = activeState.active
 
     /**
-     * Layout of [activeController], or of the first connected pad until one has sent input.
-     * Re-detected whenever the active pad changes or any input device is added, changed or removed.
+     * [activeController]'s id with its layout, or no id and the first connected pad's layout until
+     * a pad has sent input. Re-detected whenever the active pad changes or any input device is
+     * added, changed or removed.
      */
-    val activeLayout: StateFlow<DetectedLayout?> =
-        combine(activeController, deviceGeneration) { active, _ -> detectActive(active).layout }
+    val activePad: StateFlow<ActivePad> =
+        combine(activeController, deviceGeneration) { active, _ -> activePadOf(active) }
             .flowOn(Dispatchers.IO)
-            .stateIn(scope, SharingStarted.Eagerly, detectActive(null).layout)
+            .stateIn(scope, SharingStarted.Eagerly, activePadOf(null))
 
     private val removedDeviceIds: MutableSet<Int> = ConcurrentHashMap.newKeySet()
 
@@ -156,6 +164,9 @@ class ConnectedControllerTracker @Inject constructor(
 
     private fun detectActive(active: ActiveController?): DetectionResult =
         ControllerDetector.detectFor(deviceOf(active))
+
+    private fun activePadOf(active: ActiveController?): ActivePad =
+        ActivePad(controllerId = active?.controllerId, layout = detectActive(active).layout)
 
     private fun connectedPads(): List<InputDevice> =
         InputDevice.getDeviceIds()

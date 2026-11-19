@@ -44,6 +44,7 @@ import com.nendo.argosy.R
 import com.nendo.argosy.ui.coil.AppIconData
 import com.nendo.argosy.ui.theme.Dimens
 import com.nendo.argosy.ui.theme.LocalArgosyTheme
+import com.nendo.argosy.ui.theme.reducedMotion
 import com.nendo.argosy.ui.util.clickableNoFocus
 
 private val APP_DRAWER_MAX_HEIGHT =
@@ -217,8 +218,9 @@ fun CompanionAppDrawer(
     onDismiss: () -> Unit
 ) {
     val listState = rememberLazyListState()
+    val reduced = reducedMotion()
     LaunchedEffect(focusIndex) {
-        if (focusIndex in apps.indices) listState.animateScrollToItemCentered(focusIndex)
+        if (focusIndex in apps.indices) listState.animateScrollToItemCentered(focusIndex, reduced)
     }
     CenteredModal(title = stringResource(R.string.dual_companion_app_drawer_title), onDismiss = onDismiss) {
         LazyColumn(

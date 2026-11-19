@@ -422,6 +422,13 @@ class DisplaySettingsDelegate @Inject constructor(
         }
     }
 
+    fun setReduceAnimations(scope: CoroutineScope, enabled: Boolean) {
+        scope.launch {
+            preferencesRepository.setReduceAnimations(enabled)
+            _state.update { it.copy(reduceAnimations = enabled) }
+        }
+    }
+
     fun adjustUiScale(scope: CoroutineScope, delta: Int) {
         val current = _state.value.uiScale
         val newValue = (current + delta).coerceIn(50, 150)

@@ -334,6 +334,7 @@ data class DisplayState(
     val videoWallpaperDelaySeconds: Int = 3,
     val videoWallpaperMuted: Boolean = com.nendo.argosy.ui.theme.generated.ComponentDefaults.Background.videoWallpaperMuted,
     val uiScale: Int = 100,
+    val reduceAnimations: Boolean = false,
     val gripReserveMode: GripReserveMode = GripReserveMode.OFF,
     val gripReservePercent: Int = GRIP_RESERVE_DEFAULT_PERCENT,
     val gripAutoControllers: com.nendo.argosy.domain.model.GripAutoControllers =

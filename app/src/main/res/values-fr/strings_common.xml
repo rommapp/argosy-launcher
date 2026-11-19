@@ -584,6 +584,7 @@
     <string name="ui_home_layout_kind_carousel">Carrousel</string>
     <string name="ui_home_layout_kind_auto_grid">Grille automatique</string>
     <string name="ui_home_layout_kind_custom_grid">Grille personnalisée</string>
+    <string name="ui_home_layout_kind_columns">Colonnes</string>
     <string name="ui_home_layout_alignment_top">Haut</string>
     <string name="ui_home_layout_alignment_center">Centre</string>
     <string name="ui_home_layout_alignment_bottom">Bas</string>

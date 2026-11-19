@@ -34,6 +34,7 @@ import coil.compose.AsyncImage
 import com.nendo.argosy.ui.common.rememberFileImageModel
 import com.nendo.argosy.ui.theme.Dimens
 import com.nendo.argosy.ui.theme.LocalArgosyTheme
+import com.nendo.argosy.ui.theme.reducedMotion
 
 private const val COLLAGE_ALPHA = 0.35f
 private const val SCROLL_PIXELS_PER_SECOND = 14f
@@ -130,8 +131,9 @@ private fun CollageRow(coverPaths: List<String>, reverse: Boolean, modifier: Mod
         rememberLazyListState(initialFirstVisibleItemIndex = middle - middle.mod(coverPaths.size))
     }
 
-    LaunchedEffect(coverPaths, reverse) {
-        if (coverPaths.isEmpty()) return@LaunchedEffect
+    val reduced = reducedMotion()
+    LaunchedEffect(coverPaths, reverse, reduced) {
+        if (coverPaths.isEmpty() || reduced) return@LaunchedEffect
         val step = 4000f
         val durationMs = (step / SCROLL_PIXELS_PER_SECOND * 1000f).toInt()
         while (true) {

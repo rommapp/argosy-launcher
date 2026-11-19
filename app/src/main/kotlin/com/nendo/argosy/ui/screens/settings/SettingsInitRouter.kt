@@ -646,6 +646,7 @@ internal fun routeLoadSettings(vm: SettingsViewModel) {
             videoWallpaperDelaySeconds = prefs.videoWallpaperDelaySeconds,
             videoWallpaperMuted = prefs.videoWallpaperMuted,
             uiScale = prefs.uiScale,
+            reduceAnimations = prefs.reduceAnimations,
             gripReserveMode = prefs.gripReserveMode,
             gripReservePercent = prefs.gripReservePercent,
             gripAutoControllers = prefs.gripAutoControllers,

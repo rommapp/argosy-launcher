@@ -52,6 +52,8 @@ import com.nendo.argosy.ui.primitives.StepperControl
 import com.nendo.argosy.ui.theme.Dimens
 import com.nendo.argosy.ui.theme.LocalArgosyTheme
 import com.nendo.argosy.ui.theme.Motion
+import com.nendo.argosy.ui.theme.modalScrim
+import com.nendo.argosy.ui.theme.reducedMotion
 import com.nendo.argosy.ui.util.clickableNoFocus
 
 @Composable
@@ -70,13 +72,14 @@ fun ShaderStackSection(
         isTouchMode = LocalSettingsTouchFocus.current.isTouchMode
     )
 
-    val pickerBlur = if (shaderStack.showShaderPicker) Motion.blurRadiusModal else 0.dp
+    val pickerBlur = if (shaderStack.showShaderPicker && !reducedMotion()) Motion.blurRadiusModal else 0.dp
 
     Box(modifier = Modifier.fillMaxSize()) {
         Row(
             modifier = Modifier
                 .fillMaxSize()
                 .blur(pickerBlur)
+                .modalScrim(shaderStack.showShaderPicker)
                 .padding(Dimens.spacingMd),
             horizontalArrangement = Arrangement.spacedBy(Dimens.spacingLg)
         ) {

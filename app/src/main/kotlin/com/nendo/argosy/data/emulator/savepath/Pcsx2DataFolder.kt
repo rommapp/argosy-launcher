@@ -30,11 +30,20 @@ object Pcsx2DataFolder {
     private const val SLOT1_ENABLE_KEY = "Slot1_Enable"
     private const val SLOT1_FILENAME_KEY = "Slot1_Filename"
     private const val FILE_CARD_SUFFIX = ".ps2"
+    private const val GAME_SETTINGS_DIR = "gamesettings"
+    private const val INI_SUFFIX = ".ini"
     private val DISABLED_VALUES = setOf("false", "0", "no", "off")
+    private val REGION_PREFIX = Regex("^B[AEI](?=[A-Z]{4})")
+    private val NOT_ALPHANUMERIC = Regex("[^A-Z0-9]")
 
-    fun parse(text: String): Pcsx2Settings {
+    /**
+     * The settings [text] holds, with the `[MemoryCards]` entries of a game's own ini [gameText]
+     * laid over them key by key, as the emulator layers a game's settings over its global ones.
+     */
+    fun parse(text: String, gameText: String? = null): Pcsx2Settings {
         val folders = IniSections.entries(text, FOLDERS_SECTION)
-        val cards = IniSections.entries(text, CARDS_SECTION)
+        val cards = IniSections.entries(text, CARDS_SECTION) +
+            gameText?.let { IniSections.entries(it, CARDS_SECTION) }.orEmpty()
         val slot1Disabled = cards[SLOT1_ENABLE_KEY]?.trim()?.lowercase()?.let { it in DISABLED_VALUES } == true
         val slot1 = cards[SLOT1_FILENAME_KEY]?.trim()?.takeIf { !slot1Disabled && it.isNotEmpty() }
         val cardsFolder = folders[CARDS_FOLDER_KEY]?.trim()?.takeIf { it.isNotEmpty() }
@@ -43,12 +52,22 @@ object Pcsx2DataFolder {
 
     /**
      * The ini settings of the data folder [dataRoot], or null when it holds no `PCSX2-Android.ini`.
+     * With a [serial], the game's own `gamesettings/<serial>_<CRC>.ini` is laid over them; the
+     * newest such file wins when the game has several discs.
      */
-    fun read(dataRoot: String, fal: FileAccessLayer): Pcsx2Settings? {
-        val ini = iniPath(dataRoot, fal) ?: return null
-        val text = fal.getInputStream(ini)?.use { it.bufferedReader().readText() } ?: return null
-        return parse(text)
+    fun read(dataRoot: String, fal: FileAccessLayer, serial: String? = null): Pcsx2Settings? {
+        val text = iniPath(dataRoot, fal)?.let { readText(it, fal) } ?: return null
+        val gameText = serial?.let { gameIniPath(dataRoot, it, fal) }?.let { readText(it, fal) }
+        return parse(text, gameText)
     }
+
+    /**
+     * The serial [id] reduces to for matching a game's ini: upper case, letters and digits only,
+     * and without the region prefix a memory card save folder carries (`BASLUS-20675` is
+     * `SLUS20675`).
+     */
+    fun serialKey(id: String): String =
+        id.uppercase().replace(NOT_ALPHANUMERIC, "").replace(REGION_PREFIX, "")
 
     /**
      * The cards folder of the data folder [dataRoot]: the ini's `MemoryCards` folder, `memcards`
@@ -102,4 +121,16 @@ object Pcsx2DataFolder {
         val root = dataRoot.trimEnd('/')
         return INI_DIRS.map { "$root/$it$INI_NAME" }.firstOrNull { fal.exists(it) }
     }
+
+    private fun gameIniPath(dataRoot: String, serial: String, fal: FileAccessLayer): String? {
+        val key = serialKey(serial).takeIf { it.isNotEmpty() } ?: return null
+        return fal.listFilesUnion("${dataRoot.trimEnd('/')}/$GAME_SETTINGS_DIR")
+            .filter { it.isFile && it.name.endsWith(INI_SUFFIX, ignoreCase = true) }
+            .filter { serialKey(it.name.substringBeforeLast('_')) == key }
+            .maxByOrNull { it.lastModified }
+            ?.path
+    }
+
+    private fun readText(path: String, fal: FileAccessLayer): String? =
+        fal.getInputStream(path)?.use { it.bufferedReader().readText() }
 }

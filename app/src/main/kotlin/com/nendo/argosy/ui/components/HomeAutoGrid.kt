@@ -50,9 +50,8 @@ import com.nendo.argosy.ui.common.rememberGameArtAspectRatio
 import com.nendo.argosy.ui.screens.home.GameDownloadIndicator
 import com.nendo.argosy.ui.theme.Dimens
 import com.nendo.argosy.ui.theme.LocalBoxArtStyle
-import com.nendo.argosy.ui.theme.LocalMotionTier
 import com.nendo.argosy.ui.theme.Motion
-import com.nendo.argosy.ui.theme.MotionTier
+import com.nendo.argosy.ui.theme.reducedMotion
 import com.nendo.argosy.ui.theme.generated.ComponentDefaults
 import com.nendo.argosy.ui.util.clickableNoFocus
 import kotlinx.coroutines.flow.first
@@ -309,7 +308,7 @@ private fun rememberAutoGridEntry(
     hasItems: Boolean,
     gridState: LazyGridState
 ): AutoGridEntry? {
-    val enabled = key != null && LocalMotionTier.current != MotionTier.Reduced
+    val enabled = key != null && !reducedMotion()
     val positions = remember(key) { mutableStateOf<Map<Any, Int>?>(null) }
     val clock = remember(key) { Animatable(0f) }
     LaunchedEffect(key, hasItems, enabled) {

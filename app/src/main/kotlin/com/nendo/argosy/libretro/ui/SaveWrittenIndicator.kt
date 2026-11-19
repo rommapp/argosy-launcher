@@ -22,6 +22,7 @@ import androidx.compose.ui.draw.scale
 import androidx.compose.ui.res.painterResource
 import com.nendo.argosy.R
 import com.nendo.argosy.ui.theme.Dimens
+import com.nendo.argosy.ui.theme.reducedMotion
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -40,9 +41,18 @@ fun SaveWrittenIndicator(writtenAt: Long, modifier: Modifier = Modifier) {
     val helmRotation = remember { Animatable(0f) }
     val helmAlpha = remember { Animatable(1f) }
     val checkScale = remember { Animatable(0f) }
+    val reduced = reducedMotion()
 
     LaunchedEffect(writtenAt) {
         if (writtenAt == 0L) return@LaunchedEffect
+        if (reduced) {
+            helmAlpha.snapTo(0f)
+            checkScale.snapTo(1f)
+            visibility.snapTo(1f)
+            delay(VISIBLE_MS)
+            visibility.snapTo(0f)
+            return@LaunchedEffect
+        }
         helmRotation.snapTo(0f)
         helmAlpha.snapTo(1f)
         checkScale.snapTo(0f)

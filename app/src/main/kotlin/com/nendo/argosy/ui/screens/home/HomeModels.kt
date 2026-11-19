@@ -337,6 +337,7 @@ data class HomeUiState(
     val tileShowcases: Map<Long, com.nendo.argosy.ui.dualscreen.PresentationSlot.PlatformShowcase> =
         emptyMap(),
     val tileMedia: Map<String, HomeMediaUi> = emptyMap(),
+    val columns: ColumnsState = ColumnsState(),
     val continueGameId: Long? = null,
     val runningOrder: Map<Long, Int> = emptyMap(),
     val raTileSummary: com.nendo.argosy.domain.model.RaTileContent? = null,
@@ -367,13 +368,35 @@ data class HomeUiState(
     val memcardPickerState: com.nendo.argosy.ui.screens.common.MemcardPickerState? = null,
     val memcardPickerFocusIndex: Int = 0,
     val changelogEntry: com.nendo.argosy.domain.model.ChangelogEntry? = null,
-    val isVideoPreviewActive: Boolean = false,
-    val videoPreviewId: String? = null,
-    val isVideoPreviewLoading: Boolean = false,
+    val videoPreviewPhase: com.nendo.argosy.ui.screens.home.delegates.VideoPreviewPhase =
+        com.nendo.argosy.ui.screens.home.delegates.VideoPreviewPhase.IDLE,
+    val videoPreviewClip: com.nendo.argosy.ui.components.GameVideoClip? = null,
     val muteVideoPreview: Boolean = com.nendo.argosy.ui.theme.generated.ComponentDefaults.Background.videoWallpaperMuted,
     val videoWallpaperEnabled: Boolean = false,
     val videoWallpaperDelayMs: Long = 3000L
 ) {
+    val isVideoPreviewActive: Boolean get() = videoPreviewPhase.isActive
+
+    val isVideoPreviewLoading: Boolean
+        get() = videoPreviewPhase == com.nendo.argosy.ui.screens.home.delegates.VideoPreviewPhase.LOADING
+
+    val videoPreviewId: String? get() = videoPreviewClip?.key
+
+    /**
+     * Whether the preview hides the header and footer. Columns hides them once expanded, the other
+     * layouts while the clip plays.
+     */
+    val videoChromeHidden: Boolean
+        get() = when (layoutKind) {
+            com.nendo.argosy.domain.model.HomeLayoutKind.COLUMNS -> videoPreviewPhase.isExpanded
+            com.nendo.argosy.domain.model.HomeLayoutKind.CAROUSEL,
+            com.nendo.argosy.domain.model.HomeLayoutKind.AUTO_GRID,
+            com.nendo.argosy.domain.model.HomeLayoutKind.CUSTOM_GRID -> isVideoPreviewActive
+        }
+
+    val isVideoTakeoverEngaged: Boolean
+        get() = layoutKind == com.nendo.argosy.domain.model.HomeLayoutKind.COLUMNS && videoPreviewPhase.isExpanded
+
     /**
      * The rows on offer, in the order [HomeSectionKind] declares them: the fixed opening run, then
      * every repeating run, then the fixed closing run. Walking the three lists rather than hardcoding
@@ -559,7 +582,11 @@ data class HomeUiState(
      * tiles and suppresses the game info panel, so presentation reads this one accessor.
      */
     val isMediaRow: Boolean
-        get() = currentRow.kind in HomeSectionKind.MEDIA
+        get() = if (layoutKind == com.nendo.argosy.domain.model.HomeLayoutKind.COLUMNS) {
+            columns.focusedColumn?.kind == com.nendo.argosy.domain.model.HomeColumnKind.MEDIA
+        } else {
+            currentRow.kind in HomeSectionKind.MEDIA
+        }
 
     /**
      * A library row browses a library's own top-level items, so its tile is a movie or a series
@@ -589,14 +616,21 @@ data class HomeUiState(
      * downstream can find the focused title by looking at one.
      */
     val focusedMedia: HomeMediaUi?
-        get() = if (layoutKind == com.nendo.argosy.domain.model.HomeLayoutKind.CUSTOM_GRID) {
-            focusedTileMedia
-        } else {
-            (focusedItem as? HomeRowItem.Media)?.media
+        get() = when (layoutKind) {
+            com.nendo.argosy.domain.model.HomeLayoutKind.CUSTOM_GRID -> focusedTileMedia
+            com.nendo.argosy.domain.model.HomeLayoutKind.COLUMNS ->
+                (columns.focusedItem as? HomeRowItem.Media)?.media
+            com.nendo.argosy.domain.model.HomeLayoutKind.CAROUSEL,
+            com.nendo.argosy.domain.model.HomeLayoutKind.AUTO_GRID ->
+                (focusedItem as? HomeRowItem.Media)?.media
         }
 
     val focusedItem: HomeRowItem?
-        get() = currentItems.getOrNull(focusedGameIndex)
+        get() = if (layoutKind == com.nendo.argosy.domain.model.HomeLayoutKind.COLUMNS) {
+            columns.focusedItem
+        } else {
+            currentItems.getOrNull(focusedGameIndex)
+        }
 
     /**
      * The game under the cursor, whichever layout is showing. Everything downstream reads this one
@@ -605,10 +639,13 @@ data class HomeUiState(
      * that this layout never puts on screen.
      */
     val focusedGame: HomeGameUi?
-        get() = if (layoutKind == com.nendo.argosy.domain.model.HomeLayoutKind.CUSTOM_GRID) {
-            focusedTileGame
-        } else {
-            (focusedItem as? HomeRowItem.Game)?.game
+        get() = when (layoutKind) {
+            com.nendo.argosy.domain.model.HomeLayoutKind.CUSTOM_GRID -> focusedTileGame
+            com.nendo.argosy.domain.model.HomeLayoutKind.COLUMNS ->
+                (columns.focusedItem as? HomeRowItem.Game)?.game
+            com.nendo.argosy.domain.model.HomeLayoutKind.CAROUSEL,
+            com.nendo.argosy.domain.model.HomeLayoutKind.AUTO_GRID ->
+                (focusedItem as? HomeRowItem.Game)?.game
         }
 
     val focusedTile: com.nendo.argosy.domain.model.HomeTile?
@@ -964,7 +1001,12 @@ fun HomeUiState.withDockApps(apps: List<String>): HomeUiState {
 }
 
 fun HomeUiState.keepingFocusOn(gameId: Long?): HomeUiState {
-    if (layoutKind == com.nendo.argosy.domain.model.HomeLayoutKind.CUSTOM_GRID) return this
+    when (layoutKind) {
+        com.nendo.argosy.domain.model.HomeLayoutKind.CUSTOM_GRID,
+        com.nendo.argosy.domain.model.HomeLayoutKind.COLUMNS -> return this
+        com.nendo.argosy.domain.model.HomeLayoutKind.CAROUSEL,
+        com.nendo.argosy.domain.model.HomeLayoutKind.AUTO_GRID -> Unit
+    }
     val items = currentItems
     if (items.isEmpty()) return this
     val index = gameId?.let { id -> items.indexOfFirst { (it as? HomeRowItem.Game)?.game?.id == id } }

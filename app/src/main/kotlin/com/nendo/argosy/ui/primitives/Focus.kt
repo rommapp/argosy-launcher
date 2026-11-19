@@ -21,7 +21,6 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.nendo.argosy.ui.theme.LocalActiveGamePalette
 import com.nendo.argosy.ui.theme.LocalArgosyTheme
-import com.nendo.argosy.ui.theme.LocalMotionTier
 import com.nendo.argosy.ui.theme.Motion
 
 enum class FocusDirection { Up, Down, Left, Right }
@@ -65,9 +64,8 @@ fun Modifier.argosyFocusIndicators(
     val effectiveTint = tint ?: palette.firstOrNull() ?: theme.focusAccent
     val effectiveStripeColor = stripeColor ?: effectiveTint
     val effectiveRingColor = ringColor ?: effectiveTint
-    val tier = LocalMotionTier.current
-    val tierSpringFloat = Motion.tierFocusSpring(tier)
-    val tierSpringDp = Motion.tierFocusSpringDp(tier)
+    val tierSpringFloat = Motion.focusSpring
+    val tierSpringDp = Motion.focusSpringDp
 
     val translationY by animateDpAsState(
         targetValue = if (focused && indicators.lift) -liftDp else 0.dp,

@@ -30,6 +30,7 @@ import com.nendo.argosy.R
 import com.nendo.argosy.ui.components.SwitchPreference
 import com.nendo.argosy.ui.screens.settings.components.SectionHeader
 import com.nendo.argosy.ui.theme.Dimens
+import com.nendo.argosy.ui.theme.reducedMotion
 import com.nendo.argosy.ui.util.touchOnly
 
 sealed class CheatListItem {
@@ -110,6 +111,7 @@ fun AvailableTab(
     val listState = rememberLazyListState()
     val enabledCount = allCheats.count { it.enabled }
     val searchFieldFocused = focusedIndex == 0
+    val reduced = reducedMotion()
 
     val cheatIndexToListIndex = remember(listItems) {
         listItems.mapIndexedNotNull { listIdx, item ->
@@ -126,7 +128,11 @@ fun AvailableTab(
                 val viewportHeight = layoutInfo.viewportEndOffset - layoutInfo.viewportStartOffset
                 val itemHeight = layoutInfo.visibleItemsInfo.firstOrNull()?.size ?: 60
                 val centerOffset = (viewportHeight - itemHeight) / 2
-                listState.animateScrollToItem(listIndex, -centerOffset)
+                if (reduced) {
+                    listState.scrollToItem(listIndex, -centerOffset)
+                } else {
+                    listState.animateScrollToItem(listIndex, -centerOffset)
+                }
             }
         }
     }

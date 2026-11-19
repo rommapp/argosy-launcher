@@ -61,10 +61,10 @@ import com.nendo.argosy.ui.components.recap.rememberRecapFullCardSurface
 import com.nendo.argosy.ui.input.ModalInputEffect
 import com.nendo.argosy.ui.primitives.ActionButton
 import com.nendo.argosy.ui.theme.LocalLauncherTheme
-import com.nendo.argosy.ui.theme.LocalMotionTier
 import com.nendo.argosy.ui.theme.Motion
-import com.nendo.argosy.ui.theme.MotionTier
 import com.nendo.argosy.ui.theme.generated.ComponentDefaults
+import com.nendo.argosy.ui.theme.motionDuration
+import com.nendo.argosy.ui.theme.reducedMotion
 import com.nendo.argosy.ui.util.clickableNoFocus
 import dagger.hilt.EntryPoint
 import dagger.hilt.InstallIn
@@ -199,7 +199,7 @@ fun launchRecapBackdropBlur(): Dp {
     val tracker = remember { launchProgressEntryPoint(context).launchProgressTracker() }
     val progress by tracker.progress.collectAsState()
     val blur by animateDpAsState(
-        targetValue = if (progress?.step is LaunchStep.Recap) Motion.blurRadiusDrawer else 0.dp,
+        targetValue = if (progress?.step is LaunchStep.Recap && !reducedMotion()) Motion.blurRadiusDrawer else 0.dp,
         animationSpec = tween(launchOverlayFadeMs()),
         label = "launchRecapBlur"
     )
@@ -210,8 +210,7 @@ fun launchRecapBackdropBlur(): Dp {
  * The launch overlay's fade length, zero under reduced motion.
  */
 @Composable
-fun launchOverlayFadeMs(): Int =
-    if (LocalMotionTier.current == MotionTier.Reduced) 0 else ComponentDefaults.LaunchOverlay.fadeMs
+fun launchOverlayFadeMs(): Int = motionDuration(ComponentDefaults.LaunchOverlay.fadeMs)
 
 private const val NO_PROMPT_FOCUS = -1
 

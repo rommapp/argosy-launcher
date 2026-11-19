@@ -1,6 +1,5 @@
 package com.nendo.argosy.ui.screens.settings.components
 
-import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.foundation.background
 import com.nendo.argosy.ui.util.clickableNoFocus
 import androidx.compose.foundation.layout.Arrangement
@@ -24,7 +23,6 @@ import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.unit.dp
 import com.nendo.argosy.R
 import com.nendo.argosy.data.preferences.RegionFilterMode
 import com.nendo.argosy.data.preferences.SyncFilterPreferences
@@ -37,7 +35,8 @@ import com.nendo.argosy.ui.components.SwitchPreference
 import com.nendo.argosy.ui.input.ModalPresenceEffect
 import com.nendo.argosy.ui.theme.Dimens
 import com.nendo.argosy.ui.theme.LocalLauncherTheme
-import com.nendo.argosy.ui.theme.Motion
+import com.nendo.argosy.ui.theme.animateModalBlur
+import com.nendo.argosy.ui.theme.modalScrim
 
 @Composable
 fun SyncFiltersModal(
@@ -63,11 +62,7 @@ fun SyncFiltersModal(
     val isDarkTheme = LocalLauncherTheme.current.isDarkTheme
     val overlayColor = if (isDarkTheme) Color.Black.copy(alpha = 0.7f) else Color.White.copy(alpha = 0.5f)
 
-    val modalBlur by animateDpAsState(
-        targetValue = if (showRegionPicker) Motion.blurRadiusModal else 0.dp,
-        animationSpec = Motion.focusSpringDp,
-        label = "regionPickerBlur"
-    )
+    val modalBlur by animateModalBlur(showRegionPicker, label = "regionPickerBlur")
 
     FocusedScroll(
         listState = listState,
@@ -88,7 +83,8 @@ fun SyncFiltersModal(
                 .background(MaterialTheme.colorScheme.surface)
                 .clickableNoFocus(enabled = false) {}
                 .padding(Dimens.spacingLg)
-                .blur(modalBlur),
+                .blur(modalBlur)
+                .modalScrim(showRegionPicker),
             verticalArrangement = Arrangement.spacedBy(Dimens.spacingMd)
         ) {
             Text(

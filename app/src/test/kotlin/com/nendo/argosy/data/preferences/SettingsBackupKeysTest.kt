@@ -76,7 +76,7 @@ class SettingsBackupKeysTest {
         "ambient_led_custom_color", "ambient_led_custom_color_hue", "ambient_led_enabled",
         "ambient_led_screen_enabled", "ambient_led_transition_ms", "display_role_override",
         "dual_screen_enabled", "dual_screen_input_focus", "screen_dimmer_enabled",
-        "screen_dimmer_level", "screen_dimmer_timeout_minutes", "lid_sleep_enabled", "ui_scale",
+        "screen_dimmer_level", "screen_dimmer_timeout_minutes", "lid_sleep_enabled", "ui_scale", "reduce_animations",
         "builtin_architecture_override", "builtin_gpu_driver", "grip_auto_controllers", "controller_profiles",
         "screen_layouts", "screen_layouts_unreadable", "lock_screen_art_applied", "live_wallpaper_offered", "home_app_available",
         "games_display_target", "apps_display_target", "performance_saved_mode",

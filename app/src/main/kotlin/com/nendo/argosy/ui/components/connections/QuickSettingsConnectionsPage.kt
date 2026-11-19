@@ -64,9 +64,9 @@ import com.nendo.argosy.ui.primitives.SegmentedControl
 import com.nendo.argosy.ui.theme.Dimens
 import com.nendo.argosy.ui.theme.LocalArgosyTheme
 import com.nendo.argosy.ui.theme.LocalLauncherTheme
-import com.nendo.argosy.ui.theme.LocalMotionTier
 import com.nendo.argosy.ui.theme.Motion
 import com.nendo.argosy.ui.theme.generated.MotionTokens
+import com.nendo.argosy.ui.theme.reducedMotion
 
 /**
  * The Connections page of the quick panel. Device and network actions show on the focused row
@@ -95,7 +95,7 @@ fun QuickSettingsConnectionsPage(
     val currentRows by rememberUpdatedState(rows)
     LaunchedEffect(focusedKey) {
         val listIndex = currentRows.indexOfFirst { it.key == focusedKey }
-        if (listIndex >= 0) listState.animateScrollToItemCentered(listIndex)
+        if (listIndex >= 0) listState.animateScrollToItemCentered(listIndex, reduced)
     }
 
     LazyColumn(
@@ -432,7 +432,7 @@ private fun FocusedAction(
 ) {
     FocusedActionSlot(
         shown = focused && action != null,
-        animationSpec = Motion.tierFocusSpring(LocalMotionTier.current),
+        animationSpec = Motion.focusSpring,
         rest = rest
     ) {
         when (action) {

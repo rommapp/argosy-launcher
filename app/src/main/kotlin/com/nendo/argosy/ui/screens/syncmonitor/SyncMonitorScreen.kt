@@ -52,6 +52,7 @@ import com.nendo.argosy.ui.components.FooterHints
 import com.nendo.argosy.ui.components.InputButton
 import com.nendo.argosy.ui.components.PlatformIconAssets
 import com.nendo.argosy.ui.components.animateScrollToItemCentered
+import com.nendo.argosy.ui.theme.reducedMotion
 import com.nendo.argosy.ui.components.withNavBarClearance
 import com.nendo.argosy.ui.input.LocalInputDispatcher
 import com.nendo.argosy.ui.navigation.Screen
@@ -88,9 +89,10 @@ fun SyncMonitorScreen(
     val uiState by viewModel.uiState.collectAsState()
     val listState = rememberLazyListState()
     val theme = LocalArgosyTheme.current
+    val reduced = reducedMotion()
 
     LaunchedEffect(uiState.focusedIndex, uiState.rows.size) {
-        if (uiState.hasRows) listState.animateScrollToItemCentered(uiState.focusedIndex)
+        if (uiState.hasRows) listState.animateScrollToItemCentered(uiState.focusedIndex, reduced)
     }
 
     Box(modifier = Modifier.fillMaxSize()) {

@@ -34,6 +34,7 @@ import com.nendo.argosy.ui.components.AchievementBadge
 import com.nendo.argosy.ui.components.accentColor
 import com.nendo.argosy.ui.components.achievementBadgeTier
 import com.nendo.argosy.ui.components.animateScrollToItemCentered
+import com.nendo.argosy.ui.theme.reducedMotion
 import com.nendo.argosy.ui.common.achievementTypeColor
 import com.nendo.argosy.ui.common.achievementTypeLabelRes
 import com.nendo.argosy.ui.primitives.FocusIndicators
@@ -192,11 +193,12 @@ fun AchievementList(
     }
 
     val headerOffset = if (unlockedCount > 0) 1 else 0
+    val reduced = reducedMotion()
 
     LaunchedEffect(focusIndex, ordered.size) {
         if (focusIndex in ordered.indices) {
             val lockedHeaderOffset = if (lockedCount > 0 && focusIndex >= unlockedCount) 1 else 0
-            listState.animateScrollToItemCentered(focusIndex + headerOffset + lockedHeaderOffset)
+            listState.animateScrollToItemCentered(focusIndex + headerOffset + lockedHeaderOffset, reduced)
         }
     }
 

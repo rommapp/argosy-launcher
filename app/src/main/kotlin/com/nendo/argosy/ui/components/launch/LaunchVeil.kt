@@ -15,8 +15,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.semantics.SemanticsPropertyKey
 import androidx.compose.ui.semantics.SemanticsPropertyReceiver
 import androidx.compose.ui.semantics.semantics
-import com.nendo.argosy.ui.theme.LocalMotionTier
-import com.nendo.argosy.ui.theme.MotionTier
+import com.nendo.argosy.ui.theme.reducedMotion
 import com.nendo.argosy.ui.theme.generated.ComponentDefaults
 
 /**
@@ -34,7 +33,7 @@ private var SemanticsPropertyReceiver.veilAlpha by VeilAlpha
  */
 @Composable
 fun LaunchVeil(veiled: Boolean, modifier: Modifier = Modifier, veiledSinceMs: Long? = null) {
-    val reduced = LocalMotionTier.current == MotionTier.Reduced
+    val reduced = reducedMotion()
     val veilMs = ComponentDefaults.LaunchOverlay.veilMs
     val target = if (veiled) 1f else 0f
     val animated = remember {

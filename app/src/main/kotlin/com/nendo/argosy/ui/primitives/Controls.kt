@@ -58,10 +58,9 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.nendo.argosy.ui.theme.Dimens
 import com.nendo.argosy.ui.theme.LocalArgosyTheme
-import com.nendo.argosy.ui.theme.LocalMotionTier
 import com.nendo.argosy.ui.theme.LocalUiScale
 import com.nendo.argosy.ui.theme.Motion
-import com.nendo.argosy.ui.theme.MotionTier
+import com.nendo.argosy.ui.theme.reducedMotion
 import com.nendo.argosy.ui.theme.generated.ComponentDefaults
 import com.nendo.argosy.ui.theme.trackGradientEnd
 import androidx.compose.ui.graphics.Brush
@@ -343,7 +342,7 @@ fun SegmentedControl(
 ) {
     val theme = LocalArgosyTheme.current
     val s = LocalUiScale.current.scale
-    val reduced = LocalMotionTier.current == MotionTier.Reduced
+    val reduced = reducedMotion()
     val pill = RoundedCornerShape(Dimens.radiusPill)
     val gap = (ComponentDefaults.Segmented.gapDp * s).dp
     val selectedFill = if (focused) theme.focusAccent else theme.surfaceBase

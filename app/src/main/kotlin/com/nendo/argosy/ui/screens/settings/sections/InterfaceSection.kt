@@ -63,6 +63,8 @@ internal sealed class InterfaceItem(
 
     data object Language : Row("language", SECTION_GENERAL, R.string.settings_main_language_title)
     data object UiScale : Row("uiScale", SECTION_GENERAL, R.string.settings_interface_ui_scale_title)
+    data object ReducedMotion :
+        Row("reducedMotion", SECTION_GENERAL, R.string.settings_interface_reduced_motion)
     data object ScreenOrientation :
         Row("screenOrientation", SECTION_GENERAL, R.string.settings_interface_screen_orientation_title)
     data object CompactFooter :
@@ -141,7 +143,7 @@ internal sealed class InterfaceItem(
         val ALL: List<InterfaceItem>
             get() = listOf(
                 Header("generalHeader", SECTION_GENERAL, R.string.settings_interface_section_general),
-                Language, UiScale, CompactFooter, HideSystemNavigationBar, HideSystemStatusBar,
+                Language, ReducedMotion, UiScale, CompactFooter, HideSystemNavigationBar, HideSystemStatusBar,
                 ControllerGrip, ScreenOrientation,
                 Header("screensHeader", SECTION_SCREENS, R.string.settings_interface_section_screens),
                 HomeScreen, LibraryView, BoxArt, Presentation, LockScreenArt,
@@ -279,6 +281,14 @@ fun InterfaceSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
                     step = 5,
                     suffix = "%",
                     onAdjust = { viewModel.adjustUiScale(it) }
+                )
+
+                is InterfaceItem.ReducedMotion -> SwitchPreference(
+                    title = stringResource(item.labelRes),
+                    subtitle = stringResource(R.string.settings_interface_reduced_motion_subtitle),
+                    isEnabled = display.reduceAnimations,
+                    isFocused = isFocused(item),
+                    onToggle = { viewModel.setReduceAnimations(it) }
                 )
 
                 is InterfaceItem.ScreenOrientation -> CyclePreference(

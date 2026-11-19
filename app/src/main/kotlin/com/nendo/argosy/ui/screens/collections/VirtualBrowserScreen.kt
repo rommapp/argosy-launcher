@@ -59,6 +59,7 @@ import com.nendo.argosy.ui.components.AlphabetSidebar
 import com.nendo.argosy.ui.components.FooterHints
 import com.nendo.argosy.ui.components.InputButton
 import com.nendo.argosy.ui.components.animateScrollToItemCentered
+import com.nendo.argosy.ui.theme.reducedMotion
 import com.nendo.argosy.ui.components.keyboard.ControllerKeyboardSession
 import com.nendo.argosy.ui.input.LocalInputDispatcher
 import com.nendo.argosy.ui.navigation.Screen
@@ -99,12 +100,13 @@ fun VirtualBrowserScreen(
 
     val uiState by viewModel.uiState.collectAsState()
     val listState = rememberLazyListState()
+    val reduced = reducedMotion()
 
     LaunchedEffect(uiState.focusedIndex, uiState.isSearchStopFocused) {
         if (uiState.isSearchStopFocused) {
-            listState.animateScrollToItem(0)
+            if (reduced) listState.scrollToItem(0) else listState.animateScrollToItem(0)
         } else if (uiState.categories.isNotEmpty() && uiState.focusedIndex in uiState.categories.indices) {
-            listState.animateScrollToItemCentered(uiState.focusedIndex)
+            listState.animateScrollToItemCentered(uiState.focusedIndex, reduced)
         }
     }
 

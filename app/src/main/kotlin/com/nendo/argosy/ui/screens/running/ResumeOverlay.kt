@@ -83,9 +83,8 @@ import com.nendo.argosy.data.emulator.background.TaskSnapshots
 import com.nendo.argosy.ui.common.BlurredBackdrop
 import com.nendo.argosy.ui.theme.generated.ComponentDefaults
 import com.nendo.argosy.ui.theme.generated.MotionTokens
-import com.nendo.argosy.ui.theme.LocalMotionTier
 import com.nendo.argosy.ui.theme.Motion
-import com.nendo.argosy.ui.theme.MotionTier
+import com.nendo.argosy.ui.theme.reducedMotion
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import javax.inject.Inject
@@ -315,7 +314,7 @@ class ResumeOverlay @Inject constructor(
             val isShown by shown.collectAsState()
             val isLeaving by leaving.collectAsState()
             val behind by screenBehind.collectAsState()
-            val reduced = LocalMotionTier.current == MotionTier.Reduced
+            val reduced = reducedMotion()
             val presence by animateFloatAsState(
                 targetValue = if (isShown && !isLeaving) 1f else 0f,
                 animationSpec = tween(

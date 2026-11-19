@@ -55,6 +55,7 @@ import com.nendo.argosy.ui.theme.Dimens
 import com.nendo.argosy.ui.theme.LocalArgosyTheme
 import com.nendo.argosy.ui.theme.generated.ColorTokens
 import com.nendo.argosy.ui.theme.generated.ComponentDefaults
+import com.nendo.argosy.ui.theme.reducedMotion
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
@@ -137,7 +138,8 @@ fun InlineTilePlayer(
         isFileReadable = withContext(Dispatchers.IO) { isReadableVideoFile(filePath) }
     }
 
-    val shouldPlay = isPlaying && isStarted && isFileReadable == true && !hasFailed
+    val previewAllowed = isEngaged || !reducedMotion()
+    val shouldPlay = isPlaying && previewAllowed && isStarted && isFileReadable == true && !hasFailed
 
     DisposableEffect(filePath, shouldPlay) {
         val listener = object : Player.Listener {

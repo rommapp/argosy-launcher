@@ -21,8 +21,7 @@ import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImagePainter
 import coil.memory.MemoryCache
 import coil.request.ImageRequest
-import coil.transition.Transition
-import com.nendo.argosy.ui.common.AlwaysCrossfadeFactory
+import com.nendo.argosy.ui.common.alwaysCrossfade
 import com.nendo.argosy.ui.common.rememberFileImageModel
 import com.nendo.argosy.ui.common.stackedScreenshotBackdrop
 import com.nendo.argosy.ui.theme.Motion
@@ -44,12 +43,13 @@ internal fun rememberShowcaseBackdrop(
     val context = LocalContext.current
     val model = rememberFileImageModel(path)
     val lastKey = remember { mutableStateOf<MemoryCache.Key?>(null) }
-    val request = remember(model, crossfadeMs, stackedScreenshot) {
+    val crossfade = alwaysCrossfade(crossfadeMs)
+    val request = remember(model, crossfade, stackedScreenshot) {
         ImageRequest.Builder(context)
             .data(model)
             .placeholderMemoryCacheKey(Snapshot.withoutReadObservation { lastKey.value })
             .apply { if (stackedScreenshot) stackedScreenshotBackdrop() }
-            .transitionFactory(if (crossfadeMs > 0) AlwaysCrossfadeFactory(crossfadeMs) else Transition.Factory.NONE)
+            .transitionFactory(crossfade)
             .build()
     }
     return remember(request) {

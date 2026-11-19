@@ -38,7 +38,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.platform.LocalContext
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
-import com.nendo.argosy.ui.common.AlwaysCrossfadeFactory
+import com.nendo.argosy.ui.common.alwaysCrossfade
 import com.nendo.argosy.ui.components.boxart.UnbadgedBoxArtBorder
 import com.nendo.argosy.ui.primitives.FocusIndicators
 import com.nendo.argosy.ui.primitives.argosyFocusIndicators
@@ -126,10 +126,11 @@ fun MediaCard(
             )
         } else {
             val context = LocalContext.current
-            val posterRequest = remember(context, media.posterUrl) {
+            val crossfade = alwaysCrossfade(ComponentDefaults.MediaCover.crossfadeMs)
+            val posterRequest = remember(context, media.posterUrl, crossfade) {
                 ImageRequest.Builder(context)
                     .data(media.posterUrl)
-                    .transitionFactory(AlwaysCrossfadeFactory(ComponentDefaults.MediaCover.crossfadeMs))
+                    .transitionFactory(crossfade)
                     .build()
             }
             AsyncImage(

@@ -25,6 +25,7 @@ import com.nendo.argosy.R
 import com.nendo.argosy.ui.components.FooterHints
 import com.nendo.argosy.ui.components.InputButton
 import com.nendo.argosy.ui.components.animateScrollToItemCentered
+import com.nendo.argosy.ui.theme.reducedMotion
 import com.nendo.argosy.ui.components.withNavBarClearance
 import com.nendo.argosy.ui.input.LocalInputDispatcher
 import com.nendo.argosy.ui.navigation.Screen
@@ -87,10 +88,12 @@ fun MediaLibraryScreen(
         }
     }
 
+    val reduced = reducedMotion()
     LaunchedEffect(uiState.focusedIndex, uiState.selectedLibraryIndex) {
         if (uiState.items.isNotEmpty()) {
             gridState.animateScrollToItemCentered(
-                uiState.focusedIndex.coerceIn(0, uiState.items.lastIndex)
+                uiState.focusedIndex.coerceIn(0, uiState.items.lastIndex),
+                reduced
             )
         }
     }

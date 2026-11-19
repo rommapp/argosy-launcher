@@ -30,6 +30,8 @@ import androidx.compose.ui.unit.dp
 import com.nendo.argosy.ui.theme.Dimens
 import com.nendo.argosy.ui.theme.LocalArgosyTheme
 import com.nendo.argosy.ui.theme.Motion
+import com.nendo.argosy.ui.theme.motionEnter
+import com.nendo.argosy.ui.theme.motionExit
 import com.nendo.argosy.ui.util.clickableNoFocus
 
 internal const val DRAWER_FOCUS_WASH_ALPHA = 0.15f
@@ -93,10 +95,14 @@ fun NavDrawerRow(
         AnimatedVisibility(
             visible = labelVisible,
             modifier = Modifier.weight(1f),
-            enter = expandHorizontally(tween(Motion.durationSlide, easing = Motion.argosyEase)) +
-                fadeIn(tween(Motion.durationContent)),
-            exit = shrinkHorizontally(tween(Motion.durationSlide, easing = Motion.argosyEase)) +
-                fadeOut(tween(Motion.durationContent))
+            enter = motionEnter(
+                expandHorizontally(tween(Motion.durationSlide, easing = Motion.argosyEase)) +
+                    fadeIn(tween(Motion.durationContent))
+            ),
+            exit = motionExit(
+                shrinkHorizontally(tween(Motion.durationSlide, easing = Motion.argosyEase)) +
+                    fadeOut(tween(Motion.durationContent))
+            )
         ) {
             Row(
                 verticalAlignment = Alignment.CenterVertically,

@@ -557,6 +557,7 @@
     <string name="ui_home_layout_kind_carousel">कैरोसेल</string>
     <string name="ui_home_layout_kind_auto_grid">ऑटो ग्रिड</string>
     <string name="ui_home_layout_kind_custom_grid">कस्टम ग्रिड</string>
+    <string name="ui_home_layout_kind_columns">कॉलम</string>
     <string name="ui_home_layout_alignment_top">ऊपर</string>
     <string name="ui_home_layout_alignment_center">बीच में</string>
     <string name="ui_home_layout_alignment_bottom">नीचे</string>

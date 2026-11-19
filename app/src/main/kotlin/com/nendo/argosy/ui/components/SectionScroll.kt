@@ -19,6 +19,7 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.nendo.argosy.ui.theme.Dimens
+import com.nendo.argosy.ui.theme.reducedMotion
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
 import kotlin.math.abs
@@ -118,14 +119,15 @@ private suspend fun centerOnItem(
  * Animates until the item at [index] sits centred in the band left after [topInsetPx] and
  * [bottomInsetPx] of chrome; a top inset expects matching top content padding. An unmeasured
  * list waits for its first layout, one that fits its viewport is left alone, and [snapFarJumps]
- * pre-snaps near a far target as [fastAnimateScrollToItem] does.
+ * pre-snaps near a far target as [fastAnimateScrollToItem] does. [reduced] jumps straight there.
  */
 suspend fun LazyListState.animateScrollToItemCentered(
     index: Int,
+    reduced: Boolean,
     topInsetPx: Int = 0,
     bottomInsetPx: Int = 0,
     snapFarJumps: Boolean = false
-) = scrollToItemCentered(index, animate = true, topInsetPx, bottomInsetPx, snapFarJumps)
+) = scrollToItemCentered(index, animate = !reduced, topInsetPx, bottomInsetPx, snapFarJumps)
 
 /**
  * [animateScrollToItemCentered] with the motion optional: [animate] false jumps straight to the
@@ -159,10 +161,11 @@ suspend fun LazyListState.scrollToItemCentered(
  */
 suspend fun LazyGridState.animateScrollToItemCentered(
     index: Int,
+    reduced: Boolean,
     topInsetPx: Int = 0,
     bottomInsetPx: Int = 0,
     snapFarJumps: Boolean = false
-) = scrollToItemCentered(index, animate = true, topInsetPx, bottomInsetPx, snapFarJumps)
+) = scrollToItemCentered(index, animate = !reduced, topInsetPx, bottomInsetPx, snapFarJumps)
 
 suspend fun LazyGridState.scrollToItemCentered(
     index: Int,
@@ -192,10 +195,11 @@ suspend fun LazyGridState.scrollToItemCentered(
  */
 suspend fun LazyStaggeredGridState.animateScrollToItemCentered(
     index: Int,
+    reduced: Boolean,
     topInsetPx: Int = 0,
     bottomInsetPx: Int = 0,
     snapFarJumps: Boolean = false
-) = scrollToItemCentered(index, animate = true, topInsetPx, bottomInsetPx, snapFarJumps)
+) = scrollToItemCentered(index, animate = !reduced, topInsetPx, bottomInsetPx, snapFarJumps)
 
 suspend fun LazyStaggeredGridState.scrollToItemCentered(
     index: Int,
@@ -242,6 +246,7 @@ fun FocusedScroll(
 ) {
     var isInitialPass by remember(listState) { mutableStateOf(true) }
     val touchMode by rememberUpdatedState(isTouchMode)
+    val reduced by rememberUpdatedState(reducedMotion())
     val footerPx = footerOverlapPx()
 
     LaunchedEffect(focusedIndex, footerPx) {
@@ -257,9 +262,10 @@ fun FocusedScroll(
             return@LaunchedEffect
         }
 
-        val instant = isInitialPass
+        val firstPass = isInitialPass
         isInitialPass = false
-        if (!shouldFollowFocus(instant, touchMode)) return@LaunchedEffect
+        if (!shouldFollowFocus(firstPass, touchMode)) return@LaunchedEffect
+        val instant = firstPass || reduced
 
         val visibleEnd = layoutInfo.viewportEndOffset - footerPx
         val viewportHeight = visibleEnd - layoutInfo.viewportStartOffset
@@ -310,15 +316,17 @@ fun SectionHeaderLockScroll(
     var previousSection by remember(listState) { mutableIntStateOf(Int.MIN_VALUE) }
     var isInitialPass by remember(listState) { mutableStateOf(true) }
     val touchMode by rememberUpdatedState(isTouchMode)
+    val reduced by rememberUpdatedState(reducedMotion())
     val footerPx = footerOverlapPx()
 
     LaunchedEffect(focusedIndex, sections, footerPx) {
         val sectionIndex = sections.indexOfLast { focusedIndex >= it.focusStartIndex }
         val sectionChanged = sectionIndex != previousSection
         previousSection = sectionIndex
-        val instant = isInitialPass
+        val firstPass = isInitialPass
         isInitialPass = false
-        if (!shouldFollowFocus(instant, touchMode)) return@LaunchedEffect
+        if (!shouldFollowFocus(firstPass, touchMode)) return@LaunchedEffect
+        val instant = firstPass || reduced
 
         if (listState.layoutInfo.totalItemsCount == 0) {
             snapshotFlow { listState.layoutInfo.totalItemsCount }.first { it > 0 }
@@ -393,11 +401,12 @@ fun GridFocusedScroll(
     val topInsetPx = with(density) { topInset.roundToPx() }
     val bottomInsetPx = with(density) { bottomInset.roundToPx() } + footerOverlapPx()
     var isInitialPass by remember(gridState) { mutableStateOf(true) }
+    val reduced by rememberUpdatedState(reducedMotion())
 
     LaunchedEffect(focusedIndex, topInsetPx, bottomInsetPx) {
         if (focusedIndex < 0) return@LaunchedEffect
 
-        val instant = isInitialPass
+        val instant = isInitialPass || reduced
         isInitialPass = false
 
         if (gridState.layoutInfo.totalItemsCount == 0) {
@@ -444,6 +453,7 @@ fun SectionFocusedScroll(
     var previousFocusIndex by remember { mutableIntStateOf(focusedIndex) }
     var isInitialPass by remember(listState) { mutableStateOf(true) }
     val touchMode by rememberUpdatedState(isTouchMode)
+    val reduced by rememberUpdatedState(reducedMotion())
     val footerPx = footerOverlapPx()
 
     LaunchedEffect(focusedIndex, footerPx) {
@@ -459,7 +469,7 @@ fun SectionFocusedScroll(
         val firstPass = isInitialPass
         isInitialPass = false
         if (!shouldFollowFocus(firstPass, touchMode)) return@LaunchedEffect
-        val instant = jumped || firstPass
+        val instant = jumped || firstPass || reduced
 
         val viewportHeight = layoutInfo.viewportEndOffset - footerPx - layoutInfo.viewportStartOffset
         val listIndex = focusToListIndex(focusedIndex)

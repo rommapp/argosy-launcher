@@ -48,6 +48,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import com.nendo.argosy.R
 import com.nendo.argosy.ui.components.animateScrollToItemCentered
+import com.nendo.argosy.ui.theme.reducedMotion
 import com.nendo.argosy.ui.primitives.FocusIndicators
 import com.nendo.argosy.ui.primitives.argosyFocusIndicators
 import com.nendo.argosy.ui.screens.media.MediaDetailRow
@@ -78,10 +79,11 @@ fun MediaDetailMenu(
 ) {
     val listState = rememberLazyListState()
     val isSectionFocused = uiState.section == MediaDetailSection.MENU
+    val reduced = reducedMotion()
 
     LaunchedEffect(uiState.rows, uiState.rowIndex) {
         if (uiState.rowIndex in uiState.rows.indices) {
-            listState.animateScrollToItemCentered(uiState.rowIndex)
+            listState.animateScrollToItemCentered(uiState.rowIndex, reduced)
         }
     }
 

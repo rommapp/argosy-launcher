@@ -15,7 +15,6 @@ import com.nendo.argosy.ui.components.connections.OutsideLaunchButton
 import com.nendo.argosy.ui.components.power.PowerCommand
 import com.nendo.argosy.ui.components.power.QuickOpenGame
 import com.nendo.argosy.ui.components.power.QuickPowerController
-import com.nendo.argosy.ui.theme.LocalMotionTier
 import com.nendo.argosy.ui.theme.Motion
 
 @Composable
@@ -82,7 +81,7 @@ internal fun QuickPowerRow(
             ) {
                 FocusedActionSlot(
                     shown = isFocused,
-                    animationSpec = Motion.tierFocusSpring(LocalMotionTier.current),
+                    animationSpec = Motion.focusSpring,
                     rest = {}
                 ) {
                     OutsideLaunchButton(label = buttonLabel, onClick = open)

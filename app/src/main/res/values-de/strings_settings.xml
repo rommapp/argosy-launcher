@@ -117,6 +117,8 @@
     <!-- ===== Interface section ===== -->
 
     <string name="settings_interface_ui_scale_title">UI-Skalierung</string>
+    <string name="settings_interface_reduced_motion">Bewegung reduzieren</string>
+    <string name="settings_interface_reduced_motion_subtitle">Schaltet Animationen, Videovorschauen und Endlos-Effekte ab, damit langsamere Geräte flüssiger laufen</string>
     <string name="settings_interface_compact_footer_title">Kompakter Footer</string>
     <string name="settings_interface_compact_footer_subtitle">Schmalere Bedienleiste verwenden</string>
     <string name="settings_interface_hide_system_nav_bar_title">System-Navigationsleiste ausblenden</string>

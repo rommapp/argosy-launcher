@@ -23,6 +23,8 @@ class RomMRepository @Inject constructor(
 ) {
     val syncProgress: StateFlow<SyncProgress> get() = librarySyncService.syncProgress
 
+    val syncedGames: kotlinx.coroutines.flow.SharedFlow<Long> get() = librarySyncService.syncedGames
+
     val connectionState: StateFlow<ConnectionState> get() = connectionManager.connectionState
 
     fun isConnected(): Boolean = connectionManager.isConnected()

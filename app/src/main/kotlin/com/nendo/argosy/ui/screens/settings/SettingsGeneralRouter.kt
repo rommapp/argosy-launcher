@@ -28,6 +28,7 @@ import com.nendo.argosy.ui.screens.settings.sections.RALayoutState
 import com.nendo.argosy.ui.screens.settings.sections.raFocusIndexOf
 import com.nendo.argosy.ui.screens.settings.sections.biosItemAtFocusIndex
 import com.nendo.argosy.ui.screens.settings.sections.SteamItem
+import com.nendo.argosy.ui.navigation.Screen
 import com.nendo.argosy.ui.screens.settings.sections.StorageItem
 import com.nendo.argosy.ui.screens.settings.sections.createStorageGamesLayoutInfo
 import com.nendo.argosy.ui.screens.settings.sections.createStorageLayoutInfo
@@ -1042,6 +1043,7 @@ internal fun routeSyncRomm(vm: SettingsViewModel) {
     vm.platformSyncQueue.enqueueLibrary(initializeFirst = false) {
         vm.viewModelScope.launch { vm.loadSettings() }
     }
+    vm._navigationEvents.tryEmit(SettingsViewModel.NavigationEvent(Screen.BuildingLibrary.route))
 }
 
 // --- Server / RA connection ---

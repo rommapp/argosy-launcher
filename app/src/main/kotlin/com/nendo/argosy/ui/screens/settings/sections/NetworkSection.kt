@@ -60,7 +60,6 @@ import com.nendo.argosy.ui.components.connections.newArrivals
 import com.nendo.argosy.ui.components.connections.quickConnectionsFocusIndex
 import com.nendo.argosy.ui.components.connections.quickConnectionsRowAction
 import com.nendo.argosy.ui.components.connections.quickConnectionsRows
-import com.nendo.argosy.ui.components.connections.reducedMotion
 import com.nendo.argosy.ui.components.connections.signalIcon
 import com.nendo.argosy.ui.components.connections.successTint
 import com.nendo.argosy.ui.components.connections.wifiStatusOf
@@ -75,6 +74,7 @@ import com.nendo.argosy.ui.screens.settings.components.SectionPaneLayout
 import com.nendo.argosy.ui.theme.Dimens
 import com.nendo.argosy.ui.theme.LocalArgosyTheme
 import com.nendo.argosy.ui.theme.Motion
+import com.nendo.argosy.ui.theme.reducedMotion
 import com.nendo.argosy.util.formatRelativeTimeVerbose
 import java.time.Instant
 

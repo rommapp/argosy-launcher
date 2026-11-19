@@ -6,6 +6,7 @@ import com.nendo.argosy.data.local.dao.PlayRecordDeletionDao
 import com.nendo.argosy.data.local.dao.PlaySessionDao
 import com.nendo.argosy.data.local.dao.PlayTimeSummary
 import com.nendo.argosy.data.local.entity.PlaySessionEntity
+import com.nendo.argosy.data.model.GamePlayActivity
 import com.nendo.argosy.data.model.PlayDay
 import com.nendo.argosy.data.model.PlayTimeSnapshot
 import com.nendo.argosy.data.preferences.SyncPreferencesRepository
@@ -66,6 +67,18 @@ class PlayStatsRepository @Inject constructor(
     }
 
     /**
+     * The signed-in account's active play time per game id over sessions that started in
+     * [start, end), private games excluded, most played first.
+     */
+    suspend fun activeMsPerGameInRange(start: Instant, end: Instant, limit: Int): Map<Long, Long> =
+        withContext(Dispatchers.IO) {
+            val ownerUserId = syncPreferencesRepository.getRommUserId()
+            val hidden = syncPreferencesRepository.privateIgdbIds()
+            playSessionDao.getActiveMsPerGameInRange(ownerUserId, start, end, MIN_DISPLAY_MS, limit, hidden)
+                .associate { it.gameId to it.activeMs }
+        }
+
+    /**
      * Active play time of each game's most recent session for the signed-in account, keyed by
      * game id. Sessions under [MIN_DISPLAY_MS] and games with no session are left out.
      */
@@ -75,6 +88,26 @@ class PlayStatsRepository @Inject constructor(
             val activeMs = playSessionDao.getLatestForGameAndOwner(gameId, ownerUserId)?.activePlayMs
             activeMs?.takeIf { it >= MIN_DISPLAY_MS }?.let { gameId to it }
         }.toMap()
+    }
+
+    /**
+     * The signed-in account's play of [gameId] over the [GamePlayActivityCalculator.WEEKS] weeks
+     * ending at [now], with its latest session's end and device.
+     */
+    suspend fun gamePlayActivity(
+        gameId: Long,
+        now: Instant = Instant.now(),
+        zone: ZoneId = ZoneId.systemDefault()
+    ): GamePlayActivity = withContext(Dispatchers.IO) {
+        val ownerUserId = syncPreferencesRepository.getRommUserId()
+        val start = GamePlayActivityCalculator.windowStart(now, zone)
+        val sessions = playSessionDao.getSessionsForGameAndOwnerInRange(gameId, ownerUserId, start, now)
+        val latest = playSessionDao.getLatestForGameAndOwner(gameId, ownerUserId)
+        GamePlayActivity(
+            weekActiveMs = GamePlayActivityCalculator.weekActiveMs(sessions, now, zone, minWeekMs = MIN_DISPLAY_MS),
+            lastPlayedAt = latest?.endTime,
+            lastPlayedDevice = latest?.let(GamePlayActivityCalculator::deviceName)
+        )
     }
 
     suspend fun getSessionsInRange(start: Instant, end: Instant): List<PlaySessionEntity> =

@@ -16,12 +16,14 @@ import com.nendo.argosy.data.local.dao.GameDao
 import com.nendo.argosy.data.local.dao.GameDiscDao
 import com.nendo.argosy.data.local.dao.GameFileDao
 import com.nendo.argosy.data.local.dao.GameScreenshotDao
+import com.nendo.argosy.data.local.dao.LibraryWallCover
 import com.nendo.argosy.data.local.dao.PlatformDao
 import com.nendo.argosy.data.local.dao.PlatformShowcaseStats
 import com.nendo.argosy.data.local.dao.UserRomsHiddenDao
 import com.nendo.argosy.data.local.dao.coverPathsForGamesChunked
 import com.nendo.argosy.data.local.dao.forGames
 import com.nendo.argosy.data.local.dao.getByIdsChunked
+import com.nendo.argosy.data.local.dao.getByIgdbIdsChunked
 import com.nendo.argosy.data.local.dao.resolved
 import com.nendo.argosy.data.local.dao.resolvedFor
 import com.nendo.argosy.data.local.dao.statsForGamesChunked
@@ -829,6 +831,12 @@ class GameRepository @Inject constructor(
         emitAll(gameDao.observeRecentlyPlayed(hiddenOwnerId(), limit))
     }
 
+    /**
+     * The cover of each visible game among [gameIds] that has one, in no particular order.
+     */
+    suspend fun libraryWallCovers(gameIds: List<Long>): List<LibraryWallCover> =
+        gameDao.libraryWallCovers(gameIds, hiddenOwnerId())
+
     suspend fun getFavorites(): List<GameEntity> =
         hydrateByIds(gameDao.getFavoriteIds(hiddenOwnerId()))
 
@@ -1089,6 +1097,18 @@ class GameRepository @Inject constructor(
         platformId: Long,
         limit: Int = 20
     ): List<GameEntity> = gameDao.getByPlatformSorted(platformId, hiddenOwnerId(), limit)
+
+    suspend fun getPlatformLeadOrdered(platformId: Long, limit: Int): List<GameEntity> =
+        gameDao.getPlatformLeadOrdered(platformId, hiddenOwnerId(), limit)
+
+    suspend fun getGatheringDust(cutoff: Instant, limit: Int): List<GameEntity> =
+        gameDao.getGatheringDust(cutoff, hiddenOwnerId(), limit)
+
+    suspend fun getAlmostThere(maxRemainingSec: Long, limit: Int): List<GameEntity> =
+        gameDao.getAlmostThere(maxRemainingSec, hiddenOwnerId(), limit)
+
+    suspend fun getByIgdbIds(igdbIds: Collection<Long>): List<GameEntity> =
+        gameDao.getByIgdbIdsChunked(igdbIds.distinct(), hiddenOwnerId())
 
     /**
      * A platform's games in the order a row carrying every game displays them: ownership tier, then

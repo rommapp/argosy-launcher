@@ -67,9 +67,8 @@ import com.nendo.argosy.ui.primitives.argosyFocusIndicators
 import com.nendo.argosy.ui.theme.Dimens
 import com.nendo.argosy.ui.theme.LocalArgosyTheme
 import com.nendo.argosy.ui.theme.LocalLauncherTheme
-import com.nendo.argosy.ui.theme.LocalMotionTier
 import com.nendo.argosy.ui.theme.Motion
-import com.nendo.argosy.ui.theme.MotionTier
+import com.nendo.argosy.ui.theme.reducedMotion
 import com.nendo.argosy.ui.theme.generated.ComponentDefaults
 import com.nendo.argosy.ui.util.clickableNoFocus
 import com.nendo.argosy.util.formatRelativeTime
@@ -88,7 +87,7 @@ fun MakeRoomContent(
     onClose: () -> Unit,
     onCancel: () -> Unit
 ) {
-    val reduced = LocalMotionTier.current == MotionTier.Reduced
+    val reduced = reducedMotion()
     val contentMs = if (reduced) 0 else Motion.durationContent
     val choosing = step.stage == MakeRoomStage.CHOOSE
     val deepScrim by animateFloatAsState(

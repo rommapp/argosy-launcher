@@ -208,4 +208,81 @@
         <item quantity="other">%d Elemente</item>
     </plurals>
     <string name="home_tile_file_browser_decor_title">Bild auswählen</string>
+
+    <string name="home_columns_theme_continue">Weiterspielen</string>
+    <string name="home_columns_theme_play_it_again">Noch einmal spielen</string>
+    <string name="home_columns_theme_almost_there">Fast geschafft</string>
+    <string name="home_columns_theme_friends_playing">Freunde spielen</string>
+    <string name="home_columns_theme_just_added">Neu hinzugefügt</string>
+    <string name="home_columns_theme_gathering_dust">Verstaubt</string>
+    <string name="home_columns_theme_favorites">Favoriten</string>
+    <string name="home_columns_theme_pinned_collection">Angeheftete Sammlung</string>
+    <string name="home_columns_theme_most_played_genre">Meistgespieltes Genre</string>
+    <string name="home_columns_media_continue_watching">Weiterschauen</string>
+    <string name="home_columns_media_next_up">Als Nächstes</string>
+    <string name="home_columns_reason_continue_none">Mach dort weiter, wo du aufgehört hast</string>
+    <plurals name="home_columns_reason_continue">
+        <item quantity="one">%d begonnen</item>
+        <item quantity="other">%d begonnen</item>
+    </plurals>
+    <string name="home_columns_reason_play_it_again">Diese Woche vor einem Jahr</string>
+    <plurals name="home_columns_reason_almost_there">
+        <item quantity="one">Weniger als %d Stunde übrig</item>
+        <item quantity="other">Weniger als %d Stunden übrig</item>
+    </plurals>
+    <plurals name="home_columns_reason_friends">
+        <item quantity="one">%d wird gerade gespielt</item>
+        <item quantity="other">%d werden gerade gespielt</item>
+    </plurals>
+    <string name="home_columns_reason_friends_recent">Kürzlich von Freunden gespielt</string>
+    <string name="home_columns_reason_just_added">Diese Woche hinzugefügt</string>
+    <plurals name="home_columns_reason_gathering_dust">
+        <item quantity="one">Seit %d Tag unberührt</item>
+        <item quantity="other">Seit %d Tagen unberührt</item>
+    </plurals>
+    <plurals name="home_columns_reason_favorites">
+        <item quantity="one">%d Favorit</item>
+        <item quantity="other">%d Favoriten</item>
+    </plurals>
+    <plurals name="home_columns_reason_collection">
+        <item quantity="one">%d Spiel</item>
+        <item quantity="other">%d Spiele</item>
+    </plurals>
+    <string name="home_columns_reason_genre">Dein meistgespieltes Genre</string>
+    <plurals name="home_columns_platform_count">
+        <item quantity="one">%d Spiel</item>
+        <item quantity="other">%d Spiele</item>
+    </plurals>
+    <plurals name="home_columns_reason_continue_watching">
+        <item quantity="one">%d begonnen</item>
+        <item quantity="other">%d begonnen</item>
+    </plurals>
+    <plurals name="home_columns_reason_next_up">
+        <item quantity="one">%d Folge</item>
+        <item quantity="other">%d Folgen</item>
+    </plurals>
+    <string name="home_columns_fact_progress">%1$s gespielt, noch etwa %2$s</string>
+    <string name="home_columns_fact_played">%1$s gespielt</string>
+    <string name="home_columns_fact_left">Noch etwa %1$s</string>
+    <string name="home_columns_fact_last_played">Zuletzt gespielt am %1$s</string>
+    <string name="home_columns_fact_unplayed">Noch nicht gespielt</string>
+    <string name="home_columns_progress_story">Story</string>
+    <string name="home_columns_progress_story_of">%1$s von ~%2$s</string>
+    <string name="home_columns_progress_story_length">Etwa %1$s lang</string>
+    <string name="home_columns_progress_trophies">Trophäen</string>
+    <string name="home_columns_progress_trophies_count">%1$d / %2$d</string>
+    <plurals name="home_columns_activity_window">
+        <item quantity="one">letzte %d Woche</item>
+        <item quantity="other">letzte %d Wochen</item>
+    </plurals>
+    <string name="home_columns_activity_unplayed">Noch nicht gespielt</string>
+    <plurals name="home_columns_activity_idle">
+        <item quantity="one">Seit %d Woche nicht gespielt</item>
+        <item quantity="other">Seit %d Wochen nicht gespielt</item>
+    </plurals>
+    <string name="home_columns_last_played_on">Zuletzt gespielt %1$s auf %2$s</string>
+    <string name="home_columns_last_played">Zuletzt gespielt %1$s</string>
+    <string name="home_columns_previous_game">Vorheriges Spiel</string>
+    <string name="home_columns_next_game">Nächstes Spiel</string>
+    <string name="home_footer_columns_sections">Bereiche</string>
 </resources>

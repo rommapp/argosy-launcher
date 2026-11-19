@@ -223,6 +223,28 @@ class Pcsx2LegacyCardsTest {
     }
 
     @Test
+    fun `a restore lands in the game's own card when the emulator's per-game ini names one`() = runTest {
+        thorLayout()
+        val sdData = sdData()
+        File(sdData, Pcsx2DataFolder.INI_NAME).writeText(ini.replace("Slot1_Filename = maincard", "Slot1_Filename = mcd001.ps2"))
+        val own = folderCard(File(sdData, "memcards/DarkCloud"))
+        File(sdData, "gamesettings").mkdirs()
+        File(sdData, "gamesettings/SLUS-20675_ABCD1234.ini").writeText("[MemoryCards]\nSlot1_Filename = DarkCloud\n")
+        coEvery { emulatorSaveConfigDao.getByEmulator("armsx2_refresh") } returns EmulatorSaveConfigEntity(
+            emulatorId = "armsx2_refresh",
+            savePathPattern = "${sdData.absolutePath}/memcards",
+            isAutoDetected = false,
+            isUserOverride = true
+        )
+
+        val global = cards.baseFor(config, "ps2", null)!!
+        val forGame = cards.baseFor(config, "ps2", null, saveId)!!
+
+        assertNull(cards.targetCard(global, null, saveId, handler))
+        assertEquals(own.absolutePath, cards.targetCard(forGame, null, saveId, handler))
+    }
+
+    @Test
     fun `a restore lands in the slot 1 folder card, not the stray internal card`() = runTest {
         thorLayout()
         val base = cards.baseFor(config, "ps2", null)!!

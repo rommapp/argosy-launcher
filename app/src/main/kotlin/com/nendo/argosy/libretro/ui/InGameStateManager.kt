@@ -417,13 +417,18 @@ private fun SplitLayout(
         }
 
         val gridState = rememberLazyGridState()
+        val reduced = com.nendo.argosy.ui.theme.reducedMotion()
 
         LaunchedEffect(focusedIndex) {
             if (slots.isNotEmpty() && focusedIndex in slots.indices) {
                 val viewportHeight = gridState.layoutInfo.viewportSize.height
                 val itemHeight = gridState.layoutInfo.visibleItemsInfo.firstOrNull()?.size?.height ?: 0
                 val centerOffset = if (itemHeight > 0) (viewportHeight - itemHeight) / 2 else 0
-                gridState.animateScrollToItem(focusedIndex, -centerOffset)
+                if (reduced) {
+                    gridState.scrollToItem(focusedIndex, -centerOffset)
+                } else {
+                    gridState.animateScrollToItem(focusedIndex, -centerOffset)
+                }
             }
         }
 

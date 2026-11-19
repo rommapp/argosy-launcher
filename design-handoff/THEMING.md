@@ -181,7 +181,10 @@ Optional, deliberately subtle motion on the backdrop pattern:
 - Implementation: translate the cached tile shader's local matrix per frame; the
   tile bitmap is never regenerated. Drift animates each axis as its own loop of
   exactly one tile length so wraps land on the lattice at any angle.
-- Gated on the motion tier: Reduced renders static regardless of the knob.
+- Gated on the motion tier: Reduced renders static regardless of the knob. The tier comes
+  from `ProvideArgosyThemeLocals`, which provides `LocalMotionTier` through
+  `resolveMotionTier`: Reduced when Settings > Interface > Reduced motion is on or Android's
+  animator scale is zero, Comfortable otherwise.
 - Base speeds/amplitudes live in tokens.json components.surfaceBackdrop.
 
 ## Backdrop scatter + scale jitter + density spread (2026-07-08)

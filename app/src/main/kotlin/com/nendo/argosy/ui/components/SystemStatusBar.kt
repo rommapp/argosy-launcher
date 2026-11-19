@@ -9,7 +9,6 @@ import android.net.Network
 import android.net.NetworkCapabilities
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
-import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
@@ -68,6 +67,7 @@ import com.nendo.argosy.hardware.toBatterySample
 import com.nendo.argosy.ui.theme.generated.ColorTokens
 import com.nendo.argosy.ui.theme.generated.ComponentDefaults
 import com.nendo.argosy.ui.theme.generated.MotionTokens
+import com.nendo.argosy.ui.theme.loopingFloat
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextOverflow
@@ -185,6 +185,26 @@ fun statusBarItemsOf(prefs: com.nendo.argosy.data.preferences.UserPreferences) =
  * Provides [LocalStatusBarItems] from [preferences] for a surface that renders outside ArgosyApp,
  * so its status bar follows the Interface toggles as they change.
  */
+/**
+ * Provides [LocalArtworkScraping] from the image cache's [progress] to [content]. Every surface
+ * that draws a [SystemStatusBar] outside `ArgosyApp` wraps it in this, or its caching icon never
+ * shows.
+ */
+@Composable
+fun ProvideArtworkScraping(
+    progress: kotlinx.coroutines.flow.StateFlow<com.nendo.argosy.data.cache.ImageCacheProgress>?,
+    content: @Composable () -> Unit
+) {
+    val scraping = if (progress == null) {
+        false
+    } else {
+        val state = progress.collectAsState()
+        val processing by remember(state) { androidx.compose.runtime.derivedStateOf { state.value.isProcessing } }
+        processing
+    }
+    androidx.compose.runtime.CompositionLocalProvider(LocalArtworkScraping provides scraping, content = content)
+}
+
 @Composable
 fun ProvideStatusBarItems(
     preferences: kotlinx.coroutines.flow.Flow<com.nendo.argosy.data.preferences.UserPreferences>,
@@ -410,14 +430,15 @@ private fun androidx.compose.ui.graphics.drawscope.DrawScope.drawClosingStripes(
 @Composable
 private fun ArtworkScrapeIndicator(color: Color, modifier: Modifier = Modifier) {
     val transition = rememberInfiniteTransition(label = "artworkScrape")
-    val alpha = transition.animateFloat(
+    val alpha = transition.loopingFloat(
         initialValue = 0.35f,
         targetValue = 1f,
         animationSpec = infiniteRepeatable(
             animation = tween(MotionTokens.Tween.pulseMs, easing = LinearEasing),
             repeatMode = RepeatMode.Reverse
         ),
-        label = "artworkScrapeAlpha"
+        label = "artworkScrapeAlpha",
+        stillValue = 1f
     )
     Icon(
         imageVector = Icons.Outlined.Image,

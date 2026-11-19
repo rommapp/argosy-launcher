@@ -124,6 +124,7 @@ fun homeLayoutFieldsFor(kind: HomeLayoutKind): List<HomeLayoutSettingField> = wh
         HomeLayoutSettingField.CUSTOM_GRID_PERSIST_PAGES,
         HomeLayoutSettingField.CUSTOM_GRID_AUTO_ADD
     )
+    HomeLayoutKind.COLUMNS -> emptyList()
 }
 
 /**
@@ -469,6 +470,7 @@ private fun layoutLabel(kind: HomeLayoutKind): String = when (kind) {
     HomeLayoutKind.CAROUSEL -> stringResource(R.string.ui_home_layout_kind_carousel)
     HomeLayoutKind.AUTO_GRID -> stringResource(R.string.ui_home_layout_kind_auto_grid)
     HomeLayoutKind.CUSTOM_GRID -> stringResource(R.string.ui_home_layout_kind_custom_grid)
+    HomeLayoutKind.COLUMNS -> stringResource(R.string.ui_home_layout_kind_columns)
 }
 
 @Composable

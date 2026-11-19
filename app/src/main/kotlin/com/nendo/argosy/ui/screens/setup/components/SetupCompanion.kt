@@ -59,9 +59,8 @@ import com.nendo.argosy.ui.screens.setup.RommContext
 import com.nendo.argosy.ui.screens.setup.SetupAccessState
 import com.nendo.argosy.ui.theme.Dimens
 import com.nendo.argosy.ui.theme.LocalArgosyTheme
-import com.nendo.argosy.ui.theme.LocalMotionTier
 import com.nendo.argosy.ui.theme.Motion
-import com.nendo.argosy.ui.theme.MotionTier
+import com.nendo.argosy.ui.theme.reducedMotion
 
 /**
  * What the second screen shows for one setup page. Each case carries only values; text resolves
@@ -108,7 +107,7 @@ data class SetupCompanionState(
 @Composable
 fun SetupCompanion(state: SetupCompanionState, modifier: Modifier = Modifier) {
     val theme = LocalArgosyTheme.current
-    val reduced = LocalMotionTier.current == MotionTier.Reduced
+    val reduced = reducedMotion()
     Column(
         modifier = modifier
             .fillMaxSize()

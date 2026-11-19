@@ -61,6 +61,7 @@ import com.nendo.argosy.ui.components.FooterHints
 import com.nendo.argosy.ui.components.collection.CollectionCell
 import com.nendo.argosy.ui.components.InputButton
 import com.nendo.argosy.ui.components.animateScrollToItemCentered
+import com.nendo.argosy.ui.theme.reducedMotion
 import com.nendo.argosy.ui.components.withNavBarClearance
 import com.nendo.argosy.ui.input.LocalInputDispatcher
 import com.nendo.argosy.ui.navigation.Screen
@@ -108,13 +109,14 @@ fun CollectionsScreen(
 
     val uiState by viewModel.uiState.collectAsState()
     val listState = rememberLazyListState()
+    val reduced = reducedMotion()
 
     LaunchedEffect(uiState.focusedSection, uiState.focusedIndex) {
         val targetIndex = when (uiState.focusedSection) {
             CollectionSection.MY_COLLECTIONS -> uiState.focusedIndex + 1
             CollectionSection.BROWSE_BY -> uiState.collections.size + 3 + uiState.focusedIndex
         }
-        listState.animateScrollToItemCentered(targetIndex)
+        listState.animateScrollToItemCentered(targetIndex, reduced)
     }
 
     PullToRefreshBox(

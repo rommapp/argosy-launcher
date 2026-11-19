@@ -1,13 +1,7 @@
 package com.nendo.argosy.ui.components
 
 import androidx.compose.animation.core.FastOutSlowInEasing
-import androidx.compose.animation.core.LinearEasing
-import androidx.compose.animation.core.RepeatMode
-import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.infiniteRepeatable
-import androidx.compose.animation.core.rememberInfiniteTransition
-import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
@@ -74,6 +68,7 @@ import com.nendo.argosy.ui.components.boxart.GradientBorderOverlay
 import com.nendo.argosy.ui.components.boxart.GradientMaskShape
 import com.nendo.argosy.ui.components.boxart.InnerEffectShape
 import com.nendo.argosy.ui.components.boxart.glassColorFilterFor
+import com.nendo.argosy.ui.components.boxart.rememberShineSweep
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.stringResource
 import com.nendo.argosy.R
@@ -276,18 +271,9 @@ fun GameCard(
             effectiveBadgePosition = effectiveBadgePosition
         )
 
-        val shineTransition = if (innerEffect == BoxArtInnerEffect.SHINE && (useGlassBorder || useGradientBorder)) {
-            rememberInfiniteTransition(label = "innerShine")
-        } else null
-        val sweepOffset by shineTransition?.animateFloat(
-            initialValue = -0.5f,
-            targetValue = 1.5f,
-            animationSpec = infiniteRepeatable(
-                animation = tween(Motion.durationShimmer, easing = LinearEasing),
-                repeatMode = RepeatMode.Restart
-            ),
-            label = "shine"
-        ) ?: remember { mutableStateOf(0f) }
+        val sweepOffset by rememberShineSweep(
+            innerEffect == BoxArtInnerEffect.SHINE && (useGlassBorder || useGradientBorder)
+        )
 
         val box3dBody: @Composable (@Composable () -> Unit) -> Unit = { art ->
             Box(

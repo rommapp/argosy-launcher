@@ -40,6 +40,7 @@ import coil.size.Dimension
 import coil.size.Precision
 import coil.size.Scale
 import coil.size.Size
+import com.nendo.argosy.ui.theme.reducedMotion
 import com.nendo.argosy.util.Logger
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
@@ -101,8 +102,9 @@ fun Box3dCover(
     val pitch = remember(frontPath, spinePath, backPath) { Animatable(0f) }
     var isDragging by remember(frontPath, spinePath, backPath) { mutableStateOf(false) }
 
-    LaunchedEffect(isDragging, faces, isInteractive, isStarted) {
-        if (!isInteractive || !isStarted || isDragging || faces == null) return@LaunchedEffect
+    val reduced = reducedMotion()
+    LaunchedEffect(isDragging, faces, isInteractive, isStarted, reduced) {
+        if (reduced || !isInteractive || !isStarted || isDragging || faces == null) return@LaunchedEffect
         while (true) {
             yaw.animateTo(yaw.value + 360f, tween(SPIN_PERIOD_MS, easing = LinearEasing))
         }

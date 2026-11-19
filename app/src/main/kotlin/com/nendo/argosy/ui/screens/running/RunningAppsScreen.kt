@@ -75,8 +75,8 @@ import androidx.compose.ui.graphics.ColorMatrix
 import androidx.compose.ui.graphics.graphicsLayer
 import com.nendo.argosy.domain.model.MakeRoomStage
 import com.nendo.argosy.ui.theme.LocalLauncherTheme
-import com.nendo.argosy.ui.theme.LocalMotionTier
-import com.nendo.argosy.ui.theme.MotionTier
+import com.nendo.argosy.ui.theme.motionDuration
+import com.nendo.argosy.ui.theme.reducedMotion
 import com.nendo.argosy.ui.theme.generated.ComponentDefaults
 import com.nendo.argosy.data.platform.PlatformDefinitions
 import com.nendo.argosy.libretro.slot.GameSlots
@@ -391,8 +391,9 @@ private fun RunningAppsList(
     modifier: Modifier = Modifier
 ) {
     val listState = rememberLazyListState()
+    val reduced = reducedMotion()
     LaunchedEffect(uiState.focusedIndex) {
-        listState.animateScrollToItemCentered(uiState.focusedIndex)
+        listState.animateScrollToItemCentered(uiState.focusedIndex, reduced)
     }
     LazyColumn(
         state = listState,
@@ -469,7 +470,7 @@ private fun RunningAppCard(
     val shape = RoundedCornerShape(Dimens.radiusLg)
     val request = liveFrame ?: rememberTaskSnapshotRequest(app.snapshotPath, app.snapshotTakenAtMillis)
     val closed = closeStage == MakeRoomStage.CLOSED
-    val closeMs = if (LocalMotionTier.current == MotionTier.Reduced) 0 else Motion.durationContent
+    val closeMs = motionDuration(Motion.durationContent)
     val scale by animateFloatAsState(
         targetValue = if (closed) ComponentDefaults.LaunchOverlay.makeRoomClosedScale else 1f,
         animationSpec = tween(closeMs, easing = Motion.argosyEase),
@@ -553,7 +554,7 @@ private fun RunningAppCard(
 private fun ResumeZoom(app: RunningAppUi, from: Rect, onFilled: () -> Unit) {
     val request = rememberTaskSnapshotRequest(app.snapshotPath, app.snapshotTakenAtMillis)
     val screenRequest = rememberTaskSnapshotRequest(app.screenSnapshotPath, app.screenSnapshotTakenAtMillis)
-    val reduced = LocalMotionTier.current == MotionTier.Reduced
+    val reduced = reducedMotion()
     val progress = remember { Animatable(if (reduced) 1f else 0f) }
     val currentOnFilled by rememberUpdatedState(onFilled)
     LaunchedEffect(Unit) {

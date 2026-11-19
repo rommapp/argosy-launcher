@@ -40,6 +40,10 @@ interface HomeInputActions {
     fun previousGame(): Boolean
     fun nextGame(): Boolean
     fun moveGridFocus(direction: GridDirection): AutoGridMove
+    fun moveColumn(delta: Int): Boolean
+    fun stepColumnGame(delta: Int): Boolean
+    fun jumpColumnRun(direction: Int): Boolean
+    fun resetColumnsFocus(): Boolean
     fun moveCustomGridFocus(direction: com.nendo.argosy.domain.model.GridDirection2D): Boolean
     fun turnCustomGridPage(delta: Int): Boolean
     fun moveFocusedTile(direction: com.nendo.argosy.domain.model.GridDirection2D): Boolean
@@ -146,6 +150,11 @@ interface HomeInputActions {
     fun refreshMediaRails()
 
     /**
+     * Shrinks Columns' video takeover back into its column. False when no takeover is expanded.
+     */
+    fun restoreVideoTakeover(): Boolean
+
+    /**
      * Runs [onSingle] once the double-tap window passes with no second press; a second press
      * inside the window opens last month's recap and drops [onSingle].
      */
@@ -171,6 +180,12 @@ class HomeInputHandler(
         return state.appBarMenu != null
     }
 
+    private fun restoredTakeover(): Boolean {
+        if (!actions.uiState.value.isVideoTakeoverEngaged) return false
+        actions.restoreVideoTakeover()
+        return true
+    }
+
     override fun onUp(): InputResult {
         if (actions.uiState.value.appBarMenu != null) {
             actions.moveAppBarAppMenu(-1)
@@ -180,6 +195,7 @@ class HomeInputHandler(
             it.moveFocusPicker(-1)
             return InputResult.HANDLED
         }
+        if (restoredTakeover()) return InputResult.HANDLED
         val state = actions.uiState.value
         if (state.appBarFocused) {
             actions.releaseAppBar()
@@ -218,6 +234,7 @@ class HomeInputHandler(
             }
             isCustomGrid(state) -> customMove(GridDirection2D.UP)
             isGrid(state) -> gridMove(GridDirection.UP)
+            isColumns(state) -> columnsStep(-1)
             else -> {
                 if (onScrollOverflow?.invoke(-1) == true) return InputResult.HANDLED
                 if (actions.appBarIsDrawn()) return InputResult.handled(SoundType.BOUNDARY)
@@ -236,6 +253,7 @@ class HomeInputHandler(
             it.moveFocusPicker(1)
             return InputResult.HANDLED
         }
+        if (restoredTakeover()) return InputResult.HANDLED
         val state = actions.uiState.value
         if (state.customGrid.engagedTileId != null) return InputResult.handled(SoundType.BOUNDARY)
         if (state.customGrid.mediaTileNotice != null) return InputResult.HANDLED
@@ -271,6 +289,7 @@ class HomeInputHandler(
             state.appBarFocused -> InputResult.handled(SoundType.BOUNDARY)
             isCustomGrid(state) -> customMove(GridDirection2D.DOWN)
             isGrid(state) -> gridMove(GridDirection.DOWN)
+            isColumns(state) -> columnsStep(1)
             else -> {
                 if (onScrollOverflow?.invoke(1) == true) return InputResult.HANDLED
                 if (actions.focusAppBar()) {
@@ -285,6 +304,7 @@ class HomeInputHandler(
     override fun onLeft(): InputResult {
         if (actions.uiState.value.appBarMenu != null) return InputResult.handled(SoundType.BOUNDARY)
         if (focusPicker != null) return InputResult.handled(SoundType.BOUNDARY)
+        if (restoredTakeover()) return InputResult.HANDLED
         if (actions.uiState.value.appBarFocused) {
             actions.moveAppBarFocus(if (dockIsRtl) 1 else -1)
             return InputResult.HANDLED
@@ -310,6 +330,7 @@ class HomeInputHandler(
         if (state.showAddToCollectionModal || state.showGameMenu) return InputResult.HANDLED
         if (isCustomGrid(state)) return customMove(GridDirection2D.LEFT)
         if (isGrid(state)) return gridMove(GridDirection.LEFT)
+        if (isColumns(state)) return columnsMove(if (dockIsRtl) 1 else -1)
         val moved = if (railIsReversed(state)) actions.nextGame() else actions.previousGame()
         return if (moved) InputResult.HANDLED else InputResult.UNHANDLED
     }
@@ -317,6 +338,7 @@ class HomeInputHandler(
     override fun onRight(): InputResult {
         if (actions.uiState.value.appBarMenu != null) return InputResult.handled(SoundType.BOUNDARY)
         if (focusPicker != null) return InputResult.handled(SoundType.BOUNDARY)
+        if (restoredTakeover()) return InputResult.HANDLED
         if (actions.uiState.value.appBarFocused) {
             actions.moveAppBarFocus(if (dockIsRtl) -1 else 1)
             return InputResult.HANDLED
@@ -342,6 +364,7 @@ class HomeInputHandler(
         if (state.showAddToCollectionModal || state.showGameMenu) return InputResult.HANDLED
         if (isCustomGrid(state)) return customMove(GridDirection2D.RIGHT)
         if (isGrid(state)) return gridMove(GridDirection.RIGHT)
+        if (isColumns(state)) return columnsMove(if (dockIsRtl) -1 else 1)
         val moved = if (railIsReversed(state)) actions.previousGame() else actions.nextGame()
         return if (moved) InputResult.HANDLED else InputResult.UNHANDLED
     }
@@ -350,6 +373,42 @@ class HomeInputHandler(
 
     private fun isCustomGrid(state: HomeUiState): Boolean =
         state.layoutKind == HomeLayoutKind.CUSTOM_GRID
+
+    private fun isColumns(state: HomeUiState): Boolean = state.layoutKind == HomeLayoutKind.COLUMNS
+
+    private fun columnsMove(delta: Int): InputResult =
+        if (actions.moveColumn(delta)) InputResult.HANDLED else InputResult.handled(SoundType.BOUNDARY)
+
+    private fun columnsStep(delta: Int): InputResult = when {
+        actions.stepColumnGame(delta) -> InputResult.HANDLED
+        delta > 0 && actions.focusAppBar() -> InputResult.handled(SoundType.SECTION_CHANGE)
+        else -> InputResult.handled(SoundType.BOUNDARY)
+    }
+
+    private fun columnsRunJump(delta: Int): InputResult =
+        if (actions.jumpColumnRun(delta)) {
+            InputResult.handled(SoundType.SECTION_CHANGE)
+        } else {
+            InputResult.handled(SoundType.BOUNDARY)
+        }
+
+    private fun confirmColumn(state: HomeUiState) {
+        when (val item = state.focusedItem) {
+            is HomeRowItem.Game -> actions.activateGame(item.game)
+            is HomeRowItem.Media -> actions.confirmFocusedMedia()
+            is HomeRowItem.ViewAll -> Unit
+            null -> if (state.isRommConfigured) actions.syncFromRomm()
+        }
+    }
+
+    private fun columnsBack(): InputResult = when {
+        actions.resetColumnsFocus() -> InputResult.handled(SoundType.SECTION_CHANGE)
+        !isDefaultView -> {
+            onNavigateToDefault()
+            InputResult.HANDLED
+        }
+        else -> InputResult.UNHANDLED
+    }
 
     /**
      * The press is always consumed: a curated page's edges are the end of the grid, and there is no
@@ -645,6 +704,10 @@ class HomeInputHandler(
             return InputResult.handled(SoundType.SELECT)
         }
         val state = actions.uiState.value
+        if (restoredTakeover()) {
+            confirmColumn(state)
+            return InputResult.HANDLED
+        }
         if (state.appBarFocused) {
             actions.activateAppBarSlot()
             return InputResult.handled(SoundType.SELECT)
@@ -683,6 +746,7 @@ class HomeInputHandler(
             state.showAddToCollectionModal -> actions.confirmCollectionSelection()
             state.showGameMenu -> actions.confirmGameMenuSelection(onGameSelect)
             isCustomGrid(state) -> confirmCustomGridCell()
+            isColumns(state) -> confirmColumn(state)
             else -> {
                 when (val item = state.focusedItem) {
                     is HomeRowItem.Game -> actions.activateGame(item.game)
@@ -710,6 +774,7 @@ class HomeInputHandler(
             it.closeFocusPicker()
             return InputResult.handled(SoundType.CLOSE_MODAL)
         }
+        if (restoredTakeover()) return InputResult.HANDLED
         val state = actions.uiState.value
         if (state.appBarFocused) {
             actions.releaseAppBar()
@@ -764,6 +829,7 @@ class HomeInputHandler(
         if (actions.focusAppBar()) {
             return InputResult.handled(SoundType.SECTION_CHANGE)
         }
+        if (isColumns(state)) return columnsBack()
         if (actions.scrollToFirst()) {
             return InputResult.HANDLED
         }
@@ -779,6 +845,7 @@ class HomeInputHandler(
 
     override fun onMenu(): InputResult {
         if (appOverlayOpen()) return InputResult.HANDLED
+        if (restoredTakeover()) return InputResult.HANDLED
         val state = actions.uiState.value
         if (state.customGrid.mediaSetup != null || state.customGrid.featureSetup != null) return InputResult.HANDLED
         if (state.showAddToCollectionModal) {
@@ -800,6 +867,7 @@ class HomeInputHandler(
      */
     override fun onSelect(): InputResult {
         if (selectHeldByOverlay()) return InputResult.HANDLED
+        if (restoredTakeover()) return InputResult.HANDLED
         if (homeOverlayOpen(actions.uiState.value)) return singleSelect()
         actions.pressSelect(onSingle = { deferredSelect() })
         return InputResult.HANDLED
@@ -835,7 +903,22 @@ class HomeInputHandler(
             gridOverlayOpen(state)
 
     override fun onLongSelect(): InputResult =
-        if (selectHeldByOverlay()) InputResult.HANDLED else InputResult.UNHANDLED
+        if (selectHeldByOverlay() || restoredTakeover()) InputResult.HANDLED else InputResult.UNHANDLED
+
+    override fun onLeftStickClick(): InputResult = takeoverOnly()
+
+    override fun onRightStickClick(): InputResult = takeoverOnly()
+
+    override fun onRightStickUp(): InputResult = takeoverOnly()
+
+    override fun onRightStickDown(): InputResult = takeoverOnly()
+
+    override fun onRightStickLeft(): InputResult = takeoverOnly()
+
+    override fun onRightStickRight(): InputResult = takeoverOnly()
+
+    private fun takeoverOnly(): InputResult =
+        if (restoredTakeover()) InputResult.HANDLED else InputResult.UNHANDLED
 
     private fun selectHeldByOverlay(): Boolean {
         if (appOverlayOpen()) return true
@@ -862,6 +945,7 @@ class HomeInputHandler(
     override fun onLongConfirm(): InputResult {
         val state = actions.uiState.value
         if (state.appBarMenu != null) return InputResult.HANDLED
+        if (restoredTakeover()) return InputResult.HANDLED
         if (state.appBarFocused) {
             return if (actions.openDockAppMenu()) {
                 InputResult.handled(SoundType.OPEN_MODAL)
@@ -899,6 +983,7 @@ class HomeInputHandler(
      */
     override fun onSecondaryAction(): InputResult {
         if (appOverlayOpen()) return InputResult.HANDLED
+        if (restoredTakeover()) return InputResult.HANDLED
         val state = actions.uiState.value
         if (state.appBarFocused) return InputResult.HANDLED
         if (state.customGrid.mediaSetup != null || state.customGrid.featureSetup != null) return InputResult.HANDLED
@@ -921,7 +1006,7 @@ class HomeInputHandler(
         }
         if (!isCustomGrid(state) && focusedIsMedia(state)) {
             val media = state.focusedMedia ?: return InputResult.UNHANDLED
-            if (state.currentRow == HomeRow.Favorites) {
+            if (!isColumns(state) && state.currentRow == HomeRow.Favorites) {
                 actions.unfavoriteMedia(media.itemId)
                 return InputResult.HANDLED
             }
@@ -941,13 +1026,18 @@ class HomeInputHandler(
 
     override fun onNextSection(): InputResult = bumper(1)
 
-    private fun trigger(delta: Int): InputResult =
-        shiftRowOrPage(delta, movesRows = actions.appBarIsDrawn() || actions.quickNavigation()) {
+    private fun trigger(delta: Int): InputResult {
+        if (restoredTakeover()) return InputResult.HANDLED
+        val movesRows = isColumns(actions.uiState.value) || actions.appBarIsDrawn() || actions.quickNavigation()
+        return shiftRowOrPage(delta, movesRows = movesRows) {
             actions.jumpTilePickerLetter(delta > 0)
         }
+    }
 
     private fun bumper(delta: Int): InputResult =
-        if (actions.appBarIsDrawn() || actions.quickNavigation()) {
+        if (restoredTakeover()) {
+            InputResult.HANDLED
+        } else if (isColumns(actions.uiState.value) || actions.appBarIsDrawn() || actions.quickNavigation()) {
             bumperInModal(delta)
         } else {
             shiftRowOrPage(delta, movesRows = true) { actions.cycleTilePickerCategory(delta) }
@@ -965,6 +1055,7 @@ class HomeInputHandler(
         if (gridOverlayOpen(state)) return InputResult.HANDLED
         if (!movesRows) return InputResult.UNHANDLED
         if (isCustomGrid(state)) return customPageTurn(delta)
+        if (isColumns(state)) return columnsRunJump(delta)
         if (delta < 0) actions.previousRow() else actions.nextRow()
         return InputResult.handled(SoundType.SECTION_CHANGE)
     }
@@ -992,6 +1083,7 @@ class HomeInputHandler(
 
     override fun onContextMenu(): InputResult {
         if (appOverlayOpen()) return InputResult.HANDLED
+        if (restoredTakeover()) return InputResult.HANDLED
         val state = actions.uiState.value
         if (state.appBarFocused) return InputResult.HANDLED
         if (state.customGrid.engagedTileId != null) {
@@ -1016,7 +1108,11 @@ class HomeInputHandler(
         if (!isCustomGrid(state) && state.isMediaRow) return InputResult.UNHANDLED
         val game = state.focusedGame ?: return InputResult.UNHANDLED
         actions.setNavigationContext(
-            state.currentItems.filterIsInstance<HomeRowItem.Game>().map { it.game.id }
+            if (isColumns(state)) {
+                state.columns.focusedColumnGameIds
+            } else {
+                state.currentItems.filterIsInstance<HomeRowItem.Game>().map { it.game.id }
+            }
         )
         onGameSelect(game.id)
         return InputResult.HANDLED

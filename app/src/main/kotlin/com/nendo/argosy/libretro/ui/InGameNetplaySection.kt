@@ -38,6 +38,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import com.nendo.argosy.R
 import com.nendo.argosy.ui.components.animateScrollToItemCentered
+import com.nendo.argosy.ui.theme.reducedMotion
 import com.nendo.argosy.ui.input.InputHandler
 import com.nendo.argosy.ui.input.InputResult
 import com.nendo.argosy.ui.theme.Dimens
@@ -126,9 +127,10 @@ fun InGameNetplaySection(
     }
 
     val listState = rememberLazyListState()
+    val reduced = reducedMotion()
     LaunchedEffect(focusedIndex, actions.size) {
         if (actions.isNotEmpty()) {
-            listState.animateScrollToItemCentered(focusedIndex.coerceIn(0, actions.lastIndex))
+            listState.animateScrollToItemCentered(focusedIndex.coerceIn(0, actions.lastIndex), reduced)
         }
     }
 

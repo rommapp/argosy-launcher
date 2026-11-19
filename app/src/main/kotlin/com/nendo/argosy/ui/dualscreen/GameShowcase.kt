@@ -108,10 +108,9 @@ import com.nendo.argosy.ui.theme.Dimens
 import com.nendo.argosy.ui.theme.LocalArgosyTheme
 import com.nendo.argosy.ui.theme.LocalBoxArtStyle
 import com.nendo.argosy.ui.theme.LocalLauncherTheme
-import com.nendo.argosy.ui.theme.LocalMotionTier
 import com.nendo.argosy.ui.theme.LocalUiScale
 import com.nendo.argosy.ui.theme.Motion
-import com.nendo.argosy.ui.theme.MotionTier
+import com.nendo.argosy.ui.theme.reducedMotion
 import com.nendo.argosy.ui.theme.generated.ColorTokens
 import com.nendo.argosy.ui.theme.generated.ComponentDefaults
 import com.nendo.argosy.util.formatPlayTime
@@ -149,7 +148,7 @@ fun GameShowcase(
 ) {
     val art = detail.gameId?.let { com.nendo.argosy.ui.common.rememberResolvedArt(it) }
     val liveDetail = remember(detail, art) { detail.withLiveArt(art) }
-    val reduced = LocalMotionTier.current == MotionTier.Reduced
+    val reduced = reducedMotion()
     val durations = remember(reduced) { showcaseMotionDurations(reduced) }
     val scope = rememberCoroutineScope()
     val coordinator = remember(scope, reduced) {

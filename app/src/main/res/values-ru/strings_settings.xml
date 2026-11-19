@@ -110,6 +110,8 @@
     <!-- ===== Interface section ===== -->
 
     <string name="settings_interface_ui_scale_title">Масштаб интерфейса</string>
+    <string name="settings_interface_reduced_motion">Меньше анимации</string>
+    <string name="settings_interface_reduced_motion_subtitle">Отключает анимации, видеопревью и зацикленные эффекты для более плавной работы на медленных устройствах</string>
     <string name="settings_interface_compact_footer_title">Компактная панель</string>
     <string name="settings_interface_compact_footer_subtitle">Использовать более тонкую панель подсказок</string>
     <string name="settings_interface_hide_system_nav_bar_title">Скрывать системную панель навигации</string>

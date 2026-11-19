@@ -10,7 +10,10 @@ Sources: design-tokens, code-quality and ui-design-direction skills. Blocking un
   `Color(0x...)`, `N.sp`, and `N.dp` (other than `0.dp`) in UI code are REJECT, including in
   `libretro/ui/` and other non-`ui/` composables.
 - Bespoke `tween(durationMillis = N)` or `spring(stiffness = N)` instead of motion tokens is REJECT.
-  New animation respects reduced motion.
+  New animation respects reduced motion through the `Motion.kt` helpers (`reducedMotion()`,
+  `motionSpec`, `motionDuration`, `motionEnter`/`motionExit`, `loopingFloat`, `animateModalBlur` with
+  `modalScrim`) or `alwaysCrossfade` for Coil requests. A new
+  `LocalMotionTier.current == MotionTier.Reduced` comparison is REJECT; use `reducedMotion()`.
 - A new color never goes into `ALauncherColors`.
 - Files under `ui/theme/generated/` are never hand-edited. A `tokens.json` change ships with its
   regenerated output, and the reverse.

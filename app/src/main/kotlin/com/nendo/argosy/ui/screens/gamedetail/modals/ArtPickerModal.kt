@@ -43,6 +43,7 @@ import com.nendo.argosy.ui.components.InputButton
 import com.nendo.argosy.ui.components.Modal
 import com.nendo.argosy.ui.components.ModalSearchField
 import com.nendo.argosy.ui.components.animateScrollToItemCentered
+import com.nendo.argosy.ui.theme.reducedMotion
 import com.nendo.argosy.ui.primitives.FocusIndicators
 import com.nendo.argosy.ui.primitives.argosyFocusIndicators
 import com.nendo.argosy.ui.screens.gamedetail.ArtCandidate
@@ -81,10 +82,11 @@ fun ArtPickerModal(
 ) {
     val config = slot.pickerConfig
     val gridState = rememberLazyGridState()
+    val reduced = reducedMotion()
 
     LaunchedEffect(focusIndex, candidates.size) {
         if (candidates.isNotEmpty()) {
-            gridState.animateScrollToItemCentered(focusIndex.coerceIn(0, candidates.lastIndex))
+            gridState.animateScrollToItemCentered(focusIndex.coerceIn(0, candidates.lastIndex), reduced)
         }
     }
 

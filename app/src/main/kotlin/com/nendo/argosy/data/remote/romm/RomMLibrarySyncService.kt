@@ -37,8 +37,12 @@ import com.nendo.argosy.util.Logger
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.NonCancellable
+import kotlinx.coroutines.channels.BufferOverflow
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
@@ -112,8 +116,20 @@ class RomMLibrarySyncService @Inject constructor(
     private val _syncProgress = MutableStateFlow(SyncProgress())
     val syncProgress: StateFlow<SyncProgress> = _syncProgress.asStateFlow()
 
+    private val _syncedGames = MutableSharedFlow<Long>(
+        extraBufferCapacity = SYNCED_GAMES_BUFFER,
+        onBufferOverflow = BufferOverflow.DROP_OLDEST
+    )
+
+    /**
+     * The id of each game a sync has just written, with its art sources recorded, in sync order.
+     * Only collectors present at the time see an id; nothing is replayed.
+     */
+    val syncedGames: SharedFlow<Long> = _syncedGames.asSharedFlow()
+
     companion object {
         private val ROMM_SOURCES = listOf(GameSource.ROMM_REMOTE, GameSource.ROMM_SYNCED)
+        private const val SYNCED_GAMES_BUFFER = 256
     }
 
     suspend fun populateVirtualCollectionsIfNeeded() {
@@ -1280,6 +1296,7 @@ class RomMLibrarySyncService @Inject constructor(
         if (savedGame != null) {
             if (contentChanged) imageCacheManager.forgetCachedArt(savedGame.id)
             writeArtSources(savedGame.id, rom, artSources)
+            _syncedGames.tryEmit(savedGame.id)
             val screenshots = gameScreenshotDao.replaceSources(savedGame.id, screenshotUrls)
             if (screenshotCacheEnabledForSync && screenshots.any { !it.isCachedFromSource }) {
                 imageCacheManager.queueScreenshotCache(savedGame.id, rom.id, rom.name)

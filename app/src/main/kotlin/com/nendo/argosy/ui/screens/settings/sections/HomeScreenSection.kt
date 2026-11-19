@@ -123,10 +123,9 @@ internal sealed class HomeScreenItem(
     )
 
     /**
-     * One home setting field, wherever it belongs on this pane. Rail toggles are content rather
-     * than layout, so the section and the visibility rule come from the field rather than being
-     * fixed: everything else follows the selected layout, and a rail follows whether the selected
-     * layout draws rows at all.
+     * One home setting field on this pane, with its section and visibility taken from the field. A
+     * rail field shows when the selected layout shows that rail; every other field follows the
+     * selected layout.
      */
     data class LayoutField(val field: HomeLayoutSettingField) : Row(
         key = "layoutField_${field.name}",
@@ -134,7 +133,7 @@ internal sealed class HomeScreenItem(
         labelRes = field.titleRes,
         visibleWhen = {
             if (field in homeRailFields()) {
-                it.homeLayout.selected != HomeLayoutKind.CUSTOM_GRID
+                showsRail(it.homeLayout.selected, field)
             } else {
                 isHomeLayoutFieldShown(it.homeLayout, field)
             }
@@ -155,7 +154,12 @@ internal sealed class HomeScreenItem(
         key = "recentNewGames",
         section = "content",
         labelRes = R.string.settings_home_screen_recent_new_games_title,
-        visibleWhen = { it.homeLayout.selected != HomeLayoutKind.CUSTOM_GRID }
+        visibleWhen = {
+            when (it.homeLayout.selected) {
+                HomeLayoutKind.CAROUSEL, HomeLayoutKind.AUTO_GRID -> true
+                HomeLayoutKind.CUSTOM_GRID, HomeLayoutKind.COLUMNS -> false
+            }
+        }
     )
 
     data object NewBadge : Row(
@@ -176,11 +180,19 @@ internal sealed class HomeScreenItem(
                 (!state.surfaceBackdrop.enabled ||
                     state.homeBackgroundMode == HomeBackgroundMode.GAME_ART)
 
-        private fun drawsBackgroundArt(state: DisplayState): Boolean =
-            state.homeLayout.selected == HomeLayoutKind.CAROUSEL
+        private fun drawsBackgroundArt(state: DisplayState): Boolean = when (state.homeLayout.selected) {
+            HomeLayoutKind.CAROUSEL -> true
+            HomeLayoutKind.AUTO_GRID, HomeLayoutKind.CUSTOM_GRID, HomeLayoutKind.COLUMNS -> false
+        }
+
+        private fun showsRail(kind: HomeLayoutKind, field: HomeLayoutSettingField): Boolean = when (kind) {
+            HomeLayoutKind.CAROUSEL, HomeLayoutKind.AUTO_GRID -> true
+            HomeLayoutKind.CUSTOM_GRID -> false
+            HomeLayoutKind.COLUMNS -> field != HomeLayoutSettingField.RAIL_MEDIA_LIBRARIES
+        }
 
         private fun playsVideo(state: DisplayState): Boolean =
-            drawsBackgroundArt(state) ||
+            com.nendo.argosy.ui.screens.home.playsHomeVideo(state.homeLayout.selected) ||
                 (state.dualScreenEnabled && state.hasSecondaryDisplay && !state.secondaryDisplayUnsupported)
 
         private val BackgroundHeader =

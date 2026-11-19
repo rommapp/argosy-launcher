@@ -2,7 +2,6 @@ package com.nendo.argosy.ui.components
 
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
-import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
@@ -35,6 +34,7 @@ import com.nendo.argosy.ui.theme.LocalBoxArtStyle
 import com.nendo.argosy.ui.theme.LocalLauncherTheme
 import com.nendo.argosy.ui.theme.Motion
 import com.nendo.argosy.ui.theme.generated.ComponentDefaults
+import com.nendo.argosy.ui.theme.loopingFloat
 
 /**
  * The single owner of how a piece of cover art reacts to focus.
@@ -98,7 +98,7 @@ fun Modifier.boxArtFrame(
     val shineTransition = if (outerEffect == BoxArtOuterEffect.SHINE && isFocused) {
         rememberInfiniteTransition(label = "boxArtShine")
     } else null
-    val shineOffset by shineTransition?.animateFloat(
+    val shineOffset by shineTransition?.loopingFloat(
         initialValue = -0.5f,
         targetValue = 1.5f,
         animationSpec = infiniteRepeatable(

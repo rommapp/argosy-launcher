@@ -1,6 +1,5 @@
 package com.nendo.argosy.ui.common
 
-import android.animation.ValueAnimator
 import android.content.res.Resources
 import androidx.compose.animation.core.Easing
 import androidx.compose.animation.core.RepeatMode
@@ -19,9 +18,8 @@ import com.nendo.argosy.data.emulator.EmulatorRegistry
 import com.nendo.argosy.data.emulator.background.RunningGamesSnapshot
 import com.nendo.argosy.data.streaming.StreamSessionManager
 import com.nendo.argosy.libretro.slot.GameSlots
-import com.nendo.argosy.ui.theme.LocalMotionTier
-import com.nendo.argosy.ui.theme.MotionTier
 import com.nendo.argosy.ui.theme.generated.MotionTokens
+import com.nendo.argosy.ui.theme.reducedMotion
 import kotlin.math.PI
 import kotlin.math.cos
 
@@ -120,8 +118,7 @@ private val SineInOut = Easing { fraction -> ((1.0 - cos(PI * fraction)) / 2.0).
 
 @Composable
 fun rememberRunningBreath(active: Boolean): State<Float> {
-    val reduced = LocalMotionTier.current == MotionTier.Reduced || !ValueAnimator.areAnimatorsEnabled()
-    if (!active || reduced) return remember { mutableFloatStateOf(RUNNING_BREATH_MID) }
+    if (!active || reducedMotion()) return remember { mutableFloatStateOf(RUNNING_BREATH_MID) }
     val transition = rememberInfiniteTransition(label = "runningBreath")
     return transition.animateFloat(
         initialValue = 0f,

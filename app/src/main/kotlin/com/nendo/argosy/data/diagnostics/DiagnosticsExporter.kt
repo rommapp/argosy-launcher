@@ -1,5 +1,6 @@
 package com.nendo.argosy.data.diagnostics
 
+import android.content.Context
 import android.os.Build
 import android.os.Environment
 import android.os.Process
@@ -15,11 +16,14 @@ import com.nendo.argosy.data.storage.FileAccessLayer
 import com.nendo.argosy.data.storage.FileInfo
 import com.nendo.argosy.data.storage.StoragePathUtils
 import com.nendo.argosy.data.update.BuildChannel
+import com.nendo.argosy.util.CrashRecorder
 import com.nendo.argosy.util.Logger
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.withContext
+import java.io.File
 import java.io.IOException
 import java.io.OutputStream
 import java.time.LocalDateTime
@@ -36,11 +40,12 @@ sealed interface DiagnosticsExportResult {
 
 /**
  * Writes one diagnostics zip to `Download/Argosy/` through [FileAccessLayer]: recent log files, or
- * Argosy's own logcat buffer when no log files exist, device build fields, the displays passed in, connected controllers, installed emulators, the
+ * Argosy's own logcat buffer when no log files exist, the crashes [CrashRecorder] kept, device build fields, the displays passed in, connected controllers, installed emulators, the
  * Argosy version and a settings dump. Logs and settings pass through [DiagnosticsRedactor].
  */
 @Singleton
 class DiagnosticsExporter @Inject constructor(
+    @ApplicationContext private val context: Context,
     private val dataStore: DataStore<Preferences>,
     private val appPreferences: AppPreferencesRepository,
     private val fileAccessLayer: FileAccessLayer,
@@ -71,6 +76,7 @@ class DiagnosticsExporter @Inject constructor(
                 val logs = logFiles(logDirectory)
                 logs.forEach { log -> zip.writeLog(log, secrets) }
                 if (logs.isEmpty()) zip.writeLogcat(secrets)
+                CrashRecorder.crashFiles(context).forEach { crash -> zip.writeCrash(crash, secrets) }
             }
             DiagnosticsExportResult.Success(target)
         } catch (e: CancellationException) {
@@ -210,6 +216,11 @@ class DiagnosticsExporter @Inject constructor(
         }
     }
 
+    private fun ZipOutputStream.writeCrash(crash: File, secrets: Set<String>) {
+        val text = runCatching { crash.readText() }.getOrNull() ?: return
+        writeText("$CRASH_FOLDER/${crash.name}", DiagnosticsRedactor.redactText(text, secrets))
+    }
+
     private fun ZipOutputStream.writeText(name: String, text: String) {
         putNextEntry(ZipEntry(name))
         write(text.toByteArray(Charsets.UTF_8))
@@ -231,6 +242,7 @@ class DiagnosticsExporter @Inject constructor(
         const val LOG_FOLDER = "logs"
         const val LOG_EXTENSION = "log"
         const val LOGCAT_ENTRY = "logcat.txt"
+        const val CRASH_FOLDER = "crashes"
         const val LOG_FILE_LIMIT = 10
         const val LINE_SEPARATOR = "\n"
         const val BLOCK_SEPARATOR = "\n\n"

@@ -13,9 +13,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.semantics.SemanticsPropertyKey
 import androidx.compose.ui.semantics.SemanticsPropertyReceiver
 import androidx.compose.ui.semantics.semantics
-import com.nendo.argosy.ui.theme.LocalMotionTier
-import com.nendo.argosy.ui.theme.MotionTier
 import com.nendo.argosy.ui.theme.generated.ComponentDefaults
+import com.nendo.argosy.ui.theme.reducedMotion
 
 /**
  * The arrival cover's current opacity, 1 black to 0 clear, for tests that step the clock frame
@@ -33,7 +32,7 @@ private var SemanticsPropertyReceiver.arrivalAlpha by ArrivalAlpha
  */
 @Composable
 fun GameArrival(revealed: Boolean, modifier: Modifier = Modifier) {
-    val reduced = LocalMotionTier.current == MotionTier.Reduced
+    val reduced = reducedMotion()
     val target = if (revealed) 0f else 1f
     val animated by animateFloatAsState(
         targetValue = target,

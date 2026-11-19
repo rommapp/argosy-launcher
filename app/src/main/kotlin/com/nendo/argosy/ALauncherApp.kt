@@ -239,6 +239,7 @@ class ArgosyApp : Application(), Configuration.Provider, ImageLoaderFactory {
 
     override fun onCreate() {
         super.onCreate()
+        com.nendo.argosy.util.CrashRecorder.install(this, BuildConfig.VERSION_NAME)
         appScope.launch { userCertStore.initialize() }
         appScope.launch { clientCertStore.initialize() }
         appScope.launch { com.nendo.argosy.hardware.pad.MutedPadDevices.watch(filesDir) }

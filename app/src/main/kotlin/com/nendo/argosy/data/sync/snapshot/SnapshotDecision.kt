@@ -39,6 +39,8 @@ object SnapshotDecision {
         }
         val dirty = local != null && (held.save == null || !local.sameSaveAs(held.save))
         return when {
+            local == null && held.byChoice && held.save != null -> SnapshotAction.Download(held.id)
+            local == null && held.id == current.id && current.save != null -> SnapshotAction.Download(current.id)
             held.id == current.id -> if (dirty) SnapshotAction.Push(current.id, parentSnapshotId = held.id) else SnapshotAction.Nothing
             held.byChoice -> if (dirty) SnapshotAction.Push(current.id, parentSnapshotId = held.id) else SnapshotAction.Nothing
             dirty -> SnapshotAction.Conflict(current.id)

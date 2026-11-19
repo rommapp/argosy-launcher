@@ -19,6 +19,8 @@ import androidx.compose.ui.unit.Dp
 import com.nendo.argosy.ui.input.ModalPresenceEffect
 import com.nendo.argosy.ui.theme.Dimens
 import com.nendo.argosy.ui.theme.Motion
+import com.nendo.argosy.ui.theme.motionEnter
+import com.nendo.argosy.ui.theme.motionExit
 import com.nendo.argosy.ui.util.clickableNoFocus
 
 @Composable
@@ -34,10 +36,14 @@ fun ModalScaffold(
     val duration = Motion.durationDrawer / 2
     AnimatedVisibility(
         visible = visible,
-        enter = fadeIn(animationSpec = tween(duration, easing = Motion.argosyEase)) +
-            scaleIn(initialScale = 0.96f, animationSpec = tween(duration, easing = Motion.argosyEase)),
-        exit = fadeOut(animationSpec = tween(duration, easing = Motion.argosyEase)) +
-            scaleOut(targetScale = 0.96f, animationSpec = tween(duration, easing = Motion.argosyEase)),
+        enter = motionEnter(
+            fadeIn(animationSpec = tween(duration, easing = Motion.argosyEase)) +
+                scaleIn(initialScale = 0.96f, animationSpec = tween(duration, easing = Motion.argosyEase))
+        ),
+        exit = motionExit(
+            fadeOut(animationSpec = tween(duration, easing = Motion.argosyEase)) +
+                scaleOut(targetScale = 0.96f, animationSpec = tween(duration, easing = Motion.argosyEase))
+        ),
     ) {
         Box(
             modifier = modifier

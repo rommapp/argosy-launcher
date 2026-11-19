@@ -369,6 +369,9 @@ class QuickPanelOverlay @Inject constructor(
                     LocalActivityResultRegistryOwner provides resultOwner,
                     LocalActivityUnseen provides activityUnseen
                 ) {
+                    com.nendo.argosy.ui.components.ProvideArtworkScraping(
+                        DualScreenManagerHolder.instance?.imageCacheManager?.progress
+                    ) {
                     QuickConnectionsEffects(
                         controller = connections,
                         pageVisible = page == QuickSettingsPage.CONNECTIONS,
@@ -420,6 +423,7 @@ class QuickPanelOverlay @Inject constructor(
                         if (isShown) {
                             FooterHost(controller = footerHost, modifier = Modifier.align(Alignment.BottomCenter))
                         }
+                    }
                     }
                 }
             }

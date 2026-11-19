@@ -62,6 +62,7 @@ data class DisplayPreferences(
     val libraryDefaultRegions: Set<String> = emptySet(),
     val libraryDefaultPlayers: com.nendo.argosy.domain.model.PlayerCountBucket? = null,
     val uiScale: Int = 100,
+    val reduceAnimations: Boolean = false,
     val gripReserveMode: GripReserveMode = GripReserveMode.OFF,
     val gripReservePercent: Int = 35,
     val gripAutoControllers: com.nendo.argosy.domain.model.GripAutoControllers =
@@ -190,6 +191,7 @@ class DisplayPreferencesRepository @Inject constructor(
         val LIBRARY_DEFAULT_REGIONS = stringSetPreferencesKey("library_default_regions")
         val LIBRARY_DEFAULT_PLAYERS = stringPreferencesKey("library_default_players")
         val UI_SCALE = intPreferencesKey("ui_scale")
+        val REDUCE_ANIMATIONS = booleanPreferencesKey("reduce_animations")
         val GRIP_RESERVE_ENABLED = booleanPreferencesKey("grip_reserve_enabled")
         val GRIP_RESERVE_PERCENT = intPreferencesKey("grip_reserve_percent")
         val BACKGROUND_BLUR = intPreferencesKey("background_blur")
@@ -305,6 +307,7 @@ class DisplayPreferencesRepository @Inject constructor(
                 prefs[Keys.LIBRARY_DEFAULT_PLAYERS]
             ),
             uiScale = prefs[Keys.UI_SCALE] ?: 100,
+            reduceAnimations = prefs[Keys.REDUCE_ANIMATIONS] ?: false,
             gripReserveMode = readGripReserveMode(prefs),
             gripReservePercent = (prefs[Keys.GRIP_RESERVE_PERCENT] ?: 35).coerceIn(10, 40),
             gripAutoControllers = readGripAutoControllers(prefs),
@@ -583,6 +586,10 @@ class DisplayPreferencesRepository @Inject constructor(
         dataStore.edit { it[Keys.UI_SCALE] = scale.coerceIn(50, 150) }
     }
 
+    suspend fun setReduceAnimations(enabled: Boolean) {
+        dataStore.edit { it[Keys.REDUCE_ANIMATIONS] = enabled }
+    }
+
     suspend fun setGripReserveEnabled(enabled: Boolean) {
         dataStore.edit { it[Keys.GRIP_RESERVE_ENABLED] = enabled }
     }
@@ -620,6 +627,15 @@ class DisplayPreferencesRepository @Inject constructor(
 
     suspend fun setHomeLayout(settings: com.nendo.argosy.domain.model.HomeLayoutSettings) {
         dataStore.edit { it[Keys.HOME_LAYOUT_CONFIG] = settings.toJson() }
+    }
+
+    /**
+     * Writes [settings] only when no home layout is stored yet, in the same edit that checks.
+     */
+    suspend fun setHomeLayoutIfAbsent(settings: com.nendo.argosy.domain.model.HomeLayoutSettings) {
+        dataStore.edit { prefs ->
+            if (Keys.HOME_LAYOUT_CONFIG !in prefs) prefs[Keys.HOME_LAYOUT_CONFIG] = settings.toJson()
+        }
     }
 
     suspend fun setPresentationStyle(style: com.nendo.argosy.domain.model.PresentationStyle) {

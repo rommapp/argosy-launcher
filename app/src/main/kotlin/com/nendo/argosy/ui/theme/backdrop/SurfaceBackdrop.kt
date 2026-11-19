@@ -27,9 +27,8 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
 import com.nendo.argosy.data.preferences.BackdropMotion
 import com.nendo.argosy.ui.theme.LocalArgosyTheme
-import com.nendo.argosy.ui.theme.LocalMotionTier
 import com.nendo.argosy.ui.theme.LocalUiScale
-import com.nendo.argosy.ui.theme.MotionTier
+import com.nendo.argosy.ui.theme.reducedMotion
 import com.nendo.argosy.ui.theme.generated.ComponentDefaults
 import kotlin.math.PI
 import kotlin.math.abs
@@ -76,8 +75,7 @@ fun Modifier.surfaceBackdrop(role: BackdropRole): Modifier {
     }
     val alpha = ((config.strength / 100f) * cap).coerceIn(0f, cap)
     val stamps = rememberBackdropStamps(config, tint, alpha, cellSizePx) ?: return background(base)
-    val motionActive = config.motion != BackdropMotion.OFF &&
-        LocalMotionTier.current != MotionTier.Reduced
+    val motionActive = config.motion != BackdropMotion.OFF && !reducedMotion()
     val layer = remember(config, tint, cellSizePx, alpha, motionActive, stamps) {
         val tile = renderBackdropTile(config, tint, alpha, cellSizePx, stamps)
         val shader = ImageShader(tile, TileMode.Repeated, TileMode.Repeated)

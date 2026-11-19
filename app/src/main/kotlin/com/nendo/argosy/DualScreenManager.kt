@@ -297,6 +297,18 @@ class DualScreenManager(
         displayBadges.hide()
     }
 
+    private val _homeVideoGameId = MutableStateFlow<Long?>(null)
+
+    /**
+     * The game whose preview clip Home is playing as its takeover, or null. The showcase does not
+     * play its own clip for that game while this names it.
+     */
+    val homeVideoGameId: StateFlow<Long?> = _homeVideoGameId
+
+    fun setHomeVideoGameId(gameId: Long?) {
+        _homeVideoGameId.value = gameId
+    }
+
     private val _focusPickerOpen = MutableStateFlow(false)
     val focusPickerOpen: StateFlow<Boolean> = _focusPickerOpen
 

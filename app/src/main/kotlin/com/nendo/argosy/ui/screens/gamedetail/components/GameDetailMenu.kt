@@ -75,6 +75,7 @@ import com.nendo.argosy.ui.screens.gamedetail.GameDownloadStatus
 import com.nendo.argosy.ui.screens.settings.menu.SettingsLayout
 import com.nendo.argosy.ui.theme.Dimens
 import com.nendo.argosy.ui.theme.Motion
+import com.nendo.argosy.ui.theme.motionSpec
 import com.nendo.argosy.ui.util.clickableNoFocus
 
 data class MenuLayoutState(
@@ -522,7 +523,7 @@ private fun PlayButtonBody(
         if (isInProgress) {
             val animatedProgress by animateFloatAsState(
                 targetValue = downloadProgress.value,
-                animationSpec = tween(durationMillis = Motion.durationMedium, easing = LinearEasing),
+                animationSpec = motionSpec(tween(durationMillis = Motion.durationMedium, easing = LinearEasing)),
                 label = "btn_fill"
             )
             val trackColor = MaterialTheme.colorScheme.surfaceVariant

@@ -50,6 +50,7 @@ import com.nendo.argosy.core.input.SoundType
 import com.nendo.argosy.ui.components.FooterHints
 import com.nendo.argosy.ui.components.InputButton
 import com.nendo.argosy.ui.components.animateScrollToItemCentered
+import com.nendo.argosy.ui.theme.reducedMotion
 import com.nendo.argosy.ui.components.dragReorderContainer
 import com.nendo.argosy.ui.components.dragReorderItem
 import com.nendo.argosy.ui.components.liftedReorderHints
@@ -164,6 +165,7 @@ fun BgmPlaylistManagerScreen(
         onDrop = { viewModel.drop() }
     )
 
+    val reduced = reducedMotion()
     LaunchedEffect(uiState.focusedIndex, uiState.folderSources.size, uiState.entries.size) {
         if (dragState.draggingKey != null) return@LaunchedEffect
         if (uiState.isEmpty || uiState.focusedIndex !in 0 until uiState.focusCount) return@LaunchedEffect
@@ -173,7 +175,7 @@ fun BgmPlaylistManagerScreen(
             uiState.focusedIndex < sourceCount -> 1 + uiState.focusedIndex
             else -> 2 + sourceCount + (uiState.focusedIndex - sourceCount)
         }
-        listState.animateScrollToItemCentered(lazyIndex)
+        listState.animateScrollToItemCentered(lazyIndex, reduced)
     }
 
     Box(

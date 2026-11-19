@@ -97,9 +97,21 @@ class SnapshotDecisionTest {
     }
 
     @Test
-    fun `a save missing locally never pushes`() {
-        assertEquals(SnapshotAction.Nothing, SnapshotDecision.decide(point(41, a), point(41, a), null))
+    fun `a save missing locally is refilled from current, never pushed`() {
+        assertEquals(SnapshotAction.Download(41), SnapshotDecision.decide(point(41, a), point(41, a), null))
         assertEquals(SnapshotAction.Download(42), SnapshotDecision.decide(point(41, a), point(42, b), null))
+    }
+
+    @Test
+    fun `a save missing locally while holding a chosen restore refills that restore`() {
+        assertEquals(SnapshotAction.Download(39), SnapshotDecision.decide(chosen(39, a), point(42, b), null))
+        assertEquals(SnapshotAction.Download(42), SnapshotDecision.decide(chosen(42, b), point(42, b), null))
+    }
+
+    @Test
+    fun `a missing local save against a snapshot that carries none does nothing`() {
+        assertEquals(SnapshotAction.Nothing, SnapshotDecision.decide(point(41, null), point(41, null), null))
+        assertEquals(SnapshotAction.Nothing, SnapshotDecision.decide(chosen(39, null), point(42, b), null))
     }
 
     @Test

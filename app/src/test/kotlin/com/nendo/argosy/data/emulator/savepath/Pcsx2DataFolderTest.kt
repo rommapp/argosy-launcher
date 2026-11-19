@@ -157,6 +157,88 @@ class Pcsx2DataFolderTest {
         assertEquals("${newer.absolutePath}/memcards", live)
     }
 
+    private val armsx2DefaultIni = """
+        [Folders]
+        MemoryCards = memcards
+
+        [MemoryCards]
+        Slot1_Enable = true
+        Slot1_Filename = mcd001.ps2
+    """.trimIndent()
+
+    private fun dataFolder(name: String, globalIni: String = armsx2DefaultIni): File =
+        File(tempDir, name).apply {
+            File(this, "gamesettings").mkdirs()
+            File(this, Pcsx2DataFolder.INI_NAME).writeText(globalIni)
+        }
+
+    @Test
+    fun `a game's own card overrides the global slot 1`() {
+        val root = dataFolder("game")
+        File(root, "gamesettings/SLUS-20675_ABCD1234.ini")
+            .writeText("[EmuCore/GS]\nupscale_multiplier = 2\n\n[MemoryCards]\nSlot1_Filename = DarkCloud\n")
+
+        val settings = Pcsx2DataFolder.read(root.absolutePath, fal, "BASLUS-20675")
+
+        assertEquals("DarkCloud", settings?.slot1Card)
+        assertEquals("${root.absolutePath}/memcards/DarkCloud", Pcsx2DataFolder.cardBase(root.absolutePath, settings).activeCard)
+    }
+
+    @Test
+    fun `without a serial the global slot 1 stands`() {
+        val root = dataFolder("noserial")
+        File(root, "gamesettings/SLUS-20675_ABCD1234.ini").writeText("[MemoryCards]\nSlot1_Filename = DarkCloud\n")
+
+        assertEquals("mcd001.ps2", Pcsx2DataFolder.read(root.absolutePath, fal)?.slot1Card)
+    }
+
+    @Test
+    fun `another game's ini does not change slot 1`() {
+        val root = dataFolder("other")
+        File(root, "gamesettings/SLUS-21050_11112222.ini").writeText("[MemoryCards]\nSlot1_Filename = Other\n")
+
+        assertEquals("mcd001.ps2", Pcsx2DataFolder.read(root.absolutePath, fal, "SLUS-20675")?.slot1Card)
+    }
+
+    @Test
+    fun `a game ini without a card keeps the global slot 1`() {
+        val root = dataFolder("nocard")
+        File(root, "gamesettings/SLUS-20675_ABCD1234.ini").writeText("[EmuCore/GS]\nupscale_multiplier = 2\n")
+
+        assertEquals("mcd001.ps2", Pcsx2DataFolder.read(root.absolutePath, fal, "SLUS-20675")?.slot1Card)
+    }
+
+    @Test
+    fun `a game ini that disables slot 1 names no card`() {
+        val root = dataFolder("disabled")
+        File(root, "gamesettings/SLUS-20675_ABCD1234.ini").writeText("[MemoryCards]\nSlot1_Enable = false\n")
+
+        assertNull(Pcsx2DataFolder.read(root.absolutePath, fal, "SLUS-20675")?.slot1Card)
+    }
+
+    @Test
+    fun `the newest ini wins for a game on several discs`() {
+        val root = dataFolder("discs")
+        File(root, "gamesettings/SLUS-20675_00000001.ini").apply {
+            writeText("[MemoryCards]\nSlot1_Filename = DiscOne\n")
+            setLastModified(1_000_000L)
+        }
+        File(root, "gamesettings/SLUS-20675_00000002.ini").apply {
+            writeText("[MemoryCards]\nSlot1_Filename = DiscTwo\n")
+            setLastModified(2_000_000L)
+        }
+
+        assertEquals("DiscTwo", Pcsx2DataFolder.read(root.absolutePath, fal, "SLUS-20675")?.slot1Card)
+    }
+
+    @Test
+    fun `serials match across dashes, case and the card's region prefix`() {
+        assertEquals("SLUS20675", Pcsx2DataFolder.serialKey("SLUS-20675"))
+        assertEquals("SLUS20675", Pcsx2DataFolder.serialKey("BASLUS-20675"))
+        assertEquals("SLUS20675", Pcsx2DataFolder.serialKey("slus_206.75"))
+        assertEquals("SCES50490", Pcsx2DataFolder.serialKey("BESCES-50490"))
+    }
+
     @Test
     fun `only a name ending ps2 is a file card name`() {
         assertTrue(Pcsx2DataFolder.isFolderCardName("maincard"))

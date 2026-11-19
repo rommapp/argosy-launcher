@@ -49,7 +49,7 @@ import com.nendo.argosy.ui.theme.Dimens
 import com.nendo.argosy.ui.theme.Motion
 import com.nendo.argosy.util.formatTimeToBeat
 
-private const val HOME_TITLE_SERIES_SCALE = 0.75f
+internal const val HOME_TITLE_SERIES_SCALE = 0.75f
 
 private val HOME_TITLE_RUNNING_LABELS = RunningLineLabels(
     running = R.string.home_title_running,
@@ -214,7 +214,8 @@ internal fun HomeTitleSection(
     centered: Boolean,
     showMetadata: Boolean,
     modifier: Modifier = Modifier,
-    textColorOverride: Color? = null
+    textColorOverride: Color? = null,
+    titleStyle: TextStyle = MaterialTheme.typography.headlineMedium
 ) {
     val metadataAlpha by animateFloatAsState(
         targetValue = if (showMetadata) 1f else 0f,
@@ -238,7 +239,7 @@ internal fun HomeTitleSection(
         content = {
             GameTitle(
                 title = title,
-                titleStyle = MaterialTheme.typography.headlineMedium,
+                titleStyle = titleStyle,
                 titleColor = titleColor,
                 seriesScale = HOME_TITLE_SERIES_SCALE,
                 adaptiveSize = true,

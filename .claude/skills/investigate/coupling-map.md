@@ -484,28 +484,28 @@ toggle swap which is which. Nothing is addressed by display id.
 Lockstep set:
 - `DualScreenManager` owns shared state (OSOT). `swapRoles` -> `commitRoleSwap`; the flip is
   what reveals the incoming screen, so it happens last.
-- Three home implementations exist: primary `HomeViewModel`+`HomeScreen`, companion
-  `DualHomeViewModel`+`DualHomeLowerScreen`, and a second `DualHomeViewModel` built by
-  `initSwappedViewModel()` on first swap. A swap starts a different one; nothing transfers
-  unless it is explicitly carried.
-- Position travels through `SessionStateStore.CarouselNavContext`; `persistSection()` writes,
-  `restoreNavContextIfPresent` reads, and both sides must read on becoming interactive, not
-  only at construction.
-- Focus travels through `refocusSelf()` on both sides. Only one side had it, and the missing
-  half made the pad look dead until a touch.
-- `ArgosyActivity` (HOME through the `.MainActivity` activity-alias) is bound to display 0 and cannot change display. Any plan
-  that "moves Home to the other screen" is wrong on that fact alone.
-- Primary -> companion notification is `CompanionHost`. `CompanionScreen` has only HOME and
-  GAME_DETAIL, and `onGameDetailOpened`/`onGameDetailClosed` are empty, so that direction does
-  not currently work for anything.
+- There is one Home: `HomeViewModel`+`HomeScreen`, rendered inside `ArgosyApp`. Each activity
+  renders either `ArgosyApp` or `PresentationSlotContent`, chosen from
+  `DualScreenManager.companionHoldsPrimary`; a swap changes which activity renders which, it does
+  not start a second Home.
+- Focus travels through `refocusSelf()`, implemented by both `ArgosyActivity` and
+  `SecondaryHomeActivity`. A side without it leaves the pad looking dead until a touch.
+- `ArgosyActivity` (HOME through the `.MainActivity` activity-alias) is bound to display 0 and
+  cannot change display. Home reaches the other screen only through `SecondaryHomeActivity`
+  rendering `ArgosyApp` after a swap.
+- The presentation screen draws a `PresentationSlot`. Home feeds the showcase through
+  `HomeViewModel.publishCompanionDetail` (`setCompanionDetail` on focus change, republished on
+  resume, cleared on dispose); other ViewModel-owned content uses `presentSlot`/`releaseSlot`.
+  Key forwarding and companion lifecycle go through `CompanionHost`.
 
 Grill (decisions for the user):
 - Does the showcase change for this, and what does it draw?
 - Should the swap wait for the incoming screen to settle, or reveal immediately?
 
 Loose ends (agent finds, never asks):
-- Whether the state in question is already in `CarouselNavContext`.
-- Which of the three home implementations renders in the case being changed.
+- Whether the state in question lives in a `DualScreenManager` StateFlow or only in one activity.
+- Which activity renders `ArgosyApp` and which renders `PresentationSlotContent` in the case
+  being changed.
 
 Proof obligations:
 - Capture BOTH displays before and after a swap and diff them; byte-identical companion

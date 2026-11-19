@@ -27,6 +27,7 @@ import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.text.style.TextOverflow
 import com.nendo.argosy.ui.theme.Dimens
 import com.nendo.argosy.ui.theme.LocalArgosyTheme
+import com.nendo.argosy.ui.theme.reducedMotion
 import com.nendo.argosy.ui.util.clickableNoFocus
 
 private const val FOCUS_TINT_ALPHA = 0.15f
@@ -46,10 +47,11 @@ fun RecentSearchesList(
     modifier: Modifier = Modifier,
 ) {
     val listState = rememberLazyListState()
+    val reduced = reducedMotion()
 
     LaunchedEffect(focusedIndex) {
         if (focusedIndex in searches.indices) {
-            listState.animateScrollToItemCentered(focusedIndex)
+            listState.animateScrollToItemCentered(focusedIndex, reduced)
         }
     }
 

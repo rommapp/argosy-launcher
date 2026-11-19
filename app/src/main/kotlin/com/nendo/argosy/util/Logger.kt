@@ -92,6 +92,7 @@ object Logger {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO + loggerExceptionHandler)
     private val logChannel = Channel<LogEntry>(Channel.BUFFERED)
 
+    private val writeLock = Any()
     private var fileWriter: FileWriter? = null
     private var currentLogDate: LocalDate? = null
     private var logDirectory: String? = null
@@ -101,6 +102,7 @@ object Logger {
     @Volatile
     private var fileLoggingEnabled = false
 
+    private const val CRASH_TAG = "Crash"
     private val timestampFormat = DateTimeFormatter.ofPattern("HH:mm:ss.SSS")
     private val dateFormat = DateTimeFormatter.ofPattern("yyyy-MM-dd")
 
@@ -124,7 +126,7 @@ object Logger {
         this.fileLogLevel = level
 
         if (!fileLoggingEnabled) {
-            closeCurrentFile()
+            synchronized(writeLock) { closeCurrentFile() }
         }
     }
 
@@ -165,7 +167,19 @@ object Logger {
         }
     }
 
-    private fun writeToFile(entry: LogEntry) {
+    /**
+     * Logs [message] and [throwable] at ERROR and, when file logging is on, writes them to the log
+     * file on the calling thread before returning, for a process that is about to die.
+     */
+    fun recordCrash(message: String, throwable: Throwable) {
+        AndroidLog.e(CRASH_TAG, message, throwable)
+        if (!fileLoggingEnabled) return
+        writeToFile(LogEntry(LocalDateTime.now(), LogLevel.ERROR, CRASH_TAG, message, throwable))
+    }
+
+    private fun writeToFile(entry: LogEntry) = synchronized(writeLock) { writeEntry(entry) }
+
+    private fun writeEntry(entry: LogEntry) {
         val dir = logDirectory ?: return
 
         val today = entry.timestamp.toLocalDate()

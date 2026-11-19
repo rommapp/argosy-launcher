@@ -115,6 +115,7 @@ LAW: inside `ArgosyApp` and anything it hosts, reach DSM through the Holder, nev
 | `Detail` | `setCompanionDetail` from Home, Library, Media, and the Collections screens (collection detail, genre/mode game lists) through `PresentationFocus` |
 | `PlatformShowcase` | `LibraryViewModel` while the platform grid is focused; Home's custom-grid collection tiles; the Collections list and genre/mode list through `PresentationFocus` |
 | `GameHero` | `GameDetailViewModel` via `presentSlot` |
+| `LibraryWall` | `BuildingLibraryScreen` via `PresentOnCompanion`, while `presentationShowsHints`; the control screen then shows only the sync info |
 
 A focused game's `Detail` and a set of games' mosaic are built by `ui/common/PresentationShowcaseSource`
 (`gameDetail`, `collectionShowcase`), so they look identical from every screen. A new list screen

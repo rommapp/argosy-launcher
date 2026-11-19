@@ -2,7 +2,7 @@ package com.nendo.argosy.domain.model
 
 import org.json.JSONObject
 
-enum class HomeLayoutKind { CAROUSEL, AUTO_GRID, CUSTOM_GRID }
+enum class HomeLayoutKind { CAROUSEL, AUTO_GRID, CUSTOM_GRID, COLUMNS }
 
 enum class HomeRowAlignment { TOP, CENTER, BOTTOM }
 
@@ -232,6 +232,10 @@ data class CustomGridConfig(
     }
 }
 
+data object ColumnsConfig : HomeLayoutConfig {
+    override val kind: HomeLayoutKind get() = HomeLayoutKind.COLUMNS
+}
+
 const val DEFAULT_LANE_COUNT = 3
 
 const val MIN_LANE_COUNT = 2
@@ -274,6 +278,7 @@ data class HomeLayoutSettings(
     val carousel: CarouselConfig = CarouselConfig(),
     val autoGrid: AutoGridConfig = AutoGridConfig(),
     val customGrid: CustomGridConfig = CustomGridConfig(),
+    val columns: ColumnsConfig = ColumnsConfig,
     val rails: HomeRailSettings = HomeRailSettings(),
     val boxArt3d: Boolean = false
 ) {
@@ -282,6 +287,7 @@ data class HomeLayoutSettings(
             HomeLayoutKind.CAROUSEL -> carousel
             HomeLayoutKind.AUTO_GRID -> autoGrid
             HomeLayoutKind.CUSTOM_GRID -> customGrid
+            HomeLayoutKind.COLUMNS -> columns
         }
 
     val showsEveryGame: Boolean
@@ -332,6 +338,7 @@ data class HomeLayoutSettings(
                 }
             }
         )
+        put(KEY_COLUMNS_LAYOUT, JSONObject())
         put(
             KEY_RAILS,
             JSONObject().apply {
@@ -347,6 +354,7 @@ data class HomeLayoutSettings(
         private const val KEY_CAROUSEL = "carousel"
         private const val KEY_AUTO_GRID = "autoGrid"
         private const val KEY_CUSTOM_GRID = "customGrid"
+        private const val KEY_COLUMNS_LAYOUT = "columns"
         private const val KEY_ROW_ALIGNMENT = "rowAlignment"
         private const val KEY_FOCUS_POSITION = "focusPosition"
         private const val KEY_INVERTED = "inverted"

@@ -48,6 +48,7 @@ import com.google.zxing.qrcode.QRCodeWriter
 import com.nendo.argosy.R
 import com.nendo.argosy.ui.components.ActionPreference
 import com.nendo.argosy.ui.components.animateScrollToItemCentered
+import com.nendo.argosy.ui.theme.reducedMotion
 import com.nendo.argosy.ui.primitives.ActionButton
 import com.nendo.argosy.ui.screens.settings.components.SectionPaneLayout
 import com.nendo.argosy.ui.components.SwitchPreference
@@ -320,10 +321,11 @@ fun SocialSection(
         }
     } else {
         val listState = rememberLazyListState()
+        val reduced = reducedMotion()
 
         LaunchedEffect(uiState.focusedIndex) {
             if (uiState.focusedIndex == 0) {
-                listState.animateScrollToItemCentered(0)
+                listState.animateScrollToItemCentered(0, reduced)
             }
         }
 

@@ -309,11 +309,16 @@ class ArgosyViewModel @Inject constructor(
 
     fun refreshControllerDetection() = connectedControllerTracker.refresh()
 
-    fun triggerPostWizardSync() {
+    /**
+     * Starts the first library sync after setup. [onLibrarySyncQueued] runs on the main thread
+     * once a RomM sync is queued, and never when no server is connected.
+     */
+    fun triggerPostWizardSync(onLibrarySyncQueued: () -> Unit) {
         viewModelScope.launch(kotlinx.coroutines.Dispatchers.IO) {
             romMRepository.initialize()
             if (romMRepository.isConnected()) {
                 platformSyncQueue.enqueueLibrary(initializeFirst = false)
+                kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Main) { onLibrarySyncQueued() }
             }
         }
     }

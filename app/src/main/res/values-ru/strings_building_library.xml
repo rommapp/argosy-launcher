@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="building_library_title">Создаём вашу библиотеку</string>
+    <string name="building_library_getting_ready">Подготовка</string>
+    <string name="building_library_syncing_platform">Синхронизация: %1$s</string>
+    <string name="building_library_done">Библиотека готова</string>
+    <string name="building_library_browse">Смотреть, пока идёт загрузка</string>
+    <plurals name="building_library_games">
+        <item quantity="one">%1$,d из %2$,d игры</item>
+        <item quantity="few">%1$,d из %2$,d игр</item>
+        <item quantity="many">%1$,d из %2$,d игр</item>
+        <item quantity="other">%1$,d из %2$,d игры</item>
+    </plurals>
+    <plurals name="building_library_platforms">
+        <item quantity="one">%1$d из %2$d платформы</item>
+        <item quantity="few">%1$d из %2$d платформ</item>
+        <item quantity="many">%1$d из %2$d платформ</item>
+        <item quantity="other">%1$d из %2$d платформы</item>
+    </plurals>
+</resources>

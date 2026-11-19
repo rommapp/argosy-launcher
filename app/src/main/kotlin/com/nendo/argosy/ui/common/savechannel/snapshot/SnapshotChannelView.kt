@@ -34,6 +34,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.Dp
 import com.nendo.argosy.R
 import com.nendo.argosy.ui.components.animateScrollToItemCentered
+import com.nendo.argosy.ui.theme.reducedMotion
 import com.nendo.argosy.ui.primitives.ArgosyProgressBar
 import com.nendo.argosy.ui.primitives.ProgressBarStyle
 import com.nendo.argosy.ui.primitives.RuledSectionHeader
@@ -74,8 +75,9 @@ private fun SnapshotSections(
 ) {
     val listState = rememberLazyListState()
     val focusedRow = stopKey(state)?.let { rowKeys(state).indexOf(it) } ?: -1
+    val reduced = reducedMotion()
     LaunchedEffect(focusedRow) {
-        if (focusedRow >= 0) listState.animateScrollToItemCentered(focusedRow)
+        if (focusedRow >= 0) listState.animateScrollToItemCentered(focusedRow, reduced)
     }
     Column {
         if (state.isBusy) {
@@ -210,7 +212,8 @@ private fun ChannelRow(
     val open = state.expanded?.takeIf { it.isMine == isMine && it.channelId == tile.channelId }
     val cardsFocused = open != null && state.isStopFocused(SnapshotStop.Cards)
     val focusedItem = if (cardsFocused && open != null) 1 + open.focusIndex else 0
-    LaunchedEffect(focusedItem) { rowState.animateScrollToItemCentered(focusedItem) }
+    val reduced = reducedMotion()
+    LaunchedEffect(focusedItem) { rowState.animateScrollToItemCentered(focusedItem, reduced) }
     val theme = LocalArgosyTheme.current
     val laneShape = RoundedCornerShape(Dimens.radiusXl)
     Box(

@@ -43,9 +43,8 @@ import com.nendo.argosy.ui.common.savechannel.snapshot.snapshotRelativeTime
 import com.nendo.argosy.ui.theme.Dimens
 import com.nendo.argosy.ui.theme.LocalArgosyTheme
 import com.nendo.argosy.ui.theme.LocalLauncherTheme
-import com.nendo.argosy.ui.theme.LocalMotionTier
 import com.nendo.argosy.ui.theme.Motion
-import com.nendo.argosy.ui.theme.MotionTier
+import com.nendo.argosy.ui.theme.reducedMotion
 import com.nendo.argosy.ui.util.clickableNoFocus
 import kotlin.math.max
 
@@ -61,7 +60,7 @@ internal fun SaveTimelineFloaterPlacement(
     var measured by remember { mutableStateOf(IntSize.Zero) }
     var placed by remember { mutableStateOf(false) }
     val position = remember { Animatable(IntOffset.Zero, IntOffset.VectorConverter) }
-    val animate = LocalMotionTier.current != MotionTier.Reduced
+    val animate = !reducedMotion()
     if (anchor == null) {
         SideEffect { placed = false }
         return

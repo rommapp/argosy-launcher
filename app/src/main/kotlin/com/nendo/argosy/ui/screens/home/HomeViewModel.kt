@@ -125,6 +125,7 @@ class HomeViewModel @Inject constructor(
     val mediaDelegate: HomeMediaDelegate,
     val tilePickerDelegate: HomeTilePickerDelegate,
     private val dockDelegate: HomeDockDelegate,
+    private val columnsDelegate: com.nendo.argosy.ui.screens.home.delegates.HomeColumnsDelegate,
     private val steamLauncherLinkController: com.nendo.argosy.data.steam.SteamLauncherLinkController,
     private val appsRepository: com.nendo.argosy.data.repository.AppsRepository,
     private val homeTileRepository: com.nendo.argosy.data.repository.HomeTileRepository,
@@ -331,6 +332,7 @@ class HomeViewModel @Inject constructor(
         observeDelegateStates()
         observeHomeTiles()
         observeTilePrompts()
+        columnsDelegate.observe(viewModelScope, _uiState) { transform -> _uiState.update(transform) }
         customGrid.setLocalVideoSupported(true)
         mediaDelegate.observe(viewModelScope)
         gradientExtractionDelegate.startBackgroundProcessing(viewModelScope)
@@ -373,11 +375,11 @@ class HomeViewModel @Inject constructor(
         }
         viewModelScope.launch {
             videoPreviewDelegate.state.collect { vp ->
+                publishHomeVideo(vp)
                 _uiState.update {
                     it.copy(
-                        isVideoPreviewActive = vp.isVideoPreviewActive,
-                        videoPreviewId = vp.videoPreviewId,
-                        isVideoPreviewLoading = vp.isVideoPreviewLoading,
+                        videoPreviewPhase = vp.phase,
+                        videoPreviewClip = vp.clip,
                         muteVideoPreview = vp.muteVideoPreview,
                         videoWallpaperEnabled = vp.videoWallpaperEnabled,
                         videoWallpaperDelayMs = vp.videoWallpaperDelayMs
@@ -691,11 +693,16 @@ class HomeViewModel @Inject constructor(
     private var logoPrefetch: kotlinx.coroutines.Job? = null
 
     private fun backfillLogo(focused: HomeGameUi) {
-        val layout = DualScreenManagerHolder.instance?.presentationStyle?.value?.layout
-        if (layout != com.nendo.argosy.domain.model.PresentationLayout.LOGO) return
         val state = _uiState.value
-        val onScreen = listOf(focused) + state.tileGames.values +
-            state.currentItems.filterIsInstance<HomeRowItem.Game>().map { it.game }
+        val layout = DualScreenManagerHolder.instance?.presentationStyle?.value?.layout
+        val isColumns = state.layoutKind == HomeLayoutKind.COLUMNS
+        if (!isColumns && layout != com.nendo.argosy.domain.model.PresentationLayout.LOGO) return
+        val rowGames = if (isColumns) {
+            state.columns.focusedColumn?.items.orEmpty()
+        } else {
+            state.currentItems
+        }.filterIsInstance<HomeRowItem.Game>().map { it.game }
+        val onScreen = listOf(focused) + state.tileGames.values + rowGames
         val pending = onScreen.filter { it.logoPath == null && it.id !in logoAttempts }
             .distinctBy { it.id }
         if (pending.isEmpty() || logoPrefetch?.isActive == true) return
@@ -931,6 +938,7 @@ class HomeViewModel @Inject constructor(
      * because the game half of the answer came back empty.
      */
     private suspend fun refreshCurrentRowInternal(anchorGameId: Long? = null) {
+        columnsDelegate.refresh()
         val state = _uiState.value
         if (state.isMediaRow) {
             flushLibraryState()
@@ -2105,10 +2113,31 @@ class HomeViewModel @Inject constructor(
     override fun activateExactGame(game: HomeGameUi) = activate(game, exactRow = true)
 
     fun activateFocusedGame(game: HomeGameUi) =
-        activate(game, exactRow = _uiState.value.layoutKind == HomeLayoutKind.CUSTOM_GRID)
+        activate(game, exactRow = activatesExactGame(_uiState.value.layoutKind))
 
     fun downloadFocusedGame(game: HomeGameUi) =
-        activate(game, exactRow = _uiState.value.layoutKind == HomeLayoutKind.CUSTOM_GRID, allowStream = false)
+        activate(game, exactRow = activatesExactGame(_uiState.value.layoutKind), allowStream = false)
+
+    private fun activatesExactGame(kind: HomeLayoutKind): Boolean = when (kind) {
+        HomeLayoutKind.CUSTOM_GRID -> true
+        HomeLayoutKind.CAROUSEL, HomeLayoutKind.AUTO_GRID, HomeLayoutKind.COLUMNS -> false
+    }
+
+    override fun moveColumn(delta: Int): Boolean = columnsDelegate.move(delta).also { moved ->
+        if (moved) prefetchAchievementsDebounced()
+    }
+
+    override fun stepColumnGame(delta: Int): Boolean = columnsDelegate.step(delta).also { moved ->
+        if (moved) prefetchAchievementsDebounced()
+    }
+
+    override fun jumpColumnRun(direction: Int): Boolean = columnsDelegate.jumpRun(direction).also { moved ->
+        if (moved) prefetchAchievementsDebounced()
+    }
+
+    override fun resetColumnsFocus(): Boolean = columnsDelegate.reset()
+
+    fun setColumnSlotCount(slots: Int) = columnsDelegate.setSlotCount(slots)
 
     private fun activate(game: HomeGameUi, exactRow: Boolean, allowStream: Boolean = true) {
         val indicator = downloadIndicators.value[game.id] ?: GameDownloadIndicator.NONE
@@ -2510,11 +2539,26 @@ class HomeViewModel @Inject constructor(
 
     // --- Public API: Video Preview ---
 
-    fun startVideoPreviewLoading(videoId: String) = videoPreviewDelegate.startVideoPreviewLoading(videoId)
+    fun videoClipFor(game: HomeGameUi): com.nendo.argosy.ui.components.GameVideoClip? =
+        com.nendo.argosy.ui.components.gameVideoClip(
+            romMRepository.buildResourceUrlPublic(game.videoNormalizedPath),
+            game.youtubeVideoId
+        )
+    fun startVideoPreviewLoading(gameId: Long, clip: com.nendo.argosy.ui.components.GameVideoClip) =
+        videoPreviewDelegate.startVideoPreviewLoading(gameId, clip)
     fun activateVideoPreview(videoId: String, blocked: Boolean, isResumed: Boolean) =
         videoPreviewDelegate.activateVideoPreview(videoId, blocked, isResumed)
+    fun beginVideoTakeover(videoId: String) = videoPreviewDelegate.beginTakeover(videoId)
+    fun showVideoTakeoverInfo(videoId: String) = videoPreviewDelegate.showTakeoverInfo(videoId)
+    fun finishVideoTakeoverRestore() = videoPreviewDelegate.finishTakeoverRestore()
+    override fun restoreVideoTakeover(): Boolean = videoPreviewDelegate.restoreTakeover()
     fun cancelVideoPreviewLoading() = videoPreviewDelegate.cancelVideoPreviewLoading()
     fun deactivateVideoPreview() = videoPreviewDelegate.deactivateVideoPreview()
+
+    private fun publishHomeVideo(preview: com.nendo.argosy.ui.screens.home.delegates.VideoPreviewState) {
+        val gameId = preview.gameId?.takeIf { _uiState.value.layoutKind == HomeLayoutKind.COLUMNS }
+        DualScreenManagerHolder.instance?.setHomeVideoGameId(gameId)
+    }
 
     // --- Public API: Library ---
 

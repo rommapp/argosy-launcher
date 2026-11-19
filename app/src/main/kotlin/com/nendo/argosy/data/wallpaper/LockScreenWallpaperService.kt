@@ -13,12 +13,16 @@ import android.os.SystemClock
 import android.service.wallpaper.WallpaperService
 import android.view.Choreographer
 import android.view.SurfaceHolder
+import com.nendo.argosy.data.preferences.DisplayPreferencesRepository
+import com.nendo.argosy.domain.model.isReducedMotion
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
@@ -31,6 +35,7 @@ class LockScreenWallpaperService : WallpaperService() {
 
     @Inject lateinit var scenes: LockScreenScenes
     @Inject lateinit var artManager: LockScreenArtManager
+    @Inject lateinit var displayPrefs: DisplayPreferencesRepository
 
     override fun onCreateEngine(): Engine = MosaicEngine()
 
@@ -43,6 +48,7 @@ class LockScreenWallpaperService : WallpaperService() {
         private var preview: Job? = null
         private var scene: LockScreenScene? = null
         private var visible = false
+        private var reduceAnimations = false
         private var animating = false
         private var startedAt = SystemClock.uptimeMillis()
 
@@ -56,6 +62,17 @@ class LockScreenWallpaperService : WallpaperService() {
                         update()
                     }
                 }
+            }
+            scope.launch {
+                displayPrefs.preferences
+                    .map { it.reduceAnimations }
+                    .distinctUntilChanged()
+                    .collect { reduce ->
+                        renderer.post {
+                            reduceAnimations = reduce
+                            update()
+                        }
+                    }
             }
             if (isPreview) preview = artManager.prepareLivePreview() else artManager.onLiveWallpaperBound()
         }
@@ -110,7 +127,8 @@ class LockScreenWallpaperService : WallpaperService() {
         }
 
         private fun shouldAnimate(): Boolean =
-            visible && scene is LockScreenScene.Mosaic && ValueAnimator.areAnimatorsEnabled() &&
+            visible && scene is LockScreenScene.Mosaic &&
+                !isReducedMotion(reduceAnimations, ValueAnimator.areAnimatorsEnabled()) &&
                 (isPreview || keyguard?.isKeyguardLocked == true)
 
         private fun start() {

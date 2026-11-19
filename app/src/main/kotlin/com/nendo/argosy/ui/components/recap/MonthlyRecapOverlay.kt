@@ -29,6 +29,7 @@ import com.nendo.argosy.ui.input.ModalInputEffect
 import com.nendo.argosy.ui.theme.LocalLauncherTheme
 import com.nendo.argosy.ui.theme.Motion
 import com.nendo.argosy.ui.theme.generated.ComponentDefaults
+import com.nendo.argosy.ui.theme.reducedMotion
 import com.nendo.argosy.ui.util.clickableNoFocus
 import dagger.hilt.EntryPoint
 import dagger.hilt.InstallIn
@@ -96,7 +97,7 @@ fun monthlyRecapBackdropBlur(): Dp {
     val controller = rememberMonthlyRecapController()
     val state by controller.state.collectAsState()
     val blur by animateDpAsState(
-        targetValue = if (state != null) Motion.blurRadiusDrawer else 0.dp,
+        targetValue = if (state != null && !reducedMotion()) Motion.blurRadiusDrawer else 0.dp,
         animationSpec = tween(launchOverlayFadeMs()),
         label = "monthlyRecapBlur"
     )

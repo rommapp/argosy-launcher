@@ -28,9 +28,8 @@ import com.nendo.argosy.domain.model.PresentationStyle
 import com.nendo.argosy.ui.theme.AspectRatioClass
 import com.nendo.argosy.ui.theme.Dimens
 import com.nendo.argosy.ui.theme.LocalArgosyTheme
-import com.nendo.argosy.ui.theme.LocalMotionTier
 import com.nendo.argosy.ui.theme.LocalUiScale
-import com.nendo.argosy.ui.theme.MotionTier
+import com.nendo.argosy.ui.theme.reducedMotion
 
 /**
  * The showcase screen while the driven screen is on Library or Media.
@@ -70,7 +69,7 @@ fun CompanionDetailScreen(
     Box(modifier = modifier.fillMaxSize().background(theme.surfaceBase)) {
         detail.backdropUrl?.let { backdrop ->
             val isScreenshot = detail.backdropIsScreenshotOrArt
-            val reduced = LocalMotionTier.current == MotionTier.Reduced
+            val reduced = reducedMotion()
             val backdropImage = rememberShowcaseBackdrop(
                 backdrop,
                 showcaseMotionDurations(reduced).backdropCrossfadeMs,

@@ -60,6 +60,9 @@ import com.nendo.argosy.ui.theme.Motion
 import com.nendo.argosy.ui.theme.generated.ColorTokens
 import com.nendo.argosy.ui.theme.generated.DimensionTokens
 import com.nendo.argosy.ui.theme.gripReserveBottomInset
+import com.nendo.argosy.ui.theme.motionEnter
+import com.nendo.argosy.ui.theme.motionExit
+import com.nendo.argosy.ui.theme.reducedMotion
 import com.nendo.argosy.ui.util.clickableNoFocus
 import com.nendo.argosy.ui.util.verticalEdgeFade
 import androidx.annotation.StringRes
@@ -443,12 +446,13 @@ private fun InGameMenuList(
 ) {
     val menuGridState = rememberLazyGridState()
     val gridColumns = if (collapsed) 1 else columns
+    val reduced = reducedMotion()
 
     LaunchedEffect(focusedIndex, menuItems.size, gridColumns) {
         if (menuItems.isEmpty()) return@LaunchedEffect
         snapshotFlow { menuGridState.layoutInfo.viewportSize.height }
             .collectLatest {
-                menuGridState.animateScrollToItemCentered(focusedIndex.coerceIn(0, menuItems.lastIndex))
+                menuGridState.animateScrollToItemCentered(focusedIndex.coerceIn(0, menuItems.lastIndex), reduced)
             }
     }
 
@@ -460,10 +464,14 @@ private fun InGameMenuList(
     ) {
         AnimatedVisibility(
             visible = !collapsed,
-            enter = expandVertically(tween(Motion.durationSlide, easing = Motion.argosyEase)) +
-                fadeIn(tween(Motion.durationContent)),
-            exit = shrinkVertically(tween(Motion.durationSlide, easing = Motion.argosyEase)) +
-                fadeOut(tween(Motion.durationContent))
+            enter = motionEnter(
+                expandVertically(tween(Motion.durationSlide, easing = Motion.argosyEase)) +
+                    fadeIn(tween(Motion.durationContent))
+            ),
+            exit = motionExit(
+                shrinkVertically(tween(Motion.durationSlide, easing = Motion.argosyEase)) +
+                    fadeOut(tween(Motion.durationContent))
+            )
         ) {
             InGameMenuHeader(
                 gameName = gameName,
@@ -633,10 +641,12 @@ fun DiscMenu(
         val maxHeightDp =
             (availableHeightDp * DimensionTokens.Layout.inGameMenuMaxHeightPct / 100f).dp
         val listState = rememberLazyListState()
+        val reduced = reducedMotion()
 
         LaunchedEffect(focusedIndex, labels.size) {
             if (labels.isEmpty()) return@LaunchedEffect
-            listState.animateScrollToItem(focusedIndex.coerceIn(0, labels.lastIndex))
+            val target = focusedIndex.coerceIn(0, labels.lastIndex)
+            if (reduced) listState.scrollToItem(target) else listState.animateScrollToItem(target)
         }
 
         Surface(
@@ -709,10 +719,14 @@ private fun QuickLoadCell(
         )
         AnimatedVisibility(
             visible = historyFocus != QuickHistoryFocus.NONE,
-            enter = expandVertically(tween(Motion.durationSlide, easing = Motion.argosyEase)) +
-                fadeIn(tween(Motion.durationContent)),
-            exit = shrinkVertically(tween(Motion.durationSlide, easing = Motion.argosyEase)) +
-                fadeOut(tween(Motion.durationContent))
+            enter = motionEnter(
+                expandVertically(tween(Motion.durationSlide, easing = Motion.argosyEase)) +
+                    fadeIn(tween(Motion.durationContent))
+            ),
+            exit = motionExit(
+                shrinkVertically(tween(Motion.durationSlide, easing = Motion.argosyEase)) +
+                    fadeOut(tween(Motion.durationContent))
+            )
         ) {
             QuickLoadHistoryStrip(
                 entries = entries,
@@ -755,10 +769,14 @@ private fun QuickLoadRow(
         )
         AnimatedVisibility(
             visible = !collapsed,
-            enter = expandHorizontally(tween(Motion.durationSlide, easing = Motion.argosyEase)) +
-                fadeIn(tween(Motion.durationContent)),
-            exit = shrinkHorizontally(tween(Motion.durationSlide, easing = Motion.argosyEase)) +
-                fadeOut(tween(Motion.durationContent))
+            enter = motionEnter(
+                expandHorizontally(tween(Motion.durationSlide, easing = Motion.argosyEase)) +
+                    fadeIn(tween(Motion.durationContent))
+            ),
+            exit = motionExit(
+                shrinkHorizontally(tween(Motion.durationSlide, easing = Motion.argosyEase)) +
+                    fadeOut(tween(Motion.durationContent))
+            )
         ) {
             QuickHistoryButton(historyFocus = historyFocus, onClick = onHistoryClick)
         }

@@ -1143,6 +1143,8 @@
     <string name="ui_home_layout_kind_auto_grid">Auto Grid</string>
     <!-- Name of the home layout the reader arranges themselves. Noun phrase. -->
     <string name="ui_home_layout_kind_custom_grid">Custom Grid</string>
+    <!-- Name of the home layout that shows games as side-by-side vertical columns. Plural noun. -->
+    <string name="ui_home_layout_kind_columns">Columns</string>
     <!-- Value of the row position setting: rows sit at the top. -->
     <string name="ui_home_layout_alignment_top">Top</string>
     <!-- Value of the row position setting: rows sit in the middle. -->

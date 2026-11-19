@@ -32,8 +32,7 @@ import androidx.compose.ui.unit.dp
 import com.nendo.argosy.ui.primitives.GlassPanel
 import com.nendo.argosy.ui.theme.Dimens
 import com.nendo.argosy.ui.theme.LocalArgosyTheme
-import com.nendo.argosy.ui.theme.LocalMotionTier
-import com.nendo.argosy.ui.theme.MotionTier
+import com.nendo.argosy.ui.theme.reducedMotion
 import com.nendo.argosy.ui.theme.generated.ComponentDefaults
 import com.nendo.argosy.ui.util.verticalEdgeFade
 import kotlinx.coroutines.flow.collectLatest
@@ -93,7 +92,7 @@ internal fun RecapCardFrame(
 @Composable
 private fun RecapBodyScrollEffect(scrollState: ScrollState, cursor: RecapCursor) {
     val stepPx = with(LocalDensity.current) { ComponentDefaults.UnlockRecap.scrollStepDp.dp.toPx() }
-    val reduced = LocalMotionTier.current == MotionTier.Reduced
+    val reduced = reducedMotion()
     val latest by rememberUpdatedState(cursor)
     LaunchedEffect(scrollState, stepPx, reduced) {
         var seen = latest.bodyScrolls

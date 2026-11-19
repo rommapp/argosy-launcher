@@ -156,6 +156,7 @@ class SetupViewModel @Inject constructor(
     )
 
     private suspend fun openAtFirstMissingItem() {
+        setupStateRepository.seedNewInstallHomeLayout()
         val facts = setupStateRepository.facts.first()
         val prefs = preferencesRepository.userPreferences.first()
         signIn.prefill(prefs.rommBaseUrl, facts.librarySignedIn)

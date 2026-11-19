@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyRow
@@ -53,6 +54,7 @@ import com.nendo.argosy.ui.theme.LocalBoxArtStyle
 import com.nendo.argosy.ui.theme.Motion
 import com.nendo.argosy.ui.theme.generated.ComponentDefaults
 import com.nendo.argosy.ui.theme.gripReserveBottomInset
+import com.nendo.argosy.ui.theme.reducedMotion
 import kotlinx.coroutines.delay
 
 private const val PREVIEW_CAROUSEL_ITEMS = 8
@@ -103,6 +105,7 @@ fun HomeLayoutPreview(
     val theme = LocalArgosyTheme.current
     val boxArt = LocalBoxArtStyle.current
     val frameShape = RoundedCornerShape(Dimens.radiusLg)
+    val moving = animate && !reducedMotion()
 
     BoxWithConstraints(
         modifier = modifier
@@ -145,6 +148,16 @@ fun HomeLayoutPreview(
                 .padding(top = headerHeight, bottom = footerHeight)
         ) {
             when (settings.selected) {
+                HomeLayoutKind.COLUMNS -> ColumnsSchematic(
+                    preview = preview,
+                    slots = com.nendo.argosy.ui.screens.home.homeColumnsSlotCount(
+                        configuration.screenWidthDp.toFloat(),
+                        configuration.screenHeightDp.toFloat()
+                    ),
+                    edge = edge,
+                    animate = moving,
+                    modifier = Modifier.fillMaxSize().padding(vertical = preview.gap)
+                )
                 HomeLayoutKind.CAROUSEL -> CarouselSchematic(
                     config = settings.carousel,
                     preview = preview,
@@ -156,20 +169,20 @@ fun HomeLayoutPreview(
                         } else {
                             0.dp
                         },
-                    animate = animate,
+                    animate = moving,
                     modifier = Modifier.fillMaxSize()
                 )
                 HomeLayoutKind.AUTO_GRID -> AutoGridSchematic(
                     config = settings.autoGrid,
                     preview = preview,
                     gridDensity = gridDensity,
-                    animate = animate,
+                    animate = moving,
                     modifier = Modifier.padding(horizontal = edge)
                 )
                 HomeLayoutKind.CUSTOM_GRID -> CustomGridSchematic(
                     config = settings.customGrid,
                     preview = preview,
-                    animate = animate,
+                    animate = moving,
                     modifier = Modifier.padding(horizontal = edge, vertical = preview.gap)
                 )
             }
@@ -400,6 +413,105 @@ private fun CarouselSchematic(
                         )
                     }
                 }
+            }
+        }
+    }
+}
+
+@Composable
+private fun ColumnsSchematic(
+    preview: HomeLayoutPreviewMetrics,
+    slots: Int,
+    edge: Dp,
+    animate: Boolean,
+    modifier: Modifier = Modifier
+) {
+    var position by remember { mutableIntStateOf(0) }
+    LaunchedEffect(animate) {
+        if (!animate) return@LaunchedEffect
+        while (true) {
+            delay(ComponentDefaults.HomeLayoutPreview.stepDwellMs.toLong())
+            position += 1
+        }
+    }
+    val animated by animateFloatAsState(
+        targetValue = position.toFloat(),
+        animationSpec = androidx.compose.animation.core.tween(Motion.durationPage, easing = Motion.argosyEase),
+        label = "home-layout-preview-columns"
+    )
+    val shape = RoundedCornerShape(preview.coverCornerRadius)
+    Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(preview.gap)) {
+        BoxWithConstraints(
+            modifier = Modifier
+                .fillMaxWidth()
+                .weight(ComponentDefaults.HomeColumns.stripWeightRatio)
+                .clipToBounds()
+        ) {
+            val geometry = com.nendo.argosy.ui.screens.home.homeColumnsGeometry(maxWidth.value, slots, preview.gap.value)
+            val density = LocalDensity.current
+            val half = slots / 2 + 1
+            for (k in kotlin.math.floor(animated).toInt() - half..kotlin.math.ceil(animated).toInt() + half) {
+                val focused = k == position
+                val x = with(density) { geometry.startOf(k - animated).dp.roundToPx() }
+                Box(
+                    modifier = Modifier
+                        .offset { androidx.compose.ui.unit.IntOffset(x, 0) }
+                        .size(geometry.widthAt(k - animated).dp, maxHeight)
+                        .graphicsLayer {
+                            alpha = if (focused) 1f else 1f - ComponentDefaults.HomeColumns.unfocusedDimAlpha
+                        }
+                        .clip(shape)
+                        .background(if (focused) preview.focus else preview.block)
+                        .then(
+                            if (focused) {
+                                Modifier.border(ComponentDefaults.HomeColumns.ringWidthDp.dp * preview.scale, preview.text, shape)
+                            } else {
+                                Modifier
+                            }
+                        )
+                )
+            }
+        }
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .weight(ComponentDefaults.HomeColumns.bandWeightRatio)
+                .padding(horizontal = edge),
+            horizontalArrangement = Arrangement.spacedBy(preview.gap)
+        ) {
+            Column(
+                modifier = Modifier.weight(ComponentDefaults.HomeColumns.bandTitleWeightRatio),
+                verticalArrangement = Arrangement.spacedBy(Dimens.spacingXs * preview.scale)
+            ) {
+                PreviewBar(
+                    height = preview.titleHeight,
+                    color = preview.text,
+                    widthFraction = ComponentDefaults.HomeLayoutPreview.titleBarWidthRatio,
+                    modifier = Modifier.fillMaxWidth()
+                )
+                PreviewBar(
+                    height = preview.barHeight,
+                    color = preview.text,
+                    widthFraction = ComponentDefaults.HomeLayoutPreview.subtitleBarWidthRatio,
+                    modifier = Modifier.fillMaxWidth()
+                )
+            }
+            Column(
+                modifier = Modifier.weight(1f - ComponentDefaults.HomeColumns.bandTitleWeightRatio),
+                verticalArrangement = Arrangement.spacedBy(Dimens.spacingXs * preview.scale)
+            ) {
+                PreviewBar(
+                    height = preview.barHeight,
+                    color = preview.text,
+                    widthFraction = ComponentDefaults.HomeLayoutPreview.footerBarWidthRatio,
+                    modifier = Modifier.fillMaxWidth()
+                )
+                PreviewBar(
+                    height = preview.barHeight,
+                    color = preview.focus,
+                    widthFraction = ComponentDefaults.HomeLayoutPreview.badgeWidthRatio,
+                    modifier = Modifier.fillMaxWidth()
+                )
             }
         }
     }

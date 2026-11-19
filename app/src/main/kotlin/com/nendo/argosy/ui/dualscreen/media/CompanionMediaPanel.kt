@@ -54,6 +54,7 @@ import com.nendo.argosy.ui.theme.Dimens
 import com.nendo.argosy.ui.theme.LocalArgosyTheme
 import com.nendo.argosy.ui.theme.backdrop.BackdropRole
 import com.nendo.argosy.ui.theme.backdrop.surfaceBackdrop
+import com.nendo.argosy.ui.theme.reducedMotion
 import kotlinx.coroutines.launch
 
 /**
@@ -104,8 +105,9 @@ private fun ShowBody(
 ) {
     val listState = rememberLazyListState()
     val nowPlayingIndex = state.episodes.indexOfFirst { it.itemId == state.nowPlayingEpisodeId }
+    val reduced = reducedMotion()
     LaunchedEffect(state.episodes, state.nowPlayingEpisodeId) {
-        if (nowPlayingIndex >= 0) listState.animateScrollToItemCentered(nowPlayingIndex)
+        if (nowPlayingIndex >= 0) listState.animateScrollToItemCentered(nowPlayingIndex, reduced)
     }
     Column(modifier = Modifier.fillMaxSize()) {
         if (state.seasons.isNotEmpty()) {

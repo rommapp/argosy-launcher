@@ -1,7 +1,6 @@
 package com.nendo.argosy.ui.screens.settings.sections
 
 import androidx.annotation.StringRes
-import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -37,7 +36,6 @@ import androidx.compose.ui.draw.blur
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.unit.dp
 import androidx.compose.foundation.lazy.itemsIndexed
 import com.nendo.argosy.R
 import com.nendo.argosy.ui.components.ActionPreference
@@ -61,7 +59,8 @@ import com.nendo.argosy.libretro.NetplaySupportLevel
 import com.nendo.argosy.ui.primitives.ActionButton
 import com.nendo.argosy.ui.theme.Dimens
 import com.nendo.argosy.ui.theme.LocalLauncherTheme
-import com.nendo.argosy.ui.theme.Motion
+import com.nendo.argosy.ui.theme.animateModalBlur
+import com.nendo.argosy.ui.theme.modalScrim
 import com.nendo.argosy.ui.theme.generated.ColorTokens
 
 // -- Item definitions --
@@ -347,9 +346,11 @@ fun PlatformDetailSection(
     fun pickerToken(item: PlatformDetailItem): Int =
         if (uiState.enumPickerKey == item.key) uiState.enumPickerToken else 0
 
-    val modalBlur by animateDpAsState(
-        targetValue = if (emulators.showEmulatorPicker || emulators.showSavePathModal || emulators.showVariantPicker || emulators.updateModal != null || emulators.showLaunchArgsModal || emulators.showAppPickerModal || emulators.showMemcardPicker) Motion.blurRadiusModal else 0.dp,
-        animationSpec = Motion.focusSpringDp,
+    val modalOpen = emulators.showEmulatorPicker || emulators.showSavePathModal ||
+        emulators.showVariantPicker || emulators.updateModal != null || emulators.showLaunchArgsModal ||
+        emulators.showAppPickerModal || emulators.showMemcardPicker
+    val modalBlur by animateModalBlur(
+        active = modalOpen,
         label = "platformDetailBlur"
     )
 
@@ -363,7 +364,7 @@ fun PlatformDetailSection(
             isNavItem = { false },
             isHeader = { it is PlatformDetailItem.Header },
             onSectionTap = { viewModel.setFocusIndex(it.focusStartIndex) },
-            modifier = Modifier.fillMaxSize().padding(Dimens.spacingMd).blur(modalBlur),
+            modifier = Modifier.fillMaxSize().padding(Dimens.spacingMd).blur(modalBlur).modalScrim(modalOpen),
             verticalArrangement = Arrangement.spacedBy(Dimens.spacingSm)
         ) { item ->
             when (item) {

@@ -52,9 +52,8 @@ import com.nendo.argosy.ui.quickmenu.RandomState
 import com.nendo.argosy.ui.quickmenu.RandomStop
 import com.nendo.argosy.ui.theme.Dimens
 import com.nendo.argosy.ui.theme.LocalArgosyTheme
-import com.nendo.argosy.ui.theme.LocalMotionTier
 import com.nendo.argosy.ui.theme.Motion
-import com.nendo.argosy.ui.theme.MotionTier
+import com.nendo.argosy.ui.theme.reducedMotion
 import com.nendo.argosy.ui.theme.generated.ComponentDefaults
 import com.nendo.argosy.ui.util.clickableNoFocus
 import java.text.NumberFormat
@@ -347,7 +346,7 @@ private fun PoolRow(
 
 @Composable
 private fun RollCover(game: QuickMenuGameUi?, onTap: () -> Unit, modifier: Modifier = Modifier) {
-    val reduced = LocalMotionTier.current == MotionTier.Reduced
+    val reduced = reducedMotion()
     AnimatedContent(
         targetState = game,
         contentKey = { it?.id },

@@ -3,7 +3,6 @@ package com.nendo.argosy.ui.screens.library
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.ContentTransform
-import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
@@ -99,6 +98,9 @@ import com.nendo.argosy.R
 import com.nendo.argosy.ui.theme.Dimens
 import com.nendo.argosy.ui.theme.LocalArgosyTheme
 import com.nendo.argosy.ui.theme.Motion
+import com.nendo.argosy.ui.theme.animateModalBlur
+import com.nendo.argosy.ui.theme.modalScrim
+import com.nendo.argosy.ui.theme.reducedMotion
 import com.nendo.argosy.data.model.GameSource
 import com.nendo.argosy.data.model.SourceFilter
 import com.nendo.argosy.data.preferences.GridDensity
@@ -233,10 +235,12 @@ fun LibraryScreen(
         }
     }
 
+    val reduced = reducedMotion()
     LaunchedEffect(uiState.focusedIndex, uiState.lastFocusMove) {
         if (uiState.lastFocusMove == null || uiState.games.isEmpty()) return@LaunchedEffect
         gridState.animateScrollToItemCentered(
             viewModel.gameIndexToGridIndex(uiState.focusedIndex),
+            reduced,
             topInsetPx = headerHeightPx,
             bottomInsetPx = footerHeightPx
         )
@@ -246,6 +250,7 @@ fun LibraryScreen(
         if (uiState.sectionJumpTrigger == 0 || uiState.games.isEmpty()) return@LaunchedEffect
         gridState.animateScrollToItemCentered(
             viewModel.gameIndexToGridIndex(uiState.focusedIndex),
+            reduced,
             topInsetPx = headerHeightPx,
             bottomInsetPx = footerHeightPx,
             snapFarJumps = true
@@ -315,13 +320,7 @@ fun LibraryScreen(
 
     val siblingChoiceOpen = viewModel.siblingChoiceState.collectAsState().value != null
     val showAnyOverlay = uiState.showFilterMenu || uiState.showQuickMenu || uiState.showAddToCollectionModal || uiState.syncOverlayState != null || uiState.discPickerState != null || uiState.variantPickerState != null || uiState.memcardPickerState != null || siblingChoiceOpen
-    val modalBlur by animateDpAsState(
-        targetValue = if (showAnyOverlay) Motion.blurRadiusModal else 0.dp,
-        animationSpec = Motion.focusSpringDp,
-        label = "modalBlur"
-    )
-
-    val combinedBlur = modalBlur
+    val modalBlur by animateModalBlur(showAnyOverlay)
 
     val swipeThreshold = with(LocalDensity.current) { 50.dp.toPx() }
     val edgeThreshold = with(LocalDensity.current) { 80.dp.toPx() }
@@ -358,7 +357,7 @@ fun LibraryScreen(
         com.nendo.argosy.ui.screens.stream.LocalStreamFirst provides streamFirst
     ) {
     Box(modifier = Modifier.fillMaxSize()) {
-        Box(modifier = Modifier.fillMaxSize().blur(combinedBlur)) {
+        Box(modifier = Modifier.fillMaxSize().blur(modalBlur).modalScrim(showAnyOverlay)) {
             Box(
                 modifier = Modifier
                     .fillMaxSize()
@@ -1118,10 +1117,12 @@ private fun LibraryMasonryGrid(
         }
     }
 
+    val reduced = reducedMotion()
     LaunchedEffect(uiState.focusedIndex, uiState.lastFocusMove) {
         if (uiState.lastFocusMove == null || uiState.games.isEmpty()) return@LaunchedEffect
         staggeredState.animateScrollToItemCentered(
             viewModel.gameIndexToGridIndex(uiState.focusedIndex),
+            reduced,
             topInsetPx = headerHeightPx,
             bottomInsetPx = footerHeightPx
         )
@@ -1131,6 +1132,7 @@ private fun LibraryMasonryGrid(
         if (uiState.sectionJumpTrigger == 0 || uiState.games.isEmpty()) return@LaunchedEffect
         staggeredState.animateScrollToItemCentered(
             viewModel.gameIndexToGridIndex(uiState.focusedIndex),
+            reduced,
             topInsetPx = headerHeightPx,
             bottomInsetPx = footerHeightPx,
             snapFarJumps = true
@@ -1434,6 +1436,7 @@ private fun FilterMenuOverlay(
     onSearchFieldTap: () -> Unit
 ) {
     val listState = rememberLazyListState()
+    val reduced = reducedMotion()
     val filterContext = LocalContext.current
     val options = uiState.currentCategoryOptions(filterContext)
     val categories = uiState.availableCategories
@@ -1451,10 +1454,16 @@ private fun FilterMenuOverlay(
             if (itemHeight > 0 && viewportHeight > 0) {
                 val centerOffset = (viewportHeight - itemHeight) / 2
                 val paddingBuffer = (itemHeight * Motion.scrollPaddingPercent).toInt()
-                listState.animateScrollToItem(
-                    index = uiState.filterOptionIndex,
-                    scrollOffset = -centerOffset + paddingBuffer
-                )
+                if (reduced) {
+                    listState.scrollToItem(uiState.filterOptionIndex, -centerOffset + paddingBuffer)
+                } else {
+                    listState.animateScrollToItem(
+                        index = uiState.filterOptionIndex,
+                        scrollOffset = -centerOffset + paddingBuffer
+                    )
+                }
+            } else if (reduced) {
+                listState.scrollToItem(uiState.filterOptionIndex)
             } else {
                 listState.animateScrollToItem(uiState.filterOptionIndex)
             }
@@ -1502,7 +1511,7 @@ private fun FilterMenuOverlay(
             val currentCategoryIndex = categories.indexOf(uiState.currentFilterCategory)
             LaunchedEffect(currentCategoryIndex) {
                 if (currentCategoryIndex >= 0) {
-                    categoryRowState.animateScrollToItemCentered(currentCategoryIndex)
+                    categoryRowState.animateScrollToItemCentered(currentCategoryIndex, reduced)
                 }
             }
             androidx.compose.foundation.lazy.LazyRow(

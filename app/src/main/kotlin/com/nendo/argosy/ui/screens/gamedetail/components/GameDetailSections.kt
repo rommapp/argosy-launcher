@@ -93,6 +93,7 @@ import com.nendo.argosy.ui.theme.LocalBoxArtStyle
 import com.nendo.argosy.ui.theme.Motion
 import com.nendo.argosy.ui.components.GameCard
 import com.nendo.argosy.ui.components.animateScrollToItemCentered
+import com.nendo.argosy.ui.theme.reducedMotion
 import com.nendo.argosy.ui.screens.home.HomeGameUi
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
@@ -522,9 +523,10 @@ fun ScreenshotsSection(
 
         var scrollDirection by remember { mutableIntStateOf(1) }
         val isActiveUpdated by rememberUpdatedState(isActive)
+        val reduced = reducedMotion()
 
-        LaunchedEffect(screenshots) {
-            if (screenshots.size <= 1) return@LaunchedEffect
+        LaunchedEffect(screenshots, reduced) {
+            if (screenshots.size <= 1 || reduced) return@LaunchedEffect
 
             while (true) {
                 delay(3000)
@@ -612,10 +614,11 @@ fun RelatedGamesSection(
     val screenWidth = LocalConfiguration.current.screenWidthDp.dp
     val cardWidth = screenWidth * 0.12f
     val cardHeight = cardWidth / boxArtStyle.aspectRatio
+    val reduced = reducedMotion()
 
     LaunchedEffect(focusedIndex, isActive) {
         if (isActive && games.isNotEmpty()) {
-            listState.animateScrollToItemCentered(focusedIndex.coerceIn(0, games.size - 1))
+            listState.animateScrollToItemCentered(focusedIndex.coerceIn(0, games.size - 1), reduced)
         }
     }
 
@@ -705,9 +708,10 @@ fun AchievementsSection(
 
         val achievementColumns = achievements.chunked(3)
         val isActiveUpdated by rememberUpdatedState(isActive)
+        val reduced = reducedMotion()
 
-        LaunchedEffect(achievements.size) {
-            if (achievementColumns.size <= 1) return@LaunchedEffect
+        LaunchedEffect(achievements.size, reduced) {
+            if (achievementColumns.size <= 1 || reduced) return@LaunchedEffect
 
             var scrollDirection = 1
             while (true) {

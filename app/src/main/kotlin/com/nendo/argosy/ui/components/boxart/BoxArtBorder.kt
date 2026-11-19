@@ -2,7 +2,6 @@ package com.nendo.argosy.ui.components.boxart
 
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
-import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
@@ -41,6 +40,7 @@ import com.nendo.argosy.ui.theme.Dimens
 import com.nendo.argosy.ui.theme.LocalBoxArtStyle
 import com.nendo.argosy.ui.theme.Motion
 import com.nendo.argosy.ui.theme.generated.ComponentDefaults
+import com.nendo.argosy.ui.theme.loopingFloat
 
 /**
  * The GLASS and GRADIENT border styles, drawn over artwork of any kind.
@@ -54,7 +54,7 @@ import com.nendo.argosy.ui.theme.generated.ComponentDefaults
 @Composable
 internal fun rememberShineSweep(active: Boolean): State<Float> {
     val transition = if (active) rememberInfiniteTransition(label = "innerShine") else null
-    return transition?.animateFloat(
+    return transition?.loopingFloat(
         initialValue = -0.5f,
         targetValue = 1.5f,
         animationSpec = infiniteRepeatable(

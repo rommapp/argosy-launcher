@@ -36,6 +36,7 @@ import com.nendo.argosy.ui.theme.LocalUiScale
 import com.nendo.argosy.ui.theme.Motion
 import com.nendo.argosy.ui.theme.generated.DimensionTokens
 import com.nendo.argosy.ui.theme.gripReserveBottomInset
+import com.nendo.argosy.ui.theme.motionSpec
 import com.nendo.argosy.ui.util.clickableNoFocus
 
 @Composable
@@ -71,7 +72,7 @@ internal fun InGameMenuPanel(
     val collapsed = openSection != null
     val panelWidth by animateDpAsState(
         targetValue = if (collapsed) screenWidth * (broadWidthPct / 100f) else condensedWidth,
-        animationSpec = tween(Motion.durationSlide, easing = Motion.argosyEase),
+        animationSpec = motionSpec(tween(Motion.durationSlide, easing = Motion.argosyEase)),
         label = "inGameMenuPanelWidth"
     )
     val listWidth by animateDpAsState(
@@ -80,7 +81,7 @@ internal fun InGameMenuPanel(
         } else {
             condensedWidth
         },
-        animationSpec = tween(Motion.durationSlide, easing = Motion.argosyEase),
+        animationSpec = motionSpec(tween(Motion.durationSlide, easing = Motion.argosyEase)),
         label = "inGameMenuListWidth"
     )
 
@@ -127,8 +128,9 @@ internal fun InGameMenuPanel(
             if (openSection != null) {
                 VerticalDivider(color = MaterialTheme.colorScheme.outlineVariant)
                 val contentAlpha = remember(openSection) { Animatable(0f) }
+                val contentFade = motionSpec(tween<Float>(Motion.durationContent))
                 LaunchedEffect(openSection) {
-                    contentAlpha.animateTo(1f, tween(Motion.durationContent))
+                    contentAlpha.animateTo(1f, contentFade)
                 }
                 Box(
                     modifier = Modifier

@@ -209,7 +209,9 @@ fun ArgosyApp(
     var wasOnWizard by remember { mutableStateOf(isOnWizard) }
     LaunchedEffect(isOnWizard) {
         if (wasOnWizard && !isOnWizard && !uiState.setupIncomplete) {
-            viewModel.triggerPostWizardSync()
+            viewModel.triggerPostWizardSync {
+                navController.navigate(Screen.BuildingLibrary.route)
+            }
         }
         wasOnWizard = isOnWizard
     }
@@ -1282,9 +1284,13 @@ fun ArgosyApp(
                         }
                     }
                 }
-                val drawerBlur = (drawerBlurProgress * Motion.blurRadiusDrawer.value).dp
+                val drawerBlurRadius = Motion.tierModalBlur(
+                    com.nendo.argosy.ui.theme.LocalMotionTier.current,
+                    Motion.blurRadiusDrawer
+                )
+                val drawerBlur = (drawerBlurProgress * drawerBlurRadius.value).dp
                 val quickMenuBlur by androidx.compose.animation.core.animateDpAsState(
-                    targetValue = if (quickMenuState.isVisible) Motion.blurRadiusDrawer else 0.dp,
+                    targetValue = if (quickMenuState.isVisible) drawerBlurRadius else 0.dp,
                     animationSpec = androidx.compose.animation.core.tween(Motion.durationSlide),
                     label = "quickMenuBlur"
                 )
@@ -1380,7 +1386,9 @@ fun ArgosyApp(
 
             com.nendo.argosy.ui.components.LaunchOverlay(appPromptShowing = appPromptShowing)
 
-            val mutedNotificationKeys = if (currentRoute == Screen.SyncMonitor.route) {
+            val mutedNotificationKeys = if (
+                currentRoute == Screen.SyncMonitor.route || currentRoute == Screen.BuildingLibrary.route
+            ) {
                 com.nendo.argosy.domain.usecase.sync.SyncNotificationKeys.ALL
             } else {
                 emptySet()

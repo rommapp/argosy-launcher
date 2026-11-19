@@ -23,9 +23,8 @@ import androidx.compose.ui.graphics.drawscope.clipPath
 import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.unit.dp
 import com.nendo.argosy.ui.theme.LocalArgosyTheme
-import com.nendo.argosy.ui.theme.LocalMotionTier
 import com.nendo.argosy.ui.theme.Motion
-import com.nendo.argosy.ui.theme.MotionTier
+import com.nendo.argosy.ui.theme.reducedMotion
 import com.nendo.argosy.ui.theme.LocalUiScale
 import com.nendo.argosy.ui.theme.generated.ColorTokens
 import com.nendo.argosy.ui.theme.generated.ComponentDefaults
@@ -51,8 +50,7 @@ fun ArgosyProgressBar(
             if (theme.isDark) ColorTokens.Semantic.Dark.progress else ColorTokens.Semantic.Light.progress
     }
     val trackColor = theme.surfaceElevated
-    val tier = LocalMotionTier.current
-    val stripePhase = if (style == ProgressBarStyle.Working && tier != MotionTier.Reduced) {
+    val stripePhase = if (style == ProgressBarStyle.Working && !reducedMotion()) {
         rememberInfiniteTransition(label = "stripe-drift").animateFloat(
             initialValue = 0f,
             targetValue = 1f,
@@ -127,7 +125,7 @@ fun ArgosyIndeterminateProgressBar(
     val s = LocalUiScale.current.scale
     val fillColor = tint ?: theme.focusAccent
     val trackColor = theme.surfaceElevated
-    val moving = sweepMs > 0 && LocalMotionTier.current != MotionTier.Reduced
+    val moving = sweepMs > 0 && !reducedMotion()
     val sweep: State<Float> = if (moving) {
         rememberInfiniteTransition(label = "sweep").animateFloat(
             initialValue = 0f,

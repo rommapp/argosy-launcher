@@ -581,6 +581,7 @@
     <string name="ui_home_layout_kind_carousel">Карусель</string>
     <string name="ui_home_layout_kind_auto_grid">Автосетка</string>
     <string name="ui_home_layout_kind_custom_grid">Своя сетка</string>
+    <string name="ui_home_layout_kind_columns">Колонки</string>
     <string name="ui_home_layout_alignment_top">Сверху</string>
     <string name="ui_home_layout_alignment_center">По центру</string>
     <string name="ui_home_layout_alignment_bottom">Снизу</string>

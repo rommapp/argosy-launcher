@@ -428,10 +428,14 @@ class ArgosyActivity : ComponentActivity() {
                                 com.nendo.argosy.ui.components.ProvideStatusBarItems(preferences) {
                                     val ownDisplay = androidx.compose.ui.platform.LocalView.current.display?.displayId
                                     val playerDisplay by dualScreenManager.mediaPlayerDisplay.collectAsState()
-                                    com.nendo.argosy.ui.dualscreen.PresentationSlotContent(
-                                        slot.onDisplay(ownDisplay, gameDisplay.value, playerDisplay),
-                                        showsNotifications = true
-                                    )
+                                    com.nendo.argosy.ui.components.ProvideArtworkScraping(
+                                        dualScreenManager.imageCacheManager.progress
+                                    ) {
+                                        com.nendo.argosy.ui.dualscreen.PresentationSlotContent(
+                                            slot.onDisplay(ownDisplay, gameDisplay.value, playerDisplay),
+                                            showsNotifications = true
+                                        )
+                                    }
                                 }
                             }
                         }

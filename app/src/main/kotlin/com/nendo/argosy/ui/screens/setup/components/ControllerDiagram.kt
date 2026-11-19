@@ -51,10 +51,9 @@ import com.nendo.argosy.ui.input.ControllerPosition
 import com.nendo.argosy.ui.input.intentButton
 import com.nendo.argosy.ui.theme.Dimens
 import com.nendo.argosy.ui.theme.LocalArgosyTheme
-import com.nendo.argosy.ui.theme.LocalMotionTier
 import com.nendo.argosy.ui.theme.LocalUiScale
 import com.nendo.argosy.ui.theme.Motion
-import com.nendo.argosy.ui.theme.MotionTier
+import com.nendo.argosy.ui.theme.reducedMotion
 import com.nendo.argosy.ui.theme.generated.ComponentDefaults
 
 enum class ControllerDiagramSize { FULL, MINI }
@@ -211,7 +210,7 @@ private fun DiagramButton(
     modifier: Modifier = Modifier,
 ) {
     val theme = LocalArgosyTheme.current
-    val reduced = LocalMotionTier.current == MotionTier.Reduced
+    val reduced = reducedMotion()
     val flip = remember { Animatable(0f) }
     var shownLabel by remember { mutableStateOf(label) }
     LaunchedEffect(label) {
@@ -260,7 +259,7 @@ internal fun PadSurface(
     content: @Composable BoxScope.() -> Unit = {},
 ) {
     val theme = LocalArgosyTheme.current
-    val reduced = LocalMotionTier.current == MotionTier.Reduced
+    val reduced = reducedMotion()
     val colorSpec: AnimationSpec<Color> = if (reduced) snap() else tween(Motion.durationMicro, easing = Motion.argosyEase)
     val fill by animateColorAsState(
         targetValue = if (lit) theme.focusAccent else theme.surfaceElevated,

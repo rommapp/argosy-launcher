@@ -16,6 +16,7 @@ import com.nendo.argosy.R
 import com.nendo.argosy.ui.components.FooterHints
 import com.nendo.argosy.ui.components.InputButton
 import com.nendo.argosy.ui.components.animateScrollToItemCentered
+import com.nendo.argosy.ui.theme.reducedMotion
 import com.nendo.argosy.ui.components.dragReorderContainer
 import com.nendo.argosy.ui.components.dragReorderItem
 import com.nendo.argosy.ui.components.liftedReorderHints
@@ -52,8 +53,9 @@ fun NavRingPopup(
         onDrop = onDrop
     )
 
+    val reduced = reducedMotion()
     LaunchedEffect(focusIndex) {
-        if (dragState.draggingKey == null) listState.animateScrollToItemCentered(focusIndex)
+        if (dragState.draggingKey == null) listState.animateScrollToItemCentered(focusIndex, reduced)
     }
 
     RegionPopupFrame(

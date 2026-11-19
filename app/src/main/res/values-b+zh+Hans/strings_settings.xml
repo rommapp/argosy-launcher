@@ -105,6 +105,8 @@
     <!-- ===== Interface section ===== -->
 
     <string name="settings_interface_ui_scale_title">界面缩放</string>
+    <string name="settings_interface_reduced_motion">减少动态效果</string>
+    <string name="settings_interface_reduced_motion_subtitle">关闭动画、视频预览和循环效果，让较慢的设备运行更流畅</string>
     <string name="settings_interface_compact_footer_title">紧凑底栏</string>
     <string name="settings_interface_compact_footer_subtitle">使用更薄的操作提示栏</string>
     <string name="settings_interface_hide_system_nav_bar_title">隐藏系统导航栏</string>

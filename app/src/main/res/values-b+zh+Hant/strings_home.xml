@@ -203,4 +203,70 @@
         <item quantity="other">%d 項</item>
     </plurals>
     <string name="home_tile_file_browser_decor_title">選擇圖片</string>
+
+    <string name="home_columns_theme_continue">繼續遊戲</string>
+    <string name="home_columns_theme_play_it_again">再玩一次</string>
+    <string name="home_columns_theme_almost_there">即將破關</string>
+    <string name="home_columns_theme_friends_playing">好友在玩</string>
+    <string name="home_columns_theme_just_added">最近新增</string>
+    <string name="home_columns_theme_gathering_dust">塵封已久</string>
+    <string name="home_columns_theme_favorites">最愛</string>
+    <string name="home_columns_theme_pinned_collection">釘選收藏</string>
+    <string name="home_columns_theme_most_played_genre">最常玩的類型</string>
+    <string name="home_columns_media_continue_watching">繼續觀看</string>
+    <string name="home_columns_media_next_up">接下來</string>
+    <string name="home_columns_reason_continue_none">從上次離開的地方繼續</string>
+    <plurals name="home_columns_reason_continue">
+        <item quantity="other">%d 款進行中</item>
+    </plurals>
+    <string name="home_columns_reason_play_it_again">一年前的這一週</string>
+    <plurals name="home_columns_reason_almost_there">
+        <item quantity="other">剩餘不到 %d 小時</item>
+    </plurals>
+    <plurals name="home_columns_reason_friends">
+        <item quantity="other">%d 款正在被玩</item>
+    </plurals>
+    <string name="home_columns_reason_friends_recent">好友最近玩過</string>
+    <string name="home_columns_reason_just_added">本週新增</string>
+    <plurals name="home_columns_reason_gathering_dust">
+        <item quantity="other">已 %d 天未玩</item>
+    </plurals>
+    <plurals name="home_columns_reason_favorites">
+        <item quantity="other">%d 個最愛</item>
+    </plurals>
+    <plurals name="home_columns_reason_collection">
+        <item quantity="other">%d 個遊戲</item>
+    </plurals>
+    <string name="home_columns_reason_genre">你玩得最多的類型</string>
+    <plurals name="home_columns_platform_count">
+        <item quantity="other">%d 個遊戲</item>
+    </plurals>
+    <plurals name="home_columns_reason_continue_watching">
+        <item quantity="other">%d 部進行中</item>
+    </plurals>
+    <plurals name="home_columns_reason_next_up">
+        <item quantity="other">%d 集</item>
+    </plurals>
+    <string name="home_columns_fact_progress">已玩 %1$s，約剩 %2$s</string>
+    <string name="home_columns_fact_played">已玩 %1$s</string>
+    <string name="home_columns_fact_left">約剩 %1$s</string>
+    <string name="home_columns_fact_last_played">上次遊玩於 %1$s</string>
+    <string name="home_columns_fact_unplayed">尚未遊玩</string>
+    <string name="home_columns_progress_story">劇情</string>
+    <string name="home_columns_progress_story_of">%1$s / 約 %2$s</string>
+    <string name="home_columns_progress_story_length">時長約 %1$s</string>
+    <string name="home_columns_progress_trophies">獎盃</string>
+    <string name="home_columns_progress_trophies_count">%1$d / %2$d</string>
+    <plurals name="home_columns_activity_window">
+        <item quantity="other">最近 %d 週</item>
+    </plurals>
+    <string name="home_columns_activity_unplayed">尚未遊玩</string>
+    <plurals name="home_columns_activity_idle">
+        <item quantity="other">%d 週內未遊玩</item>
+    </plurals>
+    <string name="home_columns_last_played_on">上次遊玩：%1$s（%2$s）</string>
+    <string name="home_columns_last_played">上次遊玩：%1$s</string>
+    <string name="home_columns_previous_game">上一個遊戲</string>
+    <string name="home_columns_next_game">下一個遊戲</string>
+    <string name="home_footer_columns_sections">分區</string>
 </resources>

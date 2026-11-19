@@ -533,6 +533,7 @@
     <string name="ui_home_layout_kind_carousel">轮播</string>
     <string name="ui_home_layout_kind_auto_grid">自动网格</string>
     <string name="ui_home_layout_kind_custom_grid">自定义网格</string>
+    <string name="ui_home_layout_kind_columns">分栏</string>
     <string name="ui_home_layout_alignment_top">顶部</string>
     <string name="ui_home_layout_alignment_center">居中</string>
     <string name="ui_home_layout_alignment_bottom">底部</string>

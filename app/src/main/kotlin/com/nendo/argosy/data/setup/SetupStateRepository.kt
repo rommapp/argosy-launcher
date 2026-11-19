@@ -49,6 +49,7 @@ class SetupStateRepository @Inject constructor(
     private val storagePreferences: StoragePreferencesRepository,
     private val appPreferences: AppPreferencesRepository,
     private val legacyMigration: LegacySetupMigration,
+    private val homeLayoutSeed: NewInstallHomeLayoutSeed,
     private val permissionRegistry: PermissionRegistry,
     private val saveSyncGate: SaveSyncGate,
     private val displayAffinityHelper: DisplayAffinityHelper
@@ -106,6 +107,11 @@ class SetupStateRepository @Inject constructor(
     suspend fun markPagesSeen(tokens: Set<String>) = appPreferences.markSetupPagesSeen(tokens)
 
     suspend fun finishFlow() = appPreferences.finishSetupFlow()
+
+    suspend fun seedNewInstallHomeLayout() {
+        migration.await()
+        homeLayoutSeed.run()
+    }
 
     /**
      * Records the save sync answer. An answer of on goes through [SaveSyncGate] first and is not

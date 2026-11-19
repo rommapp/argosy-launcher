@@ -1,7 +1,6 @@
 package com.nendo.argosy.ui.screens.settings.sections
 
 import androidx.annotation.StringRes
-import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -52,9 +51,9 @@ import com.nendo.argosy.ui.screens.settings.components.SectionHeader
 import com.nendo.argosy.ui.screens.settings.components.SyncFiltersModal
 import com.nendo.argosy.ui.screens.settings.menu.SettingsLayout
 import com.nendo.argosy.ui.screens.settings.search.SearchableSetting
-import androidx.compose.ui.unit.dp
 import com.nendo.argosy.ui.theme.Dimens
-import com.nendo.argosy.ui.theme.Motion
+import com.nendo.argosy.ui.theme.animateModalBlur
+import com.nendo.argosy.ui.theme.modalScrim
 
 // --- Item definitions ---
 
@@ -143,11 +142,7 @@ fun SyncSettingsSection(
     val hasAnyModal = uiState.syncSettings.showSyncFiltersModal ||
         uiState.syncSettings.showPlatformFiltersModal ||
         uiState.syncSettings.showRegionPriority
-    val modalBlur by animateDpAsState(
-        targetValue = if (hasAnyModal) Motion.blurRadiusModal else 0.dp,
-        animationSpec = Motion.focusSpringDp,
-        label = "syncFiltersModalBlur"
-    )
+    val modalBlur by animateModalBlur(hasAnyModal, label = "syncFiltersModalBlur")
 
     val isProcessing = imageCacheProgress.isProcessing
     val context = LocalContext.current
@@ -174,7 +169,7 @@ fun SyncSettingsSection(
             isNavItem = { false },
             isHeader = { it is SyncSettingsItem.MediaHeader },
             onSectionTap = { viewModel.setFocusIndex(it.focusStartIndex) },
-            modifier = Modifier.fillMaxSize().padding(Dimens.spacingMd).blur(modalBlur),
+            modifier = Modifier.fillMaxSize().padding(Dimens.spacingMd).blur(modalBlur).modalScrim(hasAnyModal),
             verticalArrangement = Arrangement.spacedBy(Dimens.spacingSm)
         ) { item ->
                 when (item) {

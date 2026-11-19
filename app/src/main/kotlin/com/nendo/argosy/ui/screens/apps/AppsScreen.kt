@@ -84,9 +84,10 @@ import com.nendo.argosy.ui.primitives.InputGlyph
 import androidx.compose.ui.graphics.lerp
 import com.nendo.argosy.ui.theme.Dimens
 import com.nendo.argosy.ui.theme.LocalArgosyTheme
-import com.nendo.argosy.ui.theme.Motion
+import com.nendo.argosy.ui.theme.animateModalBlur
 import com.nendo.argosy.ui.theme.generated.ColorTokens
-import androidx.compose.animation.core.animateDpAsState
+import com.nendo.argosy.ui.theme.modalScrim
+import com.nendo.argosy.ui.theme.reducedMotion
 import androidx.compose.ui.draw.blur
 import androidx.compose.ui.platform.LocalConfiguration
 import kotlinx.coroutines.launch
@@ -134,11 +135,12 @@ fun AppsScreen(
         }
     }
 
+    val reduced = reducedMotion()
     LaunchedEffect(uiState.focusedIndex) {
         if (uiState.apps.isNotEmpty()) {
             isProgrammaticScroll = true
             scope.launch {
-                gridState.animateScrollToItemCentered(uiState.focusedIndex.coerceIn(0, uiState.apps.lastIndex))
+                gridState.animateScrollToItemCentered(uiState.focusedIndex.coerceIn(0, uiState.apps.lastIndex), reduced)
                 isProgrammaticScroll = false
             }
         }
@@ -180,14 +182,10 @@ fun AppsScreen(
         }
     }
 
-    val modalBlur by animateDpAsState(
-        targetValue = if (uiState.showContextMenu) Motion.blurRadiusModal else 0.dp,
-        animationSpec = Motion.focusSpringDp,
-        label = "contextMenuBlur"
-    )
+    val modalBlur by animateModalBlur(uiState.showContextMenu, label = "contextMenuBlur")
 
     Box(modifier = Modifier.fillMaxSize()) {
-        Column(modifier = Modifier.fillMaxSize().blur(modalBlur)) {
+        Column(modifier = Modifier.fillMaxSize().blur(modalBlur).modalScrim(uiState.showContextMenu)) {
             Box(
                 modifier = Modifier
                     .fillMaxWidth()

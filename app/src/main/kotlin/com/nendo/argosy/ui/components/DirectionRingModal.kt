@@ -58,6 +58,8 @@ import com.nendo.argosy.ui.theme.LocalUiScale
 import com.nendo.argosy.ui.theme.Motion
 import com.nendo.argosy.ui.theme.generated.ComponentDefaults
 import com.nendo.argosy.ui.theme.gripReserveBottomInset
+import com.nendo.argosy.ui.theme.motionEnter
+import com.nendo.argosy.ui.theme.motionExit
 import com.nendo.argosy.ui.util.clickableNoFocus
 import kotlin.math.PI
 import kotlin.math.atan2
@@ -169,10 +171,14 @@ fun DirectionRingModal(
         val duration = Motion.durationDrawer / 2
         AnimatedVisibility(
             visibleState = visibleState,
-            enter = fadeIn(animationSpec = tween(duration, easing = Motion.argosyEase)) +
-                scaleIn(initialScale = 0.96f, animationSpec = tween(duration, easing = Motion.argosyEase)),
-            exit = fadeOut(animationSpec = tween(duration, easing = Motion.argosyEase)) +
-                scaleOut(targetScale = 0.96f, animationSpec = tween(duration, easing = Motion.argosyEase)),
+            enter = motionEnter(
+                fadeIn(animationSpec = tween(duration, easing = Motion.argosyEase)) +
+                    scaleIn(initialScale = 0.96f, animationSpec = tween(duration, easing = Motion.argosyEase))
+            ),
+            exit = motionExit(
+                fadeOut(animationSpec = tween(duration, easing = Motion.argosyEase)) +
+                    scaleOut(targetScale = 0.96f, animationSpec = tween(duration, easing = Motion.argosyEase))
+            ),
         ) {
             Box(
                 modifier = modifier

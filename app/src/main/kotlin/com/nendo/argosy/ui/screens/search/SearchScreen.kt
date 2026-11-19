@@ -83,6 +83,7 @@ import com.nendo.argosy.ui.components.GameCard
 import com.nendo.argosy.ui.components.InputButton
 import com.nendo.argosy.ui.components.RecentSearchesList
 import com.nendo.argosy.ui.components.animateScrollToItemCentered
+import com.nendo.argosy.ui.theme.reducedMotion
 import com.nendo.argosy.ui.input.LocalInputDispatcher
 import com.nendo.argosy.ui.input.ModalInputEffect
 import com.nendo.argosy.ui.navigation.Screen
@@ -462,8 +463,9 @@ private fun SearchCoverRow(
     modifier: Modifier = Modifier
 ) {
     val listState = rememberLazyListState()
+    val reduced = reducedMotion()
     LaunchedEffect(focusedIndex) {
-        if (focusedIndex in games.indices) listState.animateScrollToItemCentered(focusedIndex)
+        if (focusedIndex in games.indices) listState.animateScrollToItemCentered(focusedIndex, reduced)
     }
     LazyRow(
         state = listState,
@@ -502,8 +504,9 @@ private fun SearchResults(
         listIndexOfFocus(state, showHeadings)
     }
 
+    val reduced = reducedMotion()
     LaunchedEffect(state.focusedIndex, focusedGridIndex) {
-        if (state.focusedIndex >= 0) gridState.animateScrollToItemCentered(focusedGridIndex)
+        if (state.focusedIndex >= 0) gridState.animateScrollToItemCentered(focusedGridIndex, reduced)
     }
 
     LazyVerticalGrid(

@@ -228,6 +228,7 @@ class UserPreferencesRepository @Inject constructor(
             videoWallpaperDelaySeconds = display.videoWallpaperDelaySeconds,
             videoWallpaperMuted = display.videoWallpaperMuted,
             uiScale = display.uiScale,
+            reduceAnimations = display.reduceAnimations,
             gripReserveMode = display.gripReserveMode,
             gripReservePercent = display.gripReservePercent,
             gripAutoControllers = display.gripAutoControllers,
@@ -360,6 +361,7 @@ class UserPreferencesRepository @Inject constructor(
     suspend fun migrateLegacyDefaultPlatform(idForDisplayName: (String) -> Long?) =
         displayPrefs.migrateLegacyDefaultPlatform(idForDisplayName)
     suspend fun setUiScale(scale: Int) = displayPrefs.setUiScale(scale)
+    suspend fun setReduceAnimations(enabled: Boolean) = displayPrefs.setReduceAnimations(enabled)
     suspend fun setGripReserveEnabled(enabled: Boolean) = displayPrefs.setGripReserveEnabled(enabled)
     suspend fun setGripReservePercent(percent: Int) = displayPrefs.setGripReservePercent(percent)
     suspend fun setBackgroundBlur(blur: Int) = displayPrefs.setBackgroundBlur(blur)
@@ -1052,6 +1054,7 @@ data class UserPreferences(
     val videoWallpaperDelaySeconds: Int = 3,
     val videoWallpaperMuted: Boolean = com.nendo.argosy.ui.theme.generated.ComponentDefaults.Background.videoWallpaperMuted,
     val uiScale: Int = 100,
+    val reduceAnimations: Boolean = false,
     val gripReserveMode: GripReserveMode = GripReserveMode.OFF,
     val gripReservePercent: Int = 35,
     val gripAutoControllers: com.nendo.argosy.domain.model.GripAutoControllers =

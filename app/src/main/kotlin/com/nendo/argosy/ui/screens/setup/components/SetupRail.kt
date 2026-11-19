@@ -25,10 +25,9 @@ import androidx.compose.ui.unit.dp
 import com.nendo.argosy.R
 import com.nendo.argosy.ui.theme.Dimens
 import com.nendo.argosy.ui.theme.LocalArgosyTheme
-import com.nendo.argosy.ui.theme.LocalMotionTier
 import com.nendo.argosy.ui.theme.LocalUiScale
 import com.nendo.argosy.ui.theme.Motion
-import com.nendo.argosy.ui.theme.MotionTier
+import com.nendo.argosy.ui.theme.reducedMotion
 import com.nendo.argosy.ui.theme.generated.ComponentDefaults
 
 /**
@@ -71,7 +70,7 @@ fun SetupRail(
 @Composable
 private fun RowScope.RailBar(state: SetupSegmentState, height: Dp) {
     val theme = LocalArgosyTheme.current
-    val reduced = LocalMotionTier.current == MotionTier.Reduced
+    val reduced = reducedMotion()
     val target = when (state) {
         SetupSegmentState.DONE -> theme.focusAccent.copy(alpha = ComponentDefaults.Setup.railDoneAlpha)
         SetupSegmentState.CURRENT -> theme.focusAccent

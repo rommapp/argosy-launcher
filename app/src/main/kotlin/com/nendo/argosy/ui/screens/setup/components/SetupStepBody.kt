@@ -44,9 +44,8 @@ import com.nendo.argosy.R
 import com.nendo.argosy.ui.primitives.ActionButton
 import com.nendo.argosy.ui.theme.Dimens
 import com.nendo.argosy.ui.theme.LocalArgosyTheme
-import com.nendo.argosy.ui.theme.LocalMotionTier
 import com.nendo.argosy.ui.theme.LocalUiScale
-import com.nendo.argosy.ui.theme.MotionTier
+import com.nendo.argosy.ui.theme.reducedMotion
 import com.nendo.argosy.ui.theme.generated.ComponentDefaults
 import com.nendo.argosy.ui.theme.generated.DimensionTokens
 import java.util.Locale
@@ -64,7 +63,7 @@ fun SetupStepBody(
     content: @Composable ColumnScope.() -> Unit,
 ) {
     val frame = LocalSetupStepFrame.current
-    val reduced = LocalMotionTier.current == MotionTier.Reduced
+    val reduced = reducedMotion()
     val keyboardPadding by animateDpAsState(
         targetValue = if (frame.docked) frame.dockedHeight else 0.dp,
         animationSpec = if (reduced) snap() else compactionTween(),

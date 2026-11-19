@@ -67,6 +67,8 @@ import com.nendo.argosy.ui.theme.LocalLauncherTheme
 import com.nendo.argosy.ui.theme.LocalUiScale
 import com.nendo.argosy.ui.theme.Motion
 import com.nendo.argosy.ui.theme.generated.ComponentDefaults
+import com.nendo.argosy.ui.theme.motionEnter
+import com.nendo.argosy.ui.theme.motionExit
 import com.nendo.argosy.ui.util.clickableNoFocus
 import com.nendo.argosy.ui.util.observeTouchDown
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -182,8 +184,8 @@ fun QuickMenuOverlay(
             }
             QuickMenuFormFactor.PORTRAIT -> AnimatedVisibility(
                 visible = uiState.isVisible,
-                enter = slideInVertically(tween(Motion.durationSlide)) { it },
-                exit = slideOutVertically(tween(Motion.durationSlide)) { it },
+                enter = motionEnter(slideInVertically(tween(Motion.durationSlide)) { it }),
+                exit = motionExit(slideOutVertically(tween(Motion.durationSlide)) { it }),
                 modifier = Modifier.fillMaxSize()
             ) {
                 Column(
@@ -299,8 +301,8 @@ private fun QuickMenuSheet(
         }
         AnimatedVisibility(
             visible = isVisible,
-            enter = slideInVertically(tween(Motion.durationSlide)) { it },
-            exit = slideOutVertically(tween(Motion.durationSlide)) { it },
+            enter = motionEnter(slideInVertically(tween(Motion.durationSlide)) { it }),
+            exit = motionExit(slideOutVertically(tween(Motion.durationSlide)) { it }),
             modifier = Modifier
                 .align(Alignment.BottomCenter)
                 .fillMaxWidth()

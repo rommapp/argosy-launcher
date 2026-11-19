@@ -35,10 +35,9 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.unit.dp
 import com.nendo.argosy.ui.theme.Dimens
 import com.nendo.argosy.ui.theme.LocalArgosyTheme
-import com.nendo.argosy.ui.theme.LocalMotionTier
 import com.nendo.argosy.ui.theme.LocalUiScale
 import com.nendo.argosy.ui.theme.Motion
-import com.nendo.argosy.ui.theme.MotionTier
+import com.nendo.argosy.ui.theme.reducedMotion
 import com.nendo.argosy.ui.theme.generated.ComponentDefaults
 import com.nendo.argosy.ui.theme.trackGradientEnd
 import com.nendo.argosy.ui.util.clickableNoFocus
@@ -56,7 +55,7 @@ private const val THUMB_LAG = 2f
  */
 @Composable
 fun rememberSwitchedPhase(on: Boolean): Float {
-    val reduced = LocalMotionTier.current == MotionTier.Reduced
+    val reduced = reducedMotion()
     val phase = remember { Animatable(if (on) PHASE_ON else PHASE_OFF) }
     LaunchedEffect(on, reduced) {
         val target = if (on) PHASE_ON else PHASE_OFF

@@ -218,4 +218,103 @@
         <item quantity="other">%d элемента</item>
     </plurals>
     <string name="home_tile_file_browser_decor_title">Выберите картинку</string>
+
+    <string name="home_columns_theme_continue">Продолжить</string>
+    <string name="home_columns_theme_play_it_again">Сыграть снова</string>
+    <string name="home_columns_theme_almost_there">Почти пройдено</string>
+    <string name="home_columns_theme_friends_playing">Играют друзья</string>
+    <string name="home_columns_theme_just_added">Недавно добавлено</string>
+    <string name="home_columns_theme_gathering_dust">Пылится</string>
+    <string name="home_columns_theme_favorites">Избранное</string>
+    <string name="home_columns_theme_pinned_collection">Закреплённая коллекция</string>
+    <string name="home_columns_theme_most_played_genre">Любимый жанр</string>
+    <string name="home_columns_media_continue_watching">Продолжить просмотр</string>
+    <string name="home_columns_media_next_up">Далее</string>
+    <string name="home_columns_reason_continue_none">Продолжите с того места, где остановились</string>
+    <plurals name="home_columns_reason_continue">
+        <item quantity="one">%d в процессе</item>
+        <item quantity="few">%d в процессе</item>
+        <item quantity="many">%d в процессе</item>
+        <item quantity="other">%d в процессе</item>
+    </plurals>
+    <string name="home_columns_reason_play_it_again">Год назад на этой неделе</string>
+    <plurals name="home_columns_reason_almost_there">
+        <item quantity="one">Осталось меньше %d часа</item>
+        <item quantity="few">Осталось меньше %d часов</item>
+        <item quantity="many">Осталось меньше %d часов</item>
+        <item quantity="other">Осталось меньше %d часа</item>
+    </plurals>
+    <plurals name="home_columns_reason_friends">
+        <item quantity="one">%d запущена сейчас</item>
+        <item quantity="few">%d запущены сейчас</item>
+        <item quantity="many">%d запущено сейчас</item>
+        <item quantity="other">%d запущены сейчас</item>
+    </plurals>
+    <string name="home_columns_reason_friends_recent">Недавно играли друзья</string>
+    <string name="home_columns_reason_just_added">Добавлено на этой неделе</string>
+    <plurals name="home_columns_reason_gathering_dust">
+        <item quantity="one">Не запускали %d день</item>
+        <item quantity="few">Не запускали %d дня</item>
+        <item quantity="many">Не запускали %d дней</item>
+        <item quantity="other">Не запускали %d дня</item>
+    </plurals>
+    <plurals name="home_columns_reason_favorites">
+        <item quantity="one">%d в избранном</item>
+        <item quantity="few">%d в избранном</item>
+        <item quantity="many">%d в избранном</item>
+        <item quantity="other">%d в избранном</item>
+    </plurals>
+    <plurals name="home_columns_reason_collection">
+        <item quantity="one">%d игра</item>
+        <item quantity="few">%d игры</item>
+        <item quantity="many">%d игр</item>
+        <item quantity="other">%d игры</item>
+    </plurals>
+    <string name="home_columns_reason_genre">Вы играете в него чаще всего</string>
+    <plurals name="home_columns_platform_count">
+        <item quantity="one">%d игра</item>
+        <item quantity="few">%d игры</item>
+        <item quantity="many">%d игр</item>
+        <item quantity="other">%d игры</item>
+    </plurals>
+    <plurals name="home_columns_reason_continue_watching">
+        <item quantity="one">%d в процессе</item>
+        <item quantity="few">%d в процессе</item>
+        <item quantity="many">%d в процессе</item>
+        <item quantity="other">%d в процессе</item>
+    </plurals>
+    <plurals name="home_columns_reason_next_up">
+        <item quantity="one">%d серия</item>
+        <item quantity="few">%d серии</item>
+        <item quantity="many">%d серий</item>
+        <item quantity="other">%d серии</item>
+    </plurals>
+    <string name="home_columns_fact_progress">Сыграно %1$s, осталось около %2$s</string>
+    <string name="home_columns_fact_played">Сыграно %1$s</string>
+    <string name="home_columns_fact_left">Осталось около %1$s</string>
+    <string name="home_columns_fact_last_played">Последний запуск %1$s</string>
+    <string name="home_columns_fact_unplayed">Ещё не запускалась</string>
+    <string name="home_columns_progress_story">Сюжет</string>
+    <string name="home_columns_progress_story_of">%1$s из ~%2$s</string>
+    <string name="home_columns_progress_story_length">Около %1$s</string>
+    <string name="home_columns_progress_trophies">Трофеи</string>
+    <string name="home_columns_progress_trophies_count">%1$d / %2$d</string>
+    <plurals name="home_columns_activity_window">
+        <item quantity="one">последняя %d неделя</item>
+        <item quantity="few">последние %d недели</item>
+        <item quantity="many">последние %d недель</item>
+        <item quantity="other">последние %d недели</item>
+    </plurals>
+    <string name="home_columns_activity_unplayed">Ещё не запускалась</string>
+    <plurals name="home_columns_activity_idle">
+        <item quantity="one">Не запускали %d неделю</item>
+        <item quantity="few">Не запускали %d недели</item>
+        <item quantity="many">Не запускали %d недель</item>
+        <item quantity="other">Не запускали %d недели</item>
+    </plurals>
+    <string name="home_columns_last_played_on">Последний запуск %1$s на %2$s</string>
+    <string name="home_columns_last_played">Последний запуск %1$s</string>
+    <string name="home_columns_previous_game">Предыдущая игра</string>
+    <string name="home_columns_next_game">Следующая игра</string>
+    <string name="home_footer_columns_sections">Разделы</string>
 </resources>

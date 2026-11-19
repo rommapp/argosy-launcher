@@ -1205,6 +1205,8 @@ class SettingsViewModel @Inject constructor(
 
     fun setUiScale(scale: Int) = displayDelegate.setUiScale(viewModelScope, scale)
 
+    fun setReduceAnimations(enabled: Boolean) = displayDelegate.setReduceAnimations(viewModelScope, enabled)
+
     fun adjustUiScale(delta: Int) = routeAdjustUiScale(this, delta)
 
     fun adjustGripReservePercent(delta: Int) = routeAdjustGripReservePercent(this, delta)

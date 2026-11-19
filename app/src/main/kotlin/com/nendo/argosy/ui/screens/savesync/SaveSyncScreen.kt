@@ -60,6 +60,7 @@ import com.nendo.argosy.ui.common.rememberFileImageModel
 import com.nendo.argosy.ui.components.FooterHints
 import com.nendo.argosy.ui.components.InputButton
 import com.nendo.argosy.ui.components.animateScrollToItemCentered
+import com.nendo.argosy.ui.theme.reducedMotion
 import com.nendo.argosy.ui.components.withNavBarClearance
 import com.nendo.argosy.ui.input.LocalInputDispatcher
 import com.nendo.argosy.ui.navigation.Screen
@@ -100,6 +101,7 @@ fun SaveSyncScreen(
     val focusedKey = uiState.focusedRow?.key
     val forceCheck by viewModel.forceCheckStatus.collectAsState()
     val listState = rememberLazyListState()
+    val reduced = reducedMotion()
 
     LaunchedEffect(
         uiState.focusedIndex,
@@ -111,11 +113,11 @@ fun SaveSyncScreen(
         if (listState.layoutInfo.totalItemsCount == 0) return@LaunchedEffect
 
         if (uiState.focusedIndex == 0) {
-            listState.animateScrollToItem(0)
+            if (reduced) listState.scrollToItem(0) else listState.animateScrollToItem(0)
             return@LaunchedEffect
         }
 
-        listState.animateScrollToItemCentered(uiState.lazyIndexForFocused())
+        listState.animateScrollToItemCentered(uiState.lazyIndexForFocused(), reduced)
     }
 
     SaveSyncPresentation(viewModel)

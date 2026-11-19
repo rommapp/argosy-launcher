@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="building_library_title">正在建立你的遊戲庫</string>
+    <string name="building_library_getting_ready">正在準備</string>
+    <string name="building_library_syncing_platform">正在同步 %1$s</string>
+    <string name="building_library_done">遊戲庫已就緒</string>
+    <string name="building_library_browse">先去逛逛</string>
+    <plurals name="building_library_games">
+        <item quantity="other">%1$,d / %2$,d 個遊戲</item>
+    </plurals>
+    <plurals name="building_library_platforms">
+        <item quantity="other">%1$d / %2$d 個平台</item>
+    </plurals>
+</resources>

@@ -9,7 +9,6 @@ import android.provider.Settings
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.background
@@ -45,7 +44,6 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.nendo.argosy.DualScreenManagerHolder
 import com.nendo.argosy.R
@@ -76,8 +74,9 @@ import com.nendo.argosy.ui.filebrowser.FileFilter
 import com.nendo.argosy.ui.input.LocalInputDispatcher
 import com.nendo.argosy.ui.navigation.Screen
 import com.nendo.argosy.ui.navigation.depthEntryMotion
-import com.nendo.argosy.ui.theme.LocalMotionTier
-import com.nendo.argosy.ui.theme.MotionTier
+import com.nendo.argosy.ui.theme.animateModalBlur
+import com.nendo.argosy.ui.theme.modalScrim
+import com.nendo.argosy.ui.theme.reducedMotion
 import com.nendo.argosy.ui.primitives.ArgosyConfirmModal
 import com.nendo.argosy.ui.primitives.ArgosyConfirmModalHost
 import com.nendo.argosy.util.formatBytes
@@ -592,17 +591,14 @@ fun SettingsScreen(
         }
     }
 
-    val soundPickerBlur by animateDpAsState(
-        targetValue = if (uiState.sounds.showSoundPicker) Motion.blurRadiusModal else 0.dp,
-        animationSpec = Motion.focusSpringDp,
-        label = "soundPickerBlur"
-    )
+    val soundPickerBlur by animateModalBlur(uiState.sounds.showSoundPicker, label = "soundPickerBlur")
 
     Box(modifier = Modifier.fillMaxSize()) {
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .blur(soundPickerBlur)
+                .modalScrim(uiState.sounds.showSoundPicker)
                 .surfaceBackdrop(BackdropRole.CONTENT)
         ) {
             SettingsAmbientPresentation(uiState, viewModel)
@@ -655,7 +651,7 @@ fun SettingsScreen(
                         .depthEntryMotion(
                             key = uiState.currentSection,
                             depth = uiState.backStack.size,
-                            reduced = LocalMotionTier.current == MotionTier.Reduced
+                            reduced = reducedMotion()
                         )
                         .observeTouchDown { viewModel.enterTouchMode() }
                 ) {

@@ -172,22 +172,16 @@ class SecondaryHomeActivity :
             }
             SecondaryHomeTheme(themeState = themeState.value, fonts = customFonts.value) {
                 if (!isInitialized) return@SecondaryHomeTheme
-                val scrapingArtwork by dsm.imageCacheManager.progress
-                    .collectAsState()
-                    .let { state ->
-                        androidx.compose.runtime.remember {
-                            androidx.compose.runtime.derivedStateOf { state.value.isProcessing }
-                        }
-                    }
-                androidx.compose.runtime.CompositionLocalProvider(
-                    com.nendo.argosy.ui.components.LocalArtworkScraping provides scrapingArtwork,
-                    com.nendo.argosy.ui.components.LocalStatusBarItems provides statusBarItems.value
-                ) {
-                    com.nendo.argosy.ui.input.ProvideButtonGlyphs(
-                        dsm.preferencesRepository.userPreferences,
-                        connectedControllerTracker.activePad
+                com.nendo.argosy.ui.components.ProvideArtworkScraping(dsm.imageCacheManager.progress) {
+                    androidx.compose.runtime.CompositionLocalProvider(
+                        com.nendo.argosy.ui.components.LocalStatusBarItems provides statusBarItems.value
                     ) {
-                        CompanionRoleContent()
+                        com.nendo.argosy.ui.input.ProvideButtonGlyphs(
+                            dsm.preferencesRepository.userPreferences,
+                            connectedControllerTracker.activePad
+                        ) {
+                            CompanionRoleContent()
+                        }
                     }
                 }
             }
@@ -204,8 +198,7 @@ class SecondaryHomeActivity :
         val launcherShown = !rolesSwapped && !showsDashboard
         val handoffMs = com.nendo.argosy.ui.dualscreen.companionHandoffMs(
             showsDashboard = showsDashboard,
-            reduced = com.nendo.argosy.ui.theme.LocalMotionTier.current ==
-                com.nendo.argosy.ui.theme.MotionTier.Reduced,
+            reduced = com.nendo.argosy.ui.theme.reducedMotion(),
             veilMs = com.nendo.argosy.ui.theme.generated.ComponentDefaults.LaunchOverlay.veilMs
         )
         androidx.compose.foundation.layout.Box(
@@ -257,8 +250,7 @@ class SecondaryHomeActivity :
             )
             val arrivalMs = com.nendo.argosy.ui.dualscreen.dashboardArrivalMs(
                 showsDashboard = showsDashboard,
-                reduced = com.nendo.argosy.ui.theme.LocalMotionTier.current ==
-                    com.nendo.argosy.ui.theme.MotionTier.Reduced,
+                reduced = com.nendo.argosy.ui.theme.reducedMotion(),
                 arrivalMs =
                     com.nendo.argosy.ui.theme.generated.ComponentDefaults.LaunchOverlay.arrivalMs
             )

@@ -47,9 +47,8 @@ import com.nendo.argosy.ui.primitives.GlassPanel
 import com.nendo.argosy.ui.primitives.RuledSectionHeader
 import com.nendo.argosy.ui.theme.Dimens
 import com.nendo.argosy.ui.theme.LocalArgosyTheme
-import com.nendo.argosy.ui.theme.LocalMotionTier
 import com.nendo.argosy.ui.theme.Motion
-import com.nendo.argosy.ui.theme.MotionTier
+import com.nendo.argosy.ui.theme.motionDuration
 import com.nendo.argosy.ui.theme.generated.ComponentDefaults
 import java.time.Instant
 
@@ -224,7 +223,7 @@ private fun RecapActions(onStart: () -> Unit, onCancel: () -> Unit) {
 @Composable
 internal fun UnlockDetailPanel(spotlight: RecapSpotlight, short: Boolean, showGame: Boolean) {
     val theme = LocalArgosyTheme.current
-    val fadeMs = if (LocalMotionTier.current == MotionTier.Reduced) 0 else Motion.durationContent
+    val fadeMs = motionDuration(Motion.durationContent)
     val descriptionLines = if (short) SHORT_LINES else DESCRIPTION_LINES
     AnimatedContent(
         targetState = spotlight,

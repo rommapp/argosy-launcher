@@ -48,12 +48,11 @@ import com.nendo.argosy.ui.notification.noticeAlphaSpec
 import com.nendo.argosy.ui.theme.ArgosyDarkTheme
 import com.nendo.argosy.ui.theme.Dimens
 import com.nendo.argosy.ui.theme.LocalLauncherTheme
-import com.nendo.argosy.ui.theme.LocalMotionTier
 import com.nendo.argosy.ui.theme.Motion
-import com.nendo.argosy.ui.theme.MotionTier
 import com.nendo.argosy.ui.theme.generated.ColorTokens
 import com.nendo.argosy.ui.theme.generated.ComponentDefaults
 import com.nendo.argosy.ui.theme.generated.MotionTokens
+import com.nendo.argosy.ui.theme.reducedMotion
 import kotlinx.coroutines.delay
 import kotlin.math.roundToInt
 
@@ -99,7 +98,7 @@ fun RAConnectionStatus(
 private fun RAConnectionBanner(visible: Boolean, info: RAConnectionInfo, modifier: Modifier) {
     val visibleState = remember { MutableTransitionState(false) }
     visibleState.targetState = visible
-    val reduced = LocalMotionTier.current == MotionTier.Reduced
+    val reduced = reducedMotion()
     val tint = info.tint()
 
     AnimatedVisibility(

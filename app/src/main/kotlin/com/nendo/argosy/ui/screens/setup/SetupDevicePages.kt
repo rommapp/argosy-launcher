@@ -72,10 +72,9 @@ import com.nendo.argosy.ui.screens.setup.components.screenRoleLabelRes
 import com.nendo.argosy.ui.theme.AccentHue
 import com.nendo.argosy.ui.theme.Dimens
 import com.nendo.argosy.ui.theme.LocalArgosyTheme
-import com.nendo.argosy.ui.theme.LocalMotionTier
 import com.nendo.argosy.ui.theme.LocalUiScale
 import com.nendo.argosy.ui.theme.Motion
-import com.nendo.argosy.ui.theme.MotionTier
+import com.nendo.argosy.ui.theme.reducedMotion
 import com.nendo.argosy.ui.theme.ThemeState
 import com.nendo.argosy.ui.theme.argosyThemeTokens
 import com.nendo.argosy.ui.theme.generated.DimensionTokens
@@ -244,7 +243,7 @@ private fun ColumnScope.ScreenSketch(screens: List<ScreenAssignment>, focus: Set
 @Composable
 internal fun ControllerPage(state: SetupUiState, viewModel: SetupViewModel) {
     val focus = focusedTarget(state)
-    val reduced = LocalMotionTier.current == MotionTier.Reduced
+    val reduced = reducedMotion()
     SetupPageBody(state = state, viewModel = viewModel) {
         Crossfade(
             targetState = state.gamepadConnected,

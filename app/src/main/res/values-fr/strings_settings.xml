@@ -109,6 +109,8 @@
     <!-- ===== Section Interface ===== -->
 
     <string name="settings_interface_ui_scale_title">Échelle de l\'interface</string>
+    <string name="settings_interface_reduced_motion">Animations réduites</string>
+    <string name="settings_interface_reduced_motion_subtitle">Supprime les animations, les aperçus vidéo et les effets en boucle pour plus de fluidité sur les appareils lents</string>
     <string name="settings_interface_compact_footer_title">Pied de page compact</string>
     <string name="settings_interface_compact_footer_subtitle">Utiliser une barre de contrôle plus fine</string>
     <string name="settings_interface_hide_system_nav_bar_title">Masquer la barre de navigation système</string>

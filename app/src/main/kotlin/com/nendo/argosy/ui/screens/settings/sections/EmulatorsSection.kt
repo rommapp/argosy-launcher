@@ -1,6 +1,5 @@
 package com.nendo.argosy.ui.screens.settings.sections
 
-import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
@@ -18,7 +17,6 @@ import androidx.compose.ui.draw.blur
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.unit.dp
 import com.nendo.argosy.R
 import com.nendo.argosy.ui.components.ActionPreference
 import com.nendo.argosy.ui.components.SwitchPreference
@@ -31,7 +29,8 @@ import com.nendo.argosy.ui.screens.settings.components.SectionPaneLayout
 import com.nendo.argosy.ui.screens.settings.components.VariantPickerModal
 import com.nendo.argosy.ui.screens.settings.menu.SettingsLayout
 import com.nendo.argosy.ui.theme.Dimens
-import com.nendo.argosy.ui.theme.Motion
+import com.nendo.argosy.ui.theme.animateModalBlur
+import com.nendo.argosy.ui.theme.modalScrim
 
 internal sealed class EmulatorsItem(
     val key: String,
@@ -133,9 +132,10 @@ fun EmulatorsSection(
         enter()
     }
 
-    val modalBlur by animateDpAsState(
-        targetValue = if (emulators.showEmulatorPicker || emulators.showSavePathModal || emulators.showVariantPicker || emulators.updateModal != null) Motion.blurRadiusModal else 0.dp,
-        animationSpec = Motion.focusSpringDp,
+    val modalOpen = emulators.showEmulatorPicker || emulators.showSavePathModal ||
+        emulators.showVariantPicker || emulators.updateModal != null
+    val modalBlur by animateModalBlur(
+        active = modalOpen,
         label = "emulatorPickerBlur"
     )
 
@@ -149,7 +149,7 @@ fun EmulatorsSection(
             isNavItem = { false },
             isHeader = { it is EmulatorsItem.SectionHeader },
             onSectionTap = { viewModel.setFocusIndex(it.focusStartIndex) },
-            modifier = Modifier.fillMaxSize().padding(Dimens.spacingMd).blur(modalBlur),
+            modifier = Modifier.fillMaxSize().padding(Dimens.spacingMd).blur(modalBlur).modalScrim(modalOpen),
             verticalArrangement = Arrangement.spacedBy(Dimens.spacingSm)
         ) { item ->
                 when (item) {

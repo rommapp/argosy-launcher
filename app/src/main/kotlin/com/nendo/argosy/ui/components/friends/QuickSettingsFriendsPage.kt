@@ -44,6 +44,7 @@ import com.nendo.argosy.ui.theme.Dimens
 import com.nendo.argosy.ui.theme.LocalArgosyTheme
 import com.nendo.argosy.ui.theme.generated.ColorTokens
 import com.nendo.argosy.ui.theme.generated.ComponentDefaults
+import com.nendo.argosy.ui.theme.reducedMotion
 
 @Composable
 fun QuickSettingsFriendsPage(
@@ -56,9 +57,10 @@ fun QuickSettingsFriendsPage(
 ) {
     val rows = remember(showQuayPass, state) { quickFriendsRows(showQuayPass, state) }
     val listState = rememberLazyListState()
+    val reduced = reducedMotion()
 
     LaunchedEffect(state.focusIndex, rows.size) {
-        if (state.focusIndex in rows.indices) listState.animateScrollToItemCentered(state.focusIndex)
+        if (state.focusIndex in rows.indices) listState.animateScrollToItemCentered(state.focusIndex, reduced)
     }
 
     Column(modifier = Modifier.fillMaxSize()) {

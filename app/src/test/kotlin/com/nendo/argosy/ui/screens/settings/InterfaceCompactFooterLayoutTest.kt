@@ -123,6 +123,15 @@ class InterfaceCompactFooterLayoutTest {
     }
 
     @Test
+    fun `reduced motion is a general row directly before ui scale`() {
+        assertTrue(InterfaceItem.ReducedMotion.isFocusable)
+        assertEquals(InterfaceItem.UiScale.section, InterfaceItem.ReducedMotion.section)
+        val index = interfaceFocusIndexOf(InterfaceItem.ReducedMotion, layoutState)
+        assertEquals(interfaceFocusIndexOf(InterfaceItem.UiScale, layoutState) - 1, index)
+        assertEquals(InterfaceItem.ReducedMotion, interfaceItemAtFocusIndex(index, layoutState))
+    }
+
+    @Test
     fun `the controller grip submenu row is reachable like its siblings`() {
         val index = interfaceFocusIndexOf(InterfaceItem.ControllerGrip, layoutState)
         assertTrue(index > 0)

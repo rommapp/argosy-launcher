@@ -40,10 +40,9 @@ import com.nendo.argosy.ui.screens.setup.components.SetupErrorLine
 import com.nendo.argosy.ui.screens.setup.components.SetupFieldRow
 import com.nendo.argosy.ui.theme.Dimens
 import com.nendo.argosy.ui.theme.LocalArgosyTheme
-import com.nendo.argosy.ui.theme.LocalMotionTier
 import com.nendo.argosy.ui.theme.LocalUiScale
 import com.nendo.argosy.ui.theme.Motion
-import com.nendo.argosy.ui.theme.MotionTier
+import com.nendo.argosy.ui.theme.reducedMotion
 import com.nendo.argosy.ui.theme.generated.ComponentDefaults
 import com.nendo.argosy.ui.theme.generated.MotionTokens
 
@@ -63,7 +62,7 @@ internal fun LibraryPage(state: SetupUiState, viewModel: SetupViewModel) {
         viewModel = viewModel,
         context = if (view == LibraryView.CHOICE) ({ RommContext() }) else null,
     ) {
-        val reduced = LocalMotionTier.current == MotionTier.Reduced
+        val reduced = reducedMotion()
         val ms = if (reduced) MotionTokens.Tween.fastMs else Motion.durationContent
         AnimatedContent(
             targetState = view,

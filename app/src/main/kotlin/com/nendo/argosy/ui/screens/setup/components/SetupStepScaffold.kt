@@ -52,6 +52,7 @@ import com.nendo.argosy.ui.theme.LocalMotionTier
 import com.nendo.argosy.ui.theme.LocalUiScale
 import com.nendo.argosy.ui.theme.Motion
 import com.nendo.argosy.ui.theme.MotionTier
+import com.nendo.argosy.ui.theme.reducedMotion
 import com.nendo.argosy.ui.theme.generated.MotionTokens
 import com.nendo.argosy.ui.util.clickableNoFocus
 
@@ -137,7 +138,7 @@ private fun SetupHeaderBand(
     showTitle: Boolean,
 ) {
     val theme = LocalArgosyTheme.current
-    val reduced = LocalMotionTier.current == MotionTier.Reduced
+    val reduced = reducedMotion()
     Row(
         modifier = Modifier
             .fillMaxWidth()

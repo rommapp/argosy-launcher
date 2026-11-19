@@ -30,6 +30,7 @@ import com.nendo.argosy.R
 import com.nendo.argosy.libretro.speedrun.SpeedrunPhase
 import com.nendo.argosy.libretro.speedrun.SpeedrunRunState
 import com.nendo.argosy.ui.theme.LocalLauncherTheme
+import com.nendo.argosy.ui.theme.reducedMotion
 
 private const val REFERENCE_PANEL_WIDTH_DP = 280f
 
@@ -55,10 +56,12 @@ fun SpeedrunPanel(
     ) {
         val scale = (maxWidth.value / REFERENCE_PANEL_WIDTH_DP).coerceIn(0.6f, 1.4f)
         val listState = rememberLazyListState()
+        val reduced = reducedMotion()
 
         LaunchedEffect(state.currentIndex) {
             if (state.phase == SpeedrunPhase.RUNNING) {
-                listState.animateScrollToItem((state.currentIndex - 2).coerceAtLeast(0))
+                val target = (state.currentIndex - 2).coerceAtLeast(0)
+                if (reduced) listState.scrollToItem(target) else listState.animateScrollToItem(target)
             }
         }
 

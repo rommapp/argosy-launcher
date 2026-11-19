@@ -3,7 +3,6 @@ package com.nendo.argosy.ui.screens.gamedetail
 import android.content.Intent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.LinearEasing
-import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -27,6 +26,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.gestures.animateScrollBy
+import androidx.compose.foundation.gestures.scrollBy
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
@@ -35,6 +35,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -115,7 +116,9 @@ import com.nendo.argosy.ui.screens.collections.dialogs.CreateCollectionDialog
 import com.nendo.argosy.ui.ArgosyViewModel
 import com.nendo.argosy.ui.theme.Dimens
 import com.nendo.argosy.ui.theme.LocalLauncherTheme
-import com.nendo.argosy.ui.theme.Motion
+import com.nendo.argosy.ui.theme.animateModalBlur
+import com.nendo.argosy.ui.theme.modalScrim
+import com.nendo.argosy.ui.theme.reducedMotion
 import com.nendo.argosy.ui.util.clickableNoFocus
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.FlowPreview
@@ -125,6 +128,10 @@ import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.launch
 
 private const val CONTENT_SCROLL_FRACTION = 0.2f
+
+private suspend fun ScrollState.moveTo(target: Int, reduced: Boolean) {
+    if (reduced) scrollTo(target) else animateScrollTo(target)
+}
 
 @Composable
 fun GameDetailScreen(
@@ -205,6 +212,11 @@ fun GameDetailScreen(
     }
 
     val descriptionEndSlack = with(LocalDensity.current) { Dimens.spacingXl.roundToPx() }
+    val reducedNow by rememberUpdatedState(reducedMotion())
+    suspend fun scrollPageTo(target: Int) = scrollState.moveTo(target, reducedNow)
+    suspend fun scrollRowTo(state: LazyListState, index: Int) {
+        if (reducedNow) state.scrollToItem(index) else state.animateScrollToItem(index)
+    }
     val inputHandler = remember(onBack) {
         viewModel.createInputHandler(
             onBack = onBack,
@@ -220,7 +232,7 @@ fun GameDetailScreen(
                     direction = -1
                 )
                 if (onDescription && target != null) {
-                    coroutineScope.launch { scrollState.animateScrollTo(target) }
+                    coroutineScope.launch { scrollPageTo(target) }
                 } else {
                     viewModel.moveMenuFocus(-1)
                 }
@@ -237,7 +249,7 @@ fun GameDetailScreen(
                     direction = 1
                 )
                 if (onDescription && target != null) {
-                    coroutineScope.launch { scrollState.animateScrollTo(target) }
+                    coroutineScope.launch { scrollPageTo(target) }
                 } else {
                     viewModel.moveMenuFocus(1)
                 }
@@ -246,10 +258,14 @@ fun GameDetailScreen(
             onScrollContent = { direction ->
                 val step = scrollState.viewportSize * CONTENT_SCROLL_FRACTION * direction
                 coroutineScope.launch {
-                    scrollState.animateScrollBy(
-                        step,
-                        tween(RightStickStepper.STEP_INTERVAL_MS.toInt(), easing = LinearEasing)
-                    )
+                    if (reducedNow) {
+                        scrollState.scrollBy(step)
+                    } else {
+                        scrollState.animateScrollBy(
+                            step,
+                            tween(RightStickStepper.STEP_INTERVAL_MS.toInt(), easing = LinearEasing)
+                        )
+                    }
                 }
                 true
             },
@@ -259,12 +275,12 @@ fun GameDetailScreen(
                     MenuItem.Screenshots -> if (screenshotCount > 0) {
                         val currentIndex = screenshotListState.firstVisibleItemIndex
                         val newIndex = (currentIndex - 1).coerceAtLeast(0)
-                        coroutineScope.launch { screenshotListState.animateScrollToItem(newIndex) }
+                        coroutineScope.launch { scrollRowTo(screenshotListState, newIndex) }
                     }
                     MenuItem.Achievements -> if (achievementColumnCount > 0) {
                         val currentIndex = achievementListState.firstVisibleItemIndex
                         val newIndex = (currentIndex - 1).coerceAtLeast(0)
-                        coroutineScope.launch { achievementListState.animateScrollToItem(newIndex) }
+                        coroutineScope.launch { scrollRowTo(achievementListState, newIndex) }
                     }
                     MenuItem.RelatedGames -> viewModel.moveRelatedFocus(-1)
                     MenuItem.Documents -> viewModel.moveDocumentFocus(-1)
@@ -277,12 +293,12 @@ fun GameDetailScreen(
                     MenuItem.Screenshots -> if (screenshotCount > 0) {
                         val currentIndex = screenshotListState.firstVisibleItemIndex
                         val newIndex = (currentIndex + 1).coerceAtMost(screenshotCount - 1)
-                        coroutineScope.launch { screenshotListState.animateScrollToItem(newIndex) }
+                        coroutineScope.launch { scrollRowTo(screenshotListState, newIndex) }
                     }
                     MenuItem.Achievements -> if (achievementColumnCount > 0) {
                         val currentIndex = achievementListState.firstVisibleItemIndex
                         val newIndex = (currentIndex + 1).coerceAtMost(achievementColumnCount - 1)
-                        coroutineScope.launch { achievementListState.animateScrollToItem(newIndex) }
+                        coroutineScope.launch { scrollRowTo(achievementListState, newIndex) }
                     }
                     MenuItem.RelatedGames -> viewModel.moveRelatedFocus(1)
                     MenuItem.Documents -> viewModel.moveDocumentFocus(1)
@@ -435,13 +451,7 @@ private fun GameDetailContent(
         uiState.showReviewList || uiState.reviewEditor != null || uiState.perGameSettings.visible ||
         viewModel.documentReader.collectAsState().value != null ||
         viewModel.siblingChoiceState.collectAsState().value != null
-    val modalBlur by animateDpAsState(
-        targetValue = if (showAnyOverlay) Motion.blurRadiusModal else 0.dp,
-        animationSpec = Motion.focusSpringDp,
-        label = "modalBlur"
-    )
-
-    val combinedBlur = modalBlur
+    val modalBlur by animateModalBlur(showAnyOverlay)
 
     var descriptionTopY by remember { mutableIntStateOf(0) }
     var screenshotTopY by remember { mutableIntStateOf(0) }
@@ -474,18 +484,21 @@ private fun GameDetailContent(
 
     var programmaticScrollInFlight by remember { mutableStateOf(false) }
 
+    val reduced = reducedMotion()
+    suspend fun scrollContentTo(target: Int) = scrollState.moveTo(target, reduced)
     LaunchedEffect(uiState.menuFocusIndex) {
         try {
             programmaticScrollInFlight = true
-            when (focusedItem) {
-                MenuItem.Details -> scrollState.animateScrollTo(0)
-                MenuItem.Description -> scrollState.animateScrollTo(descriptionTopY.coerceAtLeast(0))
-                MenuItem.Screenshots -> scrollState.animateScrollTo(screenshotTopY.coerceAtLeast(0))
-                MenuItem.Documents -> scrollState.animateScrollTo(documentsTopY.coerceAtLeast(0))
-                MenuItem.Achievements -> scrollState.animateScrollTo(achievementTopY.coerceAtLeast(0))
-                MenuItem.RelatedGames -> scrollState.animateScrollTo(relatedTopY.coerceAtLeast(0))
-                else -> {}
+            val target = when (focusedItem) {
+                MenuItem.Details -> 0
+                MenuItem.Description -> descriptionTopY.coerceAtLeast(0)
+                MenuItem.Screenshots -> screenshotTopY.coerceAtLeast(0)
+                MenuItem.Documents -> documentsTopY.coerceAtLeast(0)
+                MenuItem.Achievements -> achievementTopY.coerceAtLeast(0)
+                MenuItem.RelatedGames -> relatedTopY.coerceAtLeast(0)
+                else -> null
             }
+            if (target != null) scrollContentTo(target)
         } finally {
             programmaticScrollInFlight = false
         }
@@ -521,7 +534,7 @@ private fun GameDetailContent(
     }
 
     Box(modifier = Modifier.fillMaxSize()) {
-        Box(modifier = Modifier.fillMaxSize().blur(combinedBlur)) {
+        Box(modifier = Modifier.fillMaxSize().blur(modalBlur).modalScrim(showAnyOverlay)) {
             val liveBackgroundPath = com.nendo.argosy.ui.common.rememberResolvedBackgroundPath(game.id, game.backgroundPath)
             val effectiveBackgroundPath = uiState.repairedBackgroundPath ?: liveBackgroundPath
             val runningFrame = com.nendo.argosy.ui.common.rememberTaskSnapshotRequest(
@@ -571,7 +584,7 @@ private fun GameDetailContent(
             )
         }
 
-        Column(modifier = Modifier.fillMaxSize().blur(combinedBlur)) {
+        Column(modifier = Modifier.fillMaxSize().blur(modalBlur).modalScrim(showAnyOverlay)) {
             val isDark = LocalLauncherTheme.current.isDarkTheme
             val fadeColor = if (isDark) Color.Black else Color.White
 
@@ -622,21 +635,21 @@ private fun GameDetailContent(
                                         MenuItem.PerGameSettings -> viewModel.showPerGameSettings()
                                         MenuItem.Options -> viewModel.toggleMoreOptions()
                                         MenuItem.Details -> coroutineScope.launch {
-                                            scrollState.animateScrollTo(0)
+                                            scrollContentTo(0)
                                         }
                                         MenuItem.Description -> coroutineScope.launch {
-                                            scrollState.animateScrollTo(descriptionTopY.coerceAtLeast(0))
+                                            scrollContentTo(descriptionTopY.coerceAtLeast(0))
                                         }
                                         MenuItem.Documents -> coroutineScope.launch {
-                                            scrollState.animateScrollTo(documentsTopY.coerceAtLeast(0))
+                                            scrollContentTo(documentsTopY.coerceAtLeast(0))
                                         }
                                         MenuItem.Screenshots -> viewModel.openScreenshotViewer()
                                         MenuItem.Reviews -> viewModel.showReviewList()
                                         MenuItem.Achievements -> coroutineScope.launch {
-                                            scrollState.animateScrollTo(achievementTopY.coerceAtLeast(0))
+                                            scrollContentTo(achievementTopY.coerceAtLeast(0))
                                         }
                                         MenuItem.RelatedGames -> coroutineScope.launch {
-                                            scrollState.animateScrollTo(relatedTopY.coerceAtLeast(0))
+                                            scrollContentTo(relatedTopY.coerceAtLeast(0))
                                         }
                                         MenuItem.CloseGame -> viewModel.requestCloseRunningGame()
                                     }

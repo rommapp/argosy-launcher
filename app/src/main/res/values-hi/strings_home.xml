@@ -208,4 +208,81 @@
         <item quantity="other">%d आइटम</item>
     </plurals>
     <string name="home_tile_file_browser_decor_title">चित्र चुनें</string>
+
+    <string name="home_columns_theme_continue">जारी रखें</string>
+    <string name="home_columns_theme_play_it_again">फिर से खेलें</string>
+    <string name="home_columns_theme_almost_there">बस थोड़ा बाकी</string>
+    <string name="home_columns_theme_friends_playing">दोस्त खेल रहे हैं</string>
+    <string name="home_columns_theme_just_added">अभी जोड़े गए</string>
+    <string name="home_columns_theme_gathering_dust">धूल खा रहे</string>
+    <string name="home_columns_theme_favorites">पसंदीदा</string>
+    <string name="home_columns_theme_pinned_collection">पिन किया संग्रह</string>
+    <string name="home_columns_theme_most_played_genre">सबसे ज़्यादा खेली गई शैली</string>
+    <string name="home_columns_media_continue_watching">देखना जारी रखें</string>
+    <string name="home_columns_media_next_up">आगे</string>
+    <string name="home_columns_reason_continue_none">जहाँ छोड़ा था वहीं से शुरू करें</string>
+    <plurals name="home_columns_reason_continue">
+        <item quantity="one">%d जारी</item>
+        <item quantity="other">%d जारी</item>
+    </plurals>
+    <string name="home_columns_reason_play_it_again">एक साल पहले इसी हफ़्ते</string>
+    <plurals name="home_columns_reason_almost_there">
+        <item quantity="one">%d घंटे से कम बाकी</item>
+        <item quantity="other">%d घंटे से कम बाकी</item>
+    </plurals>
+    <plurals name="home_columns_reason_friends">
+        <item quantity="one">%d अभी खेला जा रहा है</item>
+        <item quantity="other">%d अभी खेले जा रहे हैं</item>
+    </plurals>
+    <string name="home_columns_reason_friends_recent">हाल में दोस्तों ने खेला</string>
+    <string name="home_columns_reason_just_added">इस हफ़्ते जोड़े गए</string>
+    <plurals name="home_columns_reason_gathering_dust">
+        <item quantity="one">%d दिन से अछूता</item>
+        <item quantity="other">%d दिनों से अछूता</item>
+    </plurals>
+    <plurals name="home_columns_reason_favorites">
+        <item quantity="one">%d पसंदीदा</item>
+        <item quantity="other">%d पसंदीदा</item>
+    </plurals>
+    <plurals name="home_columns_reason_collection">
+        <item quantity="one">%d गेम</item>
+        <item quantity="other">%d गेम</item>
+    </plurals>
+    <string name="home_columns_reason_genre">आपकी सबसे ज़्यादा खेली गई शैली</string>
+    <plurals name="home_columns_platform_count">
+        <item quantity="one">%d गेम</item>
+        <item quantity="other">%d गेम</item>
+    </plurals>
+    <plurals name="home_columns_reason_continue_watching">
+        <item quantity="one">%d जारी</item>
+        <item quantity="other">%d जारी</item>
+    </plurals>
+    <plurals name="home_columns_reason_next_up">
+        <item quantity="one">%d एपिसोड</item>
+        <item quantity="other">%d एपिसोड</item>
+    </plurals>
+    <string name="home_columns_fact_progress">%1$s खेला, लगभग %2$s बाकी</string>
+    <string name="home_columns_fact_played">%1$s खेला</string>
+    <string name="home_columns_fact_left">लगभग %1$s बाकी</string>
+    <string name="home_columns_fact_last_played">आख़िरी बार %1$s को खेला</string>
+    <string name="home_columns_fact_unplayed">अभी तक नहीं खेला</string>
+    <string name="home_columns_progress_story">कहानी</string>
+    <string name="home_columns_progress_story_of">~%2$s में से %1$s</string>
+    <string name="home_columns_progress_story_length">लगभग %1$s लंबा</string>
+    <string name="home_columns_progress_trophies">ट्रॉफ़ी</string>
+    <string name="home_columns_progress_trophies_count">%1$d / %2$d</string>
+    <plurals name="home_columns_activity_window">
+        <item quantity="one">पिछला %d हफ़्ता</item>
+        <item quantity="other">पिछले %d हफ़्ते</item>
+    </plurals>
+    <string name="home_columns_activity_unplayed">अभी तक नहीं खेला</string>
+    <plurals name="home_columns_activity_idle">
+        <item quantity="one">%d हफ़्ते से नहीं खेला</item>
+        <item quantity="other">%d हफ़्तों से नहीं खेला</item>
+    </plurals>
+    <string name="home_columns_last_played_on">आख़िरी बार %1$s %2$s पर खेला</string>
+    <string name="home_columns_last_played">आख़िरी बार %1$s खेला</string>
+    <string name="home_columns_previous_game">पिछला गेम</string>
+    <string name="home_columns_next_game">अगला गेम</string>
+    <string name="home_footer_columns_sections">सेक्शन</string>
 </resources>

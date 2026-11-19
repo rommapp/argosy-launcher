@@ -13,6 +13,7 @@ import com.nendo.argosy.util.AppPaths
 import com.nendo.argosy.data.emulator.SavePathRegistry
 import com.nendo.argosy.data.emulator.SwitchProfileParser
 import com.nendo.argosy.data.emulator.savepath.FlycastStandaloneConfig
+import com.nendo.argosy.data.emulator.savepath.Pcsx2DataFolder
 import com.nendo.argosy.data.local.dao.EmulatorConfigDao
 import com.nendo.argosy.data.local.dao.GameDao
 import com.nendo.argosy.data.local.entity.GameEntity
@@ -489,7 +490,7 @@ class SigilSaveHandler @Inject constructor(
             root = found,
             emulatorPackage = emulatorPackage,
             profile = profileFor(layout, emulatorPackage, found),
-            options = optionsFor(layout, game.id, config.emulatorId)
+            options = optionsFor(layout, game, config.emulatorId, found)
         )
     }
 
@@ -555,11 +556,17 @@ class SigilSaveHandler @Inject constructor(
     private fun withUserDir(saveDir: String, layout: String): String =
         LIBRETRO_USER_DIRS[layout]?.let { File(saveDir, it).absolutePath } ?: saveDir
 
-    private suspend fun optionsFor(layout: String, gameId: Long, configEmulatorId: String): Map<String, String> {
+    private suspend fun optionsFor(
+        layout: String,
+        game: GameEntity,
+        configEmulatorId: String,
+        root: String
+    ): Map<String, String> {
         if (layout != PCSX2_STANDALONE_LAYOUT) return emptyMap()
-        val card = emulatorConfigDao.getSelectedMemcardForGame(gameId)
+        val chosen = emulatorConfigDao.getSelectedMemcardForGame(game.id)
             ?: emulatorSaveConfigRepository.getByEmulator(configEmulatorId)?.selectedMemcardPath
-        val name = card?.trimEnd('/')?.substringAfterLast('/')?.takeIf { it.isNotBlank() }
+        val name = chosen?.trimEnd('/')?.substringAfterLast('/')?.takeIf { it.isNotBlank() }
+            ?: Pcsx2DataFolder.read(root, fal, game.saveId ?: game.titleId)?.slot1Card
             ?: return emptyMap()
         return mapOf(PCSX2_SLOT1_OPTION to name)
     }

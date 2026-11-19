@@ -90,6 +90,7 @@ import com.nendo.argosy.ui.theme.Dimens
 import com.nendo.argosy.ui.theme.LocalArgosyTheme
 import com.nendo.argosy.ui.theme.Motion
 import com.nendo.argosy.ui.theme.generated.ComponentDefaults
+import com.nendo.argosy.ui.theme.reducedMotion
 import com.nendo.argosy.ui.util.clickableNoFocus
 import com.nendo.argosy.ui.util.verticalEdgeFade
 import kotlinx.coroutines.delay
@@ -358,9 +359,10 @@ private fun TrackList(
     val listState = rememberLazyListState()
     val tracksFocused = state.focusedRow == MusicPlayerRow.TRACKS
     val anchor = if (tracksFocused) state.trackFocus else state.playback.index
+    val reduced = reducedMotion()
     LaunchedEffect(anchor, tracks.size) {
         snapshotFlow { listState.layoutInfo.viewportSize.height }
-            .collectLatest { if (anchor in tracks.indices) listState.animateScrollToItemCentered(anchor) }
+            .collectLatest { if (anchor in tracks.indices) listState.animateScrollToItemCentered(anchor, reduced) }
     }
     if (tracks.isEmpty()) {
         Box(modifier = modifier.fillMaxWidth()) {
@@ -778,9 +780,10 @@ private fun MusicBrowseList(
         }
     }
 
+    val reduced = reducedMotion()
     LaunchedEffect(browse.focusIndex, browse.status) {
         if (browse.focusIndex >= 0 && browse.status == MusicBrowseStatus.READY) {
-            listState.animateScrollToItemCentered(browse.focusIndex)
+            listState.animateScrollToItemCentered(browse.focusIndex, reduced)
         }
     }
 

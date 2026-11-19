@@ -96,6 +96,8 @@
     <string name="settings_theme_icon_pack_system">系統圖示</string>
 
     <string name="settings_interface_ui_scale_title">介面縮放</string>
+    <string name="settings_interface_reduced_motion">減少動態效果</string>
+    <string name="settings_interface_reduced_motion_subtitle">關閉動畫、影片預覽與循環效果，讓較慢的裝置運作更順暢</string>
     <string name="settings_interface_compact_footer_title">精簡頁尾</string>
     <string name="settings_interface_compact_footer_subtitle">使用較窄的操作提示列</string>
     <string name="settings_interface_hide_system_nav_bar_title">隱藏系統導覽列</string>

@@ -351,6 +351,86 @@ object ComponentDefaults {
         const val pageDwellMs = 1800
     }
 
+    object HomeColumns {
+        const val slotsWide = 5
+        const val slotsCompact = 3
+        const val slotsPhone = 1
+        const val focusedWidthScale = 2f
+        const val wideAspectMin = 1.6f
+        const val phoneAspectMin = 2
+        const val sliverWidthRatio = 0.03f
+        const val stripWeightRatio = 0.76f
+        const val bandWeightRatio = 0.24f
+        const val unfocusedDimAlpha = 0.45f
+        const val sliverDimAlpha = 0.6f
+        const val coverWidthRatio = 0.32f
+        const val topScrimHeightRatio = 0.3f
+        const val topScrimAlpha = 0.75f
+        const val bottomScrimHeightRatio = 0.36f
+        const val bottomScrimAlpha = 0.9f
+        const val secondaryTextAlpha = 0.7f
+        const val kickerTrackingRatio = 0.14f
+        const val ringWidthDp = 2
+        const val dotSizeDp = 4
+        const val dotSizeActiveDp = 6
+        const val dotInactiveAlpha = 0.4f
+        const val stepControlsCenterRatio = 0.4f
+        const val bandTitleWeightRatio = 0.58f
+        const val bandSentenceMaxLines = 2
+        const val heroCrossfadeMs = 250
+        const val heroMaxZoom = 1.15f
+        const val heroAnalysisSizePx = 128
+        const val bandCoverOverlapRatio = 0.45f
+        const val activityStripHeightDp = 20
+        const val activityBarWidthRatio = 0.6f
+        const val activityBarGapDp = 2
+        const val activityTrackAlpha = 0.16f
+        const val progressLabelWidthRatio = 0.3f
+        const val progressLoadDebounceMs = 300
+        const val takeoverBeatMs = 600
+        const val takeoverInfoDelayMs = 400
+        const val takeoverLogoWidthRatio = 0.28f
+        const val takeoverCoverWidthRatio = 0.12f
+        const val takeoverScrimHeightRatio = 0.5f
+        const val waterAmplitudeRatio = 0.025f
+    }
+
+    object BuildingLibrary {
+        const val wallColumns = 6
+        const val wallColumnsPresentation = 8
+        const val wallWidthRatio = 0.75f
+        const val infoWidthRatio = 0.32f
+        const val splitTopRatio = 0.44f
+        const val splitBottomRatio = 0.34f
+        const val splitFalloffRatio = 0.1f
+        const val hexSizeDp = 12
+        const val hexGapDp = 2
+        const val hexBaseAlpha = 0.02f
+        const val hexPulseMinAlpha = 0.1f
+        const val hexPulseMaxAlpha = 0.2f
+        const val hexFadeMs = 200
+        const val waveSpeedDpPerSecond = 120
+        const val waveSpeedVariation = 0.1f
+        const val waveAmplitudeDp = 24
+        const val waveLengthMinRatio = 0.4f
+        const val waveLengthMaxRatio = 0.8f
+        const val waveSpawnMinMs = 1500
+        const val waveSpawnMaxMs = 4000
+        const val waveMaxActive = 2
+        const val waveHitChance = 0.75f
+        const val waveHitMinAlpha = 0.1f
+        const val waveHitMaxAlpha = 0.15f
+        const val hexSpawnMs = 140
+        const val wallCoverLimit = 150
+        const val wallBatchMs = 250
+        const val wallSpawnStepMs = 120
+        const val wallFollowPerSecond = 3
+        const val coverAspectRatio = 0.75f
+        const val wallFadeHeightRatio = 0.16f
+        const val finishHoldMs = 1500
+        const val startTimeoutMs = 8000
+    }
+
     object PageChooser {
         const val modalWidthDp = 520
         const val rowHeightDp = 64

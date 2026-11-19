@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="building_library_title">Building your Library</string>
+    <string name="building_library_getting_ready">Getting ready</string>
+    <!-- %1$s is a game platform name, such as PlayStation 2. -->
+    <string name="building_library_syncing_platform">Syncing %1$s</string>
+    <string name="building_library_done">Your library is ready</string>
+    <!-- Button that leaves this screen for Home while the library keeps syncing in the background. -->
+    <string name="building_library_browse">Browse while it finishes</string>
+    <!-- %1$d games processed so far, of %2$d games in total. The quantity follows the total. -->
+    <plurals name="building_library_games">
+        <item quantity="one">%1$,d of %2$,d game</item>
+        <item quantity="other">%1$,d of %2$,d games</item>
+    </plurals>
+    <!-- %1$d platforms finished so far, of %2$d platforms in total. The quantity follows the total. -->
+    <plurals name="building_library_platforms">
+        <item quantity="one">%1$d of %2$d platform</item>
+        <item quantity="other">%1$d of %2$d platforms</item>
+    </plurals>
+</resources>

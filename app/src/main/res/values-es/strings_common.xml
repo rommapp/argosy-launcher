@@ -573,6 +573,7 @@
     <string name="ui_home_layout_kind_carousel">Carrusel</string>
     <string name="ui_home_layout_kind_auto_grid">Cuadrícula automática</string>
     <string name="ui_home_layout_kind_custom_grid">Cuadrícula personalizada</string>
+    <string name="ui_home_layout_kind_columns">Columnas</string>
     <string name="ui_home_layout_alignment_top">Arriba</string>
     <string name="ui_home_layout_alignment_center">Centro</string>
     <string name="ui_home_layout_alignment_bottom">Abajo</string>

@@ -64,6 +64,10 @@ sealed interface PresentationSlot {
 
     data class MediaPlayback(val itemId: String) : PresentationSlot
 
+    data class LibraryWall(
+        val tiles: List<com.nendo.argosy.ui.screens.buildinglibrary.LibraryWallTile>
+    ) : PresentationSlot
+
     data class Search(
         val owner: SlotOwner,
         val state: com.nendo.argosy.ui.screens.search.SearchPresentationState

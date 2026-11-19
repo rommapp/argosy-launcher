@@ -249,6 +249,11 @@ private fun PresentationSlotScene(
                         ?.tapPresentation(PresentationTap(slot.owner, index))
                 }
             )
+            is PresentationSlot.LibraryWall -> com.nendo.argosy.ui.screens.buildinglibrary.LibraryCoverWall(
+                tiles = slot.tiles,
+                columns = com.nendo.argosy.ui.theme.generated.ComponentDefaults.BuildingLibrary.wallColumnsPresentation,
+                modifier = Modifier.fillMaxSize()
+            )
             is PresentationSlot.QuickMenu -> com.nendo.argosy.ui.quickmenu.QuickMenuPresentation(
                 state = slot.state,
                 bottomInset = hintsHeight,
@@ -590,9 +595,10 @@ private fun PlayShareCard(row: PlayShareRow, modifier: Modifier = Modifier) {
 private fun PlayTimelineSlot(slot: PresentationSlot.PlayTimeline) {
     val theme = LocalArgosyTheme.current
     val listState = rememberLazyListState()
+    val reduced = com.nendo.argosy.ui.theme.reducedMotion()
     LaunchedEffect(slot.selectedIndex, slot.dots.size) {
         if (slot.selectedIndex in slot.dots.indices) {
-            listState.animateScrollToItemCentered(slot.selectedIndex)
+            listState.animateScrollToItemCentered(slot.selectedIndex, reduced)
         }
     }
     Column(
@@ -670,16 +676,16 @@ private fun PlayTimelineSlot(slot: PresentationSlot.PlayTimeline) {
             }
         }
         val gamesState = rememberLazyListState()
-        LaunchedEffect(slot.games, slot.selectedIndex) {
+        LaunchedEffect(slot.games, slot.selectedIndex, reduced) {
             gamesState.scrollToItem(0)
             while (true) {
                 delay(TIMELINE_SCROLL_DELAY_MS)
-                if (!gamesState.canScrollForward) {
-                    if (gamesState.firstVisibleItemIndex == 0) continue
-                    gamesState.animateScrollToItem(0)
-                } else {
-                    gamesState.animateScrollToItem(gamesState.firstVisibleItemIndex + 1)
+                val target = when {
+                    gamesState.canScrollForward -> gamesState.firstVisibleItemIndex + 1
+                    gamesState.firstVisibleItemIndex == 0 -> continue
+                    else -> 0
                 }
+                if (reduced) gamesState.scrollToItem(target) else gamesState.animateScrollToItem(target)
             }
         }
         val selectedDotCenter by remember(slot.selectedIndex) {

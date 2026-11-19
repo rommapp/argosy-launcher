@@ -1,10 +1,14 @@
 package com.nendo.argosy.ui.common
 
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.ReadOnlyComposable
 import coil.request.ErrorResult
 import coil.request.ImageResult
 import coil.transition.CrossfadeTransition
 import coil.transition.Transition
 import coil.transition.TransitionTarget
+import com.nendo.argosy.ui.theme.LocalMotionTier
+import com.nendo.argosy.ui.theme.MotionTier
 
 /**
  * Crossfades even on a cache hit, which is what makes a poster fade in rather than pop.
@@ -19,3 +23,12 @@ data class AlwaysCrossfadeFactory(private val durationMillis: Int) : Transition.
         if (result is ErrorResult) Transition.Factory.NONE.create(target, result)
         else CrossfadeTransition(target, result, durationMillis)
 }
+
+fun alwaysCrossfadeFor(tier: MotionTier, durationMillis: Int): Transition.Factory =
+    if (tier == MotionTier.Reduced || durationMillis <= 0) Transition.Factory.NONE
+    else AlwaysCrossfadeFactory(durationMillis)
+
+@Composable
+@ReadOnlyComposable
+fun alwaysCrossfade(durationMillis: Int): Transition.Factory =
+    alwaysCrossfadeFor(LocalMotionTier.current, durationMillis)

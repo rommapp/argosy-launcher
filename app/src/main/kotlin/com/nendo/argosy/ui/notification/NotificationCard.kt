@@ -63,10 +63,9 @@ import com.nendo.argosy.ui.primitives.InputGlyph
 import com.nendo.argosy.ui.theme.Dimens
 import com.nendo.argosy.ui.theme.LocalArgosyTheme
 import com.nendo.argosy.ui.theme.LocalLauncherTheme
-import com.nendo.argosy.ui.theme.LocalMotionTier
 import com.nendo.argosy.ui.theme.LocalUiScale
 import com.nendo.argosy.ui.theme.Motion
-import com.nendo.argosy.ui.theme.MotionTier
+import com.nendo.argosy.ui.theme.reducedMotion
 import com.nendo.argosy.ui.theme.generated.ComponentDefaults
 import com.nendo.argosy.ui.theme.generated.DimensionTokens
 import com.nendo.argosy.ui.theme.generated.MotionTokens
@@ -109,7 +108,7 @@ fun NotificationCard(
 ) {
     val visibleState = remember { MutableTransitionState(false) }
     visibleState.targetState = visible
-    val reduced = LocalMotionTier.current == MotionTier.Reduced
+    val reduced = reducedMotion()
     val accent = accentOverride ?: severity.accentColor()
 
     AnimatedVisibility(
@@ -236,7 +235,7 @@ private fun NotificationCardContent(
 
 @Composable
 private fun animatedProgress(target: Float): Float {
-    val reduced = LocalMotionTier.current == MotionTier.Reduced
+    val reduced = reducedMotion()
     val shown by animateFloatAsState(
         targetValue = target,
         animationSpec = if (reduced) snap() else tween(MotionTokens.Tween.noticeProgressMs, easing = Motion.argosyEase),

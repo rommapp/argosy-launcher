@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="building_library_title">Montando sua biblioteca</string>
+    <string name="building_library_getting_ready">Preparando</string>
+    <string name="building_library_syncing_platform">Sincronizando %1$s</string>
+    <string name="building_library_done">Sua biblioteca está pronta</string>
+    <string name="building_library_browse">Explorar enquanto termina</string>
+    <plurals name="building_library_games">
+        <item quantity="one">%1$,d de %2$,d jogo</item>
+        <item quantity="many">%1$,d de %2$,d jogos</item>
+        <item quantity="other">%1$,d de %2$,d jogos</item>
+    </plurals>
+    <plurals name="building_library_platforms">
+        <item quantity="one">%1$d de %2$d plataforma</item>
+        <item quantity="many">%1$d de %2$d plataformas</item>
+        <item quantity="other">%1$d de %2$d plataformas</item>
+    </plurals>
+</resources>

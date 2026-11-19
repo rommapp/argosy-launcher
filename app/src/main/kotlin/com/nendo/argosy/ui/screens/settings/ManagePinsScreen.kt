@@ -57,6 +57,7 @@ import com.nendo.argosy.domain.usecase.collection.CategoryType
 import com.nendo.argosy.ui.components.FooterHints
 import com.nendo.argosy.ui.components.InputButton
 import com.nendo.argosy.ui.components.animateScrollToItemCentered
+import com.nendo.argosy.ui.theme.reducedMotion
 import com.nendo.argosy.ui.components.dragReorderContainer
 import com.nendo.argosy.ui.components.dragReorderItem
 import com.nendo.argosy.ui.components.liftedReorderHints
@@ -93,6 +94,7 @@ fun ManagePinsScreen(
     val uiState by viewModel.uiState.collectAsState()
     val listState = rememberLazyListState()
     val haptics = LocalHapticFeedback.current
+    val reduced = reducedMotion()
 
     val dragState = rememberDragReorderState(
         listState = listState,
@@ -108,7 +110,7 @@ fun ManagePinsScreen(
     LaunchedEffect(uiState.focusedIndex) {
         if (dragState.draggingKey != null) return@LaunchedEffect
         if (uiState.pins.isNotEmpty() && uiState.focusedIndex in uiState.pins.indices) {
-            listState.animateScrollToItemCentered(uiState.focusedIndex)
+            listState.animateScrollToItemCentered(uiState.focusedIndex, reduced)
         }
     }
 

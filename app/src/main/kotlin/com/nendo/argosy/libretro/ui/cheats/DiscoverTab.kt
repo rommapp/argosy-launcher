@@ -26,6 +26,7 @@ import com.nendo.argosy.libretro.scanner.MemoryMatch
 import com.nendo.argosy.ui.components.ActionPreference
 import com.nendo.argosy.ui.components.SliderPreference
 import com.nendo.argosy.ui.theme.Dimens
+import com.nendo.argosy.ui.theme.reducedMotion
 
 @Composable
 fun DiscoverTab(
@@ -45,6 +46,7 @@ fun DiscoverTab(
 ) {
     val listState = rememberLazyListState()
     val showActions = !hasSnapshot || (canCompare && !showingResults)
+    val reduced = reducedMotion()
 
     LaunchedEffect(focusedIndex, showActions) {
         if (!showActions && focusedIndex >= 1 && focusedIndex - 1 in results.indices) {
@@ -52,7 +54,11 @@ fun DiscoverTab(
             val viewportHeight = layoutInfo.viewportEndOffset - layoutInfo.viewportStartOffset
             val itemHeight = layoutInfo.visibleItemsInfo.firstOrNull()?.size ?: 60
             val centerOffset = (viewportHeight - itemHeight) / 2
-            listState.animateScrollToItem(focusedIndex - 1, -centerOffset)
+            if (reduced) {
+                listState.scrollToItem(focusedIndex - 1, -centerOffset)
+            } else {
+                listState.animateScrollToItem(focusedIndex - 1, -centerOffset)
+            }
         }
     }
 

@@ -49,6 +49,7 @@ import com.nendo.argosy.ui.theme.Dimens
 import com.nendo.argosy.ui.theme.LocalArgosyTheme
 import com.nendo.argosy.ui.theme.LocalBoxArtStyle
 import com.nendo.argosy.ui.theme.generated.ComponentDefaults
+import com.nendo.argosy.ui.theme.reducedMotion
 import com.nendo.argosy.ui.util.clickableNoFocus
 
 private const val LANDSCAPE_RESULT_COLUMNS = 4
@@ -145,8 +146,9 @@ private fun SearchLanding(
 ) {
     val theme = LocalArgosyTheme.current
     val listState = rememberLazyListState()
+    val reduced = reducedMotion()
     LaunchedEffect(focusIndex, showCursor) {
-        if (showCursor && focusIndex > SEARCH_FIELD_INDEX) listState.animateScrollToItemCentered(focusIndex + 1)
+        if (showCursor && focusIndex > SEARCH_FIELD_INDEX) listState.animateScrollToItemCentered(focusIndex + 1, reduced)
     }
     LazyColumn(
         state = listState,

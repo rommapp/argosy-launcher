@@ -1,6 +1,7 @@
 package com.nendo.argosy.ui.screens.library
 
 import androidx.compose.foundation.gestures.animateScrollBy
+import androidx.compose.foundation.gestures.scrollBy
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.PaddingValues
@@ -35,6 +36,7 @@ import com.nendo.argosy.ui.components.withNavBarClearance
 import com.nendo.argosy.ui.screens.home.GameDownloadIndicator
 import com.nendo.argosy.ui.theme.Dimens
 import com.nendo.argosy.ui.theme.generated.ComponentDefaults
+import com.nendo.argosy.ui.theme.reducedMotion
 
 @Composable
 internal fun LibraryGameList(
@@ -50,13 +52,18 @@ internal fun LibraryGameList(
     val initialIndex = remember { viewModel.gameIndexToGridIndex(uiState.focusedIndex) }
     val listState = rememberLazyListState(initialFirstVisibleItemIndex = initialIndex)
     val downloadIndicators = viewModel.downloadIndicators.collectAsState()
+    val reduced = reducedMotion()
 
     suspend fun revealCompactSelection() {
         val listIndex = viewModel.gameIndexToGridIndex(uiState.focusedIndex)
         val layout = listState.layoutInfo
         val item = layout.visibleItemsInfo.firstOrNull { it.index == listIndex }
         if (item == null) {
-            listState.fastAnimateScrollToItem(index = listIndex, scrollOffset = 0)
+            if (reduced) {
+                listState.scrollToItem(listIndex)
+            } else {
+                listState.fastAnimateScrollToItem(index = listIndex, scrollOffset = 0)
+            }
         } else {
             val top = layout.viewportStartOffset + headerHeightPx
             val bottom = layout.viewportEndOffset - footerHeightPx
@@ -65,7 +72,11 @@ internal fun LibraryGameList(
                 item.offset + item.size > bottom -> item.offset + item.size - bottom
                 else -> 0
             }
-            if (distance != 0) listState.animateScrollBy(distance.toFloat())
+            when {
+                distance == 0 -> Unit
+                reduced -> listState.scrollBy(distance.toFloat())
+                else -> listState.animateScrollBy(distance.toFloat())
+            }
         }
     }
 
@@ -92,6 +103,7 @@ internal fun LibraryGameList(
         }
         listState.animateScrollToItemCentered(
             viewModel.gameIndexToGridIndex(uiState.focusedIndex),
+            reduced,
             topInsetPx = headerHeightPx,
             bottomInsetPx = footerHeightPx
         )
@@ -105,6 +117,7 @@ internal fun LibraryGameList(
         }
         listState.animateScrollToItemCentered(
             viewModel.gameIndexToGridIndex(uiState.focusedIndex),
+            reduced,
             topInsetPx = headerHeightPx,
             bottomInsetPx = footerHeightPx,
             snapFarJumps = true

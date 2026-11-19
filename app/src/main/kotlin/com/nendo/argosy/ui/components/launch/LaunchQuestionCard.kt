@@ -33,8 +33,7 @@ import com.nendo.argosy.ui.primitives.RowButton
 import com.nendo.argosy.ui.theme.Dimens
 import com.nendo.argosy.ui.theme.LocalArgosyTheme
 import com.nendo.argosy.ui.theme.LocalLauncherTheme
-import com.nendo.argosy.ui.theme.LocalMotionTier
-import com.nendo.argosy.ui.theme.MotionTier
+import com.nendo.argosy.ui.theme.reducedMotion
 
 data class LaunchQuestionChoice(
     val label: String,
@@ -59,7 +58,7 @@ fun LaunchQuestionCard(
 ) {
     val theme = LocalArgosyTheme.current
     val listState = rememberLazyListState()
-    val animate = LocalMotionTier.current != MotionTier.Reduced
+    val animate = !reducedMotion()
     LaunchedEffect(focusIndex) {
         val listIndex = if (focusIndex >= choices.size) choices.size + 1 else focusIndex
         listState.scrollToItemCentered(listIndex, animate)

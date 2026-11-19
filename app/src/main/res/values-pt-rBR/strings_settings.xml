@@ -302,6 +302,8 @@
     <!-- Row title. Noun phrase: how large everything in the launcher is drawn. "UI" is the usual
          short form of "user interface". -->
     <string name="settings_interface_ui_scale_title">Escala da UI</string>
+    <string name="settings_interface_reduced_motion">Movimento reduzido</string>
+    <string name="settings_interface_reduced_motion_subtitle">Remove animações, prévias em vídeo e efeitos em loop para um desempenho mais suave em aparelhos mais lentos</string>
     <!-- Row title. Adjective phrase: a shorter bar along the bottom of the screen. -->
     <string name="settings_interface_compact_footer_title">Rodapé Compacto</string>
     <!-- Second line of that row. "Control guide bar" is the strip that says what each button

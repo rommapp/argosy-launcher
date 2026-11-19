@@ -47,10 +47,9 @@ import com.nendo.argosy.ui.input.ButtonGlyphSwaps
 import com.nendo.argosy.ui.primitives.InputGlyph
 import com.nendo.argosy.ui.theme.Dimens
 import com.nendo.argosy.ui.theme.LocalArgosyTheme
-import com.nendo.argosy.ui.theme.LocalMotionTier
 import com.nendo.argosy.ui.theme.LocalUiScale
 import com.nendo.argosy.ui.theme.Motion
-import com.nendo.argosy.ui.theme.MotionTier
+import com.nendo.argosy.ui.theme.reducedMotion
 import com.nendo.argosy.ui.theme.generated.ComponentDefaults
 import kotlin.math.hypot
 import kotlin.math.roundToInt
@@ -133,7 +132,7 @@ private fun BoxScope.Bumper(
     holdProgress: () -> Float,
 ) {
     val theme = LocalArgosyTheme.current
-    val reduced = LocalMotionTier.current == MotionTier.Reduced
+    val reduced = reducedMotion()
     val lit = reading.isLit(button)
     val holding = reading.holding == button
     val colorSpec: AnimationSpec<Color> = if (reduced) snap() else tween(Motion.durationMicro, easing = Motion.argosyEase)

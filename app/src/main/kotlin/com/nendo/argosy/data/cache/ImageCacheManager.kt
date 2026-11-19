@@ -281,6 +281,8 @@ class ImageCacheManager @Inject constructor(
     private val logoQueue = Channel<PlatformLogoCacheRequest>(256)
     private val missingArt = MissingArtRegistry(File(context.filesDir, "missing_art.tsv"))
 
+    val heroFocus = HeroFocusStore(File(context.filesDir, "hero_focus.tsv"))
+
     private val coverQueue = Channel<ImageCacheRequest>(256)
 
     private val cacheExecutor = java.util.concurrent.Executors.newSingleThreadExecutor { r ->
@@ -294,7 +296,10 @@ class ImageCacheManager @Inject constructor(
     private val screenshotQueue = Channel<ScreenshotCacheRequest>(256)
     private var isProcessing = false
     private var isProcessingScreenshots = false
+    @Volatile
     private var isProcessingCovers = false
+    @Volatile
+    private var backgroundsBusy = false
 
     private val _progress = kotlinx.coroutines.flow.MutableStateFlow(ImageCacheProgress())
     val progress: kotlinx.coroutines.flow.StateFlow<ImageCacheProgress> = _progress
@@ -364,9 +369,11 @@ class ImageCacheManager @Inject constructor(
                 while (isHeld) {
                     kotlinx.coroutines.delay(500)
                 }
+                backgroundsBusy = true
                 try {
                     _progress.update {
                         it.copy(
+                            isProcessing = true,
                             currentGameTitle = request.gameTitle,
                             currentType = if (request.type == ImageType.BACKGROUND) "background" else "cover"
                         )
@@ -379,12 +386,18 @@ class ImageCacheManager @Inject constructor(
                 yield()
 
                 if (queue.isEmpty) {
-                    _progress.value = ImageCacheProgress()
+                    backgroundsBusy = false
+                    publishIdleWhenAllDone()
                 }
             }
             isProcessing = false
-            _progress.value = ImageCacheProgress()
+            backgroundsBusy = false
+            publishIdleWhenAllDone()
         }
+    }
+
+    private fun publishIdleWhenAllDone() {
+        _progress.update { if (backgroundsBusy || isProcessingCovers) it else ImageCacheProgress() }
     }
 
     private suspend fun updateProgressFromDb(isProcessing: Boolean) {
@@ -454,6 +467,7 @@ class ImageCacheManager @Inject constructor(
             FileOutputStream(cachedFile).use { out ->
                 bitmap.compress(Bitmap.CompressFormat.JPEG, 87, out)
             }
+            heroFocus.precompute(cachedFile, bitmap.width, bitmap.height) { longSide -> heroPixelsOf(bitmap, longSide) }
             bitmap.recycle()
 
             if (!isValidImageFile(cachedFile)) {
@@ -653,6 +667,7 @@ class ImageCacheManager @Inject constructor(
                 else -> entry.delete()
             }
         }
+        heroFocus.clear()
     }
 
     /**
@@ -1357,6 +1372,7 @@ class ImageCacheManager @Inject constructor(
                 try {
                     _progress.update {
                         it.copy(
+                            isProcessing = true,
                             currentGameTitle = request.gameTitle,
                             currentType = "cover"
                         )
@@ -1370,6 +1386,7 @@ class ImageCacheManager @Inject constructor(
                 if (coverQueue.isEmpty) break
             }
             isProcessingCovers = false
+            publishIdleWhenAllDone()
         }
     }
 

@@ -65,6 +65,7 @@ import com.nendo.argosy.ui.common.toNotificationText
 import com.nendo.argosy.ui.components.FooterHints
 import com.nendo.argosy.ui.components.InputButton
 import com.nendo.argosy.ui.components.animateScrollToItemCentered
+import com.nendo.argosy.ui.theme.reducedMotion
 import com.nendo.argosy.ui.components.withNavBarClearance
 import com.nendo.argosy.ui.input.LocalInputDispatcher
 import com.nendo.argosy.ui.navigation.Screen
@@ -116,10 +117,11 @@ fun DownloadsScreen(
     val state = uiState.downloadState
     val listState = rememberLazyListState()
     val context = LocalContext.current
+    val reduced = reducedMotion()
 
     LaunchedEffect(uiState.focusedListIndex) {
         if (uiState.allItems.isNotEmpty()) {
-            listState.animateScrollToItemCentered(uiState.focusedListIndex)
+            listState.animateScrollToItemCentered(uiState.focusedListIndex, reduced)
         }
     }
 

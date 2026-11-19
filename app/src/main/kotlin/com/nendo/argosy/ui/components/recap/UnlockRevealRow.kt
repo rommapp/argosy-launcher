@@ -1,6 +1,5 @@
 package com.nendo.argosy.ui.components.recap
 
-import android.animation.ValueAnimator
 import android.graphics.BlurMaskFilter
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.interaction.collectIsDraggedAsState
@@ -53,10 +52,9 @@ import coil.compose.AsyncImage
 import com.nendo.argosy.domain.model.SessionUnlock
 import com.nendo.argosy.ui.common.recapTierColor
 import com.nendo.argosy.ui.theme.Dimens
-import com.nendo.argosy.ui.theme.LocalMotionTier
 import com.nendo.argosy.ui.theme.Motion
-import com.nendo.argosy.ui.theme.MotionTier
 import com.nendo.argosy.ui.theme.generated.ComponentDefaults
+import com.nendo.argosy.ui.theme.reducedMotion
 import com.nendo.argosy.ui.util.clickableNoFocus
 import com.nendo.argosy.ui.util.horizontalEdgeFade
 import kotlinx.coroutines.flow.distinctUntilChanged
@@ -132,8 +130,7 @@ private fun UnlockRevealLazyRow(
     val timeline = UnlockRevealTimeline.Default
     val listState = rememberLazyListState()
     val scope = rememberCoroutineScope()
-    val motionTier = LocalMotionTier.current
-    val reduced = motionTier == MotionTier.Reduced || !ValueAnimator.areAnimatorsEnabled()
+    val reduced = reducedMotion()
     val dragged by listState.interactionSource.collectIsDraggedAsState()
     val currentOnCurrent by rememberUpdatedState(onCurrent)
     val currentIndexState by rememberUpdatedState(currentIndex)
@@ -218,7 +215,6 @@ private fun UnlockRevealLazyRow(
                 size = tileSize,
                 spotlit = index == currentIndex,
                 cursorTakenOver = interrupted,
-                motionTier = motionTier,
                 frame = { timeline.frameOf(index, elapsedMs) },
                 onTap = {
                     interrupted = true
@@ -236,7 +232,6 @@ private fun UnlockTile(
     size: Dp,
     spotlit: Boolean,
     cursorTakenOver: Boolean,
-    motionTier: MotionTier,
     frame: () -> UnlockTileFrame,
     onTap: () -> Unit
 ) {
@@ -247,7 +242,7 @@ private fun UnlockTile(
     val glowRadius = ComponentDefaults.UnlockRecap.tileGlowRadiusDp.dp
     val spotlight by animateFloatAsState(
         targetValue = if (spotlit) 1f else 0f,
-        animationSpec = Motion.tierFocusSpring(motionTier),
+        animationSpec = Motion.focusSpring,
         label = "recapTileSpotlight"
     )
     Box(

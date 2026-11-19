@@ -884,7 +884,7 @@ class SaveDownloader @Inject constructor(
             return@withContext false
         }
 
-        val tempFile = File(context.cacheDir, "save_channel_${System.currentTimeMillis()}.tmp")
+        val tempFile = File(context.cacheDir, "save_channel_${System.nanoTime()}_${FileNames.sanitize(serverSave.fileName)}")
         try {
             response.body()?.byteStream()?.use { input ->
                 tempFile.outputStream().use { output ->
@@ -998,7 +998,7 @@ class SaveDownloader @Inject constructor(
             return@withContext null
         }
 
-        val tempFile = File(context.cacheDir, "save_precache_${serverSaveId}_${System.nanoTime()}.tmp")
+        val tempFile = File(context.cacheDir, "save_precache_${serverSaveId}_${System.nanoTime()}_${FileNames.sanitize(serverSave.fileName)}")
         try {
             response.body()?.byteStream()?.use { input ->
                 tempFile.outputStream().use { output ->

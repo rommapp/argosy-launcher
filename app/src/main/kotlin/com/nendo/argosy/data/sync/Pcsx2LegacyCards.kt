@@ -18,7 +18,12 @@ internal class Pcsx2LegacyCards(
     private val saveRoots: EmulatorSaveRoots
 ) {
 
-    suspend fun baseFor(config: SavePathConfig, platformSlug: String, emulatorPackage: String?): Pcsx2CardBase? {
+    suspend fun baseFor(
+        config: SavePathConfig,
+        platformSlug: String,
+        emulatorPackage: String?,
+        serial: String? = null
+    ): Pcsx2CardBase? {
         if (!config.usesFolderBasedSaves) return null
         val layout = SigilSaveHandler.layoutFor(config.emulatorId, platformSlug)
             ?.takeIf { it == SigilSaveHandler.PCSX2_STANDALONE_LAYOUT }
@@ -30,13 +35,13 @@ internal class Pcsx2LegacyCards(
             val chosenRoot = SigilSaveHandler.rootFor(chosen, layout)
                 ?: SigilSaveHandler.rootAbove(chosen, layout, fal::isDirectory)
             val active = chosenRoot?.let { root ->
-                Pcsx2DataFolder.read(root, fal)?.let { Pcsx2DataFolder.cardBase(root, it).activeCard }
+                Pcsx2DataFolder.read(root, fal, serial)?.let { Pcsx2DataFolder.cardBase(root, it).activeCard }
             }
             return Pcsx2CardBase(chosen, active)
         }
         val root = saveRoots.rootFor(config, platformSlug, layout, emulatorPackage)
             ?: return null
-        return Pcsx2DataFolder.cardBase(root, Pcsx2DataFolder.read(root, fal))
+        return Pcsx2DataFolder.cardBase(root, Pcsx2DataFolder.read(root, fal, serial))
     }
 
     fun targetCard(base: Pcsx2CardBase, selectedCard: String?, saveId: String, handler: FolderSaveHandler?): String? {

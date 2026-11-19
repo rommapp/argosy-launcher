@@ -34,6 +34,7 @@ import com.nendo.argosy.domain.model.ResolvedGridShape
 import com.nendo.argosy.domain.model.SCROLL_AXIS_BOUND
 import com.nendo.argosy.ui.screens.home.GameDownloadIndicator
 import com.nendo.argosy.ui.theme.Dimens
+import com.nendo.argosy.ui.theme.reducedMotion
 
 /**
  * A scrolling custom grid: one canvas along [CustomGridState.scrollAxis], drawn as a lazy list of
@@ -80,9 +81,10 @@ fun CustomGridScrollCanvas(
     val focusedBand = remember(state) { state.focusedBandIndex }
     val tiles = remember(state) { state.tilesOnPage(state.page) }
     val editModeLabel = state.editLabelRes?.let { stringResource(it) }
+    val reduced = reducedMotion()
 
     LaunchedEffect(focusedBand, bands.size) {
-        if (bands.isNotEmpty()) listState.animateScrollToItemCentered(focusedBand)
+        if (bands.isNotEmpty()) listState.animateScrollToItemCentered(focusedBand, reduced)
     }
 
     Box(

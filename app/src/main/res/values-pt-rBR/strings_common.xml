@@ -553,6 +553,7 @@
     <string name="ui_home_layout_kind_carousel">Carrossel</string>
     <string name="ui_home_layout_kind_auto_grid">Grade automática</string>
     <string name="ui_home_layout_kind_custom_grid">Grade personalizada</string>
+    <string name="ui_home_layout_kind_columns">Colunas</string>
     <string name="ui_home_layout_alignment_top">Topo</string>
     <string name="ui_home_layout_alignment_center">Centro</string>
     <string name="ui_home_layout_alignment_bottom">Base</string>

@@ -41,6 +41,11 @@ data class PlatformShowcaseStats(
     val latestYear: Int?
 )
 
+data class LibraryWallCover(
+    val gameId: Long,
+    val coverPath: String
+)
+
 data class ShowcaseCoverCandidate(
     val coverPath: String,
     val installed: Boolean,
@@ -432,6 +437,52 @@ interface GameDao {
     """)
     suspend fun getRecentlyPlayed(ownerUserId: Long?, limit: Int = 20): List<GameEntity>
 
+    @Query("""
+        SELECT * FROM games
+        WHERE playTimeMinutes > 0
+        AND lastPlayed IS NOT NULL AND lastPlayed < :cutoff
+        AND NOT EXISTS (SELECT 1 FROM user_roms_hidden h WHERE h.gameId = games.id AND (h.ownerUserId IS NULL OR h.ownerUserId IS :ownerUserId))
+        AND $ENABLED_PLATFORM_SQL
+        ORDER BY lastPlayed DESC LIMIT :limit
+    """)
+    suspend fun getGatheringDust(cutoff: Instant, ownerUserId: Long?, limit: Int): List<GameEntity>
+
+    @Query("""
+        SELECT * FROM games
+        WHERE timeToBeatMainSec > 0 AND playTimeMinutes > 0
+        AND (timeToBeatMainSec - playTimeMinutes * 60) > 0
+        AND (timeToBeatMainSec - playTimeMinutes * 60) <= :maxRemainingSec
+        AND completion < 100
+        AND (status IS NULL OR status NOT IN ('finished', 'completed_100', 'retired'))
+        AND NOT EXISTS (SELECT 1 FROM user_roms_hidden h WHERE h.gameId = games.id AND (h.ownerUserId IS NULL OR h.ownerUserId IS :ownerUserId))
+        AND $ENABLED_PLATFORM_SQL
+        ORDER BY (timeToBeatMainSec - playTimeMinutes * 60) ASC LIMIT :limit
+    """)
+    suspend fun getAlmostThere(maxRemainingSec: Long, ownerUserId: Long?, limit: Int): List<GameEntity>
+
+    @Query("""
+        SELECT * FROM games
+        WHERE igdbId IN (:igdbIds)
+        AND NOT EXISTS (SELECT 1 FROM user_roms_hidden h WHERE h.gameId = games.id AND (h.ownerUserId IS NULL OR h.ownerUserId IS :ownerUserId))
+        AND $ENABLED_PLATFORM_SQL
+    """)
+    suspend fun getByIgdbIds(igdbIds: List<Long>, ownerUserId: Long?): List<GameEntity>
+
+    @Query("""
+        SELECT * FROM games
+        WHERE platformId = :platformId
+        AND isGroupVisible = 1
+        AND NOT EXISTS (SELECT 1 FROM user_roms_hidden h WHERE h.gameId = games.id AND (h.ownerUserId IS NULL OR h.ownerUserId IS :ownerUserId))
+        ORDER BY
+            CASE WHEN lastPlayed IS NULL THEN 1 ELSE 0 END,
+            lastPlayed DESC,
+            CASE WHEN rating IS NULL THEN 1 ELSE 0 END,
+            rating DESC,
+            sortTitle ASC
+        LIMIT :limit
+    """)
+    suspend fun getPlatformLeadOrdered(platformId: Long, ownerUserId: Long?, limit: Int): List<GameEntity>
+
     /**
      * Newly added games, narrowed to what can be launched only when [installedOnly] asks for it.
      * The predicate is a parameter rather than a second query so the two cannot drift; a caller
@@ -751,6 +802,17 @@ interface GameDao {
         LIMIT :limit
     """)
     suspend fun libraryCoverCandidates(ownerUserId: Long?, limit: Int = SHOWCASE_COVER_LIMIT): List<ShowcaseCoverCandidate>
+
+    @Query("""
+        SELECT games.id AS gameId, $RESOLVED_ART_SQL AS coverPath FROM games
+        $COVER_ART_JOIN
+        WHERE games.id IN (:gameIds)
+          AND isGroupVisible = 1
+          AND $RESOLVED_ART_SQL IS NOT NULL AND $RESOLVED_ART_SQL != ''
+          AND $ENABLED_PLATFORM_SQL
+          AND NOT EXISTS (SELECT 1 FROM user_roms_hidden h WHERE h.gameId = games.id AND (h.ownerUserId IS NULL OR h.ownerUserId IS :ownerUserId))
+    """)
+    suspend fun libraryWallCovers(gameIds: List<Long>, ownerUserId: Long?): List<LibraryWallCover>
 
     /**
      * Counts only what the library also counts, so a downloaded total can never exceed the total
@@ -1562,6 +1624,11 @@ private const val ID_FETCH_BATCH_SIZE = 100
 suspend fun GameDao.getByIdsChunked(ids: List<Long>): List<GameEntity> {
     if (ids.isEmpty()) return emptyList()
     return ids.chunked(ID_FETCH_BATCH_SIZE).flatMap { getByIds(it) }
+}
+
+suspend fun GameDao.getByIgdbIdsChunked(igdbIds: List<Long>, ownerUserId: Long?): List<GameEntity> {
+    if (igdbIds.isEmpty()) return emptyList()
+    return igdbIds.chunked(ID_FETCH_BATCH_SIZE).flatMap { getByIgdbIds(it, ownerUserId) }
 }
 
 private const val SQL_VARIABLE_LIMIT = 900

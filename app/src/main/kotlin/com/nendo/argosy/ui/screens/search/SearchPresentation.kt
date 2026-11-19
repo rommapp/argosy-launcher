@@ -28,6 +28,7 @@ import androidx.compose.ui.zIndex
 import com.nendo.argosy.R
 import com.nendo.argosy.ui.components.GameCard
 import com.nendo.argosy.ui.components.animateScrollToItemCentered
+import com.nendo.argosy.ui.theme.reducedMotion
 import com.nendo.argosy.ui.dualscreen.PresentationSlot
 import com.nendo.argosy.ui.theme.Dimens
 import com.nendo.argosy.ui.theme.LocalArgosyTheme
@@ -129,9 +130,10 @@ fun SearchPresentation(
 @Composable
 private fun CoverGrid(state: SearchPresentationState, contentPadding: PaddingValues, onTap: (Int) -> Unit) {
     val gridState = rememberLazyGridState()
+    val reduced = reducedMotion()
     LaunchedEffect(state.focusOnTop, state.focusIndex) {
         if (state.focusOnTop && state.focusIndex in state.covers.indices) {
-            gridState.animateScrollToItemCentered(state.focusIndex)
+            gridState.animateScrollToItemCentered(state.focusIndex, reduced)
         }
     }
     val spacing = state.spacingDp.dp

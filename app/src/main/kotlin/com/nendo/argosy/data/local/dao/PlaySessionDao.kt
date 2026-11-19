@@ -225,6 +225,18 @@ interface PlaySessionDao {
     suspend fun getSessionsForGameAndOwner(gameId: Long, ownerUserId: Long?): List<PlaySessionEntity>
 
     @Query("""
+        SELECT * FROM play_sessions
+        WHERE gameId = :gameId AND ownerUserId IS :ownerUserId AND startTime >= :start AND startTime < :end
+        ORDER BY startTime ASC
+    """)
+    suspend fun getSessionsForGameAndOwnerInRange(
+        gameId: Long,
+        ownerUserId: Long?,
+        start: Instant,
+        end: Instant
+    ): List<PlaySessionEntity>
+
+    @Query("""
         SELECT platformSlug, SUM(activePlayMs) AS activeMs, COUNT(*) AS sessionCount,
                MAX(startTime) AS lastPlayed
         FROM play_sessions
@@ -272,6 +284,26 @@ interface PlaySessionDao {
     suspend fun getActiveMsPerGame(
         ownerUserId: Long?,
         since: Instant,
+        minActiveMs: Long,
+        limit: Int,
+        hiddenIgdbIds: List<Long>
+    ): List<GamePlayTotal>
+
+    @Query("""
+        SELECT gameId, MAX(gameTitle) AS gameTitle, MAX(platformSlug) AS platformSlug, MAX(igdbId) AS igdbId,
+               SUM(activePlayMs) AS activeMs, COUNT(*) AS sessionCount, MAX(startTime) AS lastPlayed
+        FROM play_sessions
+        WHERE ownerUserId IS :ownerUserId AND startTime >= :start AND startTime < :end
+          AND (igdbId IS NULL OR igdbId NOT IN (:hiddenIgdbIds))
+        GROUP BY gameId
+        HAVING activeMs >= :minActiveMs
+        ORDER BY activeMs DESC
+        LIMIT :limit
+    """)
+    suspend fun getActiveMsPerGameInRange(
+        ownerUserId: Long?,
+        start: Instant,
+        end: Instant,
         minActiveMs: Long,
         limit: Int,
         hiddenIgdbIds: List<Long>

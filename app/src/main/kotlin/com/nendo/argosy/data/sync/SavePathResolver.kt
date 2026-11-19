@@ -303,7 +303,11 @@ class SavePathResolver @Inject constructor(
         val isRetroArch =
             com.nendo.argosy.data.emulator.RetroArchPathResolver.isRetroArch(effectiveEmulatorId)
         val besideRomBaseDir = besideRomDir(config, romPath, platformSlug)
-        val pcsx2Base = if (besideRomBaseDir == null) pcsx2Cards.baseFor(config, platformSlug, emulatorPackage) else null
+        val pcsx2Base = if (besideRomBaseDir == null) {
+            pcsx2Cards.baseFor(config, platformSlug, emulatorPackage, cachedSaveId)
+        } else {
+            null
+        }
         val overrideBaseDir = besideRomBaseDir
             ?: pcsx2Base?.cardsDir
             ?: userBaseOverride(effectiveEmulatorId, platformSlug)
@@ -991,7 +995,7 @@ class SavePathResolver @Inject constructor(
 
         val besideRomDir = besideRomDir(config, romPath, platformSlug)
         val pcsx2Base = if (besideRomDir == null && (folderShaped ?: config.usesFolderBasedSaves) && cachedSaveId != null) {
-            pcsx2Cards.baseFor(config, platformSlug, emulatorPackage)
+            pcsx2Cards.baseFor(config, platformSlug, emulatorPackage, cachedSaveId)
         } else {
             null
         }
@@ -1170,7 +1174,8 @@ class SavePathResolver @Inject constructor(
         }
         val folderHandler = saveHandlerRegistry.getFolderHandler(platformSlug)
         if (pcsx2Base != null) {
-            return pcsx2Cards.targetCard(pcsx2Base, selectedMemcard, titleId, folderHandler)
+            val gameBase = pcsx2Cards.baseFor(config, platformSlug, emulatorPackage, titleId) ?: pcsx2Base
+            return pcsx2Cards.targetCard(gameBase, selectedMemcard, titleId, folderHandler)
         }
         return folderHandler?.constructSavePath(baseDir, titleId)
     }

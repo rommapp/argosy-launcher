@@ -6,8 +6,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.boundsInWindow
 import androidx.compose.ui.layout.onGloballyPositioned
-import com.nendo.argosy.ui.theme.LocalMotionTier
-import com.nendo.argosy.ui.theme.MotionTier
+import com.nendo.argosy.ui.theme.reducedMotion
 import androidx.navigation.NavHostController
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
@@ -57,16 +56,16 @@ fun NavGraph(
         }
     }
     val transitionOrigin = remember { NavTransitionOrigin() }
-    val reducedMotion = LocalMotionTier.current == MotionTier.Reduced
+    val reduced = reducedMotion()
     CompositionLocalProvider(LocalNavTransitionOrigin provides transitionOrigin) {
     NavHost(
         modifier = modifier.onGloballyPositioned { transitionOrigin.updateHost(it.boundsInWindow()) },
         navController = navController,
         startDestination = startDestination,
-        enterTransition = { navEnter(transitionOrigin, reducedMotion) },
-        exitTransition = { navExit(transitionOrigin, reducedMotion) },
-        popEnterTransition = { navPopEnter(transitionOrigin, reducedMotion) },
-        popExitTransition = { navPopExit(transitionOrigin, reducedMotion) }
+        enterTransition = { navEnter(transitionOrigin, reduced) },
+        exitTransition = { navExit(transitionOrigin, reduced) },
+        popEnterTransition = { navPopEnter(transitionOrigin, reduced) },
+        popExitTransition = { navPopExit(transitionOrigin, reduced) }
     ) {
         composable(Screen.FirstRun.route) {
             SetupScreen(
@@ -223,6 +222,14 @@ fun NavGraph(
             com.nendo.argosy.ui.screens.syncmonitor.SyncMonitorScreen(
                 onBack = { if (!navController.popBackStack()) navigateToDefault() },
                 onDrawerToggle = onDrawerToggle
+            )
+        }
+
+        composable(Screen.BuildingLibrary.route) {
+            com.nendo.argosy.ui.screens.buildinglibrary.BuildingLibraryScreen(
+                onBrowse = navigateToDefault,
+                onBack = { if (!navController.popBackStack()) navigateToDefault() },
+                onFinished = navigateToDefault
             )
         }
 

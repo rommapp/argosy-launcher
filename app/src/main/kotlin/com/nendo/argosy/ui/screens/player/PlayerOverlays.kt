@@ -31,6 +31,7 @@ import com.nendo.argosy.ui.components.InputButton
 import com.nendo.argosy.ui.components.Modal
 import com.nendo.argosy.ui.components.WheelPicker
 import com.nendo.argosy.ui.components.animateScrollToItemCentered
+import com.nendo.argosy.ui.theme.reducedMotion
 import com.nendo.argosy.ui.primitives.FocusIndicators
 import com.nendo.argosy.ui.primitives.argosyFocusIndicators
 import com.nendo.argosy.ui.theme.Dimens
@@ -278,9 +279,10 @@ private fun OverlayList(
     row: @Composable (Int) -> Unit
 ) {
     val listState = rememberLazyListState()
+    val reduced = reducedMotion()
     LaunchedEffect(selectedIndex) {
         if (itemCount > 0) {
-            listState.animateScrollToItemCentered(selectedIndex.coerceIn(0, itemCount - 1))
+            listState.animateScrollToItemCentered(selectedIndex.coerceIn(0, itemCount - 1), reduced)
         }
     }
     LazyColumn(

@@ -2,6 +2,7 @@ package com.nendo.argosy.ui.screens.gamedetail.components
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.spring
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.background
@@ -49,6 +50,9 @@ import com.nendo.argosy.ui.screens.gamedetail.GameDetailUi
 import com.nendo.argosy.ui.screens.gamedetail.toCompanionDetail
 import com.nendo.argosy.ui.theme.ALauncherColors
 import com.nendo.argosy.ui.theme.Dimens
+import com.nendo.argosy.ui.theme.motionEnter
+import com.nendo.argosy.ui.theme.motionExit
+import com.nendo.argosy.ui.theme.motionSpec
 import com.nendo.argosy.util.formatPlayTime
 
 private val COLLAPSED_THUMBNAIL_SIZE = 48.dp
@@ -71,6 +75,7 @@ fun CollapsingHeader(
 ) {
     val collapseProgress by animateFloatAsState(
         targetValue = if (state.isCollapsed) 1f else 0f,
+        animationSpec = motionSpec(spring()),
         label = "collapse_progress"
     )
 
@@ -103,8 +108,8 @@ fun StickyCollapsedHeader(
 ) {
     AnimatedVisibility(
         visible = isVisible,
-        enter = expandVertically(),
-        exit = shrinkVertically(),
+        enter = motionEnter(expandVertically()),
+        exit = motionExit(shrinkVertically()),
         modifier = modifier
     ) {
         CollapsedHeader(game = game)

@@ -32,6 +32,7 @@ import com.nendo.argosy.R
 import com.nendo.argosy.libretro.SaveStateManager
 import com.nendo.argosy.ui.common.ScreenshotImage
 import com.nendo.argosy.ui.components.animateScrollToItemCentered
+import com.nendo.argosy.ui.theme.reducedMotion
 import com.nendo.argosy.ui.primitives.FocusIndicators
 import com.nendo.argosy.ui.primitives.argosyFocusIndicators
 import com.nendo.argosy.ui.theme.Dimens
@@ -48,10 +49,11 @@ internal fun QuickLoadHistoryStrip(
     modifier: Modifier = Modifier
 ) {
     val listState = rememberLazyListState()
+    val reduced = reducedMotion()
 
     LaunchedEffect(focusedIndex, entries.size) {
         if (focusedIndex != null && focusedIndex in entries.indices) {
-            listState.animateScrollToItemCentered(focusedIndex)
+            listState.animateScrollToItemCentered(focusedIndex, reduced)
         }
     }
 

@@ -460,4 +460,128 @@
         <item quantity="other">%d items</item>
     </plurals>
     <string name="home_tile_file_browser_decor_title">Choose a picture</string>
+
+    <!-- Columns home layout. Theme names head a column of games and are drawn in capitals. -->
+    <!-- Theme: games played most recently. Verb sense: carry on playing. -->
+    <string name="home_columns_theme_continue">Continue</string>
+    <!-- Theme: games played in this same week one year ago. -->
+    <string name="home_columns_theme_play_it_again">Play it again</string>
+    <!-- Theme: games a few hours from their ending. -->
+    <string name="home_columns_theme_almost_there">Almost there</string>
+    <!-- Theme: games the user's friends are playing or played recently. -->
+    <string name="home_columns_theme_friends_playing">Friends playing</string>
+    <!-- Theme: games added to the library this week. -->
+    <string name="home_columns_theme_just_added">Just added</string>
+    <!-- Theme: games played before and then left alone for months. -->
+    <string name="home_columns_theme_gathering_dust">Gathering dust</string>
+    <!-- Theme: the games marked as favourites. Noun, plural. -->
+    <string name="home_columns_theme_favorites">Favorites</string>
+    <!-- Theme fallback for a pinned collection whose name is missing. -->
+    <string name="home_columns_theme_pinned_collection">Pinned collection</string>
+    <!-- Theme fallback for the genre played most, when the genre has no name. -->
+    <string name="home_columns_theme_most_played_genre">Most played genre</string>
+    <!-- Media column: films and episodes stopped part way through. -->
+    <string name="home_columns_media_continue_watching">Continue watching</string>
+    <!-- Media column: the next episode of each show being watched. -->
+    <string name="home_columns_media_next_up">Next up</string>
+
+    <!-- Line under the Continue theme when every game in it is finished. -->
+    <string name="home_columns_reason_continue_none">Pick up where you left off</string>
+    <!-- Line under the Continue theme. %d is how many of its games are still unfinished. -->
+    <plurals name="home_columns_reason_continue">
+        <item quantity="one">%d in progress</item>
+        <item quantity="other">%d in progress</item>
+    </plurals>
+    <!-- Line under the Play it again theme. -->
+    <string name="home_columns_reason_play_it_again">A year ago this week</string>
+    <!-- Line under the Almost there theme. %d is a number of hours. -->
+    <plurals name="home_columns_reason_almost_there">
+        <item quantity="one">Under %d hour left</item>
+        <item quantity="other">Under %d hours left</item>
+    </plurals>
+    <!-- Line under the Friends playing theme. %d is how many of its games a friend is in right now. -->
+    <plurals name="home_columns_reason_friends">
+        <item quantity="one">%d playing now</item>
+        <item quantity="other">%d playing now</item>
+    </plurals>
+    <!-- Line under the Friends playing theme when no friend is in a game right now. -->
+    <string name="home_columns_reason_friends_recent">Played by friends lately</string>
+    <!-- Line under the Just added theme. -->
+    <string name="home_columns_reason_just_added">Added this week</string>
+    <!-- Line under the Gathering dust theme. %d is a number of days. -->
+    <plurals name="home_columns_reason_gathering_dust">
+        <item quantity="one">Untouched for %d day</item>
+        <item quantity="other">Untouched for %d days</item>
+    </plurals>
+    <!-- Line under the Favorites theme. %d is how many games are favourites. -->
+    <plurals name="home_columns_reason_favorites">
+        <item quantity="one">%d favorite</item>
+        <item quantity="other">%d favorites</item>
+    </plurals>
+    <!-- Line under a pinned collection. %d is how many games the collection holds. -->
+    <plurals name="home_columns_reason_collection">
+        <item quantity="one">%d game</item>
+        <item quantity="other">%d games</item>
+    </plurals>
+    <!-- Line under the theme named after the genre played most. -->
+    <string name="home_columns_reason_genre">Your most played genre</string>
+    <!-- Line under a platform's name. %d is how many games the platform has. -->
+    <plurals name="home_columns_platform_count">
+        <item quantity="one">%d game</item>
+        <item quantity="other">%d games</item>
+    </plurals>
+    <!-- Line under the Continue watching column. %d is how many titles it shows. -->
+    <plurals name="home_columns_reason_continue_watching">
+        <item quantity="one">%d in progress</item>
+        <item quantity="other">%d in progress</item>
+    </plurals>
+    <!-- Line under the Next up column. %d is how many episodes it shows. -->
+    <plurals name="home_columns_reason_next_up">
+        <item quantity="one">%d episode</item>
+        <item quantity="other">%d episodes</item>
+    </plurals>
+
+    <!-- Fact under a game in a column. %1$s is time played, %2$s is time left, both like "21h". -->
+    <string name="home_columns_fact_progress">%1$s in, about %2$s left</string>
+    <!-- Fact under a game in a column. %1$s is time played, like "14h". -->
+    <string name="home_columns_fact_played">%1$s played</string>
+    <!-- Fact under a game in a column. %1$s is time left to the ending, like "2h". -->
+    <string name="home_columns_fact_left">About %1$s left</string>
+    <!-- Fact under a game in a column. %1$s is a date, like "Nov 17". -->
+    <string name="home_columns_fact_last_played">Last played %1$s</string>
+    <!-- Fact under a game in a column that has never been started. -->
+    <string name="home_columns_fact_unplayed">Not played yet</string>
+
+    <!-- Progress panel beside the focused game. Label of the bar for time played against the main story length. Noun: the game's main story. Drawn in capitals. -->
+    <string name="home_columns_progress_story">Story</string>
+    <!-- Progress panel. %1$s is time played, %2$s is the main story length, both like "2h". The tilde means approximately. -->
+    <string name="home_columns_progress_story_of">%1$s of ~%2$s</string>
+    <!-- Progress panel, for a game not yet played. %1$s is the main story length, like "2h". -->
+    <string name="home_columns_progress_story_length">About %1$s long</string>
+    <!-- Progress panel. Label of the bar for achievements earned. Noun, plural. Drawn in capitals. -->
+    <string name="home_columns_progress_trophies">Trophies</string>
+    <!-- Progress panel. %1$d is achievements earned, %2$d is how many the game has. -->
+    <string name="home_columns_progress_trophies_count">%1$d / %2$d</string>
+    <!-- Progress panel. Caption after a strip of weekly play bars. %d is the number of weeks shown. -->
+    <plurals name="home_columns_activity_window">
+        <item quantity="one">last %d week</item>
+        <item quantity="other">last %d weeks</item>
+    </plurals>
+    <!-- Progress panel, in place of the weekly play bars for a game that has never been started. -->
+    <string name="home_columns_activity_unplayed">Not played yet</string>
+    <!-- Progress panel, in place of the weekly play bars when the game was not played lately. %d is a number of weeks. -->
+    <plurals name="home_columns_activity_idle">
+        <item quantity="one">No play in %d week</item>
+        <item quantity="other">No play in %d weeks</item>
+    </plurals>
+    <!-- Progress panel. %1$s is when the game was last played, like "2 days ago". %2$s is a device name, like "Odin3". -->
+    <string name="home_columns_last_played_on">Last played %1$s on %2$s</string>
+    <!-- Progress panel. %1$s is when the game was last played, like "2 days ago". -->
+    <string name="home_columns_last_played">Last played %1$s</string>
+    <!-- Description of the arrow that moves to the previous game in the focused column. -->
+    <string name="home_columns_previous_game">Previous game</string>
+    <!-- Description of the arrow that moves to the next game in the focused column. -->
+    <string name="home_columns_next_game">Next game</string>
+    <!-- Footer hint in the Columns layout. Noun: the triggers jump between themes, platforms and media. -->
+    <string name="home_footer_columns_sections">Sections</string>
 </resources>

@@ -51,6 +51,7 @@ import com.nendo.argosy.ui.theme.Dimens
 import com.nendo.argosy.ui.theme.LocalArgosyTheme
 import com.nendo.argosy.ui.theme.LocalBoxArtStyle
 import com.nendo.argosy.ui.theme.generated.ComponentDefaults
+import com.nendo.argosy.ui.theme.reducedMotion
 import com.nendo.argosy.ui.util.clickableNoFocus
 import com.nendo.argosy.util.formatPlayTime
 import com.nendo.argosy.util.formatRelativeTimeShort
@@ -72,8 +73,9 @@ fun MostPlayedList(
 ) {
     val context = LocalContext.current
     val listState = rememberLazyListState()
+    val reduced = reducedMotion()
     LaunchedEffect(focusedIndex, rows.size, isFocused) {
-        if (isFocused && focusedIndex in rows.indices) listState.animateScrollToItemCentered(focusedIndex)
+        if (isFocused && focusedIndex in rows.indices) listState.animateScrollToItemCentered(focusedIndex, reduced)
     }
     LazyColumn(
         state = listState,
@@ -144,12 +146,13 @@ fun RecentList(
         }
     }
     val listState = rememberLazyListState()
+    val reduced = reducedMotion()
     LaunchedEffect(focusedIndex, entries, isFocused) {
         if (!isFocused) return@LaunchedEffect
         val target = entries.indexOfFirst {
             (it is RecentEntry.Row && it.index == focusedIndex) || (it is RecentEntry.Hero && focusedIndex == 0)
         }
-        if (target >= 0) listState.animateScrollToItemCentered(target)
+        if (target >= 0) listState.animateScrollToItemCentered(target, reduced)
     }
     LazyColumn(
         state = listState,
@@ -310,8 +313,9 @@ fun QuickMenuCoverGrid(
     tileCaption: (@Composable (Int) -> Unit)? = null
 ) {
     val gridState = rememberLazyGridState()
+    val reduced = reducedMotion()
     LaunchedEffect(focusedIndex, games.size, isFocused) {
-        if (isFocused && focusedIndex in games.indices) gridState.animateScrollToItemCentered(focusedIndex)
+        if (isFocused && focusedIndex in games.indices) gridState.animateScrollToItemCentered(focusedIndex, reduced)
     }
     val aspectRatio = LocalBoxArtStyle.current.aspectRatio
     LazyVerticalGrid(

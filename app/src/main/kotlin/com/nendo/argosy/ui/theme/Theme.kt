@@ -1,5 +1,6 @@
 package com.nendo.argosy.ui.theme
 
+import android.animation.ValueAnimator
 import android.content.res.Configuration
 import android.graphics.Color as AndroidColor
 import androidx.compose.foundation.isSystemInDarkTheme
@@ -353,12 +354,8 @@ fun ArgosyDarkTheme(
 }
 
 /**
- * Provides the launcher's CompositionLocals (LocalUiScale, LocalLauncherTheme,
- * LocalBoxArtStyle, LocalFooterStyle). Both [ALauncherTheme] and the
- * secondary-display theme call into this -- without it, cover-art style
- * settings (corners, borders, glow, etc.) silently fall back to defaults on
- * the dual-screen home and library grid because [LocalBoxArtStyle] would
- * never be overridden there.
+ * Provides the launcher's CompositionLocals (LocalMotionTier, LocalUiScale, LocalLauncherTheme,
+ * LocalBoxArtStyle, LocalFooterStyle) for [ALauncherTheme] and the secondary-display theme.
  */
 @Composable
 fun ProvideArgosyThemeLocals(
@@ -428,7 +425,13 @@ fun ProvideArgosyThemeLocals(
         runCatching { backdropStampProvider(context) }.getOrNull()
     }
 
+    val motionTier = resolveMotionTier(
+        reduceAnimations = themeState.reduceAnimations,
+        animatorsEnabled = ValueAnimator.areAnimatorsEnabled()
+    )
+
     CompositionLocalProvider(
+        LocalMotionTier provides motionTier,
         LocalUiScale provides uiScaleConfig,
         LocalLauncherTheme provides launcherConfig,
         LocalArgosyTheme provides argosyThemeTokens(palette),

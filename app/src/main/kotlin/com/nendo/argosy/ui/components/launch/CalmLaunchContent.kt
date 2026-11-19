@@ -54,9 +54,8 @@ import com.nendo.argosy.ui.primitives.ArgosyIndeterminateProgressBar
 import com.nendo.argosy.ui.primitives.ArgosyProgressBar
 import com.nendo.argosy.ui.theme.Dimens
 import com.nendo.argosy.ui.theme.LocalLauncherTheme
-import com.nendo.argosy.ui.theme.LocalMotionTier
 import com.nendo.argosy.ui.theme.Motion
-import com.nendo.argosy.ui.theme.MotionTier
+import com.nendo.argosy.ui.theme.reducedMotion
 import com.nendo.argosy.ui.theme.generated.ComponentDefaults
 import com.nendo.argosy.util.formatBytes
 import kotlinx.coroutines.delay
@@ -74,12 +73,12 @@ fun CalmLaunchContent(
     onCancel: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val reducedMotion = LocalMotionTier.current == MotionTier.Reduced
+    val reduced = reducedMotion()
     var nowMs by remember { mutableLongStateOf(SystemClock.elapsedRealtime()) }
     val ui = LaunchOverlayState.from(
         progress = progress,
         nowMs = nowMs,
-        reducedMotion = reducedMotion,
+        reducedMotion = reduced,
         patienceMs = Defaults.patienceMs,
         reflowMs = Defaults.reflowMs,
         statusFadeMs = Defaults.statusFadeMs,

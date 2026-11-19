@@ -21,11 +21,10 @@ import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
 import androidx.compose.ui.unit.dp
 import com.nendo.argosy.ui.common.GradientColorExtractor
 import com.nendo.argosy.ui.theme.Dimens
-import com.nendo.argosy.ui.theme.LocalMotionTier
 import com.nendo.argosy.ui.theme.Motion
-import com.nendo.argosy.ui.theme.MotionTier
 import com.nendo.argosy.ui.theme.generated.ComponentDefaults
 import com.nendo.argosy.ui.theme.generated.MotionTokens
+import com.nendo.argosy.ui.theme.reducedMotion
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
@@ -59,7 +58,7 @@ private fun GradientColorExtractor.warmerArtColor(art: Bitmap): Color? {
 
 @Composable
 internal fun Modifier.launchBreathGlow(artColor: Color?, breathKey: Any?): Modifier {
-    val reduced = LocalMotionTier.current == MotionTier.Reduced
+    val reduced = reducedMotion()
     val color by animateColorAsState(
         targetValue = artColor ?: MaterialTheme.colorScheme.primary,
         animationSpec = tween(durationMillis = Defaults.fadeMs, easing = Motion.argosyEase),

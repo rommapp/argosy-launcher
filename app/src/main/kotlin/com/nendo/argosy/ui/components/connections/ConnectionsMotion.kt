@@ -26,15 +26,11 @@ import androidx.compose.ui.unit.dp
 import com.nendo.argosy.ui.theme.Dimens
 import com.nendo.argosy.ui.theme.LocalArgosyTheme
 import com.nendo.argosy.ui.theme.LocalLauncherTheme
-import com.nendo.argosy.ui.theme.LocalMotionTier
 import com.nendo.argosy.ui.theme.Motion
-import com.nendo.argosy.ui.theme.MotionTier
 import com.nendo.argosy.ui.theme.generated.ComponentDefaults
 import com.nendo.argosy.ui.theme.generated.MotionTokens
+import com.nendo.argosy.ui.theme.reducedMotion
 import kotlinx.coroutines.delay
-
-@Composable
-internal fun reducedMotion(): Boolean = LocalMotionTier.current == MotionTier.Reduced
 
 @Composable
 internal fun SearchPulseIcon(active: Boolean, content: @Composable () -> Unit) {

@@ -16,7 +16,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
-import com.nendo.argosy.ui.common.AlwaysCrossfadeFactory
+import com.nendo.argosy.ui.common.alwaysCrossfade
 import com.nendo.argosy.ui.common.backgroundBlurDp
 import com.nendo.argosy.ui.screens.media.FULL_PERCENT
 import com.nendo.argosy.ui.screens.media.MediaBackdropSettings
@@ -51,14 +51,15 @@ fun MediaBackdrop(
         ColorMatrix().apply { setToSaturation(settings.saturation.toFloat() / FULL_PERCENT) }
     }
     val blurRadius = settings.blur.backgroundBlurDp
-    val request = remember(imageUrl, context) {
+    val crossfade = alwaysCrossfade(ComponentDefaults.MediaBackdrop.crossfadeMs)
+    val request = remember(imageUrl, context, crossfade) {
         ImageRequest.Builder(context)
             .data(imageUrl)
             .size(
                 ComponentDefaults.MediaBackdrop.requestWidth,
                 ComponentDefaults.MediaBackdrop.requestHeight
             )
-            .transitionFactory(AlwaysCrossfadeFactory(ComponentDefaults.MediaBackdrop.crossfadeMs))
+            .transitionFactory(crossfade)
             .build()
     }
 

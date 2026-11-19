@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="building_library_title">आपकी लाइब्रेरी बन रही है</string>
+    <string name="building_library_getting_ready">तैयारी हो रही है</string>
+    <string name="building_library_syncing_platform">%1$s सिंक हो रहा है</string>
+    <string name="building_library_done">आपकी लाइब्रेरी तैयार है</string>
+    <string name="building_library_browse">पूरा होने तक ब्राउज़ करें</string>
+    <plurals name="building_library_games">
+        <item quantity="one">%2$,d में से %1$,d गेम</item>
+        <item quantity="other">%2$,d में से %1$,d गेम</item>
+    </plurals>
+    <plurals name="building_library_platforms">
+        <item quantity="one">%2$d में से %1$d प्लैटफ़ॉर्म</item>
+        <item quantity="other">%2$d में से %1$d प्लैटफ़ॉर्म</item>
+    </plurals>
+</resources>

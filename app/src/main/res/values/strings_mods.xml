@@ -1,0 +1,36 @@
+<resources>
+    <string name="gamedetail_mods_title">Mods</string>
+    <string name="gamedetail_mods_loading">Reading downloaded mod packages…</string>
+    <string name="gamedetail_mods_working">Applying changes. Keep Argosy open…</string>
+    <string name="gamedetail_mods_success">Changes completed.</string>
+    <string name="gamedetail_mods_settings_skipped">Bundled desktop emulator settings were skipped. Your Eden settings were preserved.</string>
+    <string name="gamedetail_mods_empty">Download a compatible mod ZIP through Files first, then return here to install it.</string>
+    <string name="gamedetail_mods_compatibility">Use a mod made for your installed game version. Close Eden before changing mods. Packages can contain desktop display settings; choose a suitable profile below.</string>
+    <string name="gamedetail_mods_status_recovery">Interrupted installation — restore required</string>
+    <string name="gamedetail_mods_status_installed">Installed</string>
+    <string name="gamedetail_mods_status_downloaded">Downloaded — ready to install</string>
+    <string name="gamedetail_mods_close">Close</string>
+    <string name="gamedetail_mods_back">Back</string>
+    <string name="gamedetail_mods_handheld">UltraCam handheld profile</string>
+    <string name="gamedetail_mods_handheld_description">16:9, 720p, dynamic FPS with a 60 FPS ceiling. Actual performance depends on your device.</string>
+    <string name="gamedetail_mods_original">Original package profile</string>
+    <string name="gamedetail_mods_original_description">Keep the supplied UltraCam settings, including any desktop resolution or aspect ratio.</string>
+    <string name="gamedetail_mods_acknowledgement">I closed Eden and checked that the mod matches my game version</string>
+    <string name="gamedetail_mods_install">Install package</string>
+    <string name="gamedetail_mods_update">Update installed package</string>
+    <string name="gamedetail_mods_remove">Remove installed package</string>
+    <!-- Restore refers to files changed by an interrupted mod installation, never game saves. -->
+    <string name="gamedetail_mods_restore">Restore interrupted installation</string>
+    <string name="gamedetail_mods_restore_description">Restore files recorded before the interrupted installation. Later changes to those files will be replaced.</string>
+    <string name="gamedetail_mods_error_title">This game needs a valid Switch title ID. Check Title ID in the game menu first.</string>
+    <string name="gamedetail_mods_error_access">Could not access Eden’s files. Open Eden once and check Argosy’s storage access before trying again.</string>
+    <string name="gamedetail_mods_error_conflict">Some destination files belong to another package or differ from this download. They were preserved.</string>
+    <string name="gamedetail_mods_error_modified">Installed files have changed since installation. They were preserved; resolve those changes before updating or removing this package.</string>
+    <string name="gamedetail_mods_error_recovery">An interrupted installation needs to be restored first. Open Mods for the game involved.</string>
+    <string name="gamedetail_mods_launch_blocked">Finish or restore the mod installation in Game → More → Mods before launching Switch games.</string>
+    <string name="gamedetail_mods_error_acknowledgement">Confirm that Eden is closed and the mod matches your game version before continuing.</string>
+    <string name="gamedetail_mods_error_emulator">Select an installed Eden emulator for this Switch game first.</string>
+    <string name="gamedetail_mods_error_state">The installation record could not be read safely. No further changes were made.</string>
+    <string name="gamedetail_mods_error_profile">This package does not contain the expected UltraCam settings. Try its original profile or a compatible package.</string>
+    <string name="gamedetail_mods_error_package">This package is incompatible or unsafe. Use a ZIP with matching load/title-ID mod folders and supported UltraCam config files. Custom Eden storage locations are not supported yet.</string>
+</resources>

@@ -1,0 +1,21 @@
+<p>Argosy is a gamepad-first launcher for Android retro handhelds such as Retroid, AYN, Anbernic and similar devices, built around a self-hosted <a href="https://github.com/rommapp/romm">RomM</a> server.</p>
+
+<p><b>Your RomM library on your handheld</b><br>
+Sync your library with its metadata, covers, descriptions and screenshots, and download games and BIOS files on demand. Games are sorted by platform as they arrive.</p>
+
+<p><b>Save sync</b><br>
+Saves and states sync with RomM when a session ends and before the next launch, with conflict prompts when two devices both played.</p>
+
+<p><b>Built-in emulation and external emulators</b><br>
+Play many systems with the built-in libretro cores, or launch standalone emulators such as RetroArch, Dolphin, DuckStation, Eden and others. Argosy picks the right one per platform or per game.</p>
+
+<p><b>Made for controllers</b><br>
+Every screen works with a d-pad and buttons. Touch works too.</p>
+
+<p><b>Dual-screen handhelds</b><br>
+On devices with two screens, the second screen shows details for what you have focused and a dashboard while you play.</p>
+
+<p><b>RetroAchievements</b><br>
+Track your achievements, including hardcore mode with the built-in cores.</p>
+
+<p>Argosy is free and open source under the GPL-3.0 license. Setup guides and troubleshooting are in the wiki: https://github.com/rommapp/argosy-launcher/wiki</p>

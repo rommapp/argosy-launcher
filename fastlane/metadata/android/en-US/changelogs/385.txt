@@ -1,0 +1,8 @@
+- New Columns Home layout, the default for new installs
+- Building your Library shows covers filling in while your library syncs
+- Reduced motion setting in Settings > Interface
+- Download progress on the Columns Home
+- Crashes are saved to the log and diagnostics exports
+- ARMSX2 memory cards set per game are used for save sync
+- Fixed the artwork caching icon on the status bar, quick menu and second screen
+- A save missing from disk is restored from the server before launch

@@ -211,6 +211,10 @@ When promoting beta to stable:
     and get the user's explicit approval of the exact wording in chat -- release-note
     wording requires that approval before ANY `gh release create` or `gh release edit`
     runs; showing a draft in chat is not approval
+11a. Write the approved notes to `fastlane/metadata/android/en-US/changelogs/<versionCode>.txt`
+    for IzzyOnDroid: plain `- ` bullets, no `##` headers, at most 500 characters (trim the
+    least important bullets, never reword an approved one beyond shortening). Commit it on main
+    before the push in step 13: `git commit -m "Changelog for vX.Y.Z"`.
 12. Review wiki with the user for this release (see "Wiki Review" below)
 13. Push commits and tags: `git push && git push --tags`
 14. Create GitHub release (asset paths MUST carry the full

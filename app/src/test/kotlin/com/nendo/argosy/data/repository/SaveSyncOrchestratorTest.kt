@@ -160,12 +160,14 @@ class SaveSyncOrchestratorTest {
         val checkpoint = makeServerSave(id = 3L, fileName = "checkpoint.srm", updatedAt = "2025-02-01T00:00:00Z")
         coEvery { mockApiClient.checkSavesForGame(1L, 200L) } returns listOf(olderAutosave, newestAutosave, checkpoint)
         coEvery { mockApiClient.downloadToCache(any(), any(), any()) } returns 10L
-        coEvery { mockApiClient.downloadSave(any(), any(), any(), any(), any()) } returns SaveSyncResult.Success()
+        coEvery { mockApiClient.downloadSave(any(), any(), any(), any(), any(), any()) } returns SaveSyncResult.Success()
 
         orchestrator.syncSavesForNewDownload(1L, 200L, "yuzu")
 
-        coVerify(exactly = 1) { mockApiClient.downloadSave(1L, "yuzu", "autosave", false, 2L) }
-        coVerify(exactly = 1) { mockApiClient.downloadSave(any(), any(), any(), any(), any()) }
+        coVerify(exactly = 1) {
+            mockApiClient.downloadSave(1L, "yuzu", "autosave", false, 2L, placeOutsideChannel = true)
+        }
+        coVerify(exactly = 1) { mockApiClient.downloadSave(any(), any(), any(), any(), any(), any()) }
         coVerify { mockApiClient.downloadToCache(1L, 1L, "autosave") }
         coVerify { mockApiClient.downloadToCache(3L, 1L, "checkpoint") }
         coVerify(exactly = 0) { mockApiClient.downloadToCache(2L, any(), any()) }
@@ -176,11 +178,13 @@ class SaveSyncOrchestratorTest {
     fun `syncSavesForNewDownload without an autosave places the newest save in its own slot`() = runTest {
         val serverSave = makeServerSave(id = 1L, fileName = "Ch\u00e9ckpoint.srm")
         coEvery { mockApiClient.checkSavesForGame(1L, 200L) } returns listOf(serverSave)
-        coEvery { mockApiClient.downloadSave(any(), any(), any(), any(), any()) } returns SaveSyncResult.Success()
+        coEvery { mockApiClient.downloadSave(any(), any(), any(), any(), any(), any()) } returns SaveSyncResult.Success()
 
         orchestrator.syncSavesForNewDownload(1L, 200L, "yuzu")
 
-        coVerify(exactly = 1) { mockApiClient.downloadSave(1L, "yuzu", "Ch\u00e9ckpoint", false, 1L) }
+        coVerify(exactly = 1) {
+            mockApiClient.downloadSave(1L, "yuzu", "Ch\u00e9ckpoint", false, 1L, placeOutsideChannel = true)
+        }
     }
 
     @Test
@@ -189,7 +193,7 @@ class SaveSyncOrchestratorTest {
         val head = makeServerSave(id = 2L, fileName = "Pok\u00e9mon Violet.srm", updatedAt = "2025-01-15T00:00:00Z")
         coEvery { mockApiClient.checkSavesForGame(1L, 200L) } returns listOf(older, head)
         coEvery { mockApiClient.downloadToCache(any(), any(), any()) } returns 10L
-        coEvery { mockApiClient.downloadSave(any(), any(), any(), any(), any()) } returns SaveSyncResult.Error("network error")
+        coEvery { mockApiClient.downloadSave(any(), any(), any(), any(), any(), any()) } returns SaveSyncResult.Error("network error")
 
         orchestrator.syncSavesForNewDownload(1L, 200L, "yuzu")
 
@@ -213,7 +217,7 @@ class SaveSyncOrchestratorTest {
         val entity1 = makeSyncEntity(id = 1L, gameId = 1L)
         val entity2 = makeSyncEntity(id = 2L, gameId = 1L, channelName = "slot1")
         coEvery { saveSyncDao.getPendingDownloads(any()) } returns listOf(entity1, entity2)
-        coEvery { mockApiClient.downloadSave(any(), any(), any(), any(), any()) } returns SaveSyncResult.Success()
+        coEvery { mockApiClient.downloadSave(any(), any(), any(), any(), any(), any()) } returns SaveSyncResult.Success()
 
         val result = orchestrator.downloadPendingServerSaves()
 
@@ -230,7 +234,7 @@ class SaveSyncOrchestratorTest {
         coEvery { saveSyncDao.getPendingDownloads(any()) } returns listOf(entity)
         every { fileAccessLayer.exists("/saves/game.srm") } returns true
         coEvery { saveCacheManager.calculateLocalSaveHash("/saves/game.srm", 1L, "yuzu") } returns "local-form"
-        coEvery { mockApiClient.downloadSave(any(), any(), any(), any(), any()) } returns SaveSyncResult.Success()
+        coEvery { mockApiClient.downloadSave(any(), any(), any(), any(), any(), any()) } returns SaveSyncResult.Success()
 
         val result = orchestrator.downloadPendingServerSaves()
 
@@ -252,7 +256,7 @@ class SaveSyncOrchestratorTest {
         val result = orchestrator.downloadPendingServerSaves()
 
         assertEquals(0, result)
-        coVerify(exactly = 0) { mockApiClient.downloadSave(any(), any(), any(), any(), any()) }
+        coVerify(exactly = 0) { mockApiClient.downloadSave(any(), any(), any(), any(), any(), any()) }
     }
 
     @Test
@@ -268,7 +272,7 @@ class SaveSyncOrchestratorTest {
         val result = orchestrator.downloadPendingServerSaves()
 
         assertEquals(0, result)
-        coVerify(exactly = 0) { mockApiClient.downloadSave(any(), any(), any(), any(), any()) }
+        coVerify(exactly = 0) { mockApiClient.downloadSave(any(), any(), any(), any(), any(), any()) }
         coVerify { saveSyncDao.upsert(match { it.id == 1L && it.syncStatus == SaveSyncEntity.STATUS_CONFLICT }) }
     }
 
@@ -280,7 +284,7 @@ class SaveSyncOrchestratorTest {
         } returns SaveLookup.Unreadable("/saves")
 
         assertEquals(0, orchestrator.downloadPendingServerSaves())
-        coVerify(exactly = 0) { mockApiClient.downloadSave(any(), any(), any(), any(), any()) }
+        coVerify(exactly = 0) { mockApiClient.downloadSave(any(), any(), any(), any(), any(), any()) }
     }
 
     @Test
@@ -291,7 +295,7 @@ class SaveSyncOrchestratorTest {
         } returns SaveLookup.Found("/saves/card.ps2")
         coEvery { saveCacheManager.probeLocalSave("/saves/card.ps2", 1L, "yuzu") } returns
             SaveCacheManager.LocalSaveProbe.Absent
-        coEvery { mockApiClient.downloadSave(any(), any(), any(), any(), any()) } returns SaveSyncResult.Success()
+        coEvery { mockApiClient.downloadSave(any(), any(), any(), any(), any(), any()) } returns SaveSyncResult.Success()
 
         assertEquals(1, orchestrator.downloadPendingServerSaves())
     }
@@ -305,7 +309,7 @@ class SaveSyncOrchestratorTest {
         } returns SaveLookup.Found("/saves/card.ps2")
         coEvery { saveCacheManager.probeLocalSave(any(), any(), any()) } returns
             SaveCacheManager.LocalSaveProbe.Present("local-form")
-        coEvery { mockApiClient.downloadSave(any(), any(), any(), any(), any()) } returns SaveSyncResult.Success()
+        coEvery { mockApiClient.downloadSave(any(), any(), any(), any(), any(), any()) } returns SaveSyncResult.Success()
 
         assertEquals(1, orchestrator.downloadPendingServerSaves())
     }
@@ -331,7 +335,7 @@ class SaveSyncOrchestratorTest {
         val result = orchestrator.downloadPendingServerSaves()
 
         assertEquals(0, result)
-        coVerify(exactly = 0) { mockApiClient.downloadSave(any(), any(), any(), any(), any()) }
+        coVerify(exactly = 0) { mockApiClient.downloadSave(any(), any(), any(), any(), any(), any()) }
         coVerify { saveSyncDao.upsert(match { it.id == 7L && it.syncStatus == SaveSyncEntity.STATUS_SYNCED }) }
     }
 
@@ -342,7 +346,7 @@ class SaveSyncOrchestratorTest {
             localUpdatedAt = java.time.Instant.parse("2026-06-01T00:01:24Z")
         )
         coEvery { saveSyncDao.getPendingDownloads(any()) } returns listOf(unknownTime)
-        coEvery { mockApiClient.downloadSave(any(), any(), any(), any(), any()) } returns SaveSyncResult.Success()
+        coEvery { mockApiClient.downloadSave(any(), any(), any(), any(), any(), any()) } returns SaveSyncResult.Success()
 
         assertEquals(1, orchestrator.downloadPendingServerSaves())
         coVerify(exactly = 0) { saveSyncDao.upsert(match { it.id == 7L && it.syncStatus == SaveSyncEntity.STATUS_SYNCED }) }
@@ -368,7 +372,7 @@ class SaveSyncOrchestratorTest {
             serverUpdatedAt = java.time.Instant.parse("2026-10-27T07:39:57Z")
         )
         coEvery { saveSyncDao.getPendingDownloads(any()) } returns listOf(legacySlot)
-        coEvery { mockApiClient.downloadSave(any(), any(), any(), any(), any()) } returns SaveSyncResult.Success()
+        coEvery { mockApiClient.downloadSave(any(), any(), any(), any(), any(), any()) } returns SaveSyncResult.Success()
 
         val result = orchestrator.downloadPendingServerSaves()
 
@@ -384,7 +388,7 @@ class SaveSyncOrchestratorTest {
         coEvery { saveSyncDao.getPendingDownloads(any()) } returns listOf(autosave)
 
         assertEquals(0, orchestrator.downloadPendingServerSaves())
-        coVerify(exactly = 0) { mockApiClient.downloadSave(any(), any(), any(), any(), any()) }
+        coVerify(exactly = 0) { mockApiClient.downloadSave(any(), any(), any(), any(), any(), any()) }
     }
 
     @Test
@@ -396,7 +400,7 @@ class SaveSyncOrchestratorTest {
         coEvery { saveSyncDao.getPendingDownloads(any()) } returns listOf(otherSlot)
 
         assertEquals(0, orchestrator.downloadPendingServerSaves())
-        coVerify(exactly = 0) { mockApiClient.downloadSave(any(), any(), any(), any(), any()) }
+        coVerify(exactly = 0) { mockApiClient.downloadSave(any(), any(), any(), any(), any(), any()) }
         coVerify(exactly = 0) { saveSyncDao.upsert(any()) }
     }
 
@@ -404,7 +408,7 @@ class SaveSyncOrchestratorTest {
     fun `downloadPendingServerSaves download failure does not count as success`() = runTest {
         val entity = makeSyncEntity(id = 1L, gameId = 1L)
         coEvery { saveSyncDao.getPendingDownloads(any()) } returns listOf(entity)
-        coEvery { mockApiClient.downloadSave(any(), any(), any(), any(), any()) } returns SaveSyncResult.Error("failed")
+        coEvery { mockApiClient.downloadSave(any(), any(), any(), any(), any(), any()) } returns SaveSyncResult.Error("failed")
 
         val result = orchestrator.downloadPendingServerSaves()
 
@@ -418,14 +422,14 @@ class SaveSyncOrchestratorTest {
         val result = orchestrator.downloadPendingServerSaves()
 
         assertEquals(0, result)
-        coVerify(exactly = 0) { mockApiClient.downloadSave(any(), any(), any(), any(), any()) }
+        coVerify(exactly = 0) { mockApiClient.downloadSave(any(), any(), any(), any(), any(), any()) }
     }
 
     @Test
     fun `downloadPendingServerSaves NeedsHardcoreResolution parks row and drops from queue`() = runTest {
         val entity = makeSyncEntity(id = 1L, gameId = 1L)
         coEvery { saveSyncDao.getPendingDownloads(any()) } returns listOf(entity)
-        coEvery { mockApiClient.downloadSave(any(), any(), any(), any(), any()) } returns
+        coEvery { mockApiClient.downloadSave(any(), any(), any(), any(), any(), any()) } returns
             SaveSyncResult.NeedsHardcoreResolution(
                 tempFilePath = "/tmp/save",
                 gameId = 1L,

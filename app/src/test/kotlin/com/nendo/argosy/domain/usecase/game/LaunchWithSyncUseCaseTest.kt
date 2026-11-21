@@ -201,7 +201,9 @@ class LaunchWithSyncUseCaseTest {
         coEvery {
             saveSyncRepository.preLaunchSyncForGame(gameId, rommId, builtinId, channelName = null, secureSaves = true)
         } returns PreLaunchSyncResult.ServerIsNewer(serverSaveTime, "autosave", 42L)
-        coEvery { saveSyncRepository.downloadSave(gameId, builtinId, "autosave", knownServerSaveId = 42L) } returns result
+        coEvery {
+            saveSyncRepository.downloadSave(gameId, builtinId, "autosave", knownServerSaveId = 42L, placeOutsideChannel = true)
+        } returns result
     }
 
     private fun builtinSettings(autoRestore: Boolean, preferServer: Boolean) {
@@ -265,8 +267,9 @@ class LaunchWithSyncUseCaseTest {
         coEvery {
             saveSyncRepository.preLaunchSyncForGame(gameId, rommId, emulatorId, channelName = null, secureSaves = true)
         } returns PreLaunchSyncResult.ServerIsNewer(serverSaveTime, "autosave", 42L)
-        coEvery { saveSyncRepository.downloadSave(gameId, emulatorId, "autosave", knownServerSaveId = 42L) } returns
-            SaveSyncResult.Success(rommSaveId = 42L, serverTimestamp = serverSaveTime)
+        coEvery {
+            saveSyncRepository.downloadSave(gameId, emulatorId, "autosave", knownServerSaveId = 42L, placeOutsideChannel = true)
+        } returns SaveSyncResult.Success(rommSaveId = 42L, serverTimestamp = serverSaveTime)
         builtinSettings(autoRestore = true, preferServer = true)
 
         useCase.invokeWithProgress(gameId).toList()
@@ -284,7 +287,7 @@ class LaunchWithSyncUseCaseTest {
             serverSaveId = 42L
         )
         coEvery {
-            saveSyncRepository.downloadSave(gameId, emulatorId, "autosave", knownServerSaveId = 42L)
+            saveSyncRepository.downloadSave(gameId, emulatorId, "autosave", knownServerSaveId = 42L, placeOutsideChannel = true)
         } returns SaveSyncResult.Success()
 
         val progress = useCase.invokeWithProgress(gameId).toList()

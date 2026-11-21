@@ -372,7 +372,8 @@ class GameSessionService : Service() {
             val observer = object : FileObserver(dir.absolutePath, CLOSE_WRITE or MOVED_TO or CREATE or MODIFY) {
                 override fun onEvent(event: Int, path: String?) {
                     if (path == null) return
-                    if (path.startsWith(".") || path.endsWith(".tmp") || path.endsWith(".bak")) return
+                    if (path.startsWith(".")) return
+                    if (path.substringAfterLast('.', "").lowercase() in IGNORED_FILE_EXTENSIONS) return
 
                     val elapsed = System.currentTimeMillis() - sessionStartTime
                     if (elapsed < STARTUP_COOLDOWN_MS) {
@@ -811,6 +812,7 @@ class GameSessionService : Service() {
         private const val CACHE_DEBOUNCE_MS = 250L
         private const val SAVE_SCREENSHOT_DELAY_MS = 250L
         private const val IN_PLACE_WRITE_QUIET_MS = 1_500L
+        private val IGNORED_FILE_EXTENSIONS = setOf("tmp", "bak", "rtc")
         private val IGNORED_DIRECTORY_PATTERNS = setOf(
             "cache",
             "shader",

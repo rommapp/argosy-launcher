@@ -59,7 +59,10 @@ import com.nendo.argosy.data.social.FriendActivity
 import com.nendo.argosy.domain.model.HomeColumnKind
 import com.nendo.argosy.ui.common.LocalRunningGames
 import com.nendo.argosy.ui.common.alwaysCrossfade
+import androidx.compose.foundation.border
+import androidx.compose.ui.graphics.SolidColor
 import com.nendo.argosy.ui.components.DownloadProgressBadge
+import com.nendo.argosy.ui.components.wideTileBorderBrush
 import com.nendo.argosy.ui.components.DownloadWaterFill
 import com.nendo.argosy.ui.components.GameStatusBadges
 import com.nendo.argosy.ui.common.rememberFileImageModel
@@ -79,7 +82,7 @@ import kotlin.math.ceil
 import kotlin.math.floor
 import kotlin.math.sign
 
-private val ColumnsFocus = FocusIndicators(ring = true, halo = true)
+private val ColumnsFocus = FocusIndicators(halo = true)
 
 /**
  * The art behind one column, sized to the column and framed on its subject by [frame]. The focused
@@ -242,7 +245,19 @@ private fun HomeColumnCard(
 ) {
     val item = column.items.getOrNull(itemIndex) ?: return
     val theme = LocalArgosyTheme.current
+    val boxArtStyle = LocalBoxArtStyle.current
     val shape = RoundedCornerShape(Dimens.radiusPanel)
+    val accent = boxArtStyle.accentColor ?: theme.focusAccent
+    val borderBrush = if (isFocused && showFocus && boxArtStyle.borderThicknessDp.value > 0f) {
+        wideTileBorderBrush(
+            style = boxArtStyle.borderStyle,
+            gradientColors = item.artworkGradient,
+            accent = accent,
+            secondary = boxArtStyle.secondaryColor ?: accent
+        ) ?: SolidColor(accent)
+    } else {
+        null
+    }
     val dim by animateFloatAsState(
         targetValue = when {
             isFocused -> 0f
@@ -265,9 +280,9 @@ private fun HomeColumnCard(
             .argosyFocusIndicators(
                 focused = isFocused && showFocus,
                 indicators = ColumnsFocus,
-                ringThickness = ComponentDefaults.HomeColumns.ringWidthDp.dp,
                 shape = shape
             )
+            .then(if (borderBrush != null) Modifier.border(boxArtStyle.borderThicknessDp, borderBrush, shape) else Modifier)
             .clip(shape)
             .background(theme.surfaceBase)
             .clickableNoFocus(onClick = onTap, onLongClick = onLongPress)

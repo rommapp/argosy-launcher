@@ -216,6 +216,13 @@ sealed class HomeRowItem {
         val logoPath: String? = null,
         val sourceFilter: String? = null
     ) : HomeRowItem()
+
+    val artworkGradient: Pair<androidx.compose.ui.graphics.Color, androidx.compose.ui.graphics.Color>?
+        get() = when (this) {
+            is Game -> game.gradientColors
+            is Media -> media.gradientColors
+            is ViewAll -> null
+        }
 }
 
 data class HomePlatformUi(

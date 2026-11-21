@@ -63,6 +63,12 @@ import androidx.compose.foundation.border
 import androidx.compose.ui.graphics.SolidColor
 import com.nendo.argosy.ui.components.DownloadProgressBadge
 import com.nendo.argosy.ui.components.wideTileBorderBrush
+import com.nendo.argosy.ui.components.boxart.GlassBorderOverlay
+import com.nendo.argosy.ui.components.boxart.glassColorFilterFor
+import com.nendo.argosy.ui.components.boxart.rememberShineSweep
+import com.nendo.argosy.ui.components.boxart.unbadgedGeometry
+import com.nendo.argosy.data.preferences.BoxArtBorderStyle
+import com.nendo.argosy.data.preferences.BoxArtInnerEffect
 import com.nendo.argosy.ui.components.DownloadWaterFill
 import com.nendo.argosy.ui.components.GameStatusBadges
 import com.nendo.argosy.ui.common.rememberFileImageModel
@@ -94,11 +100,7 @@ fun BoxScope.HomeColumnHero(item: HomeRowItem, frame: HomeHeroFrame) {
         val density = LocalDensity.current
         val heightPx = with(density) { maxHeight.roundToPx() }.coerceAtLeast(1)
         val widthPx = heightPx
-        val (path, isScreenshot) = when (item) {
-            is HomeRowItem.Game -> rememberHomeBackgroundArt(item.game)?.let { it.path to it.isScreenshot }
-            is HomeRowItem.Media -> (item.media.backdropUrl ?: item.media.posterUrl) to false
-            is HomeRowItem.ViewAll -> null
-        } ?: (null to false)
+        val (path, isScreenshot) = rememberColumnHeroArt(item)
         val context = LocalContext.current
         val model = rememberFileImageModel(path)
         val crossfade = alwaysCrossfade(ComponentDefaults.HomeColumns.heroCrossfadeMs)
@@ -129,6 +131,38 @@ fun BoxScope.HomeColumnHero(item: HomeRowItem, frame: HomeHeroFrame) {
             )
         }
     }
+}
+
+@Composable
+private fun rememberColumnHeroArt(item: HomeRowItem): Pair<String?, Boolean> = when (item) {
+    is HomeRowItem.Game -> rememberHomeBackgroundArt(item.game)?.let { it.path to it.isScreenshot }
+    is HomeRowItem.Media -> (item.media.backdropUrl ?: item.media.posterUrl) to false
+    is HomeRowItem.ViewAll -> null
+} ?: (null to false)
+
+@Composable
+private fun ColumnGlassBorder(item: HomeRowItem, accent: Color) {
+    val boxArtStyle = LocalBoxArtStyle.current
+    val density = LocalDensity.current
+    val (path, _) = rememberColumnHeroArt(item)
+    val geometry = unbadgedGeometry(
+        outerCornerRadiusPx = with(density) { Dimens.radiusPanel.toPx() },
+        frameWidthPx = with(density) { boxArtStyle.borderThicknessDp.toPx() },
+        oneDpPx = with(density) { Dimens.borderThin.toPx() },
+        innerEffect = boxArtStyle.innerEffect,
+        innerEffectWidth = boxArtStyle.innerEffectThicknessPx
+    )
+    val sweepOffset by rememberShineSweep(boxArtStyle.innerEffect == BoxArtInnerEffect.SHINE)
+    GlassBorderOverlay(
+        imageModel = rememberFileImageModel(path),
+        geometry = geometry,
+        glassColorFilter = glassColorFilterFor(
+            gradientColors = item.artworkGradient,
+            borderColor = accent,
+            glassBorderTintAlpha = boxArtStyle.glassBorderTintAlpha
+        ),
+        sweepOffset = sweepOffset
+    )
 }
 
 @Composable
@@ -248,7 +282,9 @@ private fun HomeColumnCard(
     val boxArtStyle = LocalBoxArtStyle.current
     val shape = RoundedCornerShape(Dimens.radiusPanel)
     val accent = boxArtStyle.accentColor ?: theme.focusAccent
-    val borderBrush = if (isFocused && showFocus && boxArtStyle.borderThicknessDp.value > 0f) {
+    val showBorder = isFocused && showFocus && boxArtStyle.borderThicknessDp.value > 0f
+    val glassBorder = showBorder && boxArtStyle.borderStyle == BoxArtBorderStyle.GLASS
+    val borderBrush = if (showBorder && !glassBorder) {
         wideTileBorderBrush(
             style = boxArtStyle.borderStyle,
             gradientColors = item.artworkGradient,
@@ -301,6 +337,7 @@ private fun HomeColumnCard(
             if (isFocused) focusedBackground(item, heroFrame) else HomeColumnHero(item, heroFrame)
         }
         Box(Modifier.matchParentSize().background(Color.Black.copy(alpha = dim)))
+        if (glassBorder) ColumnGlassBorder(item, accent)
         if (sliver) return@Box
         if (download.isShown) {
             DownloadProgressBadge(

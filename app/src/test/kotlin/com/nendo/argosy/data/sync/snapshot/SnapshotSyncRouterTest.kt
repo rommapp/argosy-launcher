@@ -42,11 +42,15 @@ class SnapshotSyncRouterTest {
     }
 
     @Test
-    fun `a download from an empty channel falls back to the server-save downloader`() = runBlocking {
+    fun `a download from an empty channel places a save outside it only when asked to`() = runBlocking {
         coEvery { engine.isEligible(5) } returns true
         coEvery { engine.keepServer(5, "argosy", null) } returns SnapshotSyncResult.Empty
 
-        org.junit.Assert.assertEquals(null, router.download(5, "argosy", null))
+        org.junit.Assert.assertEquals(null, router.download(5, "argosy", null, placeOutsideChannel = true))
+        org.junit.Assert.assertEquals(
+            com.nendo.argosy.data.repository.SaveSyncResult.Success(noOp = true),
+            router.download(5, "argosy", null)
+        )
     }
 
     @Test

@@ -357,13 +357,19 @@ class SaveSyncApiClient @Inject constructor(
         ?: saveUploader.get()
             .uploadCacheEntry(gameId, rommId, emulatorId, channelName, cacheFile, contentHash, overwrite, uploadedCacheId, ownerApi)
 
+    /**
+     * Places the server's save for [gameId]. On a snapshot server the channel's current is applied;
+     * a channel with nothing in it is left alone unless [placeOutsideChannel], which places
+     * [knownServerSaveId] or the newest server save outside any channel instead.
+     */
     suspend fun downloadSave(
         gameId: Long,
         emulatorId: String,
         channelName: String? = null,
         skipBackup: Boolean = false,
-        knownServerSaveId: Long? = null
-    ): SaveSyncResult = snapshotRouter.get().download(gameId, emulatorId, channelName)
+        knownServerSaveId: Long? = null,
+        placeOutsideChannel: Boolean = false
+    ): SaveSyncResult = snapshotRouter.get().download(gameId, emulatorId, channelName, placeOutsideChannel)
         ?: saveDownloader.get().downloadSave(gameId, emulatorId, channelName, skipBackup, knownServerSaveId)
 
     suspend fun downloadToCache(

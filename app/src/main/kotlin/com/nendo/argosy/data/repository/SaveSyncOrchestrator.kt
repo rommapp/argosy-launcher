@@ -625,7 +625,9 @@ class SaveSyncOrchestrator @Inject constructor(
         }
 
         val headSlot = slotOf[head]
-        val result = client.downloadSave(gameId, canonicalEmulatorId, headSlot, skipBackup = false, knownServerSaveId = head.id)
+        val result = client.downloadSave(
+            gameId, canonicalEmulatorId, headSlot, skipBackup = false, knownServerSaveId = head.id, placeOutsideChannel = true
+        )
         Logger.info(TAG, "syncSavesForNewDownload: gameId=$gameId | history cached=$cached of ${serverSaves.size - 1}, head saveId=${head.id} slot=$headSlot placed=${result::class.simpleName}")
         if (result is SaveSyncResult.Error) {
             Logger.error(TAG, "syncSavesForNewDownload: failed to place head '${head.fileName}': ${result.message}")

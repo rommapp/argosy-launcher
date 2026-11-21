@@ -302,7 +302,8 @@ class LaunchWithSyncUseCase @Inject constructor(
                 emit(SyncProgress.PreLaunch.Downloading(channelName))
                 val downloadResult = saveSyncRepository.downloadSave(
                     gameId, emulatorId, syncResult.channelName,
-                    knownServerSaveId = syncResult.serverSaveId
+                    knownServerSaveId = syncResult.serverSaveId,
+                    placeOutsideChannel = true
                 )
                 when (downloadResult) {
                     is SaveSyncResult.Success -> {

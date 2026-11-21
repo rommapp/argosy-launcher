@@ -95,10 +95,15 @@ class SnapshotSyncRouter @Inject constructor(
         return toSaveSyncResult(gameId, pushed)
     }
 
-    suspend fun download(gameId: Long, emulatorId: String, channelName: String?): SaveSyncResult? {
+    suspend fun download(
+        gameId: Long,
+        emulatorId: String,
+        channelName: String?,
+        placeOutsideChannel: Boolean = false
+    ): SaveSyncResult? {
         if (!engine.isEligible(gameId)) return null
         val kept = engine.keepServer(gameId, emulatorId, channelName)
-        if (kept == SnapshotSyncResult.Empty) return null
+        if (kept == SnapshotSyncResult.Empty && placeOutsideChannel) return null
         return toSaveSyncResult(gameId, kept)
     }
 

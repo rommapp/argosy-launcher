@@ -298,8 +298,10 @@ class SaveSyncRepository @Inject constructor(
         emulatorId: String,
         channelName: String? = null,
         skipBackup: Boolean = false,
-        knownServerSaveId: Long? = null
-    ): SaveSyncResult = apiClient.downloadSave(gameId, emulatorId, channelName, skipBackup, knownServerSaveId)
+        knownServerSaveId: Long? = null,
+        placeOutsideChannel: Boolean = false
+    ): SaveSyncResult =
+        apiClient.downloadSave(gameId, emulatorId, channelName, skipBackup, knownServerSaveId, placeOutsideChannel)
 
     suspend fun downloadToCache(serverSaveId: Long, gameId: Long, channelName: String?): Long? =
         apiClient.downloadToCache(serverSaveId, gameId, channelName)

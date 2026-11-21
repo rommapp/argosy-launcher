@@ -1,0 +1,8 @@
+- New Columns Home layout, the default for new installs
+- Run several built-in games at once and switch between them from Resume
+- Stream games you haven't downloaded from RomM's emulator streaming
+- Redesigned Quick Menu and Search, plus Settings search
+- Rebuilt first-run setup
+- Controller-driven on-screen keyboard, with paste
+- Support RomM 5.5 snapshot save sync
+- Audio Latency setting for the built-in emulator

@@ -287,6 +287,11 @@
     <string name="settings_displays_display_roles_auto">ऑटो</string>
     <string name="settings_displays_display_roles_standard">कम्पैनियन स्क्रीन</string>
     <string name="settings_displays_display_roles_swapped">मुख्य स्क्रीन</string>
+    <string name="settings_displays_navigation_menu_title">नेविगेशन मेन्यू</string>
+    <string name="settings_displays_navigation_menu_subtitle">वह स्क्रीन जिस पर मेन्यू खुलता है। कंट्रोलर कंट्रोल स्क्रीन को ही चलाता रहता है।</string>
+    <string name="settings_displays_navigation_menu_control">कंट्रोल स्क्रीन</string>
+    <string name="settings_displays_navigation_menu_presentation">प्रेज़ेंटेशन स्क्रीन</string>
+    <string name="settings_displays_navigation_menu_screen">स्क्रीन %1$d</string>
 
     <string name="settings_displays_screens_title">स्क्रीन व्यवस्था</string>
     <string name="settings_displays_screens_subtitle">हर जुड़ी स्क्रीन को एक काम सौंपें</string>

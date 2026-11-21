@@ -148,6 +148,7 @@ class ArgosyActivity : ComponentActivity() {
     @Inject lateinit var screenCaptureManager: ScreenCaptureManager
     @Inject lateinit var displayAffinityHelper: DisplayAffinityHelper
     @Inject lateinit var permissionHelper: com.nendo.argosy.util.PermissionHelper
+    @Inject lateinit var slotRegistry: com.nendo.argosy.libretro.slot.SlotRegistry
     @Inject lateinit var gameActionsDelegate: GameActionsDelegate
     @Inject lateinit var platformSyncQueue: com.nendo.argosy.data.sync.PlatformSyncQueue
     @Inject lateinit var gameThemeAudioCoordinator: com.nendo.argosy.ui.audio.GameThemeAudioCoordinator
@@ -326,6 +327,7 @@ class ArgosyActivity : ComponentActivity() {
                 steamRepository = steamRepository,
                 playSessionTracker = playSessionTracker,
                 permissionHelper = permissionHelper,
+                slotRegistry = slotRegistry,
                 repairImageCacheUseCase = repairImageCacheUseCase,
                 downloadFileStatusRepository = downloadFileStatusRepository,
                 gradientExtractionDelegate = gradientExtractionDelegate,

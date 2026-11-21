@@ -12,7 +12,10 @@ import com.nendo.argosy.domain.model.GridAxis
 import com.nendo.argosy.domain.model.isAtStepBound
 import com.nendo.argosy.domain.model.stepIndex
 import com.nendo.argosy.domain.model.stepped
+import com.nendo.argosy.domain.model.HomeColumnCount
+import com.nendo.argosy.domain.model.HomeColumnTheme
 import com.nendo.argosy.domain.model.HomeFocusPosition
+import com.nendo.argosy.ui.screens.home.fixedSlots
 import com.nendo.argosy.domain.model.HomeGridKind
 import com.nendo.argosy.domain.model.HomeLayoutKind
 import com.nendo.argosy.domain.model.MAX_LANE_COUNT
@@ -31,7 +34,7 @@ import kotlin.math.roundToInt
  * are the exception: they say which rows home offers rather than how one layout draws, so they are
  * listed by [homeRailFields] and a host places them among its own content rows.
  */
-enum class HomeLayoutSettingField {
+enum class HomeLayoutSettingField(val columnTheme: HomeColumnTheme? = null) {
     ROW_ALIGNMENT,
     FOCUS_POSITION,
     INVERTED,
@@ -48,10 +51,26 @@ enum class HomeLayoutSettingField {
     CUSTOM_GRID_EMPTY_SLOTS,
     CUSTOM_GRID_PERSIST_PAGES,
     CUSTOM_GRID_AUTO_FIT,
+    COLUMNS_COUNT,
+    COLUMNS_INFO_BAND,
+    COLUMNS_SHOW_ALL,
+    COLUMNS_THEME_CONTINUE(HomeColumnTheme.CONTINUE),
+    COLUMNS_THEME_PLAY_IT_AGAIN(HomeColumnTheme.PLAY_IT_AGAIN),
+    COLUMNS_THEME_ALMOST_THERE(HomeColumnTheme.ALMOST_THERE),
+    COLUMNS_THEME_FRIENDS_PLAYING(HomeColumnTheme.FRIENDS_PLAYING),
+    COLUMNS_THEME_JUST_ADDED(HomeColumnTheme.JUST_ADDED),
+    COLUMNS_THEME_GATHERING_DUST(HomeColumnTheme.GATHERING_DUST),
+    COLUMNS_THEME_FAVORITES(HomeColumnTheme.FAVORITES),
+    COLUMNS_THEME_PINNED_COLLECTION(HomeColumnTheme.PINNED_COLLECTION),
+    COLUMNS_THEME_MOST_PLAYED_GENRE(HomeColumnTheme.MOST_PLAYED_GENRE),
+    COLUMNS_PLATFORMS,
     RAIL_MEDIA_LIBRARIES,
     RAIL_CONTINUE_WATCHING,
     RAIL_NEXT_UP
 }
+
+private val COLUMN_THEME_FIELDS: List<HomeLayoutSettingField> =
+    HomeLayoutSettingField.entries.filter { it.columnTheme != null }
 
 /**
  * The media row toggles, in render order. Kept apart from the per-layout lists because which rows
@@ -87,6 +106,21 @@ val HomeLayoutSettingField.titleRes: Int
         HomeLayoutSettingField.CUSTOM_GRID_EMPTY_SLOTS -> R.string.ui_home_layout_custom_grid_empty_slots
         HomeLayoutSettingField.CUSTOM_GRID_PERSIST_PAGES -> R.string.ui_home_layout_custom_grid_persist_pages
         HomeLayoutSettingField.CUSTOM_GRID_AUTO_FIT -> R.string.ui_home_layout_custom_grid_auto_fit
+        HomeLayoutSettingField.COLUMNS_COUNT -> R.string.ui_home_layout_columns_count
+        HomeLayoutSettingField.COLUMNS_INFO_BAND -> R.string.ui_home_layout_columns_info_band
+        HomeLayoutSettingField.COLUMNS_SHOW_ALL -> R.string.ui_home_layout_columns_show_all_games
+        HomeLayoutSettingField.COLUMNS_THEME_CONTINUE -> R.string.ui_home_layout_columns_theme_continue
+        HomeLayoutSettingField.COLUMNS_THEME_PLAY_IT_AGAIN -> R.string.ui_home_layout_columns_theme_play_it_again
+        HomeLayoutSettingField.COLUMNS_THEME_ALMOST_THERE -> R.string.ui_home_layout_columns_theme_almost_there
+        HomeLayoutSettingField.COLUMNS_THEME_FRIENDS_PLAYING -> R.string.ui_home_layout_columns_theme_friends_playing
+        HomeLayoutSettingField.COLUMNS_THEME_JUST_ADDED -> R.string.ui_home_layout_columns_theme_just_added
+        HomeLayoutSettingField.COLUMNS_THEME_GATHERING_DUST -> R.string.ui_home_layout_columns_theme_gathering_dust
+        HomeLayoutSettingField.COLUMNS_THEME_FAVORITES -> R.string.ui_home_layout_columns_theme_favorites
+        HomeLayoutSettingField.COLUMNS_THEME_PINNED_COLLECTION ->
+            R.string.ui_home_layout_columns_theme_pinned_collection
+        HomeLayoutSettingField.COLUMNS_THEME_MOST_PLAYED_GENRE ->
+            R.string.ui_home_layout_columns_theme_most_played_genre
+        HomeLayoutSettingField.COLUMNS_PLATFORMS -> R.string.ui_home_layout_columns_platforms
         HomeLayoutSettingField.RAIL_MEDIA_LIBRARIES -> R.string.ui_home_layout_rail_libraries
         HomeLayoutSettingField.RAIL_CONTINUE_WATCHING -> R.string.ui_home_layout_rail_continue_watching
         HomeLayoutSettingField.RAIL_NEXT_UP -> R.string.ui_home_layout_rail_next_up
@@ -124,7 +158,11 @@ fun homeLayoutFieldsFor(kind: HomeLayoutKind): List<HomeLayoutSettingField> = wh
         HomeLayoutSettingField.CUSTOM_GRID_PERSIST_PAGES,
         HomeLayoutSettingField.CUSTOM_GRID_AUTO_ADD
     )
-    HomeLayoutKind.COLUMNS -> emptyList()
+    HomeLayoutKind.COLUMNS -> listOf(
+        HomeLayoutSettingField.COLUMNS_COUNT,
+        HomeLayoutSettingField.COLUMNS_INFO_BAND,
+        HomeLayoutSettingField.COLUMNS_SHOW_ALL
+    ) + COLUMN_THEME_FIELDS + HomeLayoutSettingField.COLUMNS_PLATFORMS
 }
 
 /**
@@ -198,6 +236,24 @@ fun adjustHomeLayoutField(
             settings.copy(customGrid = settings.customGrid.copy(persistBlankPages = direction > 0))
         HomeLayoutSettingField.CUSTOM_GRID_AUTO_FIT ->
             settings.copy(customGrid = settings.customGrid.copy(autoFit = direction > 0))
+        HomeLayoutSettingField.COLUMNS_COUNT ->
+            settings.copy(columns = settings.columns.copy(columnCount = step(settings.columns.columnCount, direction)))
+        HomeLayoutSettingField.COLUMNS_INFO_BAND ->
+            settings.copy(columns = settings.columns.copy(showInfoBand = direction > 0))
+        HomeLayoutSettingField.COLUMNS_SHOW_ALL ->
+            settings.copy(columns = settings.columns.copy(showAllGames = direction > 0))
+        HomeLayoutSettingField.COLUMNS_THEME_CONTINUE,
+        HomeLayoutSettingField.COLUMNS_THEME_PLAY_IT_AGAIN,
+        HomeLayoutSettingField.COLUMNS_THEME_ALMOST_THERE,
+        HomeLayoutSettingField.COLUMNS_THEME_FRIENDS_PLAYING,
+        HomeLayoutSettingField.COLUMNS_THEME_JUST_ADDED,
+        HomeLayoutSettingField.COLUMNS_THEME_GATHERING_DUST,
+        HomeLayoutSettingField.COLUMNS_THEME_FAVORITES,
+        HomeLayoutSettingField.COLUMNS_THEME_PINNED_COLLECTION,
+        HomeLayoutSettingField.COLUMNS_THEME_MOST_PLAYED_GENRE ->
+            settings.withColumnTheme(field, shown = direction > 0)
+        HomeLayoutSettingField.COLUMNS_PLATFORMS ->
+            settings.copy(columns = settings.columns.copy(showPlatformColumns = direction > 0))
         HomeLayoutSettingField.RAIL_MEDIA_LIBRARIES ->
             settings.copy(rails = settings.rails.copy(showLibraries = direction > 0))
         HomeLayoutSettingField.RAIL_CONTINUE_WATCHING ->
@@ -221,6 +277,8 @@ fun isHomeLayoutFieldAtBound(
         settings.autoGrid.scrollAxis.isAtEnd(direction, HomeScrollAxis.entries.size)
     HomeLayoutSettingField.CUSTOM_GRID_AUTO_ADD ->
         settings.customGrid.autoAdd.isAtEnd(direction, HomeTileAutoAdd.entries.size)
+    HomeLayoutSettingField.COLUMNS_COUNT ->
+        settings.columns.columnCount.isAtEnd(direction, HomeColumnCount.entries.size)
     else -> false
 }
 
@@ -256,6 +314,24 @@ fun toggleHomeLayoutField(settings: HomeLayoutSettings, field: HomeLayoutSetting
             )
         HomeLayoutSettingField.CUSTOM_GRID_AUTO_FIT ->
             settings.copy(customGrid = settings.customGrid.copy(autoFit = !settings.customGrid.autoFit))
+        HomeLayoutSettingField.COLUMNS_INFO_BAND ->
+            settings.copy(columns = settings.columns.copy(showInfoBand = !settings.columns.showInfoBand))
+        HomeLayoutSettingField.COLUMNS_SHOW_ALL ->
+            settings.copy(columns = settings.columns.copy(showAllGames = !settings.columns.showAllGames))
+        HomeLayoutSettingField.COLUMNS_THEME_CONTINUE,
+        HomeLayoutSettingField.COLUMNS_THEME_PLAY_IT_AGAIN,
+        HomeLayoutSettingField.COLUMNS_THEME_ALMOST_THERE,
+        HomeLayoutSettingField.COLUMNS_THEME_FRIENDS_PLAYING,
+        HomeLayoutSettingField.COLUMNS_THEME_JUST_ADDED,
+        HomeLayoutSettingField.COLUMNS_THEME_GATHERING_DUST,
+        HomeLayoutSettingField.COLUMNS_THEME_FAVORITES,
+        HomeLayoutSettingField.COLUMNS_THEME_PINNED_COLLECTION,
+        HomeLayoutSettingField.COLUMNS_THEME_MOST_PLAYED_GENRE ->
+            settings.withColumnTheme(field, shown = !settings.showsColumnTheme(field))
+        HomeLayoutSettingField.COLUMNS_PLATFORMS ->
+            settings.copy(
+                columns = settings.columns.copy(showPlatformColumns = !settings.columns.showPlatformColumns)
+            )
         HomeLayoutSettingField.RAIL_MEDIA_LIBRARIES ->
             settings.copy(rails = settings.rails.copy(showLibraries = !settings.rails.showLibraries))
         HomeLayoutSettingField.RAIL_CONTINUE_WATCHING ->
@@ -412,6 +488,48 @@ fun HomeLayoutSettingRow(
             isFocused = isFocused,
             onToggle = { onToggle() }
         )
+        HomeLayoutSettingField.COLUMNS_COUNT -> SegmentedPreference(
+            title = stringResource(field.titleRes),
+            options = HomeColumnCount.entries.map { columnCountLabel(it) },
+            selectedIndex = settings.columns.columnCount.ordinal,
+            isFocused = isFocused,
+            onSelect = { onAdjust(it - settings.columns.columnCount.ordinal) }
+        )
+        HomeLayoutSettingField.COLUMNS_INFO_BAND -> SwitchPreference(
+            title = stringResource(field.titleRes),
+            subtitle = stringResource(R.string.ui_home_layout_columns_info_band_subtitle),
+            isEnabled = settings.columns.showInfoBand,
+            isFocused = isFocused,
+            onToggle = { onToggle() }
+        )
+        HomeLayoutSettingField.COLUMNS_SHOW_ALL -> SwitchPreference(
+            title = stringResource(field.titleRes),
+            subtitle = stringResource(R.string.ui_home_layout_columns_show_all_games_subtitle),
+            isEnabled = settings.columns.showAllGames,
+            isFocused = isFocused,
+            onToggle = { onToggle() }
+        )
+        HomeLayoutSettingField.COLUMNS_THEME_CONTINUE,
+        HomeLayoutSettingField.COLUMNS_THEME_PLAY_IT_AGAIN,
+        HomeLayoutSettingField.COLUMNS_THEME_ALMOST_THERE,
+        HomeLayoutSettingField.COLUMNS_THEME_FRIENDS_PLAYING,
+        HomeLayoutSettingField.COLUMNS_THEME_JUST_ADDED,
+        HomeLayoutSettingField.COLUMNS_THEME_GATHERING_DUST,
+        HomeLayoutSettingField.COLUMNS_THEME_FAVORITES,
+        HomeLayoutSettingField.COLUMNS_THEME_PINNED_COLLECTION,
+        HomeLayoutSettingField.COLUMNS_THEME_MOST_PLAYED_GENRE -> SwitchPreference(
+            title = stringResource(field.titleRes),
+            isEnabled = settings.showsColumnTheme(field),
+            isFocused = isFocused,
+            onToggle = { onToggle() }
+        )
+        HomeLayoutSettingField.COLUMNS_PLATFORMS -> SwitchPreference(
+            title = stringResource(field.titleRes),
+            subtitle = stringResource(R.string.ui_home_layout_columns_platforms_subtitle),
+            isEnabled = settings.columns.showPlatformColumns,
+            isFocused = isFocused,
+            onToggle = { onToggle() }
+        )
         HomeLayoutSettingField.RAIL_MEDIA_LIBRARIES -> SwitchPreference(
             title = stringResource(field.titleRes),
             subtitle = stringResource(R.string.ui_home_layout_rail_libraries_subtitle),
@@ -456,6 +574,18 @@ private fun GridAxisStepperRow(
         },
         onAdjust = { delta -> onAdjust(if (delta < 0) -1 else 1) }
     )
+}
+
+@Composable
+private fun columnCountLabel(count: HomeColumnCount): String =
+    count.fixedSlots?.toString() ?: stringResource(R.string.ui_home_layout_columns_count_auto)
+
+private fun HomeLayoutSettings.showsColumnTheme(field: HomeLayoutSettingField): Boolean =
+    field.columnTheme?.let { columns.showsTheme(it) } ?: false
+
+private fun HomeLayoutSettings.withColumnTheme(field: HomeLayoutSettingField, shown: Boolean): HomeLayoutSettings {
+    val theme = field.columnTheme ?: return this
+    return copy(columns = columns.withTheme(theme, shown))
 }
 
 @Composable

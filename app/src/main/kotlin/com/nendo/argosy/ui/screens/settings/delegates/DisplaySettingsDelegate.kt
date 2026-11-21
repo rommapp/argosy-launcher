@@ -141,6 +141,10 @@ class DisplaySettingsDelegate @Inject constructor(
         _state.update { it.copy(launchTargetScreens = screens, launchTargetSetCount = setCount) }
     }
 
+    fun setNavigationMenu(choices: com.nendo.argosy.ui.screens.settings.NavigationMenuChoices) {
+        _state.update { it.copy(navigationMenu = choices) }
+    }
+
     fun setThemeMode(scope: CoroutineScope, mode: ThemeMode) {
         scope.launch {
             preferencesRepository.setThemeMode(mode)

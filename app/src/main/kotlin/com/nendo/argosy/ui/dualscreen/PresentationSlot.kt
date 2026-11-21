@@ -78,6 +78,13 @@ sealed interface PresentationSlot {
         val state: com.nendo.argosy.ui.quickmenu.QuickMenuPresentationState
     ) : PresentationSlot
 
+    data class NavigationMenu(
+        val owner: SlotOwner,
+        val items: List<com.nendo.argosy.ui.DrawerItem>,
+        val currentRoute: String?,
+        val drawerState: com.nendo.argosy.ui.DrawerState
+    ) : PresentationSlot
+
     data class InGame(
         val state: com.nendo.argosy.hardware.CompanionInGameState,
         val achievements: List<com.nendo.argosy.core.game.AchievementUi>

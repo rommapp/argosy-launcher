@@ -71,6 +71,8 @@ class SnapshotSyncEngineTest {
         every { apiClient.getCapabilities() } returns RomMCapabilities.from("5.5.0", snapshotsEnabled = true)
         every { apiClient.getApi() } returns api
         every { apiClient.getDeviceId() } returns DEVICE
+        coEvery { apiClient.resolveCoreForGame(any(), any()) } returns null
+        coEvery { apiClient.discoverSavePath(any(), any(), any(), any(), any(), any(), any(), any()) } returns null
         coEvery { gameDao.getById(GAME_ID) } returns game
         coEvery { prefs.getRommUserId() } returns 3L
         coEvery { sigil.route(GAME_ID, EMULATOR) } returns SigilRoute("genesis_plus_gx", "/saves", null, null)
@@ -239,6 +241,26 @@ class SnapshotSyncEngineTest {
         })
 
     @Test
+    fun `a save still as another client's server save placed it is not pushed into an empty channel`(): Unit = runBlocking {
+        coEvery { channelDao.get(3L, GAME_ID, "default") } returns null
+        coEvery { api.listChannels(listOf(FILE_ID)) } returns Response.success(emptyList())
+        coEvery { apiClient.discoverSavePath(any(), any(), any(), any(), any(), any(), any(), any()) } returns "/saves/Crystal.srm"
+        coEvery { cacheManager.isUnchangedServerPlacement(GAME_ID, EMULATOR, null, "/saves/Crystal.srm") } returns true
+
+        assertEquals(SnapshotSyncResult.UpToDate, engine.sync(GAME_ID, EMULATOR, null))
+        coVerify(exactly = 0) { api.pushSnapshot(any(), any()) }
+    }
+
+    @Test
+    fun `no local save, nothing held and an empty channel reads as empty, not up to date`() = runBlocking {
+        coEvery { sigil.collect(GAME_ID, EMULATOR, any()) } returns SigilCollect.Absent
+        coEvery { channelDao.get(3L, GAME_ID, "default") } returns null
+        coEvery { api.listChannels(listOf(FILE_ID)) } returns Response.success(emptyList())
+
+        assertEquals(SnapshotSyncResult.Empty, engine.sync(GAME_ID, EMULATOR, null))
+    }
+
+    @Test
     fun `a first push joins the file's empty default channel instead of creating one`() = runBlocking {
         coEvery { channelDao.get(3L, GAME_ID, "default") } returns null
         coEvery { api.listChannels(listOf(FILE_ID)) } returns Response.success(listOf(
@@ -386,6 +408,19 @@ class SnapshotSyncEngineTest {
         engine.pushCached(GAME_ID, EMULATOR, null, file, onTopOfCurrent = false, cacheId = 62L)
 
         assertEquals("native", manifestOf(pushes.single()).getJSONObject("save").getString("format"))
+    }
+
+    @Test
+    fun `a cached save already current on the server is not pushed again`(): Unit = runBlocking {
+        val pushes = stubDirtyDefaultChannel()
+        coEvery { api.listChannels(listOf(FILE_ID)) } returns channelsOf(listOf(snapshot(41, "md5-of-1")))
+        coEvery { saveCacheDao.getById(60L) } returns cachedRow(60L, SaveCacheEntity.FORMAT_NATIVE)
+        val file = tempDir.newFile("save_precache_46.srm").apply { writeBytes(byteArrayOf(9)) }
+
+        val result = engine.pushCached(GAME_ID, EMULATOR, null, file, onTopOfCurrent = true, cacheId = 60L)
+
+        assertEquals(SnapshotSyncResult.UpToDate, result)
+        assertTrue(pushes.isEmpty())
     }
 
     @Test

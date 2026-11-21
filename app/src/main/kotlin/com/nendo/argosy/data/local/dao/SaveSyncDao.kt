@@ -155,8 +155,8 @@ interface SaveSyncDao {
     @Query("UPDATE save_sync SET lastUploadedHash = :hash WHERE id = :id")
     suspend fun updateLastUploadedHash(id: Long, hash: String)
 
-    @Query("UPDATE save_sync SET localContentHash = :hash WHERE id = :id")
-    suspend fun updateLocalContentHash(id: Long, hash: String)
+    @Query("UPDATE save_sync SET localContentHash = :hash, localIdentityHash = :identityHash WHERE id = :id")
+    suspend fun updateLocalContentHash(id: Long, hash: String, identityHash: String? = null)
 
     @Query("UPDATE save_sync SET userSelectedRestorePoint = 1, userSelectedRestorePointAt = :nowMs WHERE id = :id")
     suspend fun setUserSelectedRestorePoint(id: Long, nowMs: Long)

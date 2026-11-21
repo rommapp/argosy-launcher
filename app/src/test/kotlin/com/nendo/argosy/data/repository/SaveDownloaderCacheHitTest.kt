@@ -174,7 +174,7 @@ class SaveDownloaderCacheHitTest {
 
         assertEquals(cachedId, cacheId)
         coVerify(exactly = 0) { api.getSaveWithDevice(any(), any()) }
-        coVerify(exactly = 0) { saveCacheManager.cacheServerDownload(any(), any(), any(), any(), any(), any(), any(), any(), any()) }
+        coVerify(exactly = 0) { saveCacheManager.cacheServerDownload(any(), any(), any(), any(), any(), any(), any(), any(), any(), any()) }
     }
 
     @Test

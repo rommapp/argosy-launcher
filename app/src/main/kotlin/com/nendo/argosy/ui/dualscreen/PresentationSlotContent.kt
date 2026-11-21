@@ -262,6 +262,13 @@ private fun PresentationSlotScene(
                         ?.tapPresentation(PresentationTap(slot.owner, 0))
                 }
             )
+            is PresentationSlot.NavigationMenu -> com.nendo.argosy.ui.components.MainDrawerPresentation(
+                slot = slot,
+                onTap = { index ->
+                    com.nendo.argosy.DualScreenManagerHolder.instance
+                        ?.tapPresentation(PresentationTap(slot.owner, index))
+                }
+            )
             is PresentationSlot.InGame -> {
                 val manager = com.nendo.argosy.DualScreenManagerHolder.instance ?: return@Box
                 val bar = rememberInGameAppBarState()
@@ -295,7 +302,8 @@ private fun dashboardActions(manager: com.nendo.argosy.DualScreenManager) =
         onScreenshot = { manager.sessionQuickActions?.screenshot() },
         onOpenCheats = { manager.sessionQuickActions?.openCheats() },
         onOpenSettings = { manager.sessionQuickActions?.openGameSettings() },
-        onQuit = { manager.quitSession() },
+        onReturnToArgosy = { manager.returnToArgosy() },
+        onCloseGame = { manager.closeGame() },
         onOpenDocument = { manager.openDashboardDocument(it) },
         onNextDisc = { manager.streamDashboardActions?.nextDisc() }
     )

@@ -12,6 +12,7 @@ import com.nendo.argosy.data.repository.GameRepository
 import com.nendo.argosy.data.repository.PlatformRepository
 import com.nendo.argosy.data.repository.PlayStatsRepository
 import com.nendo.argosy.data.social.FriendActivity
+import com.nendo.argosy.domain.model.ColumnsConfig
 import com.nendo.argosy.domain.model.CompletionStatus
 import com.nendo.argosy.domain.model.HomeColumn
 import com.nendo.argosy.domain.model.HomeColumnLabel
@@ -30,6 +31,7 @@ import com.nendo.argosy.domain.usecase.collection.GetPinnedCollectionsUseCase
 import com.nendo.argosy.domain.usecase.home.ALMOST_THERE_MAX_REMAINING_SEC
 import com.nendo.argosy.domain.usecase.home.BuildHomeColumnsUseCase
 import com.nendo.argosy.domain.usecase.home.HOME_COLUMN_MAX_GAMES
+import com.nendo.argosy.domain.usecase.home.homeColumnGameLimit
 import com.nendo.argosy.ui.screens.home.ColumnsGameProgress
 import com.nendo.argosy.ui.screens.home.ColumnsState
 import com.nendo.argosy.ui.screens.home.HomeColumnUi
@@ -50,6 +52,7 @@ import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.mapLatest
@@ -72,7 +75,17 @@ private val SETTLED_STATUSES = CompletionStatus.entries
     .map { it.apiValue }
     .toSet()
 
+private data class ColumnSourceQuery(val showAllGames: Boolean, val loadsPlatforms: Boolean) {
+    val limit: Int get() = homeColumnGameLimit(showAllGames)
+    val platformLimit: Int get() = if (showAllGames) limit else PLATFORM_CANDIDATE_LIMIT
+    val genreLimit: Int get() = if (showAllGames) limit else GENRE_CANDIDATE_LIMIT
+}
+
+private fun ColumnsConfig.sourceQuery(): ColumnSourceQuery =
+    ColumnSourceQuery(showAllGames = showAllGames, loadsPlatforms = showPlatformColumns)
+
 private data class ColumnGameSources(
+    val query: ColumnSourceQuery,
     val sources: HomeColumnSources,
     val favoriteCount: Int,
     val platformCounts: Map<Long, Int>,
@@ -131,17 +144,20 @@ class HomeColumnsDelegate @Inject constructor(
         write = { transform -> update { it.copy(columns = transform(it.columns)) } }
 
         val active = state.map { it.layoutKind == HomeLayoutKind.COLUMNS }.distinctUntilChanged()
-        val gameSources = active.flatMapLatest { on ->
-            if (!on) {
+        val config = state.map { it.columnsConfig }.distinctUntilChanged()
+        val sourceQuery = combine(active, config) { on, columns -> columns.sourceQuery().takeIf { on } }
+            .distinctUntilChanged()
+        val gameSources = sourceQuery.flatMapLatest { query ->
+            if (query == null) {
                 flowOf<ColumnGameSources?>(null)
             } else {
                 combine(
-                    gameRepository.observeRecentlyPlayed(HOME_COLUMN_MAX_GAMES),
+                    gameRepository.observeRecentlyPlayed(query.limit),
                     platformRepository.observePlatformsWithGames(),
                     getPinnedCollectionsUseCase(),
                     refreshes
                 ) { recent, platforms, pinned, _ -> Triple(recent, platforms, pinned) }
-                    .mapLatest { (recent, platforms, pinned) -> loadGameSources(recent, platforms, pinned) }
+                    .mapLatest { (recent, platforms, pinned) -> loadGameSources(query, recent, platforms, pinned) }
             }
         }
         val friendActivity = combine(active, state.map { it.friendsActivity }.distinctUntilChanged()) { on, activity ->
@@ -154,7 +170,10 @@ class HomeColumnsDelegate @Inject constructor(
                 pair?.let { (games, activity) -> resolve(games, activity) }
             }
             .filterNotNull()
-            .let { resolved -> combine(resolved, media) { games, rows -> columnsFor(games, rows) } }
+            .let { resolved ->
+                combine(resolved, media, config) { games, rows, columns -> columnsFor(games, rows, columns) }
+            }
+            .flowOn(Dispatchers.Default)
             .onEach { columns -> write { it.rebuiltWith(columns) } }
             .launchIn(scope)
 
@@ -218,6 +237,7 @@ class HomeColumnsDelegate @Inject constructor(
     }
 
     private suspend fun loadGameSources(
+        query: ColumnSourceQuery,
         recent: List<GameEntity>,
         platforms: List<PlatformEntity>,
         pinned: List<PinnedCollection>
@@ -230,11 +250,11 @@ class HomeColumnsDelegate @Inject constructor(
         val zone = ZoneId.systemDefault()
         val againWindow = BuildHomeColumnsUseCase.playItAgainWindow(LocalDate.now(zone), zone)
         val playItAgain = playedGames(
-            playStatsRepository.activeMsPerGameInRange(againWindow.start, againWindow.end, HOME_COLUMN_MAX_GAMES)
+            playStatsRepository.activeMsPerGameInRange(againWindow.start, againWindow.end, query.limit)
         )
         val genreWindow = BuildHomeColumnsUseCase.mostPlayedGenreWindow(now)
         val genrePlay = playedGames(
-            playStatsRepository.activeMsPerGameInRange(genreWindow.start, genreWindow.end, GENRE_CANDIDATE_LIMIT)
+            playStatsRepository.activeMsPerGameInRange(genreWindow.start, genreWindow.end, query.genreLimit)
         )
         val favorites = gameRepository.getFavorites().shown()
         val orderedPins = pinned.sortedByDescending { it.displayOrder }
@@ -245,29 +265,34 @@ class HomeColumnsDelegate @Inject constructor(
                 games = getGamesForPinnedCollectionUseCase(pin).first().shown()
             )
         }
-        val platformGames = platforms.map { platform ->
-            HomePlatformGames(
-                platformId = platform.id,
-                name = platform.getDisplayName(),
-                games = gameRepository.getPlatformLeadOrdered(platform.id, PLATFORM_CANDIDATE_LIMIT).shown()
-            )
+        val platformGames = if (!query.loadsPlatforms) {
+            emptyList()
+        } else {
+            platforms.map { platform ->
+                HomePlatformGames(
+                    platformId = platform.id,
+                    name = platform.getDisplayName(),
+                    games = gameRepository.getPlatformLeadOrdered(platform.id, query.platformLimit).shown()
+                )
+            }
         }
         val shownPlayItAgain = playItAgain.map { it.game }.shown().map { it.id }.toSet()
         val shownGenre = genrePlay.map { it.game }.shown().map { it.id }.toSet()
         ColumnGameSources(
+            query = query,
             sources = HomeColumnSources(
                 recent = recent.shown(),
                 playItAgain = playItAgain.filter { it.game.id in shownPlayItAgain }.map { it.game },
-                almostThere = gameRepository.getAlmostThere(ALMOST_THERE_MAX_REMAINING_SEC, HOME_COLUMN_MAX_GAMES)
+                almostThere = gameRepository.getAlmostThere(ALMOST_THERE_MAX_REMAINING_SEC, query.limit)
                     .shown(),
                 newlyAdded = gameRepository.getNewlyAdded(
                     threshold = now.minus(JUST_ADDED_DAYS, ChronoUnit.DAYS),
                     installedOnly = installedOnly,
-                    limit = HOME_COLUMN_MAX_GAMES
+                    limit = query.limit
                 ),
                 gatheringDust = gameRepository.getGatheringDust(
                     BuildHomeColumnsUseCase.gatheringDustCutoff(now),
-                    HOME_COLUMN_MAX_GAMES
+                    query.limit
                 ).shown(),
                 favorites = favorites,
                 pinnedCollections = pinnedGames,
@@ -297,7 +322,7 @@ class HomeColumnsDelegate @Inject constructor(
         val ids = (
             sources.recent + sources.playItAgain + sources.almostThere + sources.newlyAdded +
                 sources.gatheringDust + sources.favorites + friends.map { it.game } +
-                sources.pinnedCollections.flatMap { it.games.take(HOME_COLUMN_MAX_GAMES) } +
+                sources.pinnedCollections.flatMap { it.games.take(games.query.limit) } +
                 sources.genrePlay.map { it.game } +
                 sources.platforms.flatMap { it.games }
             ).map { it.id }.distinct()
@@ -330,10 +355,14 @@ class HomeColumnsDelegate @Inject constructor(
         return ColumnMediaRows(rows, items)
     }
 
-    private fun columnsFor(games: ResolvedGameSources, media: ColumnMediaRows): List<HomeColumnUi> {
+    private fun columnsFor(
+        games: ResolvedGameSources,
+        media: ColumnMediaRows,
+        config: ColumnsConfig
+    ): List<HomeColumnUi> {
         val sources = games.games.sources.copy(friendsPlaying = games.friends, media = media.rows)
         val liveFriends = games.friends.filter { it.playingNow }.map { it.game.id }.toSet()
-        return buildHomeColumns(sources).mapNotNull { column ->
+        return buildHomeColumns(sources, config).mapNotNull { column ->
             val items = itemsFor(column, games.resolved, media)
             if (items.isEmpty()) return@mapNotNull null
             HomeColumnUi(

@@ -300,6 +300,11 @@
     <string name="settings_displays_display_roles_auto">Auto</string>
     <string name="settings_displays_display_roles_standard">Pantalla complementaria</string>
     <string name="settings_displays_display_roles_swapped">Pantalla principal</string>
+    <string name="settings_displays_navigation_menu_title">Menú de navegación</string>
+    <string name="settings_displays_navigation_menu_subtitle">La pantalla donde se abre el menú. El mando sigue manejando la pantalla de control.</string>
+    <string name="settings_displays_navigation_menu_control">Pantalla de control</string>
+    <string name="settings_displays_navigation_menu_presentation">Pantalla de presentación</string>
+    <string name="settings_displays_navigation_menu_screen">Pantalla %1$d</string>
 
     <string name="settings_displays_screens_title">Disposición de pantallas</string>
     <string name="settings_displays_screens_subtitle">Asigna una función a cada pantalla conectada</string>

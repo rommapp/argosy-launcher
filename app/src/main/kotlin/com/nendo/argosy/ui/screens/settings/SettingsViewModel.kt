@@ -1609,6 +1609,10 @@ class SettingsViewModel @Inject constructor(
 
     fun selectAppsLaunchTarget(index: Int) = routeSelectLaunchTarget(this, LaunchTargetKind.APPS, index)
 
+    fun cycleNavigationMenu(direction: Int = 1) = routeCycleNavigationMenu(this, direction)
+
+    fun selectNavigationMenu(index: Int) = routeSelectNavigationMenu(this, index)
+
     fun navigateToLaunchTargets() = routeNavigateToLaunchTargets(this)
 
     fun reloadLaunchTargetEntries() = routeLoadLaunchTargetEntries(this)

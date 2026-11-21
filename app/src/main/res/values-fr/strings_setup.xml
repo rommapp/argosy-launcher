@@ -41,6 +41,7 @@
     <string name="setup_permissions_root_note">Activé pour vous grâce à l\'accès root.</string>
     <string name="setup_permissions_primary_allow_all_files">Autoriser l\'accès à tous les fichiers</string>
     <string name="setup_permissions_primary_allow_usage">Autoriser l\'accès aux données d\'utilisation</string>
+    <string name="setup_permissions_button_continue_without_usage">Continuer sans les données d\'utilisation</string>
     <string name="setup_permissions_primary_allow_notifications">Autoriser les notifications</string>
     <string name="setup_permissions_primary_next">Suivant</string>
     <string name="setup_permissions_enables_all_files">ROM, sauvegardes, jaquettes, téléchargements et explorateur de fichiers</string>

@@ -284,6 +284,11 @@
     <string name="settings_displays_display_roles_auto">自动</string>
     <string name="settings_displays_display_roles_standard">伴侣屏幕</string>
     <string name="settings_displays_display_roles_swapped">主屏幕</string>
+    <string name="settings_displays_navigation_menu_title">导航菜单</string>
+    <string name="settings_displays_navigation_menu_subtitle">菜单打开的屏幕。手柄仍然操作操作屏幕。</string>
+    <string name="settings_displays_navigation_menu_control">操作屏幕</string>
+    <string name="settings_displays_navigation_menu_presentation">展示屏幕</string>
+    <string name="settings_displays_navigation_menu_screen">屏幕 %1$d</string>
 
     <string name="settings_displays_screens_title">屏幕布局</string>
     <string name="settings_displays_screens_subtitle">为每块已连接的屏幕分配用途</string>

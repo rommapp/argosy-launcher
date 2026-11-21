@@ -101,6 +101,19 @@ internal const val DRAWER_ACCOUNT_ROW_INDEX = 0
 internal const val DRAWER_NAV_ITEM_OFFSET = 1
 internal const val ACCOUNTS_SECTION_NAME = "ACCOUNTS"
 
+internal fun drawerRouteAt(items: List<DrawerItem>, focusIndex: Int): String? =
+    if (focusIndex == DRAWER_ACCOUNT_ROW_INDEX) {
+        Screen.Settings.createRoute(section = ACCOUNTS_SECTION_NAME)
+    } else {
+        items.getOrNull(focusIndex - DRAWER_NAV_ITEM_OFFSET)?.route
+    }
+
+internal fun drawerFocusIndexOf(items: List<DrawerItem>, route: String): Int? {
+    if (route == drawerRouteAt(items, DRAWER_ACCOUNT_ROW_INDEX)) return DRAWER_ACCOUNT_ROW_INDEX
+    val itemIndex = items.indexOfFirst { it.route == route }
+    return if (itemIndex >= 0) itemIndex + DRAWER_NAV_ITEM_OFFSET else null
+}
+
 data class DrawerState(
     val rommConnected: Boolean = false,
     val rommConnecting: Boolean = false,
@@ -530,6 +543,8 @@ class ArgosyViewModel @Inject constructor(
      */
     private val drawerNavLastIndex: Int get() = drawerItems.size
 
+    fun routeAtDrawerFocus(focusIndex: Int): String? = drawerRouteAt(drawerItems, focusIndex)
+
     fun initDrawerFocus(currentRoute: String?, parentRoute: String? = null) {
         var index = drawerItems.indexOfFirst { NavRing.routeMatches(it.route, currentRoute) }
         if (index < 0 && parentRoute != null) {
@@ -564,15 +579,9 @@ class ArgosyViewModel @Inject constructor(
             moveWrappedFocus(_navFocusIndex, 1, drawerNavLastIndex, uiState.value.menuWrapMode)
 
         override fun onConfirm(): InputResult {
-            val currentIndex = _navFocusIndex.value
-            if (currentIndex == DRAWER_ACCOUNT_ROW_INDEX) {
-                onNavigate(Screen.Settings.createRoute(section = ACCOUNTS_SECTION_NAME))
-                return InputResult.HANDLED
-            }
-            val itemIndex = currentIndex - DRAWER_NAV_ITEM_OFFSET
-            if (itemIndex in drawerItems.indices) {
-                Log.d("ArgosyViewModel", "Navigating to drawer item: ${drawerItems[itemIndex].route}")
-                onNavigate(drawerItems[itemIndex].route)
+            routeAtDrawerFocus(_navFocusIndex.value)?.let { route ->
+                Log.d("ArgosyViewModel", "Navigating to drawer item: $route")
+                onNavigate(route)
             }
             return InputResult.HANDLED
         }

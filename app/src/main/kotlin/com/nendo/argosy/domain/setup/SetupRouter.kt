@@ -23,7 +23,8 @@ object SetupRouter {
     fun isSatisfied(item: SetupItem, facts: SetupFacts): Boolean = when (item) {
         SetupItem.LIBRARY_SOURCE -> facts.librarySignedIn && facts.librarySourceConfirmed
         SetupItem.ALL_FILES_ACCESS -> facts.allFilesAccess
-        SetupItem.USAGE_ACCESS -> facts.usageAccess || !facts.usageAccessGrantable
+        SetupItem.USAGE_ACCESS ->
+            facts.usageAccess || !facts.usageAccessGrantable || facts.usageAccessDeclined
         SetupItem.NOTIFICATIONS -> facts.notifications
         SetupItem.ROM_FOLDER -> facts.romFolderPresent && facts.romFolderConfirmed
         SetupItem.SAVE_SYNC -> facts.saveSyncAnswered

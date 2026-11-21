@@ -49,11 +49,11 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import com.nendo.argosy.R
 import com.nendo.argosy.data.social.SocialUser
-import com.nendo.argosy.ui.ACCOUNTS_SECTION_NAME
 import com.nendo.argosy.ui.DRAWER_ACCOUNT_ROW_INDEX
 import com.nendo.argosy.ui.DRAWER_NAV_ITEM_OFFSET
 import com.nendo.argosy.ui.DrawerItem
 import com.nendo.argosy.ui.DrawerState
+import com.nendo.argosy.ui.drawerRouteAt
 import com.nendo.argosy.ui.components.friends.SocialAvatar
 import com.nendo.argosy.ui.theme.Dimens
 import com.nendo.argosy.ui.theme.LocalArgosyTheme
@@ -82,7 +82,7 @@ fun MainDrawer(
                 rommAvatarUrl = drawerState.rommAvatarUrl,
                 isFocused = drawerState.navFocusIndex == DRAWER_ACCOUNT_ROW_INDEX,
                 onOpenAccounts = {
-                    onNavigate(Screen.Settings.createRoute(section = ACCOUNTS_SECTION_NAME))
+                    drawerRouteAt(items, DRAWER_ACCOUNT_ROW_INDEX)?.let(onNavigate)
                 }
             )
             HorizontalDivider(

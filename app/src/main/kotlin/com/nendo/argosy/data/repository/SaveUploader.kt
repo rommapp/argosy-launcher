@@ -234,7 +234,9 @@ class SaveUploader @Inject constructor(
             val identityMappedHash = if (handler is UnitSaveHandler && syncEntity?.localContentHash != null) {
                 saveCacheManager.get().calculateLocalSaveHash(localPath, gameId, resolvedEmulatorId)
             } else null
-            val unchangedByIdentity = identityMappedHash != null && identityMappedHash == syncEntity?.localContentHash
+            val localIdentity = saveCacheManager.get().calculateLocalSaveIdentity(localPath, gameId, resolvedEmulatorId)
+            val unchangedByIdentity = (identityMappedHash != null && identityMappedHash == syncEntity?.localContentHash) ||
+                (localIdentity != null && localIdentity == syncEntity?.localIdentityHash)
 
             if (!forceOverwrite && (syncEntity?.localContentHash == contentHash || unchangedByIdentity)) {
                 Logger.debug(TAG, "[SaveSync] UPLOAD gameId=$gameId | Skipped - content unchanged (hash=$contentHash, byIdentity=$unchangedByIdentity)")
@@ -254,7 +256,8 @@ class SaveUploader @Inject constructor(
                     syncEntity.copy(
                         localUpdatedAt = localMtime ?: syncEntity.localUpdatedAt,
                         lastSyncedAt = Instant.now(),
-                        localContentHash = if (unchangedByIdentity) syncEntity.localContentHash else contentHash
+                        localContentHash = if (unchangedByIdentity) syncEntity.localContentHash else contentHash,
+                        localIdentityHash = if (unchangedByIdentity) syncEntity.localIdentityHash else localIdentity
                     )
                 )
                 prepared.sigilState?.let { saveHandlerRegistry.sigil.commit(it) }
@@ -293,6 +296,7 @@ class SaveUploader @Inject constructor(
                         lastSyncedAt = Instant.now(),
                         lastUploadedHash = headHash,
                         localContentHash = contentHash,
+                        localIdentityHash = localIdentity,
                         syncStatus = SaveSyncEntity.STATUS_SYNCED
                     )
                 )
@@ -380,6 +384,7 @@ class SaveUploader @Inject constructor(
                         syncStatus = SaveSyncEntity.STATUS_SYNCED,
                         lastUploadedHash = serverSave.contentHash?.takeIf { client.getCapabilities().trustsServerHash },
                         localContentHash = contentHash,
+                        localIdentityHash = localIdentity,
                         lastSyncDeviceId = serverSave.originDeviceId ?: currentDeviceSync?.deviceId ?: deviceId ?: syncEntity?.lastSyncDeviceId,
                         lastSyncDeviceName = serverSave.originDeviceName() ?: currentDeviceSync?.deviceName ?: syncEntity?.lastSyncDeviceName,
                         userSelectedRestorePoint = false,

@@ -187,6 +187,27 @@ class SetupViewModelTest {
     }
 
     @Test
+    fun `usage access the device will not grant can be skipped and the choice is stored`() = runTest(dispatcher) {
+        val vm = usageMissing(restricted = false)
+        advanceUntilIdle()
+        assertFalse(SetupActionId.DECLINE_USAGE in actionsFor(vm.currentState()).map { it.id })
+
+        vm.tap(SetupTarget.Permission(ArgosyPermission.USAGE_ACCESS))
+        vm.onResume()
+        advanceUntilIdle()
+        assertTrue(vm.currentState().access.usageStillOff)
+
+        vm.tap(SetupTarget.Action(SetupActionId.DECLINE_USAGE))
+        advanceUntilIdle()
+
+        coVerify(exactly = 1) { setupState.declineUsageAccess() }
+        assertEquals(
+            ArgosyPermission.NOTIFICATIONS,
+            firstUnmetRequired(vm.currentState().access, vm.currentState().facts)
+        )
+    }
+
+    @Test
     fun `a resume without a usage attempt shows no extra step`() = runTest(dispatcher) {
         val vm = usageMissing(restricted = true)
         advanceUntilIdle()

@@ -71,12 +71,17 @@ class SessionEndCoordinator @Inject constructor(
     suspend fun stopBackgroundEmulator(packageName: String) = gameLauncher.forceStopEmulator(packageName)
 
     /**
-     * Whether an emulator that left its screen is stopped, releasing any window it leaves on the
-     * other screen. One kept alive between sessions stays running unless it draws on both screens.
+     * Whether an emulator that left its screen is stopped. The built-in game stops unless games
+     * stay open. An external emulator stays in the background unless [shouldStopAfterSession]
+     * closes it or it draws on both screens, where leaving it would hold a window on the other one.
      */
     suspend fun stopsAfterLeavingScreen(emulatorPackage: String): Boolean =
-        !keepAlivePolicy.keepsAlive(emulatorPackage) ||
-            EmulatorLaunchTargetResolver.drawsBothScreens(emulatorPackage)
+        if (emulatorPackage == EmulatorRegistry.BUILTIN_PACKAGE) {
+            !keepAlivePolicy.keepsAlive(emulatorPackage)
+        } else {
+            shouldStopAfterSession(emulatorPackage) ||
+                EmulatorLaunchTargetResolver.drawsBothScreens(emulatorPackage)
+        }
 
     /**
      * Whether an external emulator is stopped when its session ends: the emulator requires it, or

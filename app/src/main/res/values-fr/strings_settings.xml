@@ -290,6 +290,11 @@
     <string name="settings_displays_display_roles_auto">Auto</string>
     <string name="settings_displays_display_roles_standard">Écran compagnon</string>
     <string name="settings_displays_display_roles_swapped">Écran principal</string>
+    <string name="settings_displays_navigation_menu_title">Menu de navigation</string>
+    <string name="settings_displays_navigation_menu_subtitle">L\'écran où s\'ouvre le menu. La manette continue de piloter l\'écran de contrôle.</string>
+    <string name="settings_displays_navigation_menu_control">Écran de contrôle</string>
+    <string name="settings_displays_navigation_menu_presentation">Écran de présentation</string>
+    <string name="settings_displays_navigation_menu_screen">Écran %1$d</string>
 
     <string name="settings_displays_screens_title">Disposition des écrans</string>
     <string name="settings_displays_screens_subtitle">Attribuez un rôle à chaque écran connecté</string>

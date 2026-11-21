@@ -654,6 +654,18 @@
     <!-- Value of that row: the device's main screen, the upper one on a two-screen handheld. -->
     <string name="settings_displays_display_roles_swapped">Main screen</string>
 
+    <!-- Row title. Noun phrase: the side menu listing Home, Library, Settings and the rest. -->
+    <string name="settings_displays_navigation_menu_title">Navigation Menu</string>
+    <!-- Second line of that row. -->
+    <string name="settings_displays_navigation_menu_subtitle">The screen the menu opens on. The controller keeps driving the control screen.</string>
+    <!-- Value of that row: the menu opens on whichever screen the controller drives. -->
+    <string name="settings_displays_navigation_menu_control">Control screen</string>
+    <!-- Value of that row: the menu opens on whichever screen shows what you are looking at, and
+         follows that role when the screens swap. -->
+    <string name="settings_displays_navigation_menu_presentation">Presentation screen</string>
+    <!-- Value of that row: one physical screen. %1$d is the number drawn on that screen. -->
+    <string name="settings_displays_navigation_menu_screen">Screen %1$d</string>
+
     <!-- Row opening the screen-by-screen role editor. -->
     <string name="settings_displays_screens_title">Screen Layout</string>
     <!-- Second line of that row. -->

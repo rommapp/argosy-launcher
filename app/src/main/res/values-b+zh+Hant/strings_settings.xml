@@ -271,6 +271,11 @@
     <string name="settings_displays_display_roles_auto">自動</string>
     <string name="settings_displays_display_roles_standard">隨附螢幕</string>
     <string name="settings_displays_display_roles_swapped">主螢幕</string>
+    <string name="settings_displays_navigation_menu_title">導覽選單</string>
+    <string name="settings_displays_navigation_menu_subtitle">選單開啟的螢幕。控制器仍然操作操作螢幕。</string>
+    <string name="settings_displays_navigation_menu_control">操作螢幕</string>
+    <string name="settings_displays_navigation_menu_presentation">展示螢幕</string>
+    <string name="settings_displays_navigation_menu_screen">螢幕 %1$d</string>
 
     <string name="settings_displays_screens_title">螢幕配置</string>
     <string name="settings_displays_screens_subtitle">為每片已連接的螢幕指派用途</string>

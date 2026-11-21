@@ -30,6 +30,8 @@ import com.nendo.argosy.ui.components.SliderPreference
 import com.nendo.argosy.ui.components.SwitchPreference
 import com.nendo.argosy.ui.screens.settings.DisplayState
 import com.nendo.argosy.ui.screens.settings.LaunchTargetScreens
+import com.nendo.argosy.ui.screens.settings.NavigationMenuChoices
+import com.nendo.argosy.domain.model.NavigationMenuPin
 import com.nendo.argosy.ui.screens.settings.SettingsUiState
 import com.nendo.argosy.ui.screens.settings.SettingsViewModel
 import com.nendo.argosy.ui.screens.settings.components.SectionPaneLayout
@@ -95,6 +97,12 @@ internal sealed class DisplaysItem(
         labelRes = R.string.settings_displays_display_roles_title,
         visibleWhen = { it.dualScreenEnabled && !it.display.secondaryDisplayUnsupported }
     )
+    data object NavigationMenu : Row(
+        key = "navigationMenu",
+        section = "displays",
+        labelRes = R.string.settings_displays_navigation_menu_title,
+        visibleWhen = { it.dualScreenEnabled && !it.display.secondaryDisplayUnsupported }
+    )
     data object DualScreenMatchSize : Row(
         key = "dualScreenMatchSize",
         section = "displays",
@@ -156,7 +164,7 @@ internal sealed class DisplaysItem(
                 ScreenSafetyHeader,
                 ScreenDimmer, DimAfter, DimLevel, LidSleep,
                 DisplaysSpacer, DisplaysHeader,
-                DualScreenEnabled, DisplayRoles, DualScreenMatchSize, ScreenLayout,
+                DualScreenEnabled, DisplayRoles, NavigationMenu, DualScreenMatchSize, ScreenLayout,
                 AmbientLedSettings,
                 DisplayTargetsSpacer, DisplayTargetsHeader,
                 GamesTarget, AppsTarget, ByPlatformAndApp
@@ -191,6 +199,44 @@ private fun launchTargetLabel(context: Context, target: EmulatorDisplayTarget, s
     val role = context.getString(screenRoleTitleRes(target.screenRole))
     val number = screens.numberFor(target) ?: return role
     return context.getString(R.string.settings_displays_launch_target_value, role, number)
+}
+
+private fun navigationMenuLabel(context: Context, pin: NavigationMenuPin, choices: NavigationMenuChoices): String =
+    when (pin) {
+        NavigationMenuPin.Presentation -> context.getString(R.string.settings_displays_navigation_menu_presentation)
+        is NavigationMenuPin.Panel -> choices.numberOf(pin)
+            ?.let { context.getString(R.string.settings_displays_navigation_menu_screen, it) }
+            ?: context.getString(R.string.settings_displays_navigation_menu_control)
+        NavigationMenuPin.Control -> context.getString(R.string.settings_displays_navigation_menu_control)
+    }
+
+@Composable
+private fun NavigationMenuPreference(
+    title: String,
+    choices: NavigationMenuChoices,
+    isFocused: Boolean,
+    onCycle: (Int) -> Unit,
+    onSelect: (Int) -> Unit,
+    pickerRequestToken: Int
+) {
+    val context = LocalContext.current
+    val value = remember(choices, context) { navigationMenuLabel(context, choices.pin, choices) }
+    val options = remember(choices, context) { choices.options.map { navigationMenuLabel(context, it, choices) } }
+    CyclePreference(
+        title = title,
+        value = value,
+        subtitle = stringResource(R.string.settings_displays_navigation_menu_subtitle),
+        isFocused = isFocused,
+        onClick = { onCycle(1) },
+        onPrev = { onCycle(-1) },
+        options = options,
+        onSelect = onSelect,
+        pickerRequestToken = pickerRequestToken,
+        onPickerVisibilityChange = { visible ->
+            val manager = DualScreenManagerHolder.instance
+            if (visible) manager?.showScreenNumbers(DisplayBadgeSize.SMALL) else manager?.hideScreenNumbers()
+        }
+    )
 }
 
 @Composable
@@ -372,6 +418,15 @@ fun DisplaysSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
                     DisplayRoleOverride.entries.map { context.getString(displayRoleLabelRes(it)) }
                 },
                 onSelect = { viewModel.setDisplayRoleOverride(DisplayRoleOverride.entries[it]) },
+                pickerRequestToken = pickerToken(item)
+            )
+
+            is DisplaysItem.NavigationMenu -> NavigationMenuPreference(
+                title = stringResource(item.labelRes),
+                choices = display.navigationMenu,
+                isFocused = isFocused(item),
+                onCycle = { viewModel.cycleNavigationMenu(it) },
+                onSelect = { viewModel.selectNavigationMenu(it) },
                 pickerRequestToken = pickerToken(item)
             )
 

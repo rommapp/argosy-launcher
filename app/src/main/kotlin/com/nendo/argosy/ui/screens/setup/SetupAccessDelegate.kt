@@ -130,7 +130,8 @@ class SetupAccessDelegate @Inject constructor(
      * Records the return from an accessibility step's Android screen. Coming back from App info
      * marks the restricted settings step done; coming back from Accessibility with the service
      * still off on a device that restricts it reopens that step. Coming back from Usage access
-     * still refused on such a device shows that step on the permissions page.
+     * still refused on such a device shows that step on the permissions page, and still off on any
+     * device offers continuing without it.
      */
     fun onResume() {
         val awaiting = _state.value.awaiting
@@ -139,9 +140,12 @@ class SetupAccessDelegate @Inject constructor(
         scope.launch {
             val snapshot = withContext(ioDispatcher) { registry.snapshot() }
             _state.update { base ->
-                val usageRefused = usageAttempted && base.restrictedSettings && !base.rootRoute &&
-                    !snapshot.isGranted(ArgosyPermission.USAGE_ACCESS)
-                val current = if (usageRefused) base.copy(usageBlocked = true) else base
+                val usageStillOff = usageAttempted && !snapshot.isGranted(ArgosyPermission.USAGE_ACCESS)
+                val usageRefused = usageStillOff && base.restrictedSettings && !base.rootRoute
+                val current = base.copy(
+                    usageBlocked = base.usageBlocked || usageRefused,
+                    usageStillOff = base.usageStillOff || usageStillOff
+                )
                 val on = snapshot.isGranted(ArgosyPermission.ACCESSIBILITY)
                 when (awaiting) {
                     AccessibilityStepKind.RESTRICTED_SETTINGS ->

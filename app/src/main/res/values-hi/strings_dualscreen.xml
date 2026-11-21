@@ -23,7 +23,11 @@
     <string name="dual_dashboard_rail_cheats">चीट्स</string>
     <string name="dual_dashboard_rail_settings">सेटिंग्स</string>
     <string name="dual_dashboard_rail_quit">बंद करें</string>
-    <string name="dual_dashboard_rail_quit_confirm">फिर टैप करें</string>
+    <string name="dual_dashboard_exit_return">Argosy पर लौटें</string>
+    <string name="dual_dashboard_exit_title">गेम छोड़ें?</string>
+    <string name="dual_dashboard_exit_message">Argosy पर लौटने से गेम बैकग्राउंड में चलता रहता है। गेम बंद करने से वह रुक जाता है, और गेम में जो सेव नहीं हुआ वह खो जाता है।</string>
+    <string name="dual_dashboard_exit_message_return_only">जब आप Argosy में हों, गेम बैकग्राउंड में चलता रहता है।</string>
+    <string name="dual_dashboard_exit_close">गेम बंद करें</string>
     <string name="dual_dashboard_rail_page">पृ. %1$d</string>
     <string name="dual_dashboard_rail_percent">%1$d%%</string>
     <string name="dual_dashboard_achievements_progress">%1$d / %2$d</string>

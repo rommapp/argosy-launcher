@@ -71,7 +71,8 @@ data class SetupAccessState(
     val restrictedStepDone: Boolean = false,
     val stillBlocked: Boolean = false,
     val awaiting: AccessibilityStepKind? = null,
-    val usageBlocked: Boolean = false
+    val usageBlocked: Boolean = false,
+    val usageStillOff: Boolean = false
 ) {
     fun availabilityOf(permission: ArgosyPermission): PermissionAvailability =
         if (permission in rootGranting) PermissionAvailability.CHECKING else snapshot.of(permission)

@@ -4,11 +4,9 @@ import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -19,11 +17,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.unit.Constraints
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.CheckCircle
-import androidx.compose.material.icons.filled.Favorite
-import androidx.compose.material3.Icon
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -46,8 +39,6 @@ import androidx.compose.ui.graphics.BlendMode
 import androidx.compose.ui.graphics.BlurEffect
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.res.vectorResource
 import androidx.compose.ui.graphics.CompositingStrategy
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.lerp
@@ -70,8 +61,6 @@ import com.nendo.argosy.ui.components.boxart.InnerEffectShape
 import com.nendo.argosy.ui.components.boxart.glassColorFilterFor
 import com.nendo.argosy.ui.components.boxart.rememberShineSweep
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.res.stringResource
-import com.nendo.argosy.R
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.platform.LocalDensity
@@ -337,12 +326,6 @@ fun GameCard(
             (boxArtStyle.systemIconPosition == SystemIconPosition.BOTTOM_LEFT ||
              boxArtStyle.systemIconPosition == SystemIconPosition.BOTTOM_RIGHT)
         val isRunning = runningGame != null
-        val showsDownloadedBadge = game.isDownloaded && showDownloadedIndicator && !isRunning
-        val showsStreamMark = !isRunning && com.nendo.argosy.ui.screens.stream.LocalStreamFirst.current.leads(
-            platformSlug = game.platformSlug,
-            isRommGame = game.isRommGame,
-            isOnDevice = game.isDownloaded || game.needsInstall || downloadIndicator.isShown
-        )
 
         if (spineActive) {
             val spineAtBottom = boxArtStyle.systemIconPosition.spineEdge(boxArtStyle.aspectRatio) == SpineEdge.BOTTOM
@@ -369,9 +352,10 @@ fun GameCard(
                     )
                     if (showStatusOverlays) {
                         StatusIndicators(
-                            isFavorite = game.isFavorite,
-                            isDownloaded = showsDownloadedBadge,
-                            isStreamable = showsStreamMark,
+                            game = game,
+                            downloadIndicator = downloadIndicator,
+                            isRunning = isRunning,
+                            showDownloaded = showDownloadedIndicator,
                             clearsRunningLine = runningMark != null && !spineAtBottom
                         )
                     }
@@ -428,9 +412,10 @@ fun GameCard(
 
         if (!spineActive && showStatusOverlays) {
             StatusIndicators(
-                isFavorite = game.isFavorite,
-                isDownloaded = showsDownloadedBadge,
-                isStreamable = showsStreamMark,
+                game = game,
+                downloadIndicator = downloadIndicator,
+                isRunning = isRunning,
+                showDownloaded = showDownloadedIndicator,
                 tabAtBottom = tabAtBottom,
                 clearsRunningLine = runningMark != null
             )
@@ -526,20 +511,23 @@ private fun StubCover(gameTitle: String, useSolidStub: Boolean) {
 
 @Composable
 private fun BoxScope.StatusIndicators(
-    isFavorite: Boolean,
-    isDownloaded: Boolean,
-    isStreamable: Boolean = false,
+    game: HomeGameUi,
+    downloadIndicator: GameDownloadIndicator,
+    isRunning: Boolean,
+    showDownloaded: Boolean,
     tabAtBottom: Boolean = false,
     clearsRunningLine: Boolean = false
 ) {
-    if (!isFavorite && !isDownloaded && !isStreamable) return
-
     val edgePadding = if (clearsRunningLine) {
         Dimens.spacingXs + ComponentDefaults.RunningLine.heightDp.dp + ComponentDefaults.RunningLine.badgeGapDp.dp
     } else {
         Dimens.spacingXs
     }
-    Row(
+    GameStatusBadges(
+        game = game,
+        downloadIndicator = downloadIndicator,
+        isRunning = isRunning,
+        showDownloaded = showDownloaded,
         modifier = Modifier
             .align(if (tabAtBottom) Alignment.TopCenter else Alignment.BottomCenter)
             .fillMaxWidth()
@@ -547,66 +535,8 @@ private fun BoxScope.StatusIndicators(
             .then(
                 if (tabAtBottom) Modifier.padding(top = edgePadding)
                 else Modifier.padding(bottom = edgePadding)
-            ),
-        horizontalArrangement = Arrangement.SpaceBetween
-    ) {
-        IndicatorBadge(
-            visible = isFavorite,
-            icon = Icons.Default.Favorite,
-            contentDescription = stringResource(R.string.ui_game_card_favorite)
-        )
-        if (isStreamable && !isDownloaded) {
-            StreamMark()
-        } else {
-            IndicatorBadge(
-                visible = isDownloaded,
-                icon = Icons.Default.CheckCircle,
-                contentDescription = stringResource(R.string.ui_game_card_downloaded)
             )
-        }
-    }
-}
-
-@Composable
-private fun StreamMark() {
-    Box(
-        modifier = Modifier
-            .size(Dimens.iconSm + Dimens.borderMedium)
-            .background(MaterialTheme.colorScheme.primary, CircleShape),
-        contentAlignment = Alignment.Center
-    ) {
-        Icon(
-            imageVector = ImageVector.vectorResource(R.drawable.ic_stream_play_network),
-            contentDescription = stringResource(R.string.stream_tile_mark_description),
-            tint = Color.White,
-            modifier = Modifier.size(Dimens.iconXs)
-        )
-    }
-}
-
-@Composable
-private fun IndicatorBadge(
-    visible: Boolean,
-    icon: androidx.compose.ui.graphics.vector.ImageVector,
-    contentDescription: String
-) {
-    if (visible) {
-        Box(
-            modifier = Modifier
-                .size(Dimens.iconSm + Dimens.borderMedium)
-                .background(Color.Black.copy(alpha = 0.35f), CircleShape),
-            contentAlignment = Alignment.Center
-        ) {
-            Icon(
-                imageVector = icon,
-                contentDescription = contentDescription,
-                tint = Color.White,
-                modifier = Modifier.size(Dimens.iconXs)
-            )
-        }
-    } else {
-        Box(modifier = Modifier.size(Dimens.iconSm + Dimens.borderMedium))
-    }
+    )
 }
 
 @Composable

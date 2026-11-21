@@ -119,6 +119,7 @@ class DualScreenManager(
     internal val steamRepository: com.nendo.argosy.data.repository.SteamRepository,
     internal val playSessionTracker: com.nendo.argosy.data.emulator.PlaySessionTracker,
     internal val permissionHelper: com.nendo.argosy.util.PermissionHelper,
+    private val slotRegistry: com.nendo.argosy.libretro.slot.SlotRegistry,
     internal val repairImageCacheUseCase: com.nendo.argosy.domain.usecase.cache.RepairImageCacheUseCase? = null,
     internal val downloadFileStatusRepository: com.nendo.argosy.data.repository.DownloadFileStatusRepository,
     internal val gradientExtractionDelegate: com.nendo.argosy.ui.screens.common.GradientExtractionDelegate,
@@ -197,6 +198,8 @@ class DualScreenManager(
 
     private val screenEventTick = MutableStateFlow(0)
 
+    private val appliedLayoutTick = MutableStateFlow(0)
+
     /**
      * True while a lit external display mirrors the built-in panel: one is attached, dual screen
      * is off and DeX is not running. Launcher surfaces skip the panel's camera cutout inset then
@@ -253,6 +256,7 @@ class DualScreenManager(
         }
         _hasPresentationScreen.value = hasPresentation
         setPrimaryDisplayId(primaryDisplayId)
+        appliedLayoutTick.update { it + 1 }
     }
 
     private val _unconfiguredScreenSet = MutableStateFlow<String?>(null)
@@ -904,24 +908,61 @@ class DualScreenManager(
         }
 
     /**
-     * Quits the running game from the dashboard. A built-in game quits itself. An external one is
-     * covered by the launcher on its display, which ends the session the way leaving any game does.
+     * Closes the running game from the dashboard: a built-in game saves and closes itself, whether
+     * it runs in Argosy's process or in a game slot, and an external emulator is force-stopped
+     * through root.
      */
-    fun quitSession() {
+    fun closeGame() {
         sessionQuickActions?.let {
             it.quit()
             return
         }
+        if (_swappedCompanionState.value.externalEmulator) {
+            forceCloseExternalGame()
+            return
+        }
+        val gameId = _swappedCompanionState.value.gameId
+        val slot = slotRegistry.slots.value.values.firstOrNull { it.gameId == gameId }
+        if (slot == null || !slotRegistry.requestClose(slot.slotIndex)) {
+            Log.w(TAG, "Close game: no game slot holds game $gameId")
+        }
+    }
+
+    /**
+     * Returns to Argosy from the running game, the way Home does: the launcher covers the game's
+     * display, the session ends, and the game stays in the background unless
+     * [SessionEndCoordinator.stopsAfterLeavingScreen] closes it.
+     */
+    fun returnToArgosy() {
+        if (!_swappedIsGameActive.value) return
+        val gameDisplay = emulatorDisplayId ?: sessionStateStore.getEmulatorDisplayId() ?: run {
+            Log.w(TAG, "Return to Argosy: the external game's display is unknown")
+            return
+        }
+        val roles = displayAffinityHelper.getRoleDisplayIds(_isRolesSwapped.value)
+        if (roles == null || (gameDisplay != roles.first && gameDisplay != roles.second)) {
+            Log.w(TAG, "Return to Argosy: game display $gameDisplay holds no launcher role ($roles)")
+            return
+        }
+        coverGameDisplay(gameDisplay)
+    }
+
+    private fun forceCloseExternalGame() {
         if (!_swappedCompanionState.value.externalEmulator) return
-        val gameDisplay = emulatorDisplayId ?: return
-        val roles = displayAffinityHelper.getRoleDisplayIds(_isRolesSwapped.value) ?: return
-        if (gameDisplay != roles.first && gameDisplay != roles.second) return
+        val emulatorPackage = sessionStateStore.getEmulatorPackage() ?: return
+        activityIndependentScope.launch {
+            sessionEndCoordinator.stopBackgroundEmulator(emulatorPackage)
+            withContext(Dispatchers.Main) { returnToArgosy() }
+        }
+    }
+
+    private fun coverGameDisplay(gameDisplay: Int) {
         val launcher = if (gameDisplay == android.view.Display.DEFAULT_DISPLAY) {
             ArgosyActivity::class.java
         } else {
             SecondaryHomeActivity::class.java
         }
-        Log.d(TAG, "Quitting the external game on display $gameDisplay")
+        Log.d(TAG, "Covering the external game on display $gameDisplay")
         activityContext.startActivity(
             Intent(activityContext, launcher).apply {
                 addFlags(
@@ -1598,7 +1639,11 @@ class DualScreenManager(
             },
             _mediaPanelItemId
         ) { slot, mediaItemId ->
-            if (mediaItemId != null && slot !is com.nendo.argosy.ui.dualscreen.PresentationSlot.InGame) {
+            if (
+                mediaItemId != null &&
+                slot !is com.nendo.argosy.ui.dualscreen.PresentationSlot.InGame &&
+                slot !is com.nendo.argosy.ui.dualscreen.PresentationSlot.NavigationMenu
+            ) {
                 com.nendo.argosy.ui.dualscreen.PresentationSlot.MediaPlayback(mediaItemId)
             } else {
                 slot
@@ -1609,6 +1654,39 @@ class DualScreenManager(
                 kotlinx.coroutines.flow.SharingStarted.Eagerly,
                 com.nendo.argosy.ui.dualscreen.PresentationSlot.Fallback
             )
+
+    /**
+     * Whether the navigation menu draws on the presentation screen: the attached set's stored pin
+     * resolves to the screen holding PRESENTATION now, the presentation surface is up and no
+     * session is live. False keeps the menu on the control screen.
+     */
+    val navigationMenuOnPresentation: StateFlow<Boolean> =
+        kotlinx.coroutines.flow.combine(
+            preferencesRepository.userPreferences.map { it.screenLayouts }.distinctUntilChanged(),
+            kotlinx.coroutines.flow.combine(_isRolesSwapped, appliedLayoutTick) { swapped, _ -> swapped },
+            presentationShowsHints,
+            _isDualScreenDevice,
+            _swappedIsGameActive
+        ) { layouts, swapped, presentationUp, dualScreen, gameActive ->
+            dualScreen && presentationUp && !gameActive && navigationMenuDrawsOnPresentation(layouts, swapped)
+        }
+            .distinctUntilChanged()
+            .stateIn(activityIndependentScope, kotlinx.coroutines.flow.SharingStarted.Eagerly, false)
+
+    private fun navigationMenuDrawsOnPresentation(
+        layouts: com.nendo.argosy.domain.model.ScreenLayouts,
+        swapped: Boolean
+    ): Boolean {
+        if (!displayAffinityHelper.hasSecondaryDisplay) return false
+        val (primaryDisplayId, presentationDisplayId) =
+            displayAffinityHelper.getRoleDisplayIds(swapped) ?: return false
+        if (primaryDisplayId == presentationDisplayId) return false
+        val attached = attachedScreens()
+        val setKey = com.nendo.argosy.domain.model.ScreenLayouts.setKeyOf(attached.map { it.key })
+        val pin = layouts.layoutFor(setKey)?.navigationMenuPin
+            ?: com.nendo.argosy.domain.model.NavigationMenuPin.Control
+        return pin.drawsOnPresentation(attached.find { it.displayId == presentationDisplayId }?.key)
+    }
 
     /**
      * A running built-in game whose core survives a display move. Called on the main thread around
@@ -2246,6 +2324,9 @@ class DualScreenManager(
                         isLoaded = true,
                         externalEmulator = sessionStateStore.getEmulatorPackage()
                             ?.let { it != com.nendo.argosy.data.emulator.EmulatorRegistry.BUILTIN_PACKAGE } == true,
+                        builtInGame = sessionStateStore.getEmulatorPackage() ==
+                            com.nendo.argosy.data.emulator.EmulatorRegistry.BUILTIN_PACKAGE,
+                        canForceClose = com.nendo.argosy.util.RootShell.isAvailable,
                         backgroundPath = art.backgroundPath,
                         manual = documents.firstOrNull {
                             it.category == com.nendo.argosy.data.model.VariantCategory.MANUAL.key

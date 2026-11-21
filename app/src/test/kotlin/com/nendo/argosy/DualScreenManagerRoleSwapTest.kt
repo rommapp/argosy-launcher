@@ -1166,6 +1166,7 @@ class DualScreenManagerRoleSwapTest {
         steamRepository = mockk(relaxed = true),
         playSessionTracker = playSessionTracker,
         permissionHelper = permissionHelper,
+        slotRegistry = com.nendo.argosy.libretro.slot.SlotRegistry(),
         repairImageCacheUseCase = mockk(relaxed = true),
         downloadFileStatusRepository = mockk(relaxed = true),
         gradientExtractionDelegate = mockk(relaxed = true),

@@ -214,6 +214,7 @@ class ReconcileEffectApplier @Inject constructor(
                 syncStatus = SaveSyncEntity.STATUS_SERVER_NEWER,
                 lastUploadedHash = existing?.lastUploadedHash,
                 localContentHash = existing?.localContentHash,
+                localIdentityHash = existing?.localIdentityHash,
                 lastSyncDeviceId = existing?.lastSyncDeviceId,
                 lastSyncDeviceName = existing?.lastSyncDeviceName,
                 userSelectedRestorePoint = existing?.userSelectedRestorePoint ?: false,

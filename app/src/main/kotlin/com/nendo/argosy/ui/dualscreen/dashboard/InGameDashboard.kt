@@ -60,6 +60,7 @@ import coil.compose.AsyncImage
 import com.nendo.argosy.R
 import com.nendo.argosy.core.game.AchievementUi
 import com.nendo.argosy.hardware.CompanionInGameState
+import com.nendo.argosy.ui.primitives.ArgosyConfirmModal
 import com.nendo.argosy.hardware.CompanionSessionTimer
 import com.nendo.argosy.ui.components.SystemStatusBar
 import com.nendo.argosy.ui.components.untilRunPlayTimeChanges
@@ -95,7 +96,8 @@ class DashboardActions(
     val onScreenshot: () -> Unit,
     val onOpenCheats: () -> Unit,
     val onOpenSettings: () -> Unit,
-    val onQuit: () -> Unit,
+    val onReturnToArgosy: () -> Unit,
+    val onCloseGame: () -> Unit,
     val onOpenDocument: (GameDocument) -> Unit,
     val onNextDisc: () -> Unit
 )
@@ -109,7 +111,6 @@ private const val BACKDROP_ALPHA = 0.7f
 private const val SCRIM_ALPHA = 0.35f
 private const val PANEL_ALPHA = 0.78f
 private const val SELECTED_ALPHA = 0.16f
-private const val CONFIRM_WINDOW_MS = 3000L
 
 /**
  * The touch-only dashboard shown on the screen the game is not on: a rail of sections over
@@ -130,8 +131,8 @@ fun InGameDashboard(
     val readerState by reader.state.collectAsState()
     val readerOpen = readerState != null
     var section by remember(state.gameId) { mutableStateOf(DashboardSection.SESSION) }
-    var quitArmedUntil by remember(state.gameId) { mutableLongStateOf(0L) }
-    ClearAt(quitArmedUntil) { quitArmedUntil = 0L }
+    var exitChoiceOpen by remember(state.gameId) { mutableStateOf(false) }
+    val exit = dashboardExitOf(state)
     var sessionMillis by remember { mutableLongStateOf(sessionTimer?.getActiveMillis() ?: 0L) }
 
     LaunchedEffect(sessionTimer) {
@@ -196,20 +197,13 @@ fun InGameDashboard(
                 selected = section,
                 wide = wide,
                 controls = controls,
-                quitArmed = android.os.SystemClock.elapsedRealtime() < quitArmedUntil,
-                showsQuit = state.quickActionsAvailable || state.externalEmulator,
+                quitSelected = exitChoiceOpen,
+                exit = exit,
                 onSelect = selectSection,
                 onCheats = actions.onOpenCheats,
                 onSettings = actions.onOpenSettings,
                 onNextDisc = actions.onNextDisc,
-                onQuit = {
-                    if (android.os.SystemClock.elapsedRealtime() < quitArmedUntil) {
-                        quitArmedUntil = 0L
-                        actions.onQuit()
-                    } else {
-                        quitArmedUntil = android.os.SystemClock.elapsedRealtime() + CONFIRM_WINDOW_MS
-                    }
-                }
+                onQuit = { exitChoiceOpen = true }
             )
             Box(modifier = Modifier.weight(1f).fillMaxHeight()) {
                 Column(modifier = Modifier.fillMaxSize()) {
@@ -242,7 +236,44 @@ fun InGameDashboard(
                 .onSizeChanged { footerHeight = with(density) { it.height.toDp() } }
         )
         if (!wide && readerOpen) DashboardReader(reader, Modifier.fillMaxSize())
+        val returnToArgosy = {
+            exitChoiceOpen = false
+            actions.onReturnToArgosy()
+        }
+        val canClose = exit == DashboardExit.RETURN_OR_CLOSE
+        ArgosyConfirmModal(
+            visible = exitChoiceOpen && exit != DashboardExit.NONE,
+            title = stringResource(R.string.dual_dashboard_exit_title),
+            message = stringResource(
+                if (canClose) R.string.dual_dashboard_exit_message else R.string.dual_dashboard_exit_message_return_only
+            ),
+            neutralLabel = if (canClose) stringResource(R.string.dual_dashboard_exit_return) else null,
+            onNeutral = returnToArgosy,
+            confirmLabel = stringResource(
+                if (canClose) R.string.dual_dashboard_exit_close else R.string.dual_dashboard_exit_return
+            ),
+            destructive = canClose,
+            onConfirm = if (canClose) {
+                {
+                    exitChoiceOpen = false
+                    actions.onCloseGame()
+                }
+            } else {
+                returnToArgosy
+            },
+            onDismiss = { exitChoiceOpen = false },
+            focusedIndex = -1
+        )
     }
+}
+
+enum class DashboardExit { NONE, RETURN_ONLY, RETURN_OR_CLOSE }
+
+fun dashboardExitOf(state: CompanionInGameState): DashboardExit = when {
+    state.quickActionsAvailable || state.builtInGame -> DashboardExit.RETURN_OR_CLOSE
+    state.externalEmulator && state.canForceClose -> DashboardExit.RETURN_OR_CLOSE
+    state.externalEmulator -> DashboardExit.RETURN_ONLY
+    else -> DashboardExit.NONE
 }
 
 
@@ -281,8 +312,8 @@ private fun DashboardRail(
     selected: DashboardSection,
     wide: Boolean,
     controls: SessionControls,
-    quitArmed: Boolean,
-    showsQuit: Boolean,
+    quitSelected: Boolean,
+    exit: DashboardExit,
     onSelect: (DashboardSection) -> Unit,
     onCheats: () -> Unit,
     onSettings: () -> Unit,
@@ -346,16 +377,12 @@ private fun DashboardRail(
                 }
             }
         }
-        if (showsQuit) {
+        if (exit != DashboardExit.NONE) {
             RailItem(
                 icon = Icons.AutoMirrored.Filled.ExitToApp,
-                label = if (quitArmed) {
-                    stringResource(R.string.dual_dashboard_rail_quit_confirm)
-                } else {
-                    stringResource(R.string.dual_dashboard_rail_quit)
-                },
+                label = stringResource(R.string.dual_dashboard_rail_quit),
                 tint = theme.destructive,
-                selected = quitArmed,
+                selected = quitSelected,
                 wide = wide,
                 onTap = onQuit
             )

@@ -1,5 +1,6 @@
 package com.nendo.argosy.domain.model
 
+import org.json.JSONArray
 import org.json.JSONObject
 
 enum class HomeLayoutKind { CAROUSEL, AUTO_GRID, CUSTOM_GRID, COLUMNS }
@@ -232,8 +233,29 @@ data class CustomGridConfig(
     }
 }
 
-data object ColumnsConfig : HomeLayoutConfig {
+/**
+ * How many columns the Columns strip lays across the screen. [AUTO] follows the screen's aspect
+ * ratio; the others fix the count to the compact, wide or ultra-wide slot count.
+ */
+enum class HomeColumnCount { AUTO, COMPACT, WIDE, ULTRA_WIDE }
+
+/**
+ * @param hiddenThemes the picked columns switched off. [HomeColumnTheme.PINNED_COLLECTION] covers
+ *   every pinned collection at once.
+ */
+data class ColumnsConfig(
+    val showAllGames: Boolean = false,
+    val columnCount: HomeColumnCount = HomeColumnCount.AUTO,
+    val hiddenThemes: Set<HomeColumnTheme> = emptySet(),
+    val showPlatformColumns: Boolean = true,
+    val showInfoBand: Boolean = true
+) : HomeLayoutConfig {
     override val kind: HomeLayoutKind get() = HomeLayoutKind.COLUMNS
+
+    fun showsTheme(theme: HomeColumnTheme): Boolean = theme !in hiddenThemes
+
+    fun withTheme(theme: HomeColumnTheme, shown: Boolean): ColumnsConfig =
+        copy(hiddenThemes = if (shown) hiddenThemes - theme else hiddenThemes + theme)
 }
 
 const val DEFAULT_LANE_COUNT = 3
@@ -278,7 +300,7 @@ data class HomeLayoutSettings(
     val carousel: CarouselConfig = CarouselConfig(),
     val autoGrid: AutoGridConfig = AutoGridConfig(),
     val customGrid: CustomGridConfig = CustomGridConfig(),
-    val columns: ColumnsConfig = ColumnsConfig,
+    val columns: ColumnsConfig = ColumnsConfig(),
     val rails: HomeRailSettings = HomeRailSettings(),
     val boxArt3d: Boolean = false
 ) {
@@ -338,7 +360,21 @@ data class HomeLayoutSettings(
                 }
             }
         )
-        put(KEY_COLUMNS_LAYOUT, JSONObject())
+        put(
+            KEY_COLUMNS_LAYOUT,
+            JSONObject().apply {
+                put(KEY_SHOW_ALL_GAMES, columns.showAllGames)
+                put(KEY_COLUMN_COUNT, columns.columnCount.name)
+                put(
+                    KEY_HIDDEN_THEMES,
+                    JSONArray().apply {
+                        HomeColumnTheme.entries.filter { it in columns.hiddenThemes }.forEach { put(it.name) }
+                    }
+                )
+                put(KEY_PLATFORM_COLUMNS, columns.showPlatformColumns)
+                put(KEY_INFO_BAND, columns.showInfoBand)
+            }
+        )
         put(
             KEY_RAILS,
             JSONObject().apply {
@@ -382,6 +418,10 @@ data class HomeLayoutSettings(
         private const val KEY_CONTINUE_WATCHING = "showContinueWatching"
         private const val KEY_NEXT_UP = "showNextUp"
         private const val KEY_LIBRARIES = "showLibraries"
+        private const val KEY_COLUMN_COUNT = "columnCount"
+        private const val KEY_HIDDEN_THEMES = "hiddenThemes"
+        private const val KEY_PLATFORM_COLUMNS = "showPlatformColumns"
+        private const val KEY_INFO_BAND = "showInfoBand"
 
         /**
          * Reads what it can and defaults the rest. A layout the user curated is not thrown away
@@ -396,6 +436,7 @@ data class HomeLayoutSettings(
             val autoGrid = root.optJSONObject(KEY_AUTO_GRID)
             val customGrid = root.optJSONObject(KEY_CUSTOM_GRID)
             val rails = root.optJSONObject(KEY_RAILS)
+            val columns = root.optJSONObject(KEY_COLUMNS_LAYOUT)
             return HomeLayoutSettings(
                 selected = enumOrDefault(root.optString(KEY_SELECTED), defaults.selected),
                 carousel = CarouselConfig(
@@ -450,6 +491,24 @@ data class HomeLayoutSettings(
                         ?.coerceAtLeast(0) ?: defaults.customGrid.pageCount,
                     scrollArrangement = scrollArrangementOrNull(customGrid?.optJSONObject(KEY_SCROLL_ARRANGEMENT))
                 ),
+                columns = ColumnsConfig(
+                    showAllGames = columns?.optBoolean(KEY_SHOW_ALL_GAMES, defaults.columns.showAllGames)
+                        ?: defaults.columns.showAllGames,
+                    columnCount = enumOrDefault(
+                        columns?.optString(KEY_COLUMN_COUNT),
+                        defaults.columns.columnCount
+                    ),
+                    hiddenThemes = hiddenThemesOrDefault(
+                        columns?.optJSONArray(KEY_HIDDEN_THEMES),
+                        defaults.columns.hiddenThemes
+                    ),
+                    showPlatformColumns = columns?.optBoolean(
+                        KEY_PLATFORM_COLUMNS,
+                        defaults.columns.showPlatformColumns
+                    ) ?: defaults.columns.showPlatformColumns,
+                    showInfoBand = columns?.optBoolean(KEY_INFO_BAND, defaults.columns.showInfoBand)
+                        ?: defaults.columns.showInfoBand
+                ),
                 rails = HomeRailSettings(
                     showContinueWatching = rails?.optBoolean(
                         KEY_CONTINUE_WATCHING,
@@ -484,6 +543,13 @@ data class HomeLayoutSettings(
             } else {
                 defaults.copy(columns = resolvedColumns, rows = resolvedRows, lanesOnShortEdge = lanesOnShortEdge)
             }
+        }
+
+        private fun hiddenThemesOrDefault(json: JSONArray?, fallback: Set<HomeColumnTheme>): Set<HomeColumnTheme> {
+            if (json == null) return fallback
+            return (0 until json.length())
+                .mapNotNull { index -> HomeColumnTheme.entries.firstOrNull { it.name == json.optString(index) } }
+                .toSet()
         }
 
         private fun scrollArrangementOrNull(json: JSONObject?): ScrollArrangement? {

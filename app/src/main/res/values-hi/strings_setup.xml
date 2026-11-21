@@ -41,6 +41,7 @@
     <string name="setup_permissions_root_note">रूट एक्सेस से आपके लिए चालू कर दिया गया।</string>
     <string name="setup_permissions_primary_allow_all_files">सभी फ़ाइलों का एक्सेस दें</string>
     <string name="setup_permissions_primary_allow_usage">उपयोग एक्सेस दें</string>
+    <string name="setup_permissions_button_continue_without_usage">उपयोग एक्सेस के बिना जारी रखें</string>
     <string name="setup_permissions_primary_allow_notifications">सूचनाओं की अनुमति दें</string>
     <string name="setup_permissions_primary_next">आगे</string>
     <string name="setup_permissions_enables_all_files">ROM, सेव, कवर, डाउनलोड और फ़ाइल ब्राउज़र</string>

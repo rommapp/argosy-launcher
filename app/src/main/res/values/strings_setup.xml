@@ -120,6 +120,7 @@
     <!-- Main button while usage access is missing. Name the permission the way Android settings
          name it in your language. -->
     <string name="setup_permissions_primary_allow_usage">Allow usage access</string>
+    <string name="setup_permissions_button_continue_without_usage">Continue without usage access</string>
     <!-- Main button while notifications are not allowed. -->
     <string name="setup_permissions_primary_allow_notifications">Allow notifications</string>
     <!-- Main button once every required permission is allowed. Verb. -->

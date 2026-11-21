@@ -275,14 +275,16 @@ class SaveCacheManager @Inject constructor(
     }
 
     /**
-     * Files a server save into the cache. [activate] decides whether the new row also becomes the
-     * game's active save and the game's dirty flags are cleared; a history fill passes false so
-     * the save the user resumes from does not move under them.
+     * Files a server save into the cache under [savedName], the name the server gave it, whatever
+     * [downloadedFile] is called. [activate] decides whether the new row also becomes the game's
+     * active save and the game's dirty flags are cleared; a history fill passes false so the save
+     * the user resumes from does not move under them.
      */
     suspend fun cacheServerDownload(
         gameId: Long,
         emulatorId: String,
         downloadedFile: File,
+        savedName: String,
         channelName: String?,
         activate: Boolean,
         serverTimestamp: Instant? = null,
@@ -324,9 +326,9 @@ class SaveCacheManager @Inject constructor(
                 downloadedFile.copyTo(finalZip, overwrite = true)
                 "$relativeDir/$zipName" to finalZip
             } else {
-                val destFile = File(gameDir, downloadedFile.name)
+                val destFile = File(gameDir, savedName)
                 downloadedFile.copyTo(destFile, overwrite = true)
-                "$relativeDir/${downloadedFile.name}" to destFile
+                "$relativeDir/$savedName" to destFile
             }
 
             val saveSize = cachedFile.length()
@@ -1374,6 +1376,39 @@ class SaveCacheManager @Inject constructor(
 
     suspend fun reassignCacheOwner(cacheId: Long, ownerUserId: Long?) =
         withContext(Dispatchers.IO) { saveCacheDao.updateOwner(cacheId, ownerUserId) }
+
+    /**
+     * Whether the save at [savePath] still hashes as it did when [gameId]'s sync record for
+     * [emulatorId] and [channelName] last matched a server save, by download or upload.
+     */
+    suspend fun isUnchangedServerPlacement(
+        gameId: Long,
+        emulatorId: String,
+        channelName: String?,
+        savePath: String
+    ): Boolean = withContext(Dispatchers.IO) {
+        val record = saveSyncDao.getByGameEmulatorAndChannel(
+            gameId,
+            emulatorId,
+            SaveSyncApiClient.syncKeyOf(channelName),
+            syncPreferencesRepository.getRommUserId()
+        ) ?: return@withContext false
+        if (record.rommSaveId == null) return@withContext false
+        val placed = record.localContentHash ?: return@withContext false
+        if (calculateLocalSaveHash(savePath, gameId, emulatorId) == placed) return@withContext true
+        val placedIdentity = record.localIdentityHash ?: return@withContext false
+        calculateLocalSaveIdentity(savePath, gameId, emulatorId) == placedIdentity
+    }
+
+    /**
+     * Sigil's identity hash of the save at [savePath]: the save data without companion files such
+     * as a cartridge clock. Null for a save Sigil does not route or cannot read.
+     */
+    suspend fun calculateLocalSaveIdentity(savePath: String, gameId: Long, emulatorId: String): String? =
+        withContext(Dispatchers.IO) {
+            if (!fal.exists(savePath)) return@withContext null
+            (sigilSaveHandler.collect(gameId, emulatorId) as? SigilCollect.Found)?.identityHash
+        }
 
     /**
      * Hash of the save at [savePath] exactly as [cacheCurrentSave] archives it and the server

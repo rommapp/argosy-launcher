@@ -41,6 +41,7 @@
     <string name="setup_permissions_root_note">已通过 root 权限为你开启。</string>
     <string name="setup_permissions_primary_allow_all_files">允许访问所有文件</string>
     <string name="setup_permissions_primary_allow_usage">允许使用情况访问</string>
+    <string name="setup_permissions_button_continue_without_usage">不使用使用情况访问继续</string>
     <string name="setup_permissions_primary_allow_notifications">允许通知</string>
     <string name="setup_permissions_primary_next">下一步</string>
     <string name="setup_permissions_enables_all_files">ROM、存档、封面、下载和文件浏览器</string>

@@ -2,6 +2,7 @@ package com.nendo.argosy.domain.usecase.home
 
 import com.nendo.argosy.data.local.entity.GameEntity
 import com.nendo.argosy.data.model.GameSource
+import com.nendo.argosy.domain.model.ColumnsConfig
 import com.nendo.argosy.domain.model.HomeColumnKind
 import com.nendo.argosy.domain.model.HomeColumnLabel
 import com.nendo.argosy.domain.model.HomeColumnSources
@@ -126,6 +127,73 @@ class BuildHomeColumnsUseCaseTest {
 
         assertEquals(listOf(10, 10, 0), columns.map { it.games.size })
         assertEquals(10, columns.last().mediaItemIds.size)
+    }
+
+    @Test
+    fun `show every game keeps more than ten in every column`() {
+        val many = (1L..15L).map { game(it, platformId = 2) }
+        val sources = HomeColumnSources(
+            recent = many,
+            pinnedCollections = listOf(HomePinnedCollection(collectionId = 3, name = "Couch", games = many)),
+            platforms = listOf(HomePlatformGames(platformId = 2, name = "SNES", games = many)),
+            media = listOf(HomeMediaRow(id = "next", mediaKind = HomeMediaColumnKind.NEXT_UP, itemIds = (1..15).map { "m$it" }))
+        )
+
+        val columns = build(sources, ColumnsConfig(showAllGames = true))
+
+        assertEquals(listOf(15, 15, 15, 0), columns.map { it.games.size })
+        assertEquals(15, columns.last().mediaItemIds.size)
+    }
+
+    @Test
+    fun `hidden themes are dropped and the rest keep their order`() {
+        val sources = HomeColumnSources(
+            recent = listOf(game(1)),
+            gatheringDust = listOf(game(2)),
+            favorites = listOf(game(3)),
+            pinnedCollections = listOf(
+                HomePinnedCollection(collectionId = 4, name = "Couch", games = listOf(game(4))),
+                HomePinnedCollection(collectionId = 5, name = "Party", games = listOf(game(5)))
+            )
+        )
+        val config = ColumnsConfig(hiddenThemes = setOf(HomeColumnTheme.GATHERING_DUST, HomeColumnTheme.PINNED_COLLECTION))
+
+        val columns = build(sources, config)
+
+        assertEquals(listOf(HomeColumnTheme.CONTINUE, HomeColumnTheme.FAVORITES), columns.map { themeOf(it.label) })
+    }
+
+    @Test
+    fun `a hidden theme's lead no longer pushes a platform off its own lead`() {
+        val newest = game(1, platformId = 2, lastPlayed = at(300))
+        val older = game(2, platformId = 2, lastPlayed = at(200))
+        val sources = HomeColumnSources(
+            recent = listOf(newest),
+            platforms = listOf(HomePlatformGames(platformId = 2, name = "SNES", games = listOf(newest, older)))
+        )
+
+        val platform = build(sources, ColumnsConfig(hiddenThemes = setOf(HomeColumnTheme.CONTINUE))).single()
+
+        assertEquals(listOf(1L, 2L), platform.games.map { it.id })
+    }
+
+    @Test
+    fun `platform columns off drops every platform and keeps themes and media`() {
+        val sources = HomeColumnSources(
+            recent = listOf(game(1)),
+            platforms = listOf(HomePlatformGames(platformId = 2, name = "SNES", games = listOf(game(2, platformId = 2)))),
+            media = listOf(HomeMediaRow(id = "next", mediaKind = HomeMediaColumnKind.NEXT_UP, itemIds = listOf("a")))
+        )
+
+        val columns = build(sources, ColumnsConfig(showPlatformColumns = false))
+
+        assertEquals(listOf(HomeColumnKind.THEME, HomeColumnKind.MEDIA), columns.map { it.kind })
+    }
+
+    @Test
+    fun `the column game limit is ten unless every game shows`() {
+        assertEquals(HOME_COLUMN_MAX_GAMES, homeColumnGameLimit(showAllGames = false))
+        assertEquals(Int.MAX_VALUE, homeColumnGameLimit(showAllGames = true))
     }
 
     @Test

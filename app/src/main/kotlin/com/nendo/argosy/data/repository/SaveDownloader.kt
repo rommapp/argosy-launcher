@@ -367,6 +367,7 @@ class SaveDownloader @Inject constructor(
                             syncStatus = SaveSyncEntity.STATUS_SYNCED,
                             lastUploadedHash = serverSave.contentHash?.takeIf { client.getCapabilities().trustsServerHash },
                             localContentHash = saveCacheManager.get().calculateLocalSaveHash(preDownloadTargetPath, gameId, resolvedEmulatorId),
+                            localIdentityHash = saveCacheManager.get().calculateLocalSaveIdentity(preDownloadTargetPath, gameId, resolvedEmulatorId),
                             lastSyncDeviceId = serverSave.originDeviceId ?: currentDeviceSync?.deviceId ?: deviceId ?: syncEntity.lastSyncDeviceId,
                             lastSyncDeviceName = serverSave.originDeviceName() ?: currentDeviceSync?.deviceName ?: syncEntity.lastSyncDeviceName
                         )
@@ -808,6 +809,7 @@ class SaveDownloader @Inject constructor(
                     syncStatus = SaveSyncEntity.STATUS_SYNCED,
                     lastUploadedHash = serverSave.contentHash?.takeIf { client.getCapabilities().trustsServerHash },
                     localContentHash = saveCacheManager.get().calculateLocalSaveHash(targetPath, gameId, resolvedEmulatorId),
+                    localIdentityHash = saveCacheManager.get().calculateLocalSaveIdentity(targetPath, gameId, resolvedEmulatorId),
                     lastSyncDeviceId = serverSave.originDeviceId ?: completedUploaderSync?.deviceId ?: syncEntity.lastSyncDeviceId,
                     lastSyncDeviceName = serverSave.originDeviceName() ?: completedUploaderSync?.deviceName ?: syncEntity.lastSyncDeviceName
                 )
@@ -902,6 +904,7 @@ class SaveDownloader @Inject constructor(
                 gameId = gameId,
                 emulatorId = emulatorId ?: "unknown",
                 downloadedFile = tempFile,
+                savedName = FileNames.sanitize(serverSave.fileName),
                 channelName = channelName,
                 activate = true,
                 serverTimestamp = serverTime,
@@ -1018,6 +1021,7 @@ class SaveDownloader @Inject constructor(
                 gameId = gameId,
                 emulatorId = resolvedEmulatorId,
                 downloadedFile = tempFile,
+                savedName = FileNames.sanitize(serverSave.fileName),
                 channelName = channelName,
                 activate = activate,
                 serverTimestamp = serverTime,

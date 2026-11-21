@@ -73,9 +73,11 @@ internal fun HomeColumnsSurface(
 ) {
     Box(modifier) {
         val configuration = LocalConfiguration.current
+        val config = uiState.columnsConfig
         val slots = homeColumnsSlotCount(
             configuration.screenWidthDp.toFloat(),
-            configuration.screenHeightDp.toFloat()
+            configuration.screenHeightDp.toFloat(),
+            config.columnCount
         )
         LaunchedEffect(slots) { onSlotCount(slots) }
         Column(
@@ -86,6 +88,8 @@ internal fun HomeColumnsSurface(
                 state = uiState.columns,
                 slots = slots,
                 showFocus = showFocus,
+                showStepControls = !config.showAllGames,
+                showInfoBand = config.showInfoBand,
                 friendsFor = uiState::friendsFor,
                 onColumnTap = onColumnTap,
                 onColumnLongPress = onColumnLongPress,
@@ -99,21 +103,23 @@ internal fun HomeColumnsSurface(
                     .fillMaxWidth()
                     .weight(ComponentDefaults.HomeColumns.stripWeightRatio)
             )
-            val bandDrop = Dimens.spacingXxl
-            HomeColumnsBand(
-                uiState = uiState,
-                onCoverLoadFailed = onCoverLoadFailed,
-                onCoverLoaded = onCoverLoaded,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .weight(ComponentDefaults.HomeColumns.bandWeightRatio)
-                    .graphicsLayer {
-                        val progress = takeoverProgress()
-                        alpha = 1f - progress
-                        translationY = progress * bandDrop.toPx()
-                    }
-                    .padding(horizontal = Dimens.spacingXxl)
-            )
+            if (config.showInfoBand) {
+                val bandDrop = Dimens.spacingXxl
+                HomeColumnsBand(
+                    uiState = uiState,
+                    onCoverLoadFailed = onCoverLoadFailed,
+                    onCoverLoaded = onCoverLoaded,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .weight(ComponentDefaults.HomeColumns.bandWeightRatio)
+                        .graphicsLayer {
+                            val progress = takeoverProgress()
+                            alpha = 1f - progress
+                            translationY = progress * bandDrop.toPx()
+                        }
+                        .padding(horizontal = Dimens.spacingXxl)
+                )
+            }
         }
     }
 }

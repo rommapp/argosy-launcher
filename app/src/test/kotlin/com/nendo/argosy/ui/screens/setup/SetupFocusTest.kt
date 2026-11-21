@@ -31,9 +31,44 @@ class SetupFocusTest {
         val state = permissionsPage(
             SetupAccessState(snapshot = snapshot(ArgosyPermission.ALL_FILES_ACCESS to PermissionAvailability.GRANTED))
         )
-        assertEquals(ArgosyPermission.USAGE_ACCESS, firstUnmetRequired(state.access))
+        assertEquals(ArgosyPermission.USAGE_ACCESS, firstUnmetRequired(state.access, state.facts))
         assertEquals(R.string.setup_permissions_primary_allow_usage, actionsFor(state).single().label)
         assertEquals(SetupTarget.Permission(ArgosyPermission.USAGE_ACCESS), focusedTarget(state))
+    }
+
+    @Test
+    fun `usage access still off after a try offers continuing without it, which clears the page`() {
+        val stillOff = permissionsPage(
+            SetupAccessState(
+                snapshot = snapshot(ArgosyPermission.ALL_FILES_ACCESS to PermissionAvailability.GRANTED),
+                usageStillOff = true
+            )
+        )
+        assertEquals(
+            listOf(SetupActionId.DECLINE_USAGE, SetupActionId.PRIMARY),
+            actionsFor(stillOff).map { it.id }
+        )
+
+        val declined = stillOff.copy(facts = SetupFacts(usageAccessDeclined = true))
+        assertEquals(ArgosyPermission.NOTIFICATIONS, firstUnmetRequired(declined.access, declined.facts))
+        assertEquals(R.string.setup_permissions_primary_allow_notifications, actionsFor(declined).single().label)
+    }
+
+    @Test
+    fun `a pending restricted settings step holds back continuing without usage access`() {
+        val state = permissionsPage(
+            SetupAccessState(
+                snapshot = snapshot(ArgosyPermission.ALL_FILES_ACCESS to PermissionAvailability.GRANTED),
+                restrictedSettings = true,
+                usageBlocked = true,
+                usageStillOff = true
+            )
+        )
+        assertEquals(SetupActionId.PRIMARY, actionsFor(state).single().id)
+        assertEquals(
+            listOf(SetupActionId.DECLINE_USAGE, SetupActionId.PRIMARY),
+            actionsFor(state.copy(access = state.access.copy(restrictedStepDone = true))).map { it.id }
+        )
     }
 
     @Test
@@ -85,7 +120,7 @@ class SetupFocusTest {
                 )
             )
         )
-        assertNull(firstUnmetRequired(state.access))
+        assertNull(firstUnmetRequired(state.access, state.facts))
         assertEquals(R.string.setup_permissions_primary_next, actionsFor(state).single().label)
         assertEquals(primary, focusedTarget(state))
     }
@@ -101,7 +136,7 @@ class SetupFocusTest {
             rootGranting = setOf(ArgosyPermission.NOTIFICATIONS)
         )
         assertEquals(PermissionAvailability.CHECKING, access.availabilityOf(ArgosyPermission.NOTIFICATIONS))
-        assertEquals(ArgosyPermission.NOTIFICATIONS, firstUnmetRequired(access))
+        assertEquals(ArgosyPermission.NOTIFICATIONS, firstUnmetRequired(access, SetupFacts()))
     }
 
     @Test

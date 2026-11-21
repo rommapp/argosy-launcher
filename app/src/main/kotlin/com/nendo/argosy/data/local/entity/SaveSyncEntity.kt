@@ -32,6 +32,12 @@ data class SaveSyncEntity(
     val lastUploadedHash: String? = null,
     /** Client-computed hash of the last-synced local file (this device's hash space). Used only for local change detection; never sent to the server. */
     val localContentHash: String? = null,
+    /**
+     * Sigil's identity hash of the same local save as [localContentHash], covering the save data
+     * without companion files such as a cartridge clock. Null whenever [localContentHash] was
+     * written without it.
+     */
+    val localIdentityHash: String? = null,
     /** Server file timestamp at the moment we detected a corrupt download.
      * Subsequent sync attempts skip the download while the server's
      * timestamp matches; cleared automatically when it changes. */

@@ -7,6 +7,7 @@ import com.nendo.argosy.data.local.entity.GameEntity
 import com.nendo.argosy.data.preferences.UserPreferencesRepository
 import com.nendo.argosy.data.remote.romm.RomMRepository
 import com.nendo.argosy.data.repository.ActiveSaveRepository
+import com.nendo.argosy.data.repository.SaveCacheManager
 import com.nendo.argosy.data.repository.SaveSyncRepository
 import com.nendo.argosy.data.repository.SaveSyncResult
 import com.nendo.argosy.data.storage.FileAccessLayer
@@ -23,6 +24,7 @@ class SyncSaveOnSessionEndUseCase @Inject constructor(
     private val preferencesRepository: UserPreferencesRepository,
     private val romMRepository: RomMRepository,
     private val fileAccessLayer: FileAccessLayer,
+    private val saveCacheManager: SaveCacheManager,
 ) {
     companion object {
         private const val TAG = "SyncSaveOnSessionEnd"
@@ -128,6 +130,11 @@ class SyncSaveOnSessionEndUseCase @Inject constructor(
             ?: if (isHardcore) null else com.nendo.argosy.data.repository.SaveSyncApiClient.AUTOSAVE_SLOT_NAME
         Logger.debug(TAG, "[SaveSync] SESSION gameId=$gameId | Save ready for upload | path=$savePath, size=${saveSize}bytes, modified=$localModified, channel=$activeChannel")
 
+        if (saveCacheManager.isUnchangedServerPlacement(gameId, emulatorId, activeChannel, savePath)) {
+            Logger.info(TAG, "[SaveSync] SESSION gameId=$gameId | Result=NO_CHANGE | Save is unchanged since it last matched the server")
+            return Result.NoChange
+        }
+
         saveSyncRepository.createOrUpdateSyncEntity(
             gameId = gameId,
             rommId = game.rommId,
@@ -136,6 +143,7 @@ class SyncSaveOnSessionEndUseCase @Inject constructor(
             localUpdatedAt = localModified,
             channelName = activeChannel
         )
+
 
         if (!romMRepository.isConnected()) {
             Logger.debug(TAG, "[SaveSync] SESSION gameId=$gameId | RomM not connected, attempting reconnect...")

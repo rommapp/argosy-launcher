@@ -20,6 +20,7 @@ import javax.inject.Singleton
 
 data class AppPreferences(
     val defaultHomeDeclined: Boolean = false,
+    val usageAccessDeclined: Boolean = false,
     val setupFlowFinished: Boolean = false,
     val setupPagesSeen: Set<String> = emptySet(),
     val betaUpdatesEnabled: Boolean = false,
@@ -59,6 +60,7 @@ class AppPreferencesRepository @Inject constructor(
         val LEGACY_FIRST_RUN_COMPLETE = booleanPreferencesKey("first_run_complete")
         val LEGACY_SETUP_MIGRATED = booleanPreferencesKey("legacy_setup_migrated")
         val DEFAULT_HOME_DECLINED = booleanPreferencesKey("default_home_declined")
+        val USAGE_ACCESS_DECLINED = booleanPreferencesKey("usage_access_declined")
         val SETUP_FLOW_FINISHED = booleanPreferencesKey("setup_flow_finished")
         val SETUP_PAGES_SEEN = stringPreferencesKey("setup_pages_seen")
         val BETA_UPDATES_ENABLED = booleanPreferencesKey("beta_updates_enabled")
@@ -99,6 +101,7 @@ class AppPreferencesRepository @Inject constructor(
     val preferences: Flow<AppPreferences> = dataStore.data.map { prefs ->
         AppPreferences(
             defaultHomeDeclined = prefs[Keys.DEFAULT_HOME_DECLINED] ?: false,
+            usageAccessDeclined = prefs[Keys.USAGE_ACCESS_DECLINED] ?: false,
             setupFlowFinished = prefs[Keys.SETUP_FLOW_FINISHED] ?: false,
             setupPagesSeen = parseTokens(prefs[Keys.SETUP_PAGES_SEEN]),
             betaUpdatesEnabled = prefs[Keys.BETA_UPDATES_ENABLED] ?: false,
@@ -167,6 +170,10 @@ class AppPreferencesRepository @Inject constructor(
 
     suspend fun declineDefaultHome() {
         dataStore.edit { it[Keys.DEFAULT_HOME_DECLINED] = true }
+    }
+
+    suspend fun declineUsageAccess() {
+        dataStore.edit { it[Keys.USAGE_ACCESS_DECLINED] = true }
     }
 
     suspend fun finishSetupFlow() {

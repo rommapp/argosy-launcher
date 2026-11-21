@@ -36,6 +36,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.withTimeoutOrNull
 import com.nendo.argosy.data.remote.ssl.isCertificateTrustFailure
 import com.nendo.argosy.data.remote.ssl.isClientCertificateRejection
 import okhttp3.Interceptor
@@ -52,6 +53,7 @@ private const val MIN_DEVICE_API_VERSION = "4.7.0"
 private const val CANDIDATE_PROBE_TIMEOUT_SECONDS = 5L
 private const val TOKEN_RECHECK_WINDOW_MS = 60_000L
 private const val RECENT_CONNECT_MS = 5_000L
+private const val AWAIT_REACHABLE_INTERVAL_MS = 1_000L
 
 private val RECONNECT_BACKOFF_MS = listOf(5_000L, 10_000L, 20_000L, 40_000L, 60_000L)
 
@@ -167,6 +169,19 @@ class RomMConnectionManager @Inject constructor(
 
     suspend fun isReachable(): Boolean = withContext(Dispatchers.IO) {
         isConnected() && baseUrl.isNotEmpty() && apiFactory.reachability.isReachable(baseUrl)
+    }
+
+    /**
+     * Whether RomM answers a heartbeat within [timeoutMs], probed once a second.
+     */
+    suspend fun awaitReachable(timeoutMs: Long): Boolean = withContext(Dispatchers.IO) {
+        if (isReachable()) return@withContext true
+        withTimeoutOrNull(timeoutMs) {
+            while (!(isConnected() && baseUrl.isNotEmpty() && apiFactory.reachability.probeNow(baseUrl))) {
+                delay(AWAIT_REACHABLE_INTERVAL_MS)
+            }
+            true
+        } ?: false
     }
 
     fun responseMark(): Long = apiFactory.reachability.mark()

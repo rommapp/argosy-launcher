@@ -152,8 +152,10 @@ fun HomeLayoutPreview(
                     preview = preview,
                     slots = com.nendo.argosy.ui.screens.home.homeColumnsSlotCount(
                         configuration.screenWidthDp.toFloat(),
-                        configuration.screenHeightDp.toFloat()
+                        configuration.screenHeightDp.toFloat(),
+                        settings.columns.columnCount
                     ),
+                    showInfoBand = settings.columns.showInfoBand,
                     edge = edge,
                     animate = moving,
                     modifier = Modifier.fillMaxSize().padding(vertical = preview.gap)
@@ -422,6 +424,7 @@ private fun CarouselSchematic(
 private fun ColumnsSchematic(
     preview: HomeLayoutPreviewMetrics,
     slots: Int,
+    showInfoBand: Boolean,
     edge: Dp,
     animate: Boolean,
     modifier: Modifier = Modifier
@@ -472,6 +475,7 @@ private fun ColumnsSchematic(
                 )
             }
         }
+        if (!showInfoBand) return@Column
         Row(
             modifier = Modifier
                 .fillMaxWidth()

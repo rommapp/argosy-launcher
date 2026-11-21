@@ -292,6 +292,11 @@
     <string name="settings_displays_display_roles_auto">Авто</string>
     <string name="settings_displays_display_roles_standard">Экран-компаньон</string>
     <string name="settings_displays_display_roles_swapped">Основной экран</string>
+    <string name="settings_displays_navigation_menu_title">Меню навигации</string>
+    <string name="settings_displays_navigation_menu_subtitle">Экран, на котором открывается меню. Контроллер продолжает управлять экраном управления.</string>
+    <string name="settings_displays_navigation_menu_control">Экран управления</string>
+    <string name="settings_displays_navigation_menu_presentation">Экран презентации</string>
+    <string name="settings_displays_navigation_menu_screen">Экран %1$d</string>
 
     <string name="settings_displays_screens_title">Расположение экранов</string>
     <string name="settings_displays_screens_subtitle">Назначьте задачу каждому подключённому экрану</string>

@@ -4,6 +4,7 @@ import android.app.Application
 import android.content.Intent
 import com.nendo.argosy.data.emulator.EmulatorRegistry
 import com.nendo.argosy.data.emulator.EmulatorResolver
+import com.nendo.argosy.data.preferences.AppPreferencesRepository
 import com.nendo.argosy.data.preferences.UserPreferencesRepository
 import com.nendo.argosy.util.Logger
 import com.nendo.argosy.util.PermissionHelper
@@ -22,7 +23,8 @@ class KeepAlivePolicy @Inject constructor(
     private val application: Application,
     private val preferencesRepository: UserPreferencesRepository,
     private val emulatorResolver: EmulatorResolver,
-    private val permissionHelper: PermissionHelper
+    private val permissionHelper: PermissionHelper,
+    private val appPreferences: AppPreferencesRepository
 ) {
     val isSupported: Boolean get() = RootShell.isAvailable
 
@@ -55,6 +57,15 @@ class KeepAlivePolicy @Inject constructor(
         if (!RootShell.isAvailable || permissionHelper.hasUsageStatsPermission(application)) return
         RootShell.execute("appops set ${application.packageName} GET_USAGE_STATS allow")
             .onFailure { Logger.warn(TAG, "Usage Access grant through root failed", it) }
+    }
+
+    /**
+     * [grantUsageAccessOnRoot] at startup, unless the player chose in setup to continue without
+     * Usage Access.
+     */
+    suspend fun grantUsageAccessOnRootUnlessDeclined() {
+        if (appPreferences.preferences.first().usageAccessDeclined) return
+        grantUsageAccessOnRoot()
     }
 
     private companion object {

@@ -43,6 +43,7 @@ class SyncSaveOnSessionEndUseCaseTest {
     private val preferencesRepository = mockk<UserPreferencesRepository>(relaxed = true)
     private val romMRepository = mockk<RomMRepository>(relaxed = true)
     private val fileAccessLayer = mockk<FileAccessLayer>(relaxed = true)
+    private val saveCacheManager = mockk<com.nendo.argosy.data.repository.SaveCacheManager>(relaxed = true)
 
     private val duckstation = EmulatorRegistry.getById("duckstation")!!
     private val retroarch = EmulatorRegistry.getById("retroarch")!!
@@ -72,7 +73,8 @@ class SyncSaveOnSessionEndUseCaseTest {
         ),
         preferencesRepository = preferencesRepository,
         romMRepository = romMRepository,
-        fileAccessLayer = fileAccessLayer
+        fileAccessLayer = fileAccessLayer,
+        saveCacheManager = saveCacheManager
     )
 
     @Before
@@ -142,6 +144,18 @@ class SyncSaveOnSessionEndUseCaseTest {
         val result = useCase(GAME_ID, duckstation.packageName)
 
         assertEquals(SyncSaveOnSessionEndUseCase.Result.Uploaded(rommSaveId = 5L), result)
+    }
+
+    @Test
+    fun `a save still byte-identical to the server save placed before launch is not uploaded`() = runTest {
+        val save = givenReadableSave()
+        coEvery { saveCacheManager.isUnchangedServerPlacement(GAME_ID, "duckstation", any(), save) } returns true
+
+        val result = useCase(GAME_ID, duckstation.packageName)
+
+        assertEquals(SyncSaveOnSessionEndUseCase.Result.NoChange, result)
+        coVerify(exactly = 0) { saveSyncRepository.uploadSave(any(), any(), any(), any(), any(), any()) }
+        coVerify(exactly = 0) { saveSyncRepository.queueUpload(any(), any(), any(), any()) }
     }
 
     @Test

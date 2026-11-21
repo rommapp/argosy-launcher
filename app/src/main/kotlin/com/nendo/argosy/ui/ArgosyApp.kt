@@ -123,10 +123,8 @@ import com.nendo.argosy.ui.quickmenu.QuickMenuViewModel
 import com.nendo.argosy.DualScreenManager
 import com.nendo.argosy.ui.screens.settings.SettingsSection
 import com.nendo.argosy.ui.theme.Dimens
-import com.nendo.argosy.ui.theme.LocalLauncherTheme
 import com.nendo.argosy.ui.theme.Motion
 import com.nendo.argosy.ui.theme.gripReserveBottomInset
-import androidx.compose.ui.graphics.Color
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.flowWithLifecycle
 import androidx.lifecycle.repeatOnLifecycle
@@ -192,6 +190,8 @@ fun ArgosyApp(
     val isDualScreenDevice by dsm?.isDualScreenDevice?.collectAsState()
         ?: remember { mutableStateOf(false) }
     val isRolesSwapped by dsm?.isRolesSwapped?.collectAsState()
+        ?: remember { mutableStateOf(false) }
+    val menuOnPresentation by dsm?.navigationMenuOnPresentation?.collectAsState()
         ?: remember { mutableStateOf(false) }
     val isOnHomeScreen = currentRoute == Screen.Home.route
 
@@ -868,10 +868,11 @@ fun ArgosyApp(
         }
     }
 
-    LaunchedEffect(isDrawerOpen) {
-        if (isDrawerOpen && !drawerState.isOpen) {
+    LaunchedEffect(isDrawerOpen, menuOnPresentation) {
+        val drawsHere = isDrawerOpen && !menuOnPresentation
+        if (drawsHere && !drawerState.isOpen) {
             drawerState.open()
-        } else if (!isDrawerOpen && drawerState.isOpen) {
+        } else if (!drawsHere && drawerState.isOpen) {
             drawerState.close()
         }
     }
@@ -1145,8 +1146,7 @@ fun ArgosyApp(
             return@CompositionLocalProvider
         }
 
-        val isDarkTheme = LocalLauncherTheme.current.isDarkTheme
-        val scrimColor = if (isDarkTheme) Color.Black.copy(alpha = 0.5f) else Color.White.copy(alpha = 0.35f)
+        val scrimColor = com.nendo.argosy.ui.components.mainDrawerScrimColor()
         val lastUserActivityAtMs by (
             dsm?.lastUserActivityAtMs
                 ?: remember { kotlinx.coroutines.flow.MutableStateFlow(0L) }
@@ -1253,22 +1253,37 @@ fun ArgosyApp(
 
                 var drawerWidthPx by remember { mutableStateOf(0f) }
 
+                val navigateFromMainDrawer: (String) -> Unit = { route ->
+                    inputDispatcher.unsubscribeDrawer()
+                    viewModel.setDrawerOpen(false)
+                    scope.launch { drawerState.close() }
+                    navigateFromDrawer(route)
+                }
+
+                if (menuOnPresentation && isDrawerOpen) {
+                    FooterHints(hints = emptyList())
+                    com.nendo.argosy.ui.components.MainDrawerOnPresentation(
+                        holder = viewModel,
+                        items = viewModel.drawerItems,
+                        currentRoute = currentRoute,
+                        drawerState = drawerUiState,
+                        routeAtFocus = viewModel::routeAtDrawerFocus,
+                        onNavigate = navigateFromMainDrawer,
+                        onDismiss = closeDrawer
+                    )
+                }
+
                 ModalNavigationDrawer(
                 drawerState = drawerState,
-                gesturesEnabled = !setupActive,
+                gesturesEnabled = !setupActive && !menuOnPresentation,
                 scrimColor = scrimColor,
                 drawerContent = {
                     MainDrawer(
                         items = viewModel.drawerItems,
                         currentRoute = currentRoute,
                         drawerState = drawerUiState,
-                        isOpen = isDrawerOpen,
-                        onNavigate = { route ->
-                            inputDispatcher.unsubscribeDrawer()
-                            viewModel.setDrawerOpen(false)
-                            scope.launch { drawerState.close() }
-                            navigateFromDrawer(route)
-                        },
+                        isOpen = isDrawerOpen && !menuOnPresentation,
+                        onNavigate = navigateFromMainDrawer,
                         modifier = Modifier.onSizeChanged { drawerWidthPx = it.width.toFloat() }
                     )
                 }

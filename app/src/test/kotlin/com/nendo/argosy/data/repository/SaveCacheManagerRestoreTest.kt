@@ -15,6 +15,7 @@ import io.mockk.mockk
 import kotlinx.coroutines.test.runTest
 import org.junit.After
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import java.io.File
@@ -67,6 +68,58 @@ class SaveCacheManagerRestoreTest {
     @After
     fun tearDown() {
         tempDir.deleteRecursively()
+    }
+
+    private fun syncRecord(rommSaveId: Long?, localContentHash: String?) =
+        com.nendo.argosy.data.local.entity.SaveSyncEntity(
+            gameId = 100L,
+            rommId = 3169L,
+            emulatorId = "argosy",
+            channelName = "autosave",
+            rommSaveId = rommSaveId,
+            localSavePath = "/saves/Crystal.srm",
+            localUpdatedAt = null,
+            serverUpdatedAt = null,
+            lastSyncedAt = null,
+            syncStatus = com.nendo.argosy.data.local.entity.SaveSyncEntity.STATUS_SYNCED,
+            localContentHash = localContentHash
+        )
+
+    @Test
+    fun `a live save still hashing as the sync record placed it is unchanged, one played on is not`() = runTest {
+        val spied = io.mockk.spyk(manager)
+        coEvery { saveSyncDao.getByGameEmulatorAndChannel(100L, "argosy", "autosave", any()) } returns
+            syncRecord(rommSaveId = 2192L, localContentHash = "placed")
+
+        coEvery { spied.calculateLocalSaveHash("/saves/Crystal.srm", 100L, "argosy") } returns "placed"
+        assertTrue(spied.isUnchangedServerPlacement(100L, "argosy", null, "/saves/Crystal.srm"))
+
+        coEvery { spied.calculateLocalSaveHash("/saves/Crystal.srm", 100L, "argosy") } returns "played"
+        assertFalse(spied.isUnchangedServerPlacement(100L, "argosy", null, "/saves/Crystal.srm"))
+    }
+
+    @Test
+    fun `a placed save whose clock ticked but whose data did not still counts as unchanged`() = runTest {
+        val spied = io.mockk.spyk(manager)
+        coEvery { saveSyncDao.getByGameEmulatorAndChannel(100L, "argosy", "autosave", any()) } returns
+            syncRecord(rommSaveId = 2194L, localContentHash = "ram-and-old-clock").copy(localIdentityHash = "ram")
+        coEvery { spied.calculateLocalSaveHash("/saves/Silver.srm", 100L, "argosy") } returns "ram-and-new-clock"
+
+        coEvery { spied.calculateLocalSaveIdentity("/saves/Silver.srm", 100L, "argosy") } returns "ram"
+        assertTrue(spied.isUnchangedServerPlacement(100L, "argosy", null, "/saves/Silver.srm"))
+
+        coEvery { spied.calculateLocalSaveIdentity("/saves/Silver.srm", 100L, "argosy") } returns "played"
+        assertFalse(spied.isUnchangedServerPlacement(100L, "argosy", null, "/saves/Silver.srm"))
+    }
+
+    @Test
+    fun `a sync record that never matched a server save is not a placement`() = runTest {
+        val spied = io.mockk.spyk(manager)
+        coEvery { saveSyncDao.getByGameEmulatorAndChannel(100L, "argosy", "autosave", any()) } returns
+            syncRecord(rommSaveId = null, localContentHash = "placed")
+        coEvery { spied.calculateLocalSaveHash(any(), any(), any()) } returns "placed"
+
+        assertFalse(spied.isUnchangedServerPlacement(100L, "argosy", null, "/saves/Crystal.srm"))
     }
 
     @Test

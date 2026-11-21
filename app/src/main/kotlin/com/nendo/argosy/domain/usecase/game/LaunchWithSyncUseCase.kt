@@ -249,7 +249,7 @@ class LaunchWithSyncUseCase @Inject constructor(
         emit(SyncProgress.PreLaunch.CheckingSave(channelName, found = true))
         emit(SyncProgress.PreLaunch.Connecting(channelName))
 
-        if (!romMRepository.isReachable()) {
+        if (!romMRepository.awaitReachable(PRE_LAUNCH_SYNC_BUDGET_MS)) {
             emit(SyncProgress.PreLaunch.Connecting(channelName, success = false))
             emit(SyncProgress.Skipped)
             return@flow

@@ -457,7 +457,11 @@ class SaveSyncOrchestrator @Inject constructor(
             }
             val placedHash = cacheManager.calculateLocalSaveHash(savePath, game.id, emulatorId)
             if (syncRow != null && placedHash != null && syncRow.rommSaveId != null && syncRow.rommSaveId == active.rommSaveId) {
-                saveSyncDao.updateLocalContentHash(syncRow.id, placedHash)
+                saveSyncDao.updateLocalContentHash(
+                    syncRow.id,
+                    placedHash,
+                    cacheManager.calculateLocalSaveIdentity(savePath, game.id, emulatorId)
+                )
             }
             DiskCheck.Restored
         }
@@ -735,6 +739,7 @@ class SaveSyncOrchestrator @Inject constructor(
                         syncStatus = status,
                         lastUploadedHash = existing?.lastUploadedHash,
                         localContentHash = existing?.localContentHash,
+                        localIdentityHash = existing?.localIdentityHash,
                         lastSyncDeviceId = existing?.lastSyncDeviceId,
                         lastSyncDeviceName = existing?.lastSyncDeviceName,
                         userSelectedRestorePoint = existing?.userSelectedRestorePoint ?: false,

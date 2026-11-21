@@ -5,6 +5,7 @@ import com.nendo.argosy.R
 import com.nendo.argosy.domain.model.ArgosyPermission
 import com.nendo.argosy.domain.model.PermissionAvailability
 import com.nendo.argosy.domain.model.ScreenRole
+import com.nendo.argosy.domain.model.SetupFacts
 import com.nendo.argosy.domain.model.SetupItem
 import com.nendo.argosy.domain.setup.SetupRouter
 import com.nendo.argosy.ui.screens.settings.ScreenAssignment
@@ -44,6 +45,7 @@ enum class SetupActionId {
     DIFFERENT_SERVER,
     NOT_NOW,
     DECLINE_HOME,
+    DECLINE_USAGE,
     CHECK_AGAIN,
     SKIP_CUSTOMIZATION
 }
@@ -77,10 +79,12 @@ val SETUP_RECOMMENDED_PERMISSIONS: List<ArgosyPermission> = listOf(
 
 /**
  * The first required permission still blocking the page. A permission the device has no screen
- * for counts as met, as it does for routing.
+ * for counts as met, as it does for routing, and so does Usage access once the person chose to
+ * continue without it.
  */
-fun firstUnmetRequired(access: SetupAccessState): ArgosyPermission? =
+fun firstUnmetRequired(access: SetupAccessState, facts: SetupFacts): ArgosyPermission? =
     SETUP_REQUIRED_PERMISSIONS.firstOrNull {
+        if (it == ArgosyPermission.USAGE_ACCESS && facts.usageAccessDeclined) return@firstOrNull false
         when (access.availabilityOf(it)) {
             PermissionAvailability.GRANTED, PermissionAvailability.UNAVAILABLE -> false
             PermissionAvailability.MISSING, PermissionAvailability.CHECKING -> true
@@ -99,13 +103,21 @@ fun actionsFor(state: SetupUiState): List<SetupActionSpec> = when (state.page) {
     SetupPage.WELCOME -> listOf(primary(R.string.setup_welcome_button_start))
     SetupPage.LIBRARY -> libraryActions(state)
     SetupPage.PERMISSIONS -> {
-        val missing = firstUnmetRequired(state.access)
-        val label = if (missing == ArgosyPermission.USAGE_ACCESS && state.access.usageRestrictedStepPending) {
+        val missing = firstUnmetRequired(state.access, state.facts)
+        val usageMissing = missing == ArgosyPermission.USAGE_ACCESS
+        val label = if (usageMissing && state.access.usageRestrictedStepPending) {
             R.string.setup_accessibility_step_restricted_title
         } else {
             allowLabelFor(missing)
         }
-        listOf(primary(label))
+        if (usageMissing && state.access.usageStillOff && !state.access.usageRestrictedStepPending) {
+            listOf(
+                SetupActionSpec(SetupActionId.DECLINE_USAGE, R.string.setup_permissions_button_continue_without_usage),
+                primary(label)
+            )
+        } else {
+            listOf(primary(label))
+        }
     }
     SetupPage.ACCESSIBILITY -> listOf(
         primary(if (state.access.accessibilityOn) R.string.setup_accessibility_button_next else R.string.setup_accessibility_button_skip)
@@ -274,7 +286,7 @@ fun primaryTarget(state: SetupUiState): SetupTarget? =
 fun pageSatisfied(state: SetupUiState): Boolean = when (state.page) {
     SetupPage.WELCOME, SetupPage.DONE -> true
     SetupPage.LIBRARY -> state.signIn.view == LibraryView.SIGNED_IN
-    SetupPage.PERMISSIONS -> firstUnmetRequired(state.access) == null
+    SetupPage.PERMISSIONS -> firstUnmetRequired(state.access, state.facts) == null
     SetupPage.ACCESSIBILITY -> firstIncompleteStep(state.access) == null
     SetupPage.FOLDERS -> SetupRouter.isSatisfied(SetupItem.ROM_FOLDER, state.facts) &&
         state.folders.selectedRomPath != null &&
@@ -303,7 +315,7 @@ private fun choiceFocus(state: SetupUiState): SetupTarget? {
                 else -> content.firstOrNull()
             }
         }
-        SetupPage.PERMISSIONS -> firstUnmetRequired(state.access)?.let { missing ->
+        SetupPage.PERMISSIONS -> firstUnmetRequired(state.access, state.facts)?.let { missing ->
             if (missing == ArgosyPermission.USAGE_ACCESS && state.access.usageRestrictedStepPending) {
                 SetupTarget.AccessibilityStep(AccessibilityStepKind.RESTRICTED_SETTINGS)
             } else {

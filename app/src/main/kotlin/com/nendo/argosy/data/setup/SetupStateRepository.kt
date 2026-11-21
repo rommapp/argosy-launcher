@@ -104,6 +104,8 @@ class SetupStateRepository @Inject constructor(
 
     suspend fun declineDefaultHome() = appPreferences.declineDefaultHome()
 
+    suspend fun declineUsageAccess() = appPreferences.declineUsageAccess()
+
     suspend fun markPagesSeen(tokens: Set<String>) = appPreferences.markSetupPagesSeen(tokens)
 
     suspend fun finishFlow() = appPreferences.finishSetupFlow()
@@ -161,6 +163,7 @@ class SetupStateRepository @Inject constructor(
             allFilesAccess = access.allFiles,
             usageAccess = access.usageAccess,
             usageAccessGrantable = access.usageAccessGrantable,
+            usageAccessDeclined = app.usageAccessDeclined,
             notifications = access.notifications,
             romFolderPresent = !storage.romStoragePath.isNullOrBlank(),
             romFolderConfirmed = storage.romStoragePathConfirmed,

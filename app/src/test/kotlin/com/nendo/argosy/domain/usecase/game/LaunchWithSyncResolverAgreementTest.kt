@@ -67,6 +67,7 @@ class LaunchWithSyncResolverAgreementTest {
         coEvery { gameDao.getById(GAME_ID) } returns game
         coEvery { romMRepository.isConnected() } returns true
         coEvery { romMRepository.isReachable() } returns true
+        coEvery { romMRepository.awaitReachable(any()) } returns true
         coEvery { emulatorConfigDao.getByGameId(GAME_ID) } returns EmulatorConfigEntity(
             platformId = PLATFORM_ID,
             gameId = GAME_ID,

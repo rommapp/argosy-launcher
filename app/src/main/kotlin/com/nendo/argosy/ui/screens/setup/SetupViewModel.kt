@@ -292,6 +292,11 @@ class SetupViewModel @Inject constructor(
         advance()
     }
 
+    private fun declineUsageAccess() {
+        _core.update { it.copy(facts = it.facts.copy(usageAccessDeclined = true), focused = null) }
+        viewModelScope.launch { setupStateRepository.declineUsageAccess() }
+    }
+
     private fun requestPlatforms() {
         if (platformsRequested) return
         platformsRequested = true
@@ -539,6 +544,7 @@ class SetupViewModel @Inject constructor(
             SetupActionId.APPROVE_ON_DEVICE -> signIn.useDevicePairing()
             SetupActionId.NOT_NOW -> finishSetup()
             SetupActionId.DECLINE_HOME -> declineDefaultHome()
+            SetupActionId.DECLINE_USAGE -> declineUsageAccess()
             SetupActionId.CHECK_AGAIN -> personalize.recheckControllers()
             SetupActionId.SKIP_CUSTOMIZATION -> skipCustomization()
         }
@@ -550,7 +556,7 @@ class SetupViewModel @Inject constructor(
             SetupPage.WELCOME, SetupPage.ACCESSIBILITY -> advance()
             SetupPage.LIBRARY -> activateLibraryPrimary(state)
             SetupPage.PERMISSIONS -> {
-                val missing = firstUnmetRequired(state.access)
+                val missing = firstUnmetRequired(state.access, state.facts)
                 when {
                     missing == null -> advance()
                     missing == ArgosyPermission.USAGE_ACCESS && state.access.usageRestrictedStepPending ->

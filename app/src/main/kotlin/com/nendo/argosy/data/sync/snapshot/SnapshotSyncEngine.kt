@@ -53,6 +53,11 @@ sealed class SnapshotSyncResult {
     data object NotEligible : SnapshotSyncResult()
     data object NoConnection : SnapshotSyncResult()
     data object UpToDate : SnapshotSyncResult()
+
+    /**
+     * Neither this device nor the channel holds a save: no local save, nothing held, no current.
+     */
+    data object Empty : SnapshotSyncResult()
     data class Pushed(val snapshotId: Long) : SnapshotSyncResult()
     data class Branched(val snapshotId: Long, val channelLabel: String) : SnapshotSyncResult()
     data class Applied(val snapshotId: Long) : SnapshotSyncResult()
@@ -156,12 +161,21 @@ class SnapshotSyncEngine @Inject constructor(
             Logger.info(TAG, "[SaveSync] SNAPSHOT gameId=$gameId channel=${ctx.label}/${ctx.channelId} held=${ctx.stored?.heldSnapshotId} current=${ctx.current?.id} | $action")
             when (action) {
                 SnapshotAction.Nothing -> {
+                    if (local is LocalSave.None && ctx.current == null && held(ctx) == null) {
+                        return@locked SnapshotSyncResult.Empty
+                    }
                     commitSigilState(local)
                     markReached(ctx, local.hashes?.contentHash)
                     SnapshotSyncResult.UpToDate
                 }
-                is SnapshotAction.Push ->
+                is SnapshotAction.Push -> if (
+                    held(ctx) == null && ctx.current == null && isUnchangedServerPlacement(ctx.game, emulatorId, channelName)
+                ) {
+                    Logger.info(TAG, "[SaveSync] SNAPSHOT gameId=$gameId | the save is still the server save placed here, not pushed")
+                    SnapshotSyncResult.UpToDate
+                } else {
                     pushLocal(ctx, local, emulatorId, channelName, action.expectedCurrentId, isHardcore, false, action.parentSnapshotId)
+                }
                 is SnapshotAction.Adopt -> {
                     val result = adopt(ctx, ctx.current ?: return@locked SnapshotSyncResult.UpToDate)
                     commitSigilState(local)
@@ -227,7 +241,7 @@ class SnapshotSyncEngine @Inject constructor(
      * keep goes on top of the channel's current ([onTopOfCurrent]); every later one expects the
      * snapshot the push before it made, so the chain lands in order or stops at the first conflict.
      * The push carries the format recorded on cache row [cacheId], and marks that row synced once
-     * it lands.
+     * it lands. A cached save that is the held or current snapshot's save pushes nothing.
      */
     suspend fun pushCached(
         gameId: Long,
@@ -242,13 +256,20 @@ class SnapshotSyncEngine @Inject constructor(
         val ctx = load(gameId, channelName) ?: return@locked notReady(gameId)
         val format = cacheId?.let { saveCacheDao.getById(it) }?.saveFormat ?: SaveCacheEntity.FORMAT_NATIVE
         val unit = unitFromCache(cacheFile, format) ?: return@locked SnapshotSyncResult.Failed("cached save ${cacheFile.name} is empty")
+        val unitHashes = SaveHashes(unit.contentHash, unit.identityHash)
+        val onServer = listOfNotNull(held(ctx)?.save, currentPoint(ctx.current)?.save)
+        if (onServer.any { unitHashes.sameSaveAs(it) }) {
+            Logger.info(TAG, "[SaveSync] SNAPSHOT gameId=$gameId | cached save ${cacheFile.name} is already on the server, not pushed")
+            markReached(ctx, unit.contentHash, cacheId)
+            return@locked SnapshotSyncResult.UpToDate
+        }
         val expected = if (onTopOfCurrent) ctx.current?.id else ctx.stored?.heldSnapshotId ?: ctx.current?.id
         push(ctx, unit, PushSource(emulatorId, cacheId = cacheId), expected, isHardcore, approveHardcoreDowngrade, ctx.stored?.heldSnapshotId)
     }
 
     suspend fun keepServer(gameId: Long, emulatorId: String, channelName: String?): SnapshotSyncResult = locked(gameId) {
         val ctx = load(gameId, channelName) ?: return@locked notReady(gameId)
-        val current = ctx.current ?: return@locked SnapshotSyncResult.UpToDate
+        val current = ctx.current ?: return@locked SnapshotSyncResult.Empty
         apply(ctx, current.id, emulatorId, channelName)
     }
 
@@ -315,9 +336,9 @@ class SnapshotSyncEngine @Inject constructor(
             SigilCollect.NotRouted -> nativeSave(game, emulatorId)
         }
 
-    private suspend fun nativeSave(game: GameEntity, emulatorId: String): LocalSave {
+    private suspend fun discoverSavePath(game: GameEntity, emulatorId: String): String? {
         val client = apiClient.get()
-        val savePath = client.discoverSavePath(
+        return client.discoverSavePath(
             emulatorId = emulatorId,
             gameTitle = game.title,
             platformSlug = game.platformSlug,
@@ -326,7 +347,16 @@ class SnapshotSyncEngine @Inject constructor(
             coreName = client.resolveCoreForGame(game, emulatorId),
             emulatorPackage = emulatorResolver.getEmulatorPackageForGame(game.id, game.platformId, game.platformSlug),
             gameId = game.id
-        ) ?: return LocalSave.None
+        )
+    }
+
+    private suspend fun isUnchangedServerPlacement(game: GameEntity, emulatorId: String, channelName: String?): Boolean {
+        val savePath = discoverSavePath(game, emulatorId) ?: return false
+        return saveCacheManager.get().isUnchangedServerPlacement(game.id, emulatorId, channelName, savePath)
+    }
+
+    private suspend fun nativeSave(game: GameEntity, emulatorId: String): LocalSave {
+        val savePath = discoverSavePath(game, emulatorId) ?: return LocalSave.None
         val hash = saveCacheManager.get().calculateLocalSaveHash(savePath, game.id, emulatorId) ?: return LocalSave.None
         return LocalSave.Native(savePath, hash)
     }

@@ -606,6 +606,11 @@
     <string name="settings_displays_display_roles_standard">Tela companheira</string>
     <!-- Value of that row: the device\'s main screen, the upper one on a two-screen handheld. -->
     <string name="settings_displays_display_roles_swapped">Tela principal</string>
+    <string name="settings_displays_navigation_menu_title">Menu de Navegação</string>
+    <string name="settings_displays_navigation_menu_subtitle">A tela onde o menu abre. O controle continua comandando a tela de controle.</string>
+    <string name="settings_displays_navigation_menu_control">Tela de controle</string>
+    <string name="settings_displays_navigation_menu_presentation">Tela de apresentação</string>
+    <string name="settings_displays_navigation_menu_screen">Tela %1$d</string>
 
     <!-- Row opening the screen-by-screen role editor. -->
     <string name="settings_displays_screens_title">Layout de Telas</string>

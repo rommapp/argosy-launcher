@@ -97,6 +97,7 @@ class LaunchWithSyncUseCaseTest {
         every { emulatorResolver.resolveEmulatorId(emulatorPackage) } returns emulatorId
         coEvery { romMRepository.isConnected() } returns true
         coEvery { romMRepository.isReachable() } returns true
+        coEvery { romMRepository.awaitReachable(any()) } coAnswers { romMRepository.isReachable() }
     }
 
     @After
@@ -379,6 +380,19 @@ class LaunchWithSyncUseCaseTest {
         useCase.invokeWithProgress(gameId).toList()
 
         io.mockk.coVerify(exactly = 0) { siblingGroupRepository.refreshRommMainSibling(any()) }
+    }
+
+    @Test
+    fun `a server that answers again within the wait still gets the pre-launch sync`() = runTest {
+        coEvery { romMRepository.isReachable() } returns false
+        coEvery { romMRepository.awaitReachable(any()) } returns true
+        coEvery {
+            saveSyncRepository.preLaunchSyncForGame(gameId, rommId, emulatorId, channelName = null, secureSaves = true)
+        } returns PreLaunchSyncResult.LocalIsNewer
+
+        useCase.invokeWithProgress(gameId).toList()
+
+        io.mockk.coVerify(exactly = 1) { saveSyncRepository.preLaunchSyncForGame(gameId, rommId, emulatorId, null, true) }
     }
 
     @Test

@@ -23,7 +23,11 @@
     <string name="dual_dashboard_rail_cheats">Trucos</string>
     <string name="dual_dashboard_rail_settings">Ajustes</string>
     <string name="dual_dashboard_rail_quit">Salir</string>
-    <string name="dual_dashboard_rail_quit_confirm">Toca otra vez</string>
+    <string name="dual_dashboard_exit_return">Volver a Argosy</string>
+    <string name="dual_dashboard_exit_title">¿Salir del juego?</string>
+    <string name="dual_dashboard_exit_message">Volver a Argosy deja el juego ejecutándose en segundo plano. Cerrar juego lo detiene, y se pierde todo lo que no esté guardado en el juego.</string>
+    <string name="dual_dashboard_exit_message_return_only">El juego sigue ejecutándose en segundo plano mientras estás en Argosy.</string>
+    <string name="dual_dashboard_exit_close">Cerrar juego</string>
     <string name="dual_dashboard_rail_page">pág. %1$d</string>
     <string name="dual_dashboard_rail_percent">%1$d%%</string>
     <string name="dual_dashboard_achievements_progress">%1$d / %2$d</string>

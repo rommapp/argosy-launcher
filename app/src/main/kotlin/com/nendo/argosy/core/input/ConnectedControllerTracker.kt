@@ -8,6 +8,7 @@ import com.nendo.argosy.hardware.pad.MutedPadDevices
 import com.nendo.argosy.util.SafeCoroutineScope
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.drop
@@ -47,6 +48,7 @@ class ConnectedControllerTracker @Inject constructor(
 ) {
     private val inputManager = context.getSystemService(Context.INPUT_SERVICE) as InputManager
     private val scope = SafeCoroutineScope(Dispatchers.IO, "ConnectedControllerTracker")
+    private val refreshLane = Dispatchers.IO.limitedParallelism(1)
     private val activeState = ActiveControllerState()
     private val deviceGeneration = MutableStateFlow(0)
     private val presence = ControllerPresence()
@@ -90,8 +92,13 @@ class ConnectedControllerTracker @Inject constructor(
     private val removedDeviceIds: MutableSet<Int> = ConcurrentHashMap.newKeySet()
 
     private val listener = object : InputManager.InputDeviceListener {
-        override fun onInputDeviceAdded(deviceId: Int) = refresh()
-        override fun onInputDeviceChanged(deviceId: Int) = refresh()
+        override fun onInputDeviceAdded(deviceId: Int) {
+            refresh()
+        }
+
+        override fun onInputDeviceChanged(deviceId: Int) {
+            refresh()
+        }
         override fun onInputDeviceRemoved(deviceId: Int) {
             removedDeviceIds.add(deviceId)
             refresh()
@@ -121,7 +128,14 @@ class ConnectedControllerTracker @Inject constructor(
 
     fun detectActive(): DetectionResult = detectActive(activeController.value)
 
-    fun refresh() {
+    /**
+     * Re-reads the connected pads on a background lane, one refresh at a time, and returns that
+     * refresh. Reading a pad asks the system for its battery, which can stall for seconds on some
+     * Bluetooth pads, so the caller's thread never does it.
+     */
+    fun refresh(): Job = scope.launch(refreshLane) { refreshNow() }
+
+    private fun refreshNow() {
         val snapshot = readControllers()
         val events = synchronized(presence) {
             settler.offer(presence.update(snapshot), System.currentTimeMillis())

@@ -239,6 +239,47 @@ class ScreenLayoutTest {
     }
 
     @Test
+    fun `the navigation menu pin survives a json round trip`() {
+        listOf(
+            NavigationMenuPin.Control,
+            NavigationMenuPin.Presentation,
+            NavigationMenuPin.Panel(SECOND)
+        ).forEach { pin ->
+            val layout = ScreenLayout(
+                mapOf(BUILT_IN to ScreenRole.PRIMARY, SECOND to ScreenRole.PRESENTATION),
+                pin
+            )
+            assertEquals(layout, ScreenLayout.fromJson(layout.toJson()))
+        }
+    }
+
+    @Test
+    fun `a stored layout without a pin reads as the control pin`() {
+        val layout = ScreenLayout.fromJson("""{"roles":{"$BUILT_IN":"PRIMARY","$SECOND":"PRESENTATION"}}""")
+        assertEquals(NavigationMenuPin.Control, layout.navigationMenuPin)
+        assertEquals(ScreenRole.PRESENTATION, layout.roleFor(SECOND))
+    }
+
+    @Test
+    fun `a flat layout written before the pin keeps its roles and reads as the control pin`() {
+        val layout = ScreenLayout.fromJson("""{"$BUILT_IN":"PRIMARY","$SECOND":"PRESENTATION"}""")
+        assertEquals(
+            mapOf(BUILT_IN to ScreenRole.PRIMARY, SECOND to ScreenRole.PRESENTATION),
+            layout.roles
+        )
+        assertEquals(NavigationMenuPin.Control, layout.navigationMenuPin)
+    }
+
+    @Test
+    fun `a role change keeps the navigation menu pin`() {
+        val layout = ScreenLayout(
+            mapOf(BUILT_IN to ScreenRole.PRIMARY, SECOND to ScreenRole.PRESENTATION),
+            NavigationMenuPin.Panel(SECOND)
+        )
+        assertEquals(NavigationMenuPin.Panel(SECOND), layout.withRole(SECOND, ScreenRole.PRIMARY).navigationMenuPin)
+    }
+
+    @Test
     fun `an unreadable payload falls back to an empty layout`() {
         assertEquals(emptyMap<String, ScreenRole>(), ScreenLayout.fromJson("not json").roles)
         assertEquals(emptyMap<String, ScreenRole>(), ScreenLayout.fromJson(null).roles)
@@ -300,5 +341,33 @@ class ScreenLayoutsTest {
         )
         val restored = ScreenLayouts.fromJson(stored.toJson())
         assertEquals(stored.layoutFor(key)?.roles, restored.layoutFor(key)?.roles)
+    }
+
+    @Test
+    fun `each profile keeps its own navigation menu pin through a json round trip`() {
+        val pair = ScreenLayouts.setKeyOf(listOf(BUILT_IN, SECOND))
+        val trio = ScreenLayouts.setKeyOf(listOf(BUILT_IN, SECOND, THIRD))
+        val stored = ScreenLayouts()
+            .with(
+                pair,
+                ScreenLayout(
+                    mapOf(BUILT_IN to ScreenRole.PRIMARY, SECOND to ScreenRole.PRESENTATION),
+                    NavigationMenuPin.Presentation
+                )
+            )
+            .with(
+                trio,
+                ScreenLayout(
+                    mapOf(
+                        BUILT_IN to ScreenRole.PRIMARY,
+                        SECOND to ScreenRole.PRESENTATION,
+                        THIRD to ScreenRole.APP_TARGET
+                    ),
+                    NavigationMenuPin.Panel(THIRD)
+                )
+            )
+        val restored = ScreenLayouts.fromJson(stored.toJson())
+        assertEquals(NavigationMenuPin.Presentation, restored.layoutFor(pair)?.navigationMenuPin)
+        assertEquals(NavigationMenuPin.Panel(THIRD), restored.layoutFor(trio)?.navigationMenuPin)
     }
 }

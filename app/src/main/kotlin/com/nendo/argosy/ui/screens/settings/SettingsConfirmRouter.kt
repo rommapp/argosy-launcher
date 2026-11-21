@@ -795,6 +795,10 @@ private fun routeDisplaysConfirm(vm: SettingsViewModel, state: SettingsUiState):
             vm.requestEnumPicker(DisplaysItem.DisplayRoles.key)
             return InputResult.handled(SoundType.OPEN_MODAL)
         }
+        DisplaysItem.NavigationMenu -> {
+            vm.requestEnumPicker(DisplaysItem.NavigationMenu.key)
+            return InputResult.handled(SoundType.OPEN_MODAL)
+        }
         DisplaysItem.ScreenLayout -> vm.navigateToScreens()
         DisplaysItem.AmbientLedSettings -> vm.navigateToAmbientLed()
         DisplaysItem.GamesTarget -> {

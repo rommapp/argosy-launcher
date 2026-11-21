@@ -1,5 +1,6 @@
 package com.nendo.argosy.ui.screens.home
 
+import com.nendo.argosy.domain.model.HomeColumnCount
 import com.nendo.argosy.ui.theme.generated.ComponentDefaults
 import kotlin.math.abs
 import kotlin.math.min
@@ -32,14 +33,32 @@ data class HomeColumnsGeometry(
     }
 }
 
-fun homeColumnsSlotCount(screenWidth: Float, screenHeight: Float): Int {
-    val aspect = screenWidth / screenHeight.coerceAtLeast(1f)
-    return when {
-        aspect <= 1f || aspect >= ComponentDefaults.HomeColumns.phoneAspectMin ->
-            ComponentDefaults.HomeColumns.slotsPhone
-        aspect < ComponentDefaults.HomeColumns.wideAspectMin -> ComponentDefaults.HomeColumns.slotsCompact
-        else -> ComponentDefaults.HomeColumns.slotsWide
+/**
+ * The columns the strip lays across a [screenWidth] by [screenHeight] screen. [HomeColumnCount.AUTO]
+ * picks by aspect ratio; any other [count] fixes it.
+ */
+fun homeColumnsSlotCount(
+    screenWidth: Float,
+    screenHeight: Float,
+    count: HomeColumnCount = HomeColumnCount.AUTO
+): Int = count.fixedSlots ?: autoSlotCount(screenWidth / screenHeight.coerceAtLeast(1f))
+
+/**
+ * The column count this choice fixes, or null for [HomeColumnCount.AUTO].
+ */
+val HomeColumnCount.fixedSlots: Int?
+    get() = when (this) {
+        HomeColumnCount.AUTO -> null
+        HomeColumnCount.COMPACT -> ComponentDefaults.HomeColumns.slotsCompact
+        HomeColumnCount.WIDE -> ComponentDefaults.HomeColumns.slotsWide
+        HomeColumnCount.ULTRA_WIDE -> ComponentDefaults.HomeColumns.slotsUltraWide
     }
+
+private fun autoSlotCount(aspect: Float): Int = when {
+    aspect <= 1f -> ComponentDefaults.HomeColumns.slotsPhone
+    aspect < ComponentDefaults.HomeColumns.wideAspectMin -> ComponentDefaults.HomeColumns.slotsCompact
+    aspect < ComponentDefaults.HomeColumns.ultraWideAspectMin -> ComponentDefaults.HomeColumns.slotsWide
+    else -> ComponentDefaults.HomeColumns.slotsUltraWide
 }
 
 fun homeColumnsGeometry(width: Float, slots: Int, gap: Float): HomeColumnsGeometry {

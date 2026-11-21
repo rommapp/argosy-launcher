@@ -299,6 +299,7 @@ class SaveSyncApiClient @Inject constructor(
                     syncStatus = conflictDetector.determineSyncStatus(existing?.localUpdatedAt, serverTime),
                     lastUploadedHash = existing?.lastUploadedHash,
                     localContentHash = existing?.localContentHash,
+                    localIdentityHash = existing?.localIdentityHash,
                     lastSyncDeviceId = uploaderDeviceSync?.deviceId ?: existing?.lastSyncDeviceId,
                     lastSyncDeviceName = uploaderDeviceSync?.deviceName ?: existing?.lastSyncDeviceName,
                     ownerUserId = existing?.ownerUserId ?: ownerUserId

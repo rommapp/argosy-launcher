@@ -109,6 +109,15 @@ class RomMReachability @Inject constructor(
         return ledger.isReachable(baseUrl.trimEnd('/') + "/")
     }
 
+    /**
+     * Probes [baseUrl]'s heartbeat now, ignoring a recent failure, and records the answer. Blocks
+     * for up to the probe timeout.
+     */
+    fun probeNow(baseUrl: String): Boolean {
+        if (!hasActiveNetwork()) return false
+        return ledger.probeNow(baseUrl.trimEnd('/') + "/")
+    }
+
     private fun proceedRecording(chain: Interceptor.Chain, request: Request, root: String): Response =
         try {
             chain.proceed(request).also { response ->
@@ -154,6 +163,12 @@ internal class ReachabilityLedger(
 
     fun recordReachable(root: String) {
         synchronized(lock) { record(root, true) }
+    }
+
+    fun probeNow(root: String): Boolean {
+        val reachable = probe(root)
+        synchronized(lock) { record(root, reachable) }
+        return reachable
     }
 
     fun recordUnreachable(root: String) {

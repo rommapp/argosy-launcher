@@ -518,6 +518,7 @@ class HomeViewModel @Inject constructor(
         installedOnlyHome = prefs.installedOnlyHome,
         newBadgePlacement = prefs.newBadgePlacement,
         customGridConfig = prefs.homeLayout.customGrid,
+        columnsConfig = prefs.homeLayout.columns,
         layoutKind = prefs.homeLayout.selected
     )
 

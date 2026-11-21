@@ -60,9 +60,13 @@
     <string name="dual_dashboard_rail_settings">Settings</string>
     <!-- Rail entry that saves and closes the game. Verb. Keep very short. -->
     <string name="dual_dashboard_rail_quit">Quit</string>
+    <string name="dual_dashboard_exit_return">Return to Argosy</string>
+    <string name="dual_dashboard_exit_title">Leave the game?</string>
+    <string name="dual_dashboard_exit_message">Return to Argosy leaves the game running in the background. Close game stops it, and anything not saved in the game is lost.</string>
+    <string name="dual_dashboard_exit_message_return_only">The game keeps running in the background while you are in Argosy.</string>
+    <string name="dual_dashboard_exit_close">Close game</string>
     <!-- What the quit entry reads after the first tap, while it waits for a second. Instruction
          addressed to the user. Keep very short. -->
-    <string name="dual_dashboard_rail_quit_confirm">Tap again</string>
     <!-- Page the manual was left open at, beside its rail entry. %1$d is the page number. -->
     <string name="dual_dashboard_rail_page">p. %1$d</string>
     <!-- How much of the walkthrough has been read, beside its rail entry. %1$d is a percentage. -->

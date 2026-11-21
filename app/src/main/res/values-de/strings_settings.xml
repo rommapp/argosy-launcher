@@ -297,6 +297,11 @@
     <string name="settings_displays_display_roles_auto">Auto</string>
     <string name="settings_displays_display_roles_standard">Begleitbildschirm</string>
     <string name="settings_displays_display_roles_swapped">Hauptbildschirm</string>
+    <string name="settings_displays_navigation_menu_title">Navigationsmenü</string>
+    <string name="settings_displays_navigation_menu_subtitle">Der Bildschirm, auf dem das Menü erscheint. Der Controller steuert weiter den Steuerbildschirm.</string>
+    <string name="settings_displays_navigation_menu_control">Steuerbildschirm</string>
+    <string name="settings_displays_navigation_menu_presentation">Präsentationsbildschirm</string>
+    <string name="settings_displays_navigation_menu_screen">Bildschirm %1$d</string>
 
     <string name="settings_displays_screens_title">Bildschirmanordnung</string>
     <string name="settings_displays_screens_subtitle">Jedem angeschlossenen Bildschirm eine Aufgabe geben</string>

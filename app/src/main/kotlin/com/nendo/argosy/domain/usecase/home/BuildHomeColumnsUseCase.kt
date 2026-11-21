@@ -1,6 +1,7 @@
 package com.nendo.argosy.domain.usecase.home
 
 import com.nendo.argosy.data.local.entity.GameEntity
+import com.nendo.argosy.domain.model.ColumnsConfig
 import com.nendo.argosy.domain.model.HomeColumn
 import com.nendo.argosy.domain.model.HomeColumnLabel
 import com.nendo.argosy.domain.model.HomeColumnWindow
@@ -23,20 +24,34 @@ const val ALMOST_THERE_MAX_REMAINING_SEC = 3L * 60 * 60
 const val MOST_PLAYED_GENRE_WINDOW_DAYS = 90L
 
 /**
- * The ordered Columns loop: themes, then platforms, then media. Empty columns are dropped and each
- * column holds at most [HOME_COLUMN_MAX_GAMES]. A platform column leads with its most recently
- * played game, else its best rated, passing over any game that already leads an earlier column.
+ * How many games one Columns column holds, and so how many each of its queries asks for.
+ */
+fun homeColumnGameLimit(showAllGames: Boolean): Int = if (showAllGames) Int.MAX_VALUE else HOME_COLUMN_MAX_GAMES
+
+/**
+ * The ordered Columns loop: themes, then platforms, then media. Empty columns, themes in
+ * [ColumnsConfig.hiddenThemes] and, with [ColumnsConfig.showPlatformColumns] off, platforms are
+ * dropped. Each column holds at most [homeColumnGameLimit] games. A platform column leads with its
+ * most recently played game, else its best rated, passing over any game that already leads an
+ * earlier column.
  */
 class BuildHomeColumnsUseCase @Inject constructor() {
 
-    operator fun invoke(sources: HomeColumnSources): List<HomeColumn> {
-        val themes = themeColumns(sources)
+    operator fun invoke(sources: HomeColumnSources, config: ColumnsConfig = ColumnsConfig()): List<HomeColumn> {
+        val limit = homeColumnGameLimit(config.showAllGames)
+        val themes = themeColumns(sources, limit).filter { column ->
+            (column.label as? HomeColumnLabel.Theme)?.let { config.showsTheme(it.theme) } ?: true
+        }
         val leads = themes.mapTo(mutableSetOf()) { it.games.first().id }
-        val platforms = sources.platforms.mapNotNull { platform ->
-            platformColumn(platform, leads)?.also { leads += it.games.first().id }
+        val platforms = if (!config.showPlatformColumns) {
+            emptyList()
+        } else {
+            sources.platforms.mapNotNull { platform ->
+                platformColumn(platform, leads, limit)?.also { leads += it.games.first().id }
+            }
         }
         val media = sources.media.mapNotNull { row ->
-            row.itemIds.distinct().take(HOME_COLUMN_MAX_GAMES).takeIf { it.isNotEmpty() }?.let { ids ->
+            row.itemIds.distinct().take(limit).takeIf { it.isNotEmpty() }?.let { ids ->
                 HomeColumn(
                     id = "$ID_MEDIA${row.id}",
                     label = HomeColumnLabel.Media(row.mediaKind),
@@ -47,26 +62,27 @@ class BuildHomeColumnsUseCase @Inject constructor() {
         return themes + platforms + media
     }
 
-    private fun themeColumns(sources: HomeColumnSources): List<HomeColumn> {
+    private fun themeColumns(sources: HomeColumnSources, limit: Int): List<HomeColumn> {
         val genre = mostPlayedGenre(sources.genrePlay)
         return listOfNotNull(
-            theme(HomeColumnTheme.CONTINUE, sources.recent),
-            theme(HomeColumnTheme.PLAY_IT_AGAIN, sources.playItAgain),
-            theme(HomeColumnTheme.ALMOST_THERE, sources.almostThere),
-            theme(HomeColumnTheme.FRIENDS_PLAYING, friendsOrder(sources.friendsPlaying)),
-            theme(HomeColumnTheme.JUST_ADDED, sources.newlyAdded),
-            theme(HomeColumnTheme.GATHERING_DUST, sources.gatheringDust),
-            theme(HomeColumnTheme.FAVORITES, sources.favorites)
+            theme(HomeColumnTheme.CONTINUE, sources.recent, limit),
+            theme(HomeColumnTheme.PLAY_IT_AGAIN, sources.playItAgain, limit),
+            theme(HomeColumnTheme.ALMOST_THERE, sources.almostThere, limit),
+            theme(HomeColumnTheme.FRIENDS_PLAYING, friendsOrder(sources.friendsPlaying), limit),
+            theme(HomeColumnTheme.JUST_ADDED, sources.newlyAdded, limit),
+            theme(HomeColumnTheme.GATHERING_DUST, sources.gatheringDust, limit),
+            theme(HomeColumnTheme.FAVORITES, sources.favorites, limit)
         ) + sources.pinnedCollections.mapNotNull { collection ->
             theme(
                 HomeColumnTheme.PINNED_COLLECTION,
                 collection.games,
+                limit,
                 subject = collection.name,
                 id = "$ID_COLLECTION${collection.collectionId}"
             )
         } + listOfNotNull(
             genre?.let { (name, games) ->
-                theme(HomeColumnTheme.MOST_PLAYED_GENRE, games, subject = name)
+                theme(HomeColumnTheme.MOST_PLAYED_GENRE, games, limit, subject = name)
             }
         )
     }
@@ -74,19 +90,20 @@ class BuildHomeColumnsUseCase @Inject constructor() {
     private fun theme(
         theme: HomeColumnTheme,
         games: List<GameEntity>,
+        limit: Int,
         subject: String? = null,
         id: String = "$ID_THEME${theme.name}"
     ): HomeColumn? {
-        val capped = games.distinctBy { it.id }.take(HOME_COLUMN_MAX_GAMES)
+        val capped = games.distinctBy { it.id }.take(limit)
         if (capped.isEmpty()) return null
         return HomeColumn(id = id, label = HomeColumnLabel.Theme(theme, subject), games = capped)
     }
 
-    private fun platformColumn(platform: HomePlatformGames, leads: Set<Long>): HomeColumn? {
+    private fun platformColumn(platform: HomePlatformGames, leads: Set<Long>, limit: Int): HomeColumn? {
         val ranked = platform.games.distinctBy { it.id }.sortedWith(LEAD_ORDER)
         if (ranked.isEmpty()) return null
         val lead = ranked.firstOrNull { it.id !in leads } ?: ranked.first()
-        val games = (listOf(lead) + ranked.filter { it.id != lead.id }).take(HOME_COLUMN_MAX_GAMES)
+        val games = (listOf(lead) + ranked.filter { it.id != lead.id }).take(limit)
         return HomeColumn(
             id = "$ID_PLATFORM${platform.platformId}",
             label = HomeColumnLabel.Platform(platform.name),

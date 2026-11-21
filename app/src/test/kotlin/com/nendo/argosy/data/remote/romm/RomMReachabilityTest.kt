@@ -184,6 +184,18 @@ class RomMReachabilityTest {
     }
 
     @Test
+    fun `a probe now ignores a fresh failure and lets the next call through once the server answers`() {
+        val h = Harness(serverUp = false)
+        assertFalse(h.ledger.isReachable(root))
+
+        h.serverUp = true
+        h.clock = 2_000L
+        assertFalse("a fresh failure still fails fast", h.ledger.isReachable(root))
+        assertTrue(h.ledger.probeNow(root))
+        assertTrue(h.ledger.isReachable(root))
+    }
+
+    @Test
     fun `a background re-probe that answers lets the next launch through`() {
         val h = Harness(serverUp = false)
         h.ledger.isReachable(root)

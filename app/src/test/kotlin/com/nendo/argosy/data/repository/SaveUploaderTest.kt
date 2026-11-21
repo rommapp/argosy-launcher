@@ -159,6 +159,44 @@ class SaveUploaderTest {
     }
 
     @Test
+    fun `a save whose clock ticked but whose save data did not is skipped by identity`() = runTest {
+        coEvery {
+            saveSyncDao.getByGameEmulatorAndChannel(gameId, emulatorId, SaveSyncApiClient.AUTOSAVE_SLOT_NAME, any())
+        } returns SaveSyncEntity(
+            id = 11L, gameId = gameId, rommId = rommId, emulatorId = emulatorId, rommSaveId = 555L,
+            localSavePath = preparedFile.absolutePath, syncStatus = SaveSyncEntity.STATUS_SYNCED,
+            localContentHash = "ram-and-old-clock", localIdentityHash = "ram"
+        )
+        every { saveArchiver.calculateContentHash(any()) } returns "ram-and-new-clock"
+        coEvery { saveCacheManager.calculateLocalSaveIdentity(any(), gameId, any()) } returns "ram"
+        coEvery { saveCacheDao.getByGameAndHash(any(), any(), any()) } returns null
+
+        val result = uploader.uploadSave(gameId, emulatorId, channelName = null)
+
+        assertEquals(true, (result as SaveSyncResult.Success).noOp)
+        coVerify(exactly = 0) { romMApi.uploadSaveWithDevice(any(), any(), any(), any(), any(), any(), any(), any<MultipartBody.Part>(), any()) }
+        coVerify(exactly = 0) { romMApi.uploadSave(any(), any(), any(), any(), any(), any<MultipartBody.Part>(), any()) }
+    }
+
+    @Test
+    fun `a save whose data changed is not skipped when only an old identity is recorded`() = runTest {
+        coEvery {
+            saveSyncDao.getByGameEmulatorAndChannel(gameId, emulatorId, SaveSyncApiClient.AUTOSAVE_SLOT_NAME, any())
+        } returns SaveSyncEntity(
+            id = 11L, gameId = gameId, rommId = rommId, emulatorId = emulatorId, rommSaveId = 555L,
+            localSavePath = preparedFile.absolutePath, syncStatus = SaveSyncEntity.STATUS_SYNCED,
+            localContentHash = "ram-and-old-clock", localIdentityHash = "ram"
+        )
+        every { saveArchiver.calculateContentHash(any()) } returns "played-and-new-clock"
+        coEvery { saveCacheManager.calculateLocalSaveIdentity(any(), gameId, any()) } returns "played"
+        coEvery { saveCacheDao.getByGameAndHash(any(), any(), any()) } returns null
+
+        val result = uploader.uploadSave(gameId, emulatorId, channelName = null)
+
+        assertTrue("expected an upload attempt, got noOp", result !is SaveSyncResult.Success || !result.noOp)
+    }
+
+    @Test
     fun `an unchanged upload links the active version to the server save it already is`() = runTest {
         coEvery {
             saveSyncDao.getByGameEmulatorAndChannel(gameId, emulatorId, SaveSyncApiClient.AUTOSAVE_SLOT_NAME, any())

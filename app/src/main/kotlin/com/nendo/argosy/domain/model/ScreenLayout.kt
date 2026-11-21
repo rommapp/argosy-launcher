@@ -22,7 +22,55 @@ data class ScreenSpec(
     val areaPx: Long get() = widthPx.toLong() * heightPx.toLong()
 }
 
-data class ScreenLayout(val roles: Map<String, ScreenRole> = emptyMap()) {
+private const val PIN_CONTROL_TOKEN = "control"
+private const val PIN_PRESENTATION_TOKEN = "presentation"
+private const val PIN_PANEL_TOKEN_PREFIX = "screen:"
+private const val ROLES_FIELD = "roles"
+private const val NAVIGATION_MENU_FIELD = "navigationMenu"
+
+/**
+ * The screen a screen set draws the navigation menu on. [Panel] names a physical screen by its
+ * stable key. Anything unreadable is [Control].
+ */
+sealed interface NavigationMenuPin {
+    data object Control : NavigationMenuPin
+
+    data object Presentation : NavigationMenuPin
+
+    data class Panel(val screenKey: String) : NavigationMenuPin
+
+    val token: String
+        get() = when (this) {
+            Control -> PIN_CONTROL_TOKEN
+            Presentation -> PIN_PRESENTATION_TOKEN
+            is Panel -> PIN_PANEL_TOKEN_PREFIX + screenKey
+        }
+
+    /**
+     * Whether the menu draws on the presentation screen, given the stable key of the attached
+     * screen holding PRESENTATION right now, or null when no screen holds it.
+     */
+    fun drawsOnPresentation(presentationScreenKey: String?): Boolean = when (this) {
+        Control -> false
+        Presentation -> presentationScreenKey != null
+        is Panel -> screenKey == presentationScreenKey
+    }
+
+    companion object {
+        fun fromToken(token: String?): NavigationMenuPin = when {
+            token == PIN_PRESENTATION_TOKEN -> Presentation
+            token != null && token.startsWith(PIN_PANEL_TOKEN_PREFIX) &&
+                token.length > PIN_PANEL_TOKEN_PREFIX.length ->
+                Panel(token.removePrefix(PIN_PANEL_TOKEN_PREFIX))
+            else -> Control
+        }
+    }
+}
+
+data class ScreenLayout(
+    val roles: Map<String, ScreenRole> = emptyMap(),
+    val navigationMenuPin: NavigationMenuPin = NavigationMenuPin.Control
+) {
 
     fun roleFor(screenKey: String): ScreenRole? = roles[screenKey]
 
@@ -37,7 +85,7 @@ data class ScreenLayout(val roles: Map<String, ScreenRole> = emptyMap()) {
         val next = roles.toMutableMap()
         next[screenKey] = role
         if (holder != null && role != ScreenRole.OFF) next[holder] = previous
-        return ScreenLayout(next)
+        return copy(roles = next)
     }
 
     val primaryKey: String? get() = roles.entries.find { it.value == ScreenRole.PRIMARY }?.key
@@ -49,18 +97,30 @@ data class ScreenLayout(val roles: Map<String, ScreenRole> = emptyMap()) {
     val isSingleDisplay: Boolean get() = presentationKey == null
 
     fun toJson(): String = JSONObject().apply {
-        roles.forEach { (key, role) -> put(key, role.name) }
+        put(ROLES_FIELD, JSONObject().apply { roles.forEach { (key, role) -> put(key, role.name) } })
+        if (navigationMenuPin != NavigationMenuPin.Control) put(NAVIGATION_MENU_FIELD, navigationMenuPin.token)
     }.toString()
 
     companion object {
+        /**
+         * Reads both the current shape, roles under [ROLES_FIELD] beside the menu pin, and the
+         * earlier flat map of screen key to role, which carries no pin.
+         */
         fun fromJson(json: String?): ScreenLayout {
             if (json.isNullOrBlank()) return ScreenLayout()
             return try {
                 val obj = JSONObject(json)
-                val roles = obj.keys().asSequence().associateWith { key ->
-                    ScreenRole.fromString(obj.optString(key))
+                val nested = obj.optJSONObject(ROLES_FIELD)
+                val rolesObj = nested ?: obj
+                val roles = rolesObj.keys().asSequence().associateWith { key ->
+                    ScreenRole.fromString(rolesObj.optString(key))
                 }
-                ScreenLayout(roles)
+                val pin = if (nested != null && obj.has(NAVIGATION_MENU_FIELD)) {
+                    NavigationMenuPin.fromToken(obj.optString(NAVIGATION_MENU_FIELD))
+                } else {
+                    NavigationMenuPin.Control
+                }
+                ScreenLayout(roles, pin)
             } catch (_: Exception) {
                 ScreenLayout()
             }

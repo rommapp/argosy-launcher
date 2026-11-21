@@ -34,6 +34,22 @@ class SnapshotSyncRouterTest {
     }
 
     @Test
+    fun `an empty channel with no local save hands the launch to the server-save negotiation`() = runBlocking {
+        coEvery { engine.isEligible(5) } returns true
+        coEvery { engine.sync(5, "argosy", null, false) } returns SnapshotSyncResult.Empty
+
+        org.junit.Assert.assertEquals(null, router.preLaunch(5, "argosy", null))
+    }
+
+    @Test
+    fun `a download from an empty channel falls back to the server-save downloader`() = runBlocking {
+        coEvery { engine.isEligible(5) } returns true
+        coEvery { engine.keepServer(5, "argosy", null) } returns SnapshotSyncResult.Empty
+
+        org.junit.Assert.assertEquals(null, router.download(5, "argosy", null))
+    }
+
+    @Test
     fun `a launch on an older server keeps syncing autosave`() = runBlocking {
         coEvery { engine.isEligible(5) } returns false
 

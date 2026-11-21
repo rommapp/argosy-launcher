@@ -327,6 +327,8 @@ data class HomeUiState(
         com.nendo.argosy.domain.model.HomeLayoutKind.CAROUSEL,
     val customGridConfig: com.nendo.argosy.domain.model.CustomGridConfig =
         com.nendo.argosy.domain.model.CustomGridConfig(),
+    val columnsConfig: com.nendo.argosy.domain.model.ColumnsConfig =
+        com.nendo.argosy.domain.model.ColumnsConfig(),
     val customGrid: com.nendo.argosy.ui.components.CustomGridState =
         com.nendo.argosy.ui.components.CustomGridState(),
     val tileGames: Map<Long, HomeGameUi> = emptyMap(),

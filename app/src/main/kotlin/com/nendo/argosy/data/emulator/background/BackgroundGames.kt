@@ -79,7 +79,7 @@ class BackgroundGames @Inject constructor(
     fun start() {
         if (started) return
         started = true
-        scope.launch { keepAlivePolicy.grantUsageAccessOnRoot() }
+        scope.launch { keepAlivePolicy.grantUsageAccessOnRootUnlessDeclined() }
         scope.launch { restoreTransitionScale() }
         scope.launch {
             var previous: ActiveSession? = null

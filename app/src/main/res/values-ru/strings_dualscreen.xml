@@ -19,7 +19,11 @@
     <string name="dual_dashboard_rail_cheats">Читы</string>
     <string name="dual_dashboard_rail_settings">Настройки</string>
     <string name="dual_dashboard_rail_quit">Выйти</string>
-    <string name="dual_dashboard_rail_quit_confirm">Ещё раз</string>
+    <string name="dual_dashboard_exit_return">Вернуться в Argosy</string>
+    <string name="dual_dashboard_exit_title">Выйти из игры?</string>
+    <string name="dual_dashboard_exit_message">При возврате в Argosy игра продолжит работать в фоне. Закрытие игры остановит её, и всё, что не сохранено в игре, будет потеряно.</string>
+    <string name="dual_dashboard_exit_message_return_only">Игра продолжает работать в фоне, пока вы в Argosy.</string>
+    <string name="dual_dashboard_exit_close">Закрыть игру</string>
     <string name="dual_dashboard_rail_page">стр. %1$d</string>
     <string name="dual_dashboard_rail_percent">%1$d%%</string>
     <string name="dual_dashboard_achievements_progress">%1$d / %2$d</string>

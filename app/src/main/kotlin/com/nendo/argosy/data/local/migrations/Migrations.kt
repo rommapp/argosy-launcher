@@ -4367,6 +4367,12 @@ object Migration_225_226 : Migration(225, 226) {
     }
 }
 
+object Migration_226_227 : Migration(226, 227) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL("ALTER TABLE `save_sync` ADD COLUMN `localIdentityHash` TEXT")
+    }
+}
+
 object Migration_203_204 : Migration(203, 204) {
     override fun migrate(db: SupportSQLiteDatabase) {
         db.execSQL(

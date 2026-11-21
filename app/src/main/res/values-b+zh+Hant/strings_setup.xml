@@ -41,6 +41,7 @@
     <string name="setup_permissions_root_note">已透過 root 權限為你開啟。</string>
     <string name="setup_permissions_primary_allow_all_files">允許存取所有檔案</string>
     <string name="setup_permissions_primary_allow_usage">允許使用情況存取</string>
+    <string name="setup_permissions_button_continue_without_usage">不使用使用情況存取繼續</string>
     <string name="setup_permissions_primary_allow_notifications">允許通知</string>
     <string name="setup_permissions_primary_next">下一步</string>
     <string name="setup_permissions_enables_all_files">ROM、存檔、封面、下載和檔案瀏覽器</string>

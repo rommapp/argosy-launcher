@@ -365,6 +365,7 @@ data class DisplayState(
     val appsLaunchTarget: EmulatorDisplayTarget = EmulatorDisplayTarget.DEFAULT,
     val launchTargetScreens: LaunchTargetScreens = LaunchTargetScreens(),
     val launchTargetSetCount: Int = 0,
+    val navigationMenu: NavigationMenuChoices = NavigationMenuChoices(),
     val screens: List<ScreenAssignment> = emptyList(),
     val screenRoleModalOpen: Boolean = false,
     val screenRoleModalFocus: Int = 0,
@@ -383,6 +384,29 @@ data class DisplayState(
 
     val selectedIconPackIndex: Int
         get() = iconPackOptions.indexOf(iconPack).coerceAtLeast(0)
+}
+
+data class NavigationMenuScreen(val key: String, val number: Int)
+
+/**
+ * The attached set's navigation menu pin beside the screens it can name, numbered as the screen
+ * badges number them.
+ */
+data class NavigationMenuChoices(
+    val pin: com.nendo.argosy.domain.model.NavigationMenuPin =
+        com.nendo.argosy.domain.model.NavigationMenuPin.Control,
+    val screens: List<NavigationMenuScreen> = emptyList()
+) {
+    val options: List<com.nendo.argosy.domain.model.NavigationMenuPin>
+        get() = listOf(
+            com.nendo.argosy.domain.model.NavigationMenuPin.Control,
+            com.nendo.argosy.domain.model.NavigationMenuPin.Presentation
+        ) + screens.map { com.nendo.argosy.domain.model.NavigationMenuPin.Panel(it.key) }
+
+    fun numberOf(pin: com.nendo.argosy.domain.model.NavigationMenuPin): Int? {
+        val panel = pin as? com.nendo.argosy.domain.model.NavigationMenuPin.Panel ?: return null
+        return screens.firstOrNull { it.key == panel.screenKey }?.number
+    }
 }
 
 /**

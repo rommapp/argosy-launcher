@@ -62,7 +62,8 @@ class ResolveSnapshotConflictUseCase @Inject constructor(
 
     private val SnapshotSyncResult.settles: Boolean
         get() = this is SnapshotSyncResult.Pushed || this is SnapshotSyncResult.Applied ||
-            this is SnapshotSyncResult.Branched || this == SnapshotSyncResult.UpToDate
+            this is SnapshotSyncResult.Branched || this == SnapshotSyncResult.UpToDate ||
+            this == SnapshotSyncResult.Empty
 
     private companion object {
         const val TAG = "ResolveSnapshotConflict"

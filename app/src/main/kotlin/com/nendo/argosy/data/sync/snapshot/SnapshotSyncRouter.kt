@@ -40,7 +40,7 @@ class SnapshotSyncRouter @Inject constructor(
     suspend fun preLaunch(gameId: Long, emulatorId: String, channelName: String?): PreLaunchSyncResult? {
         if (!engine.isEligible(gameId)) return null
         return when (val result = engine.sync(gameId, emulatorId, channelName)) {
-            SnapshotSyncResult.NotEligible -> null
+            SnapshotSyncResult.NotEligible, SnapshotSyncResult.Empty -> null
             SnapshotSyncResult.NoConnection -> PreLaunchSyncResult.NoConnection
             is SnapshotSyncResult.Conflict -> PreLaunchSyncResult.LocalModified(
                 localSavePath = result.localSavePath.orEmpty(),
@@ -97,13 +97,15 @@ class SnapshotSyncRouter @Inject constructor(
 
     suspend fun download(gameId: Long, emulatorId: String, channelName: String?): SaveSyncResult? {
         if (!engine.isEligible(gameId)) return null
-        return toSaveSyncResult(gameId, engine.keepServer(gameId, emulatorId, channelName))
+        val kept = engine.keepServer(gameId, emulatorId, channelName)
+        if (kept == SnapshotSyncResult.Empty) return null
+        return toSaveSyncResult(gameId, kept)
     }
 
     private fun toSaveSyncResult(gameId: Long, result: SnapshotSyncResult): SaveSyncResult? = when (result) {
         SnapshotSyncResult.NotEligible -> null
         SnapshotSyncResult.NoConnection -> SaveSyncResult.NotConfigured
-        SnapshotSyncResult.UpToDate -> SaveSyncResult.Success(noOp = true)
+        SnapshotSyncResult.UpToDate, SnapshotSyncResult.Empty -> SaveSyncResult.Success(noOp = true)
         is SnapshotSyncResult.Pushed -> SaveSyncResult.Success()
         is SnapshotSyncResult.Branched -> SaveSyncResult.Success()
         is SnapshotSyncResult.Applied -> SaveSyncResult.Success()

@@ -18,8 +18,11 @@ import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withTimeout
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
+import java.util.concurrent.CountDownLatch
+import kotlin.concurrent.thread
 
 class ConnectedControllerTrackerTest {
 
@@ -66,7 +69,7 @@ class ConnectedControllerTrackerTest {
         awaitLayout(tracker, DetectedLayout.NINTENDO)
 
         connected(xboxPad)
-        tracker.refresh()
+        tracker.refresh().join()
 
         assertEquals(xboxPad.id, tracker.activeController.value?.deviceId)
         awaitLayout(tracker, DetectedLayout.XBOX)
@@ -79,7 +82,7 @@ class ConnectedControllerTrackerTest {
         val collector = launch(Dispatchers.Unconfined) { tracker.controllerEvents.toList(events) }
 
         connected(xboxPad)
-        tracker.refresh()
+        tracker.refresh().join()
         collector.cancel()
 
         assertEquals(
@@ -91,6 +94,29 @@ class ConnectedControllerTrackerTest {
             ),
             events
         )
+        assertEquals(setOf(controllerIdOf(xboxPad)), tracker.connectedControllerIds.value)
+    }
+
+    @Test
+    fun `a refresh returns at once while reading the pads is stuck`() = runBlocking {
+        val tracker = ConnectedControllerTracker(context)
+        val stuck = CountDownLatch(1)
+        every { InputDevice.getDeviceIds() } answers {
+            stuck.await()
+            intArrayOf(xboxPad.id)
+        }
+
+        thread {
+            Thread.sleep(1_500)
+            stuck.countDown()
+        }
+
+        val started = System.nanoTime()
+        val refresh = tracker.refresh()
+        val elapsedMs = (System.nanoTime() - started) / 1_000_000
+
+        assertTrue("refresh blocked the caller for $elapsedMs ms", elapsedMs < 1_000)
+        withTimeout(5_000) { refresh.join() }
         assertEquals(setOf(controllerIdOf(xboxPad)), tracker.connectedControllerIds.value)
     }
 

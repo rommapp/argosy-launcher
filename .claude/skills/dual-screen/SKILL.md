@@ -116,6 +116,7 @@ LAW: inside `ArgosyApp` and anything it hosts, reach DSM through the Holder, nev
 | `PlatformShowcase` | `LibraryViewModel` while the platform grid is focused; Home's custom-grid collection tiles; the Collections list and genre/mode list through `PresentationFocus` |
 | `GameHero` | `GameDetailViewModel` via `presentSlot` |
 | `LibraryWall` | `BuildingLibraryScreen` via `PresentOnCompanion`, while `presentationShowsHints`; the control screen then shows only the sync info |
+| `NavigationMenu` | `ArgosyApp` via `MainDrawerOnPresentation` (`PresentOnCompanion`) while the drawer is open and `navigationMenuOnPresentation` holds; outranks `MediaPlayback` |
 
 A focused game's `Detail` and a set of games' mosaic are built by `ui/common/PresentationShowcaseSource`
 (`gameDetail`, `collectionShowcase`), so they look identical from every screen. A new list screen
@@ -146,6 +147,14 @@ Three publishing mechanisms, deliberately:
 
 `presentationSlot` combines them with a live session outranking everything, then the most recent
 published slot, then the described detail, then Fallback.
+
+Navigation menu pin: each `ScreenLayout` stores a `NavigationMenuPin` (Control, Presentation, or a
+Panel by stable screen key; missing reads as Control), set from the Navigation Menu row in Displays
+settings. `DualScreenManager.navigationMenuOnPresentation` is the one reader: true only when the pin
+resolves to the screen holding PRESENTATION now (`NavigationMenuPin.drawsOnPresentation`), the
+presentation surface is up and no session is live. Then `ArgosyApp` skips its local `MainDrawer` and
+publishes `NavigationMenu`; the shared `MainDrawer` draws there, the pad stays on the drawer handler,
+and taps come back through `tapPresentation` as drawer focus indices (`drawerRouteAt`) or a dismissal.
 
 GOTCHA: `presentationSlot` is declared AFTER the flows it combines. Kotlin initialises properties
 in declaration order, so a combine placed above its inputs reads nulls at construction and throws.

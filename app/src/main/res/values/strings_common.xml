@@ -1131,6 +1131,42 @@
     <string name="ui_home_layout_rail_next_up">Next Up</string>
     <!-- Second line under that row. -->
     <string name="ui_home_layout_rail_next_up_subtitle">A row of the next episode of each show you are watching</string>
+    <!-- Settings row: how many columns the Columns home layout shows across the screen. Noun
+         phrase. -->
+    <string name="ui_home_layout_columns_count">Columns on Screen</string>
+    <!-- Value of the Columns on Screen row: the count follows the screen's shape. Adjective. -->
+    <string name="ui_home_layout_columns_count_auto">Auto</string>
+    <!-- Settings row: whether details of the focused game show below the columns. Noun phrase. -->
+    <string name="ui_home_layout_columns_info_band">Info Band</string>
+    <!-- Second line under that row. -->
+    <string name="ui_home_layout_columns_info_band_subtitle">Title, facts and recent play of the focused game below the columns</string>
+    <!-- Settings row: whether each column holds all of its games. Verb phrase. -->
+    <string name="ui_home_layout_columns_show_all_games">Show Every Game</string>
+    <!-- Second line under that row. -->
+    <string name="ui_home_layout_columns_show_all_games_subtitle">Each column holds all of its games instead of a short list</string>
+    <!-- Settings row: whether the Columns home layout shows its Continue column. Noun phrase;
+         "Continue" matches home_columns_theme_continue. -->
+    <string name="ui_home_layout_columns_theme_continue">Continue Column</string>
+    <!-- Settings row: whether the Play it again column shows. Noun phrase. -->
+    <string name="ui_home_layout_columns_theme_play_it_again">Play It Again Column</string>
+    <!-- Settings row: whether the Almost there column shows. Noun phrase. -->
+    <string name="ui_home_layout_columns_theme_almost_there">Almost There Column</string>
+    <!-- Settings row: whether the Friends playing column shows. Noun phrase. -->
+    <string name="ui_home_layout_columns_theme_friends_playing">Friends Playing Column</string>
+    <!-- Settings row: whether the Just added column shows. Noun phrase. -->
+    <string name="ui_home_layout_columns_theme_just_added">Just Added Column</string>
+    <!-- Settings row: whether the Gathering dust column shows. Noun phrase. -->
+    <string name="ui_home_layout_columns_theme_gathering_dust">Gathering Dust Column</string>
+    <!-- Settings row: whether the Favorites column shows. Noun phrase. -->
+    <string name="ui_home_layout_columns_theme_favorites">Favorites Column</string>
+    <!-- Settings row: whether a column shows for each pinned collection. Noun phrase, plural. -->
+    <string name="ui_home_layout_columns_theme_pinned_collection">Pinned Collection Columns</string>
+    <!-- Settings row: whether the Most played genre column shows. Noun phrase. -->
+    <string name="ui_home_layout_columns_theme_most_played_genre">Most Played Genre Column</string>
+    <!-- Settings row: whether a column shows for each platform. Noun phrase, plural. -->
+    <string name="ui_home_layout_columns_platforms">Platform Columns</string>
+    <!-- Second line under that row. -->
+    <string name="ui_home_layout_columns_platforms_subtitle">A column for each platform after the picked columns</string>
     <!-- Value of the new-download setting: nothing is added. Adverb. -->
     <string name="ui_home_layout_auto_add_off">Off</string>
     <!-- Value of the new-download setting: a tile appears without asking. Adverb. -->

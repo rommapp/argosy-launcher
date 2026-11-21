@@ -4,6 +4,8 @@ import android.app.Application
 import android.content.Intent
 import com.nendo.argosy.data.emulator.EmulatorRegistry
 import com.nendo.argosy.data.emulator.EmulatorResolver
+import com.nendo.argosy.data.preferences.AppPreferences
+import com.nendo.argosy.data.preferences.AppPreferencesRepository
 import com.nendo.argosy.data.preferences.UserPreferences
 import com.nendo.argosy.data.preferences.UserPreferencesRepository
 import com.nendo.argosy.util.PermissionHelper
@@ -12,6 +14,7 @@ import io.mockk.every
 import io.mockk.mockk
 import io.mockk.mockkObject
 import io.mockk.unmockkObject
+import io.mockk.verify
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
 import org.junit.After
@@ -46,12 +49,27 @@ class KeepAlivePolicyTest {
         unmockkObject(RootShell)
     }
 
-    private fun policy(closeOnReturn: Boolean, root: Boolean): KeepAlivePolicy {
+    private fun policy(closeOnReturn: Boolean, root: Boolean, usageDeclined: Boolean = false): KeepAlivePolicy {
         every { RootShell.isAvailable } returns root
         val preferences = mockk<UserPreferencesRepository> {
             every { this@mockk.preferences } returns flowOf(UserPreferences(closeEmulatorOnSessionEnd = closeOnReturn))
         }
-        return KeepAlivePolicy(application, preferences, emulatorResolver, permissionHelper)
+        val appPreferences = mockk<AppPreferencesRepository> {
+            every { this@mockk.preferences } returns flowOf(AppPreferences(usageAccessDeclined = usageDeclined))
+        }
+        return KeepAlivePolicy(application, preferences, emulatorResolver, permissionHelper, appPreferences)
+    }
+
+    @Test
+    fun `startup grants usage access on root only when setup did not decline it`() = runTest {
+        every { permissionHelper.hasUsageStatsPermission(any()) } returns false
+        every { RootShell.execute(any()) } returns Result.success("")
+
+        policy(closeOnReturn = false, root = true, usageDeclined = true).grantUsageAccessOnRootUnlessDeclined()
+        verify(exactly = 0) { RootShell.execute(any()) }
+
+        policy(closeOnReturn = false, root = true).grantUsageAccessOnRootUnlessDeclined()
+        verify(exactly = 1) { RootShell.execute("appops set $OWN_PACKAGE GET_USAGE_STATS allow") }
     }
 
     @Test

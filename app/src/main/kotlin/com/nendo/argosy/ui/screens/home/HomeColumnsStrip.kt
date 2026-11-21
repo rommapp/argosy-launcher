@@ -57,9 +57,11 @@ import coil.request.ImageRequest
 import com.nendo.argosy.R
 import com.nendo.argosy.data.social.FriendActivity
 import com.nendo.argosy.domain.model.HomeColumnKind
+import com.nendo.argosy.ui.common.LocalRunningGames
 import com.nendo.argosy.ui.common.alwaysCrossfade
 import com.nendo.argosy.ui.components.DownloadProgressBadge
 import com.nendo.argosy.ui.components.DownloadWaterFill
+import com.nendo.argosy.ui.components.GameStatusBadges
 import com.nendo.argosy.ui.common.rememberFileImageModel
 import com.nendo.argosy.ui.common.rememberResolvedCoverPath
 import com.nendo.argosy.ui.common.stackedScreenshotBackdrop
@@ -131,6 +133,8 @@ internal fun HomeColumnsStrip(
     state: ColumnsState,
     slots: Int,
     showFocus: Boolean,
+    showStepControls: Boolean,
+    showInfoBand: Boolean,
     friendsFor: (HomeGameUi?) -> List<FriendActivity>,
     onColumnTap: (offset: Int) -> Unit,
     onColumnLongPress: () -> Unit,
@@ -181,6 +185,8 @@ internal fun HomeColumnsStrip(
                     itemIndex = state.itemIndexOf(column),
                     isFocused = isFocused,
                     showFocus = showFocus,
+                    showStepControls = showStepControls,
+                    showInfoBand = showInfoBand,
                     sliver = slot.sliver,
                     width = geometry.widthAt(slot.offset).dp,
                     height = columnHeight,
@@ -218,6 +224,8 @@ private fun HomeColumnCard(
     itemIndex: Int,
     isFocused: Boolean,
     showFocus: Boolean,
+    showStepControls: Boolean,
+    showInfoBand: Boolean,
     sliver: Boolean,
     width: Dp,
     height: Dp,
@@ -246,7 +254,7 @@ private fun HomeColumnCard(
     )
     val secondary = Color.White.copy(alpha = ComponentDefaults.HomeColumns.secondaryTextAlpha)
     val footerShown by animateFloatAsState(
-        targetValue = if (isFocused) 0f else 1f,
+        targetValue = if (isFocused && showInfoBand) 0f else 1f,
         animationSpec = tween(Motion.durationPage, easing = Motion.argosyEase),
         label = "column-footer"
     )
@@ -311,12 +319,27 @@ private fun HomeColumnCard(
                     )
             )
         }
-        ColumnLabel(
-            column = column,
-            accent = if (isFocused && showFocus) theme.focusAccent else Color.White,
-            secondary = secondary,
-            modifier = Modifier.padding(horizontal = Dimens.spacingMd, vertical = Dimens.spacingSm)
-        )
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = Dimens.spacingMd, vertical = Dimens.spacingSm),
+            horizontalArrangement = Arrangement.spacedBy(Dimens.spacingSm)
+        ) {
+            ColumnLabel(
+                column = column,
+                accent = if (isFocused && showFocus) theme.focusAccent else Color.White,
+                secondary = secondary,
+                modifier = Modifier.weight(1f)
+            )
+            (item as? HomeRowItem.Game)?.game?.let { game ->
+                GameStatusBadges(
+                    game = game,
+                    downloadIndicator = download,
+                    isRunning = LocalRunningGames.current.isRunning(game.id),
+                    horizontalArrangement = Arrangement.spacedBy(Dimens.spacingXs)
+                )
+            }
+        }
         if (footerShown > 0f) {
             ColumnFooter(
                 column = column,
@@ -332,7 +355,7 @@ private fun HomeColumnCard(
                     .padding(Dimens.spacingSm)
             )
         }
-        if (isFocused && column.items.size > 1) {
+        if (isFocused && showStepControls && column.items.size > 1) {
             StepControls(
                 count = column.items.size,
                 index = itemIndex,

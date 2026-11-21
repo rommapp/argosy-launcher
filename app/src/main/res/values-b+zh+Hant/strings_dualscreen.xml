@@ -18,7 +18,11 @@
     <string name="dual_dashboard_rail_cheats">金手指</string>
     <string name="dual_dashboard_rail_settings">設定</string>
     <string name="dual_dashboard_rail_quit">結束</string>
-    <string name="dual_dashboard_rail_quit_confirm">再點一次</string>
+    <string name="dual_dashboard_exit_return">返回 Argosy</string>
+    <string name="dual_dashboard_exit_title">離開遊戲？</string>
+    <string name="dual_dashboard_exit_message">返回 Argosy 後，遊戲會在背景繼續執行。關閉遊戲會停止它，遊戲中未儲存的進度將會遺失。</string>
+    <string name="dual_dashboard_exit_message_return_only">你在 Argosy 中時，遊戲會在背景繼續執行。</string>
+    <string name="dual_dashboard_exit_close">關閉遊戲</string>
     <string name="dual_dashboard_rail_page">第 %1$d 頁</string>
     <string name="dual_dashboard_rail_percent">%1$d%%</string>
     <string name="dual_dashboard_achievements_progress">%1$d / %2$d</string>

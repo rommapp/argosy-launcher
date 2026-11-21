@@ -352,12 +352,13 @@ object ComponentDefaults {
     }
 
     object HomeColumns {
+        const val slotsUltraWide = 7
         const val slotsWide = 5
         const val slotsCompact = 3
         const val slotsPhone = 1
         const val focusedWidthScale = 2f
         const val wideAspectMin = 1.6f
-        const val phoneAspectMin = 2
+        const val ultraWideAspectMin = 2
         const val sliverWidthRatio = 0.03f
         const val stripWeightRatio = 0.76f
         const val bandWeightRatio = 0.24f

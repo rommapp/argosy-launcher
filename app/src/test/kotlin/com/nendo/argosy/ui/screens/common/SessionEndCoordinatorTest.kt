@@ -240,6 +240,17 @@ class SessionEndCoordinatorTest {
     }
 
     @Test
+    fun `an external emulator leaving its screen stays in the background unless the user closes emulators`() = runTest {
+        every { EmulatorRegistry.getById(emulatorId) } returns mockk(relaxed = true)
+
+        preferences.value = preferences.value.copy(closeEmulatorOnSessionEnd = false)
+        assertFalse(coordinator().stopsAfterLeavingScreen(emulatorPackage))
+
+        preferences.value = preferences.value.copy(closeEmulatorOnSessionEnd = true)
+        assertTrue(coordinator().stopsAfterLeavingScreen(emulatorPackage))
+    }
+
+    @Test
     fun `a failed session end still stops the emulator the user closes on session end`() = runTest {
         endingClearsTheLiveSession(SessionEndResult.Error("Failed to cache save"))
 

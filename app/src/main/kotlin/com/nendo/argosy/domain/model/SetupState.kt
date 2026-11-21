@@ -20,6 +20,7 @@ data class SetupFacts(
     val allFilesAccess: Boolean = false,
     val usageAccess: Boolean = false,
     val usageAccessGrantable: Boolean = true,
+    val usageAccessDeclined: Boolean = false,
     val notifications: Boolean = false,
     val romFolderPresent: Boolean = false,
     val romFolderConfirmed: Boolean = false,

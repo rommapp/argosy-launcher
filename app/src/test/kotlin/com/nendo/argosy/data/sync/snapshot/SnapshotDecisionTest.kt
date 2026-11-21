@@ -14,6 +14,30 @@ class SnapshotDecisionTest {
     private fun chosen(id: Long, save: SaveHashes?) = SnapshotPoint(id, save, byChoice = true)
 
     @Test
+    fun `the same bytes under another device's identity hash are clean, not a push`() {
+        val aOtherIdentity = SaveHashes("content-a", "identity-a-other-device")
+        assertEquals(SnapshotAction.Nothing, SnapshotDecision.decide(point(17, a), point(17, a), aOtherIdentity))
+    }
+
+    @Test
+    fun `an untouched save behind a newer current downloads it instead of conflicting`() {
+        val aOtherIdentity = SaveHashes("content-a", "identity-a-other-device")
+        assertEquals(SnapshotAction.Download(17), SnapshotDecision.decide(point(16, a), point(17, b), aOtherIdentity))
+    }
+
+    @Test
+    fun `a save changed on both sides still conflicts when neither hash matches held`() {
+        val c = SaveHashes("content-c", "identity-c")
+        assertEquals(SnapshotAction.Conflict(17), SnapshotDecision.decide(point(16, a), point(17, b), c))
+    }
+
+    @Test
+    fun `a first sync adopts current when only the content hashes match`() {
+        val bOtherIdentity = SaveHashes("content-b", "identity-b-other-device")
+        assertEquals(SnapshotAction.Adopt(17), SnapshotDecision.decide(null, point(17, b), bOtherIdentity))
+    }
+
+    @Test
     fun `a restored older snapshot with clean files is kept, not replaced by current`() {
         assertEquals(SnapshotAction.Nothing, SnapshotDecision.decide(chosen(39, a), point(42, b), a))
     }

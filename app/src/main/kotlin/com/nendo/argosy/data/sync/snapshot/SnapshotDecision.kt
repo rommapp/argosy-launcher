@@ -1,7 +1,8 @@
 package com.nendo.argosy.data.sync.snapshot
 
 data class SaveHashes(val contentHash: String, val identityHash: String) {
-    fun sameSaveAs(other: SaveHashes): Boolean = identityHash == other.identityHash
+    fun sameSaveAs(other: SaveHashes): Boolean =
+        identityHash == other.identityHash || contentHash == other.contentHash
 }
 
 data class SnapshotPoint(val id: Long, val save: SaveHashes?, val byChoice: Boolean = false)

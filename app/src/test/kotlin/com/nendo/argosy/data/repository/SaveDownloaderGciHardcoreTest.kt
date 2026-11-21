@@ -120,18 +120,20 @@ class SaveDownloaderGciHardcoreTest {
     fun `a server autosave fetched into the cache is not locked`() = runTest {
         fetchIntoCacheAs("autosave")
 
-        coVerify { saveCacheManager.cacheServerDownload(gameId, any(), any(), "autosave", any(), any(), false, false, serverSaveId) }
+        coVerify {
+            saveCacheManager.cacheServerDownload(gameId, any(), any(), "01-GZLE-DATA.gci", "autosave", any(), any(), false, false, serverSaveId)
+        }
     }
 
     @Test
     fun `a named server slot fetched into the cache is locked`() = runTest {
         fetchIntoCacheAs("Before boss")
 
-        coVerify { saveCacheManager.cacheServerDownload(gameId, any(), any(), "Before boss", any(), any(), true, false, serverSaveId) }
+        coVerify { saveCacheManager.cacheServerDownload(gameId, any(), any(), any(), "Before boss", any(), any(), true, false, serverSaveId) }
     }
 
     private suspend fun fetchIntoCacheAs(channel: String) {
-        coEvery { saveCacheManager.cacheServerDownload(any(), any(), any(), any(), any(), any(), any(), any(), any()) } returns
+        coEvery { saveCacheManager.cacheServerDownload(any(), any(), any(), any(), any(), any(), any(), any(), any(), any()) } returns
             SaveCacheManager.CacheResult.Created(0L, 77L)
         downloader.downloadToCache(serverSaveId, gameId, channel, activate = false)
     }
@@ -149,7 +151,7 @@ class SaveDownloaderGciHardcoreTest {
         val cacheId = downloader.downloadToCache(serverSaveId, gameId, "autosave", activate = false)
 
         assertNull(cacheId)
-        coVerify(exactly = 0) { saveCacheManager.cacheServerDownload(any(), any(), any(), any(), any(), any(), any(), any(), any()) }
+        coVerify(exactly = 0) { saveCacheManager.cacheServerDownload(any(), any(), any(), any(), any(), any(), any(), any(), any(), any()) }
     }
 
     @Test

@@ -31,6 +31,8 @@ class RomMRepository @Inject constructor(
 
     suspend fun isReachable(): Boolean = connectionManager.isReachable()
 
+    suspend fun awaitReachable(timeoutMs: Long): Boolean = connectionManager.awaitReachable(timeoutMs)
+
     fun responseMark(): Long = connectionManager.responseMark()
 
     fun answeredSince(mark: Long): Boolean = connectionManager.answeredSince(mark)

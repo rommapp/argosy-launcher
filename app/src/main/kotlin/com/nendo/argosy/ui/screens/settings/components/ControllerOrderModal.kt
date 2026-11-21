@@ -24,10 +24,15 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.setValue
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -237,20 +242,32 @@ private fun PlayerDots(port: Int) {
     }
 }
 
+private data class PadBatteryReading(val level: Int, val isCharging: Boolean)
+
 @Composable
 private fun PadBattery(device: InputDevice?, tint: Color) {
-    val battery = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) device?.batteryState else null
-    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S || battery == null || !battery.isPresent || battery.capacity.isNaN()) {
+    var reading by remember(device) { mutableStateOf<PadBatteryReading?>(null) }
+    LaunchedEffect(device) {
+        reading = withContext(Dispatchers.IO) { device?.let(::readPadBattery) }
+    }
+    val battery = reading
+    if (battery == null) {
         Spacer(modifier = Modifier.size(width = Dimens.iconMd, height = Dimens.radiusLg))
         return
     }
-    val capacity = battery.capacity
     BatteryIcon(
-        level = (capacity * 100).toInt(),
-        isCharging = battery.status == BatteryState.STATUS_CHARGING,
+        level = battery.level,
+        isCharging = battery.isCharging,
         color = tint,
         modifier = Modifier.size(width = Dimens.iconMd, height = Dimens.radiusLg)
     )
+}
+
+private fun readPadBattery(device: InputDevice): PadBatteryReading? {
+    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S) return null
+    val battery = device.batteryState
+    if (!battery.isPresent || battery.capacity.isNaN()) return null
+    return PadBatteryReading((battery.capacity * 100).toInt(), battery.status == BatteryState.STATUS_CHARGING)
 }
 
 private const val GLYPH_1 = ""

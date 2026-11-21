@@ -53,6 +53,13 @@ class SetupRouterTest {
     }
 
     @Test
+    fun `usage access is satisfied once the person continues without it`() {
+        val declined = satisfied.copy(usageAccess = false, usageAccessDeclined = true)
+        assertTrue(SetupRouter.isSatisfied(SetupItem.USAGE_ACCESS, declined))
+        assertTrue(SetupRouter.permissionsSatisfied(declined))
+    }
+
+    @Test
     fun `notifications follow the live grant`() {
         assertFalse(SetupRouter.isSatisfied(SetupItem.NOTIFICATIONS, satisfied.copy(notifications = false)))
         assertTrue(SetupRouter.isSatisfied(SetupItem.NOTIFICATIONS, satisfied))

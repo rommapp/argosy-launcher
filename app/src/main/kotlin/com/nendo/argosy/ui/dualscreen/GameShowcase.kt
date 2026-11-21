@@ -299,6 +299,7 @@ private fun GameShowcaseContent(
             when (style.layout) {
                 PresentationLayout.LOGO -> LogoShowcase(
                     detail = heldDetail,
+                    glowAlpha = logoGlowAlpha(style),
                     gutter = gutter,
                     coverLayer = rememberShowcaseLayer(
                         motion, durations, durations.coverDelayMs, durations.coverDriftDp,
@@ -348,6 +349,10 @@ private fun GameShowcaseContent(
 
 private const val GUTTER_SHARE = 0.0375f
 
+internal fun logoGlowAlpha(style: PresentationStyle): Float =
+    if (style.scrim == PresentationScrim.NONE) 0f
+    else (LOGO_GLOW_ALPHA * style.scrimStrength / DEFAULT_STRENGTH).coerceIn(0f, 1f)
+
 @Composable
 private fun ShowcaseScrim(style: PresentationStyle, color: Color) {
     val strength = style.scrimStrength / PERCENT
@@ -388,6 +393,7 @@ private fun presentationScrimColor(): Color = if (LocalLauncherTheme.current.isD
 @Composable
 private fun LogoShowcase(
     detail: CompanionDetail,
+    glowAlpha: Float,
     gutter: Dp,
     coverLayer: Modifier,
     motion: ShowcaseMotionState,
@@ -404,15 +410,15 @@ private fun LogoShowcase(
         val logo = detail.logoUrl?.takeIf { !logoFailed }
         val floatLayer = Modifier.showcaseFloat(motion, durations, enabled = logo != null)
         Box(Modifier.fillMaxSize().then(coverLayer).then(floatLayer), contentAlignment = Alignment.Center) {
-            if (logo != null) {
+            if (logo != null && glowAlpha > 0f) {
                 val glow = theme.surfaceBase
                 Box(
                     modifier = Modifier
                         .fillMaxSize()
                         .drawBehind {
                             val brush = Brush.radialGradient(
-                                0f to glow.copy(alpha = LOGO_GLOW_ALPHA),
-                                LOGO_GLOW_HOLD to glow.copy(alpha = LOGO_GLOW_ALPHA * LOGO_GLOW_HOLD_FADE),
+                                0f to glow.copy(alpha = glowAlpha),
+                                LOGO_GLOW_HOLD to glow.copy(alpha = glowAlpha * LOGO_GLOW_HOLD_FADE),
                                 1f to Color.Transparent,
                                 center = center,
                                 radius = size.height / 2f

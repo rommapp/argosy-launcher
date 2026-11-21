@@ -199,8 +199,7 @@ class EmulatorSettingsDelegate @Inject constructor(
                         updates = updateMap,
                         builtinCore = builtinCore
                     ),
-                    emulatorPickerFocusIndex = 0,
-                    emulatorPickerSelectedIndex = null
+                    emulatorPickerFocusIndex = 0
                 )
             }
         }
@@ -212,8 +211,7 @@ class EmulatorSettingsDelegate @Inject constructor(
             it.copy(
                 showEmulatorPicker = false,
                 emulatorPickerInfo = null,
-                emulatorPickerFocusIndex = 0,
-                emulatorPickerSelectedIndex = null
+                emulatorPickerFocusIndex = 0
             )
         }
         soundManager.play(SoundType.CLOSE_MODAL)
@@ -251,19 +249,8 @@ class EmulatorSettingsDelegate @Inject constructor(
         onLoadSettings: suspend () -> Unit,
         onOpenAppPicker: (Long) -> Unit
     ) {
-        val state = _state.value
-        if (state.emulatorPickerSelectedIndex == index) {
-            _state.update { it.copy(emulatorPickerFocusIndex = index) }
-            confirmEmulatorPickerSelection(scope, onSetEmulator, onLoadSettings, onOpenAppPicker)
-        } else {
-            _state.update {
-                it.copy(
-                    emulatorPickerSelectedIndex = index,
-                    emulatorPickerFocusIndex = index
-                )
-            }
-            soundManager.play(SoundType.NAVIGATE)
-        }
+        _state.update { it.copy(emulatorPickerFocusIndex = index) }
+        confirmEmulatorPickerSelection(scope, onSetEmulator, onLoadSettings, onOpenAppPicker)
     }
 
     fun confirmEmulatorPickerSelection(
@@ -1116,6 +1103,11 @@ class EmulatorSettingsDelegate @Inject constructor(
             val newIndex = (state.variantPickerFocusIndex + delta).coerceIn(0, maxIndex)
             state.copy(variantPickerFocusIndex = newIndex)
         }
+    }
+
+    fun selectVariantAt(index: Int) {
+        _state.update { it.copy(variantPickerFocusIndex = index) }
+        selectVariant()
     }
 
     fun selectVariant() {

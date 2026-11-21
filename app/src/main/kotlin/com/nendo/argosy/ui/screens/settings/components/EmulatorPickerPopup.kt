@@ -113,7 +113,6 @@ private fun createPickerLayout(items: List<PickerItem>) = SettingsLayout<PickerI
 fun EmulatorPickerPopup(
     info: EmulatorPickerInfo,
     focusIndex: Int,
-    selectedIndex: Int?,
     onItemTap: (Int) -> Unit,
     onConfirm: () -> Unit,
     onDismiss: () -> Unit
@@ -182,13 +181,11 @@ fun EmulatorPickerPopup(
                 items(visibleItems, key = { it.key }) { item ->
                     when (item) {
                         PickerItem.AutoItem -> {
-                            val isTouchSelected = selectedIndex == 0
                             val isCurrentEmulator = info.selectedEmulatorName == null
                             EmulatorPickerItem(
                                 name = stringResource(R.string.settings_emulator_picker_auto_name),
                                 subtitle = stringResource(R.string.settings_emulator_picker_auto_subtitle),
                                 isFocused = isFocused(item),
-                                isTouchSelected = isTouchSelected,
                                 isCurrentEmulator = isCurrentEmulator,
                                 isDownload = false,
                                 onClick = { onItemTap(0) }
@@ -196,7 +193,6 @@ fun EmulatorPickerPopup(
                         }
 
                         is PickerItem.InstalledItem -> {
-                            val isTouchSelected = selectedIndex == item.itemIndex
                             val isCurrentEmulator = item.emulator.def.displayName == info.selectedEmulatorName
                             val updateInfo = info.updates[item.emulator.def.id]
                             val isDownloading = info.downloadingEmulatorId == item.emulator.def.id
@@ -233,7 +229,6 @@ fun EmulatorPickerPopup(
                                 name = item.emulator.def.displayName,
                                 subtitle = subtitle,
                                 isFocused = isFocused(item),
-                                isTouchSelected = isTouchSelected,
                                 isCurrentEmulator = isCurrentEmulator,
                                 isDownload = false,
                                 hasUpdate = updateInfo != null,
@@ -256,7 +251,6 @@ fun EmulatorPickerPopup(
                         }
 
                         is PickerItem.DownloadableItem -> {
-                            val isTouchSelected = selectedIndex == item.itemIndex
                             val isPlayStore = item.emulator.downloadUrl?.contains("play.google.com") == true
                             val isDownloading = info.downloadingEmulatorId == item.emulator.id
                             val downloadState = if (isDownloading) info.downloadState else EmulatorDownloadState.Idle
@@ -280,7 +274,6 @@ fun EmulatorPickerPopup(
                                 name = item.emulator.displayName,
                                 subtitle = subtitle,
                                 isFocused = isFocused(item),
-                                isTouchSelected = isTouchSelected,
                                 isCurrentEmulator = false,
                                 isDownload = true,
                                 downloadState = downloadState,
@@ -294,7 +287,6 @@ fun EmulatorPickerPopup(
                                 name = stringResource(R.string.settings_emulator_picker_other_app_name),
                                 subtitle = stringResource(R.string.settings_emulator_picker_other_app_subtitle),
                                 isFocused = isFocused(item),
-                                isTouchSelected = selectedIndex == item.itemIndex,
                                 isCurrentEmulator = false,
                                 isDownload = false,
                                 onClick = { onItemTap(item.itemIndex) }
@@ -329,7 +321,6 @@ private fun EmulatorPickerItem(
     name: String,
     subtitle: String,
     isFocused: Boolean,
-    isTouchSelected: Boolean,
     isCurrentEmulator: Boolean,
     isDownload: Boolean,
     hasUpdate: Boolean = false,
@@ -337,7 +328,7 @@ private fun EmulatorPickerItem(
     isDisabled: Boolean = false,
     onClick: () -> Unit
 ) {
-    val isHighlighted = (isFocused || isTouchSelected) && !isDisabled
+    val isHighlighted = isFocused && !isDisabled
     val isDownloading = downloadState is EmulatorDownloadState.Downloading
     val isFailed = downloadState is EmulatorDownloadState.Failed
     val focusContent = lerp(LocalArgosyTheme.current.focusAccent, Color.White, 0.45f)

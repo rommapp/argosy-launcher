@@ -237,7 +237,6 @@ fun EmulatorsSection(
             EmulatorPickerPopup(
                 info = emulators.emulatorPickerInfo,
                 focusIndex = emulators.emulatorPickerFocusIndex,
-                selectedIndex = emulators.emulatorPickerSelectedIndex,
                 onItemTap = { index -> viewModel.handleEmulatorPickerItemTap(index) },
                 onConfirm = { viewModel.confirmEmulatorPickerSelection() },
                 onDismiss = { viewModel.dismissEmulatorPicker() }

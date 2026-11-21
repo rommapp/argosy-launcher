@@ -239,13 +239,7 @@ internal fun routeShowEmulatorPicker(vm: SettingsViewModel, config: PlatformEmul
 }
 
 internal fun routeHandleVariantPickerItemTap(vm: SettingsViewModel, index: Int) {
-    if (vm._uiState.value.emulators.variantPickerFocusIndex == index) {
-        vm.confirmVariantSelection()
-    } else {
-        vm._uiState.update { state ->
-            state.copy(emulators = state.emulators.copy(variantPickerFocusIndex = index))
-        }
-    }
+    vm.emulatorDelegate.selectVariantAt(index)
 }
 
 internal fun routeDownloadCore(vm: SettingsViewModel, coreId: String) {

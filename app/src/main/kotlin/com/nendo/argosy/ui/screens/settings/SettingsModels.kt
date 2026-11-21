@@ -626,7 +626,6 @@ data class EmulatorState(
     val showEmulatorPicker: Boolean = false,
     val emulatorPickerInfo: EmulatorPickerInfo? = null,
     val emulatorPickerFocusIndex: Int = 0,
-    val emulatorPickerSelectedIndex: Int? = null,
     val showSavePathModal: Boolean = false,
     val savePathModalInfo: SavePathModalInfo? = null,
     val savePathModalFocusIndex: Int = 0,

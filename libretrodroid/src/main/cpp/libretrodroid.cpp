@@ -1092,6 +1092,13 @@ void LibretroDroid::setAudioVolume(float volume) {
     }
 }
 
+void LibretroDroid::setAudioLatency(int32_t latencyMs) {
+    audioLatencyMs = latencyMs;
+    if (audio) {
+        audio->setRequestedLatency(latencyMs);
+    }
+}
+
 void LibretroDroid::setSensorReadings(
     const std::array<float, 3>& gyroscope,
     const std::array<float, 3>& accelerometer,

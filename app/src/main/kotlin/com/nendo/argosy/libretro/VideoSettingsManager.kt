@@ -486,9 +486,11 @@ class VideoSettingsManager(
             LibretroSettingDef.AudioVolume -> {
                 setAudioVolume((value.removeSuffix("%").toIntOrNull() ?: 100) / 100f)
             }
+            LibretroSettingDef.AudioLatency -> {
+                AudioLatencySteps.latencyMsFor(value)?.let { retroView.setAudioLatency(it) }
+            }
             LibretroSettingDef.SkipDuplicateFrames,
             LibretroSettingDef.LowLatencyAudio,
-            LibretroSettingDef.AudioLatency,
             LibretroSettingDef.VSync -> {
             }
             LibretroSettingDef.AutoSaveState,

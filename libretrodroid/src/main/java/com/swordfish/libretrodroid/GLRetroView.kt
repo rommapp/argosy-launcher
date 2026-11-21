@@ -134,6 +134,10 @@ class GLRetroView(
         LibretroDroid.setAudioVolume(value)
     }
 
+    fun setAudioLatency(latencyMs: Int) {
+        queueEvent { LibretroDroid.setAudioLatency(latencyMs) }
+    }
+
     var frameSpeed: Int by Delegates.observable(1) { _, _, value ->
         queueEvent { LibretroDroid.setFrameSpeed(value) }
     }

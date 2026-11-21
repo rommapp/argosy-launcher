@@ -60,6 +60,7 @@ public:
     void setOutputVolume(float volume);
     void resetBufferState();
     void updateTiming(int32_t newSampleRate, double newRefreshRate);
+    void setRequestedLatency(int32_t latencyMs);
 
 private:
     static int32_t roundToEven(int32_t x);

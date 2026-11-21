@@ -181,6 +181,24 @@ void Audio::updateTiming(int32_t newSampleRate, double newRefreshRate) {
     framesToSubmit = 0.0;
 }
 
+void Audio::setRequestedLatency(int32_t latencyMs) {
+    if (latencyMs == requestedLatencyMs) return;
+    LOGI("Audio latency change: %d -> %d ms", requestedLatencyMs, latencyMs);
+    requestedLatencyMs = latencyMs;
+
+    if (stream != nullptr) {
+        stream->stop();
+        stream->close();
+        stream = nullptr;
+    }
+    errorIntegral = 0.0;
+    framesToSubmit = 0.0;
+
+    if (initializeStream() && startRequested) {
+        stream->requestStart();
+    }
+}
+
 oboe::DataCallbackResult Audio::onAudioReady(oboe::AudioStream *oboeStream, void *audioData, int32_t numFrames) {
     double dynamicBufferFactor = computeDynamicBufferConversionFactor(0.001 * numFrames);
     const bool stretchActive = pitchPreservationEnabled && timeStretcher != nullptr &&

@@ -170,6 +170,7 @@ public:
     void setAudioEnabled(bool enabled);
     void setPitchPreservationEnabled(bool enabled);
     void setAudioVolume(float volume);
+    void setAudioLatency(int32_t latencyMs);
 
     void setShaderConfig(ShaderManager::Config shaderConfig);
     void setSensorReadings(

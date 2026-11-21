@@ -294,8 +294,7 @@ sealed class LibretroSettingDef(
                 R.string.settings_libretro_def_audio_latency_option_256
             ),
             clampsAtEnds = true
-        ),
-        appliesOnNextLaunch = true
+        )
     )
 
     data object VSync : LibretroSettingDef(

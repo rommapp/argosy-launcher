@@ -835,6 +835,14 @@ JNIEXPORT void JNICALL Java_com_swordfish_libretrodroid_LibretroDroid_setAudioVo
     LibretroDroid::getInstance().setAudioVolume(volume);
 }
 
+JNIEXPORT void JNICALL Java_com_swordfish_libretrodroid_LibretroDroid_setAudioLatency(
+    JNIEnv* env,
+    jclass obj,
+    jint latencyMs
+) {
+    LibretroDroid::getInstance().setAudioLatency(latencyMs);
+}
+
 JNIEXPORT void JNICALL Java_com_swordfish_libretrodroid_LibretroDroid_setShaderConfig(
     JNIEnv* env,
     jclass obj,

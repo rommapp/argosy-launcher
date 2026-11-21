@@ -134,6 +134,7 @@ public class LibretroDroid {
     public static native void setAudioEnabled(boolean enabled);
     public static native void setPitchPreservationEnabled(boolean enabled);
     public static native void setAudioVolume(float volume);
+    public static native void setAudioLatency(int latencyMs);
     public static native void setShaderConfig(GLRetroShader shader);
     public static native int prepareShaderAndGetSensorUsage();
     public static native void setSensorReadings(

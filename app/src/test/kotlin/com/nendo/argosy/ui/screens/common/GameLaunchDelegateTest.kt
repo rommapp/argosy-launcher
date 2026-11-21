@@ -182,6 +182,43 @@ class GameLaunchDelegateTest {
         }
     }
 
+    @Test
+    fun `a resume that starts the built-in game fresh closes the slot already running it first`() = runTest {
+        coEvery { emulatorResolver.getEmulatorPackageForGame(any(), any(), any()) } returns
+            com.nendo.argosy.data.emulator.EmulatorRegistry.BUILTIN_PACKAGE
+        val background = backgroundGameLaunch()
+        coEvery { background.closeSlotHolding(any(), any()) } returns false
+        var refused = false
+
+        launchGame(delegate(tracker(), router(), background), onLaunchFailed = { refused = true })
+        runCurrent()
+
+        assertTrue(refused)
+        coVerify { background.closeSlotHolding(gameId, any()) }
+    }
+
+    @Test
+    fun `resume hardcore never resumes a casual copy left running`() = runTest {
+        coEvery { emulatorResolver.getEmulatorPackageForGame(any(), any(), any()) } returns
+            com.nendo.argosy.data.emulator.EmulatorRegistry.BUILTIN_PACKAGE
+        val background = backgroundGameLaunch()
+        val casualCopy = com.nendo.argosy.data.emulator.background.RunningApp(
+            taskId = 7, packageName = com.nendo.argosy.data.emulator.EmulatorRegistry.BUILTIN_PACKAGE,
+            displayId = 0, rssKb = null, game = null, runStartedAtMillis = null, hardcore = false, slotIndex = 1
+        )
+        coEvery { background.findLive(gameId, any(), any()) } returns casualCopy
+        coEvery { background.closeSlotHolding(any(), any()) } returns false
+
+        delegate(tracker(), router(), background).launchGame(
+            this, gameId, overrideLaunchMode = com.nendo.argosy.libretro.LaunchMode.RESUME_HARDCORE,
+            start = GameStart(gameId)
+        )
+        runCurrent()
+
+        coVerify(exactly = 0) { background.resume(any(), any(), any(), any()) }
+        coVerify { background.closeSlotHolding(gameId, any()) }
+    }
+
     private fun callbacks(onFailure: (Throwable) -> Unit = {}, onLaunchFailed: () -> Unit = {}) =
         LaunchResultCallbacks(
             start = GameStart(gameId, onFailure = onFailure),

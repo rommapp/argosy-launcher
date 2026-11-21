@@ -350,6 +350,7 @@ class GameLaunchDelegate @Inject constructor(
                     backgroundGameLaunch.keepsAlive(activeSession.emulatorPackage)
                 var liveInBackground = if (canResume || evictsOwnSessionAlive) null
                 else backgroundGameLaunch.findLive(gameId, resolvedVariantId, emulatorPackage)
+                    ?.takeUnless { overrideLaunchMode == LaunchMode.RESUME_HARDCORE && !it.hardcore }
 
                 if (!canResume && !evictsOwnSessionAlive && liveInBackground == null &&
                     !preLaunchRecapStep.run(ticket, gameId, game.title)
@@ -391,6 +392,13 @@ class GameLaunchDelegate @Inject constructor(
                 }
 
                 val emulatorId = emulatorPackage?.let { emulatorResolver.resolveEmulatorId(it) }
+                if (emulatorPackage == EmulatorRegistry.BUILTIN_PACKAGE &&
+                    !backgroundGameLaunch.closeSlotHolding(gameId, resolvedVariantId)
+                ) {
+                    notificationManager.showError(NotificationText.Res(R.string.notif_gamelaunch_running_copy_not_closed))
+                    onLaunchFailed()
+                    return@launch
+                }
                 if (!emulatorClearedForLaunch(
                         ticket,
                         emulatorPackage,

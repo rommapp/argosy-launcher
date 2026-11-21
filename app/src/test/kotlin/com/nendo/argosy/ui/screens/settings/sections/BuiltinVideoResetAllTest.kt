@@ -30,6 +30,13 @@ class BuiltinVideoResetAllTest {
     }
 
     @Test
+    fun `an audio latency override alone offers the video reset`() {
+        val settings = mapOf(9L to PlatformLibretroSettingsEntity(platformId = 9, audioLatencyMs = 64))
+
+        assertTrue(builtinVideoShowsResetAll(onWii, settings))
+    }
+
+    @Test
     fun `the global context never offers the reset`() {
         val global = onWii.copy(platformContextIndex = 0)
         val settings = mapOf(9L to PlatformLibretroSettingsEntity(platformId = 9, shader = "crt"))

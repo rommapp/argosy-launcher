@@ -766,6 +766,7 @@ data class BuiltinEmulatorSettings(
     val skipDuplicateFrames: Boolean = false,
     val lowLatencyAudio: Boolean = true,
     val audioVolume: Int = 100,
+    val audioLatencyMs: Int = com.nendo.argosy.core.emulator.AudioLatencySteps.AUTO_MS,
     val forceSoftwareTiming: Boolean = false,
     val rumbleEnabled: Boolean = true,
     val motionEnabled: Boolean = true,
@@ -854,6 +855,9 @@ data class BuiltinEmulatorSettings(
 
     val audioVolumeDisplay: String
         get() = "${audioVolume}%"
+
+    val audioLatencyDisplay: String
+        get() = com.nendo.argosy.core.emulator.AudioLatencySteps.tokenFor(audioLatencyMs)
 
     val fastForwardSpeedDisplay: String
         get() = "${fastForwardSpeed}x"

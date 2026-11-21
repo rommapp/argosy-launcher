@@ -7,6 +7,7 @@ import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.floatPreferencesKey
 import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
+import com.nendo.argosy.core.emulator.AudioLatencySteps
 import com.nendo.argosy.data.emulator.GpuDriverToken
 import com.nendo.argosy.data.local.entity.FastForwardMode
 import com.nendo.argosy.data.local.entity.SelectAsBackMode
@@ -31,6 +32,7 @@ class BuiltinEmulatorPreferencesRepository @Inject constructor(
         val BUILTIN_SKIP_DUPLICATE_FRAMES = booleanPreferencesKey("builtin_skip_duplicate_frames")
         val BUILTIN_LOW_LATENCY_AUDIO = booleanPreferencesKey("builtin_low_latency_audio")
         val BUILTIN_AUDIO_VOLUME = intPreferencesKey("builtin_audio_volume")
+        val BUILTIN_AUDIO_LATENCY_MS = intPreferencesKey("builtin_audio_latency_ms")
         val BUILTIN_FORCE_SOFTWARE_TIMING = booleanPreferencesKey("builtin_force_software_timing")
         val BUILTIN_RUMBLE_ENABLED = booleanPreferencesKey("builtin_rumble_enabled")
         val BUILTIN_MOTION_ENABLED = booleanPreferencesKey("builtin_motion_enabled")
@@ -121,6 +123,9 @@ class BuiltinEmulatorPreferencesRepository @Inject constructor(
             analogAsDpad = prefs[Keys.BUILTIN_ANALOG_AS_DPAD] ?: false,
             dpadAsAnalog = prefs[Keys.BUILTIN_DPAD_AS_ANALOG] ?: false,
             audioVolume = prefs[Keys.BUILTIN_AUDIO_VOLUME] ?: 100,
+            audioLatencyMs = AudioLatencySteps.normalize(
+                prefs[Keys.BUILTIN_AUDIO_LATENCY_MS] ?: AudioLatencySteps.AUTO_MS
+            ),
             fastForwardEnabled = prefs[Keys.BUILTIN_FAST_FORWARD_ENABLED] ?: true,
             fastForwardSpeed = prefs[Keys.BUILTIN_FAST_FORWARD_SPEED] ?: 4,
             fastForwardMode = FastForwardMode.fromString(prefs[Keys.BUILTIN_FAST_FORWARD_MODE]),
@@ -304,6 +309,10 @@ class BuiltinEmulatorPreferencesRepository @Inject constructor(
 
     suspend fun setBuiltinAudioVolume(volume: Int) {
         dataStore.edit { it[Keys.BUILTIN_AUDIO_VOLUME] = volume.coerceIn(0, 200) }
+    }
+
+    suspend fun setBuiltinAudioLatencyMs(latencyMs: Int) {
+        dataStore.edit { it[Keys.BUILTIN_AUDIO_LATENCY_MS] = AudioLatencySteps.normalize(latencyMs) }
     }
 
     suspend fun setBuiltinFastForwardMode(mode: FastForwardMode) {

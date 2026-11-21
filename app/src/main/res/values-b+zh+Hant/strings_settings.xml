@@ -2376,6 +2376,8 @@
     <string name="settings_libretro_def_skip_duplicate_frames_subtitle">跳過未變更的畫面以降低CPU使用率</string>
     <string name="settings_libretro_def_low_latency_audio_title">低延遲音訊</string>
     <string name="settings_libretro_def_low_latency_audio_subtitle">降低音訊延遲以提升反應速度</string>
+    <string name="settings_libretro_def_audio_latency_title">音訊延遲</string>
+    <string name="settings_libretro_def_audio_latency_option_auto">自動</string>
     <string name="settings_libretro_def_audio_volume_title">音量</string>
     <string name="settings_libretro_def_audio_volume_subtitle" formatted="false">模擬器輸出等級（100%表示未經調整）</string>
     <string name="settings_libretro_def_vsync_title">VSync</string>

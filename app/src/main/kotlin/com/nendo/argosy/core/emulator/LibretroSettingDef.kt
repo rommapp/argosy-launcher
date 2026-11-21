@@ -17,15 +17,23 @@ sealed class LibretroSettingDef(
          * `platform_libretro_settings`, they are parsed back by the video pipeline, and the
          * shader entries are upstream `ShaderConfig` names. They must never be translated or
          * tidied. [labels] is the parallel display list, one resource id per option in the same
-         * order, and is the half that is translatable.
+         * order, and is the half that is translatable. A cycle with [clampsAtEnds] stops at its
+         * first and last option; one without it wraps around.
          */
         data class Cycle(
             val options: List<String>,
-            @StringRes val labels: List<Int>
+            @StringRes val labels: List<Int>,
+            val clampsAtEnds: Boolean = false
         ) : SettingType() {
             @StringRes
             fun labelResFor(value: String): Int? =
                 options.indexOf(value).takeIf { it >= 0 }?.let { labels.getOrNull(it) }
+
+            fun next(value: String, direction: Int): String {
+                val target = options.indexOf(value).coerceAtLeast(0) + direction
+                val index = if (clampsAtEnds) target.coerceIn(options.indices) else target.mod(options.size)
+                return options[index]
+            }
         }
 
         data object Switch : SettingType()
@@ -261,6 +269,35 @@ sealed class LibretroSettingDef(
         )
     )
 
+    data object AudioLatency : LibretroSettingDef(
+        key = "audioLatency",
+        section = "performance",
+        title = R.string.settings_libretro_def_audio_latency_title,
+        type = SettingType.Cycle(
+            options = AudioLatencySteps.TOKENS,
+            labels = listOf(
+                R.string.settings_libretro_def_audio_latency_option_auto,
+                R.string.settings_libretro_def_audio_latency_option_32,
+                R.string.settings_libretro_def_audio_latency_option_48,
+                R.string.settings_libretro_def_audio_latency_option_64,
+                R.string.settings_libretro_def_audio_latency_option_80,
+                R.string.settings_libretro_def_audio_latency_option_96,
+                R.string.settings_libretro_def_audio_latency_option_112,
+                R.string.settings_libretro_def_audio_latency_option_128,
+                R.string.settings_libretro_def_audio_latency_option_144,
+                R.string.settings_libretro_def_audio_latency_option_160,
+                R.string.settings_libretro_def_audio_latency_option_176,
+                R.string.settings_libretro_def_audio_latency_option_192,
+                R.string.settings_libretro_def_audio_latency_option_208,
+                R.string.settings_libretro_def_audio_latency_option_224,
+                R.string.settings_libretro_def_audio_latency_option_240,
+                R.string.settings_libretro_def_audio_latency_option_256
+            ),
+            clampsAtEnds = true
+        ),
+        appliesOnNextLaunch = true
+    )
+
     data object VSync : LibretroSettingDef(
         key = "vsync",
         section = "display",
@@ -321,6 +358,7 @@ sealed class LibretroSettingDef(
                 RewindBufferDuration,
                 SkipDuplicateFrames,
                 LowLatencyAudio,
+                AudioLatency,
                 AudioVolume,
                 AutoSaveState,
                 AutoRestoreState,
@@ -337,5 +375,36 @@ sealed class LibretroSettingDef(
         )
 
         val SECTION_ORDER: List<String> = listOf("shaders", "display", "performance", "saving")
+    }
+}
+
+/**
+ * Audio buffer latency for the built-in emulator, in milliseconds. [AUTO_MS] keeps the
+ * frame-based buffer sizing; any other value is one of [MIN_MS]..[MAX_MS] in [STEP_MS] steps.
+ * [TOKENS] are the stored-value strings of [LibretroSettingDef.AudioLatency], never copy.
+ */
+object AudioLatencySteps {
+    const val AUTO_MS = 0
+    const val MIN_MS = 32
+    const val MAX_MS = 256
+    const val STEP_MS = 16
+    const val AUTO_TOKEN = "Auto"
+    private const val MS_SUFFIX = "ms"
+
+    val VALUES_MS: List<Int> = listOf(AUTO_MS) + (MIN_MS..MAX_MS step STEP_MS)
+
+    val TOKENS: List<String> = VALUES_MS.map { if (it == AUTO_MS) AUTO_TOKEN else "$it$MS_SUFFIX" }
+
+    fun normalize(latencyMs: Int): Int {
+        if (latencyMs <= AUTO_MS) return AUTO_MS
+        val clamped = latencyMs.coerceIn(MIN_MS, MAX_MS)
+        return MIN_MS + (clamped - MIN_MS) / STEP_MS * STEP_MS
+    }
+
+    fun tokenFor(latencyMs: Int): String = TOKENS[VALUES_MS.indexOf(normalize(latencyMs))]
+
+    fun latencyMsFor(token: String): Int? = when (token) {
+        AUTO_TOKEN -> AUTO_MS
+        else -> token.removeSuffix(MS_SUFFIX).toIntOrNull()?.let { normalize(it) }
     }
 }

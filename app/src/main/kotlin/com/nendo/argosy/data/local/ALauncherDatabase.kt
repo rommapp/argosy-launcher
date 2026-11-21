@@ -193,7 +193,7 @@ import com.nendo.argosy.data.local.entity.SteamLicenseEntity
         com.nendo.argosy.data.local.entity.RAPatchCacheEntity::class,
         com.nendo.argosy.data.local.entity.PlayRecordDeletionEntity::class
     ],
-    version = 227,
+    version = 228,
     exportSchema = true
 )
 @TypeConverters(Converters::class)

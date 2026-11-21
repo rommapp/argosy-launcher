@@ -1215,6 +1215,7 @@ open class LibretroActivity : ComponentActivity() {
                     DualScreenOutput.forCore(coreName) == null
                 timingFollowsGeometry = coreName == "dolphin"
                 preferLowLatencyAudio = settings.lowLatencyAudio
+                audioLatencyMs = settings.audioLatencyMs
                 forceSoftwareTiming = settings.forceSoftwareTiming
                 enableMicrophone = microphoneGranted
                 rumbleEventsEnabled = settings.rumbleEnabled

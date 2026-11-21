@@ -2722,6 +2722,8 @@
     <string name="settings_libretro_def_skip_duplicate_frames_subtitle">Снижает нагрузку на CPU, пропуская неизменённые кадры</string>
     <string name="settings_libretro_def_low_latency_audio_title">Аудио с низкой задержкой</string>
     <string name="settings_libretro_def_low_latency_audio_subtitle">Уменьшает задержку звука для лучшего отклика</string>
+    <string name="settings_libretro_def_audio_latency_title">Задержка звука</string>
+    <string name="settings_libretro_def_audio_latency_option_auto">Авто</string>
     <string name="settings_libretro_def_audio_volume_title">Громкость</string>
     <string name="settings_libretro_def_audio_volume_subtitle" formatted="false">Уровень выхода эмулятора (100% - без изменений)</string>
     <string name="settings_libretro_def_vsync_title">VSync</string>

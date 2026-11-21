@@ -1,5 +1,6 @@
 package com.nendo.argosy.data.preferences
 
+import com.nendo.argosy.core.emulator.AudioLatencySteps
 import com.nendo.argosy.data.local.dao.PlatformLibretroSettingsDao
 import com.nendo.argosy.data.platform.PlatformWeightRegistry
 import com.nendo.argosy.libretro.frame.FrameRegistry
@@ -36,6 +37,8 @@ class EffectiveLibretroSettingsResolver @Inject constructor(
             skipDuplicateFrames = perPlatform?.skipDuplicateFrames ?: global.skipDuplicateFrames,
             lowLatencyAudio = perPlatform?.lowLatencyAudio ?: global.lowLatencyAudio,
             audioVolume = perPlatform?.audioVolume ?: global.audioVolume,
+            audioLatencyMs = perPlatform?.audioLatencyMs?.let(AudioLatencySteps::normalize)
+                ?: global.audioLatencyMs,
             blackFrameInsertion = perPlatform?.blackFrameInsertion ?: global.blackFrameInsertion,
             framesEnabled = global.framesEnabled,
             frame = resolveEffectiveFrame(global.framesEnabled, platformSlug, perPlatform?.frame),

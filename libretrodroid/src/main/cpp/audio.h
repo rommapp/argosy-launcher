@@ -39,7 +39,7 @@ private:
     const AudioLatencySettings LOW_LATENCY_SETTINGS { 4, true };
 
 public:
-    Audio(int32_t sampleRate, double refreshRate, bool preferLowLatencyAudio);
+    Audio(int32_t sampleRate, double refreshRate, bool preferLowLatencyAudio, int32_t audioLatencyMs);
     ~Audio() override;
 
     void start();
@@ -85,6 +85,7 @@ private:
     bool startRequested = false;
     int32_t inputSampleRate;
     double contentRefreshRate = 60.0;
+    int32_t requestedLatencyMs = 0;
 
     double baseConversionFactor = 1.0;
 

@@ -2540,6 +2540,8 @@
     <string name="settings_libretro_def_skip_duplicate_frames_subtitle">通过跳过未变化的帧降低CPU占用</string>
     <string name="settings_libretro_def_low_latency_audio_title">低延迟音频</string>
     <string name="settings_libretro_def_low_latency_audio_subtitle">减少音频延迟以提升响应速度</string>
+    <string name="settings_libretro_def_audio_latency_title">音频延迟</string>
+    <string name="settings_libretro_def_audio_latency_option_auto">自动</string>
     <string name="settings_libretro_def_audio_volume_title">音量</string>
     <string name="settings_libretro_def_audio_volume_subtitle" formatted="false">模拟器输出电平 (100%是未经调整的水平)</string>
     <string name="settings_libretro_def_vsync_title">垂直同步</string>

@@ -2600,6 +2600,8 @@
     <string name="settings_libretro_def_skip_duplicate_frames_subtitle">बिना बदले फ्रेम छोड़कर CPU उपयोग कम करें</string>
     <string name="settings_libretro_def_low_latency_audio_title">लो लेटेंसी ऑडियो</string>
     <string name="settings_libretro_def_low_latency_audio_subtitle">बेहतर रिस्पॉन्स के लिए ऑडियो देरी कम करें</string>
+    <string name="settings_libretro_def_audio_latency_title">ऑडियो लेटेंसी</string>
+    <string name="settings_libretro_def_audio_latency_option_auto">ऑटो</string>
     <string name="settings_libretro_def_audio_volume_title">वॉल्यूम</string>
     <string name="settings_libretro_def_audio_volume_subtitle" formatted="false">एमुलेटर आउटपुट स्तर (100% असंशोधित है)</string>
     <string name="settings_libretro_def_vsync_title">VSync</string>

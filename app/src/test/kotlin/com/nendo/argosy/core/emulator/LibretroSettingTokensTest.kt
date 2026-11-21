@@ -60,6 +60,51 @@ class LibretroSettingTokensTest {
         )
         assertTrue(optionsOf(LibretroSettingDef.AudioVolume).all { it.endsWith("%") })
         assertEquals("100%", optionsOf(LibretroSettingDef.AudioVolume)[10])
+        assertEquals(
+            listOf(
+                "Auto", "32ms", "48ms", "64ms", "80ms", "96ms", "112ms", "128ms", "144ms",
+                "160ms", "176ms", "192ms", "208ms", "224ms", "240ms", "256ms"
+            ),
+            optionsOf(LibretroSettingDef.AudioLatency)
+        )
+    }
+
+    @Test
+    fun `audio latency stepping clamps at Auto and 256 ms instead of wrapping`() {
+        val cycle = LibretroSettingDef.AudioLatency.type as LibretroSettingDef.SettingType.Cycle
+        assertEquals("Auto", cycle.next("Auto", -1))
+        assertEquals("32ms", cycle.next("Auto", 1))
+        assertEquals("Auto", cycle.next("32ms", -1))
+        assertEquals("256ms", cycle.next("240ms", 1))
+        assertEquals("256ms", cycle.next("256ms", 1))
+        assertEquals("256ms", cycle.next("Auto", 100))
+        assertEquals("Auto", cycle.next("256ms", -100))
+    }
+
+    @Test
+    fun `wrapping cycles still wrap at both ends`() {
+        val cycle = LibretroSettingDef.AudioVolume.type as LibretroSettingDef.SettingType.Cycle
+        assertEquals("200%", cycle.next("0%", -1))
+        assertEquals("0%", cycle.next("200%", 1))
+    }
+
+    @Test
+    fun `audio latency tokens round-trip through milliseconds`() {
+        assertEquals(AudioLatencySteps.AUTO_MS, AudioLatencySteps.latencyMsFor("Auto"))
+        assertEquals(128, AudioLatencySteps.latencyMsFor("128ms"))
+        assertEquals(null, AudioLatencySteps.latencyMsFor("fast"))
+        AudioLatencySteps.VALUES_MS.forEach { ms ->
+            assertEquals(ms, AudioLatencySteps.latencyMsFor(AudioLatencySteps.tokenFor(ms)))
+        }
+    }
+
+    @Test
+    fun `audio latency outside the range normalizes to Auto or the nearest lower step`() {
+        assertEquals(AudioLatencySteps.AUTO_MS, AudioLatencySteps.normalize(-5))
+        assertEquals(AudioLatencySteps.MIN_MS, AudioLatencySteps.normalize(1))
+        assertEquals(AudioLatencySteps.MAX_MS, AudioLatencySteps.normalize(1000))
+        assertEquals(48, AudioLatencySteps.normalize(50))
+        assertEquals("256ms", AudioLatencySteps.tokenFor(9999))
     }
 
     @Test

@@ -5001,6 +5001,9 @@
     <string name="settings_libretro_def_low_latency_audio_title">Low Latency Audio</string>
     <!-- Second line of that row. -->
     <string name="settings_libretro_def_low_latency_audio_subtitle">Reduce audio delay for better responsiveness</string>
+    <!-- Row title. "Latency" is the audio buffer delay: how far the sound lags behind the
+         game, set in milliseconds. Not network latency. -->
+    <string name="settings_libretro_def_audio_latency_title">Audio Latency</string>
     <!-- Row title. Emulator audio output level. -->
     <string name="settings_libretro_def_audio_volume_title">Volume</string>
     <!-- Second line of that row. The literal percent sign is not a format placeholder here. -->
@@ -5120,6 +5123,27 @@
     <string name="settings_libretro_def_audio_volume_option_180" translatable="false">180%</string>
     <string name="settings_libretro_def_audio_volume_option_190" translatable="false">190%</string>
     <string name="settings_libretro_def_audio_volume_option_200" translatable="false">200%</string>
+
+    <!-- Audio latency cycle label for the default choice: the emulator picks the audio buffer
+         delay itself. Adjective, short. -->
+    <string name="settings_libretro_def_audio_latency_option_auto">Auto</string>
+    <!-- Audio latency cycle labels, 32 ms to 256 ms in steps of 16. Millisecond notation of the
+         audio buffer delay, not translated. -->
+    <string name="settings_libretro_def_audio_latency_option_32" translatable="false">32 ms</string>
+    <string name="settings_libretro_def_audio_latency_option_48" translatable="false">48 ms</string>
+    <string name="settings_libretro_def_audio_latency_option_64" translatable="false">64 ms</string>
+    <string name="settings_libretro_def_audio_latency_option_80" translatable="false">80 ms</string>
+    <string name="settings_libretro_def_audio_latency_option_96" translatable="false">96 ms</string>
+    <string name="settings_libretro_def_audio_latency_option_112" translatable="false">112 ms</string>
+    <string name="settings_libretro_def_audio_latency_option_128" translatable="false">128 ms</string>
+    <string name="settings_libretro_def_audio_latency_option_144" translatable="false">144 ms</string>
+    <string name="settings_libretro_def_audio_latency_option_160" translatable="false">160 ms</string>
+    <string name="settings_libretro_def_audio_latency_option_176" translatable="false">176 ms</string>
+    <string name="settings_libretro_def_audio_latency_option_192" translatable="false">192 ms</string>
+    <string name="settings_libretro_def_audio_latency_option_208" translatable="false">208 ms</string>
+    <string name="settings_libretro_def_audio_latency_option_224" translatable="false">224 ms</string>
+    <string name="settings_libretro_def_audio_latency_option_240" translatable="false">240 ms</string>
+    <string name="settings_libretro_def_audio_latency_option_256" translatable="false">256 ms</string>
 
     <!-- ===== Top level of the settings screen: Language row ===== -->
 

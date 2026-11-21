@@ -2610,6 +2610,8 @@
     <string name="settings_libretro_def_skip_duplicate_frames_subtitle">Reduziert CPU-Last durch Überspringen unveränderter Frames</string>
     <string name="settings_libretro_def_low_latency_audio_title">Audio mit geringer Latenz</string>
     <string name="settings_libretro_def_low_latency_audio_subtitle">Reduziert Audioverzögerung für bessere Reaktionsfähigkeit</string>
+    <string name="settings_libretro_def_audio_latency_title">Audiolatenz</string>
+    <string name="settings_libretro_def_audio_latency_option_auto">Auto</string>
     <string name="settings_libretro_def_audio_volume_title">Lautstärke</string>
     <string name="settings_libretro_def_audio_volume_subtitle" formatted="false">Emulator-Ausgabepegel (100% ist unverändert)</string>
     <string name="settings_libretro_def_vsync_title">VSync</string>

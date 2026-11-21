@@ -2660,6 +2660,8 @@
     <string name="settings_libretro_def_skip_duplicate_frames_subtitle">Réduit l\'utilisation du CPU en ignorant les images inchangées</string>
     <string name="settings_libretro_def_low_latency_audio_title">Audio à faible latence</string>
     <string name="settings_libretro_def_low_latency_audio_subtitle">Réduit le délai audio pour une meilleure réactivité</string>
+    <string name="settings_libretro_def_audio_latency_title">Latence audio</string>
+    <string name="settings_libretro_def_audio_latency_option_auto">Auto</string>
     <string name="settings_libretro_def_audio_volume_title">Volume</string>
     <string name="settings_libretro_def_audio_volume_subtitle" formatted="false">Niveau de sortie de l\'émulateur (100 % est non modifié)</string>
     <string name="settings_libretro_def_vsync_title">VSync</string>

@@ -92,6 +92,7 @@ public class LibretroDroid {
         GLRetroShader shaderConfig,
         float refreshRate,
         boolean preferLowLatencyAudio,
+        int audioLatencyMs,
         boolean forceSoftwareTiming,
         boolean enableMicrophone,
         boolean skipDuplicateFrames,

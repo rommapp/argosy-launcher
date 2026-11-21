@@ -4373,6 +4373,12 @@ object Migration_226_227 : Migration(226, 227) {
     }
 }
 
+object Migration_227_228 : Migration(227, 228) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL("ALTER TABLE `platform_libretro_settings` ADD COLUMN `audioLatencyMs` INTEGER")
+    }
+}
+
 object Migration_203_204 : Migration(203, 204) {
     override fun migrate(db: SupportSQLiteDatabase) {
         db.execSQL(

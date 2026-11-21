@@ -17,6 +17,7 @@ import com.nendo.argosy.libretro.shader.ShaderPreviewRenderer
 import com.nendo.argosy.core.notification.NotificationText
 import com.nendo.argosy.core.notification.NotificationType
 import com.nendo.argosy.core.notification.showError
+import com.nendo.argosy.core.emulator.AudioLatencySteps
 import com.nendo.argosy.core.emulator.LibretroSettingDef
 import com.nendo.argosy.R
 import com.nendo.argosy.ui.screens.settings.sections.BuiltinEmulatorItem
@@ -708,6 +709,16 @@ internal fun routeCycleBuiltinAudioVolume(vm: SettingsViewModel, direction: Int)
     }
 }
 
+internal fun routeCycleBuiltinAudioLatency(vm: SettingsViewModel, direction: Int) {
+    val cycle = LibretroSettingDef.AudioLatency.type as LibretroSettingDef.SettingType.Cycle
+    val next = cycle.next(vm._uiState.value.builtinVideo.audioLatency, direction)
+    val nextMs = AudioLatencySteps.latencyMsFor(next) ?: return
+    vm._uiState.update { it.copy(builtinVideo = it.builtinVideo.copy(audioLatency = next)) }
+    vm.viewModelScope.launch {
+        vm.libretroSettingsRepo.setBuiltinAudioLatencyMs(nextMs)
+    }
+}
+
 internal fun routeCycleBuiltinRewindSpeed(vm: SettingsViewModel, direction: Int) {
     val options = listOf(1, 2, 4)
     val currentDisplay = vm._uiState.value.builtinVideo.rewindSpeed
@@ -786,6 +797,7 @@ internal fun routeUpdatePlatformLibretroSetting(vm: SettingsViewModel, setting: 
             LibretroSettingDef.SkipDuplicateFrames -> current.copy(skipDuplicateFrames = value?.toBooleanStrictOrNull())
             LibretroSettingDef.LowLatencyAudio -> current.copy(lowLatencyAudio = value?.toBooleanStrictOrNull())
             LibretroSettingDef.AudioVolume -> current.copy(audioVolume = value?.removeSuffix("%")?.toIntOrNull())
+            LibretroSettingDef.AudioLatency -> current.copy(audioLatencyMs = value?.let(AudioLatencySteps::latencyMsFor))
             LibretroSettingDef.VSync -> current.copy(vsync = value?.toBooleanStrictOrNull())
             LibretroSettingDef.RewindSpeed -> current.copy(rewindSpeed = value?.removeSuffix("x")?.toIntOrNull())
             LibretroSettingDef.RewindBufferDuration -> current.copy(rewindBufferDuration = value?.removeSuffix("s")?.toIntOrNull())
@@ -811,7 +823,7 @@ internal fun routeResetAllPlatformLibretroSettings(vm: SettingsViewModel) {
             shader = null, shaderChain = null, filter = null, aspectRatio = null, portraitPosition = null, rotation = null,
             overscanCrop = null, frame = null, blackFrameInsertion = null, fastForwardEnabled = null, fastForwardSpeed = null,
             rewindEnabled = null, rewindSpeed = null, rewindBufferDuration = null,
-            skipDuplicateFrames = null, lowLatencyAudio = null, audioVolume = null, vsync = null,
+            skipDuplicateFrames = null, lowLatencyAudio = null, audioVolume = null, audioLatencyMs = null, vsync = null,
             graphicsApi = null, gpuDriver = null
         )
         if (updated.hasAnyOverrides()) {

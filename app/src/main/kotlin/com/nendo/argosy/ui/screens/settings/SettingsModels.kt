@@ -808,6 +808,7 @@ data class BuiltinVideoState(
     val framesEnabled: Boolean = false,
     val lowLatencyAudio: Boolean = true,
     val audioVolume: String = "100%",
+    val audioLatency: String = com.nendo.argosy.core.emulator.AudioLatencySteps.AUTO_TOKEN,
     val vsync: Boolean = true,
     val rewindEnabled: Boolean = true,
     val rewindSpeed: String = "1x",

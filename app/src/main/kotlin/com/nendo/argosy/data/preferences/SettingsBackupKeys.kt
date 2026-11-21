@@ -182,6 +182,7 @@ object SettingsBackupKeys {
 
     private val BUILTIN_AUDIO = listOf(
         SettingsBackupKey("builtin_audio_volume", SettingsBackupType.INT),
+        SettingsBackupKey("builtin_audio_latency_ms", SettingsBackupType.INT),
         SettingsBackupKey("builtin_low_latency_audio", SettingsBackupType.BOOLEAN)
     )
 

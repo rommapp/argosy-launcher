@@ -342,6 +342,7 @@ class GLRetroView(
             buildShader(data.shader),
             getDefaultRefreshRate(),
             data.preferLowLatencyAudio,
+            data.audioLatencyMs,
             data.forceSoftwareTiming,
             data.enableMicrophone,
             data.skipDuplicateFrames,

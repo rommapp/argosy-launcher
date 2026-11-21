@@ -31,11 +31,12 @@ namespace {
     constexpr double kStretchBypassEpsilon = 0.02;
 }
 
-Audio::Audio(int32_t sampleRate, double refreshRate, bool preferLowLatencyAudio) {
+Audio::Audio(int32_t sampleRate, double refreshRate, bool preferLowLatencyAudio, int32_t audioLatencyMs) {
     LOGI("Audio initialization has been called with input sample rate %d", sampleRate);
 
     contentRefreshRate = refreshRate;
     inputSampleRate = sampleRate;
+    requestedLatencyMs = audioLatencyMs;
     audioLatencySettings = findBestLatencySettings(preferLowLatencyAudio);
     initializeStream();
 }
@@ -107,7 +108,9 @@ int32_t Audio::computeAudioBufferSize() {
 }
 
 double Audio::computeMaximumLatency() const {
-    double maxLatency = (audioLatencySettings->bufferSizeInVideoFrames / contentRefreshRate) * 1000;
+    double maxLatency = requestedLatencyMs > 0
+        ? (double) requestedLatencyMs
+        : (audioLatencySettings->bufferSizeInVideoFrames / contentRefreshRate) * 1000;
     return std::max(maxLatency, 32.0);
 }
 

@@ -2,6 +2,7 @@ package com.nendo.argosy.ui.screens.settings.libretro
 
 import androidx.annotation.StringRes
 import com.nendo.argosy.R
+import com.nendo.argosy.core.emulator.AudioLatencySteps
 import com.nendo.argosy.core.emulator.LibretroSettingDef
 import com.nendo.argosy.core.input.SoundType
 import com.nendo.argosy.data.local.entity.PlatformLibretroSettingsEntity
@@ -39,9 +40,9 @@ val LibretroSettingDef.isSegmented: Boolean
     get() = (type as? LibretroSettingDef.SettingType.Cycle)?.options?.size in 2..SEGMENTED_MAX_OPTIONS
 
 fun LibretroSettingsAccessor.isAtSegmentEnd(setting: LibretroSettingDef, direction: Int): Boolean {
-    if (!setting.isSegmented) return false
-    val options = (setting.type as LibretroSettingDef.SettingType.Cycle).options
-    return options.indexOf(getValue(setting)).coerceAtLeast(0) + direction !in options.indices
+    val cycle = setting.type as? LibretroSettingDef.SettingType.Cycle ?: return false
+    if (!setting.isSegmented && !cycle.clampsAtEnds) return false
+    return cycle.options.indexOf(getValue(setting)).coerceAtLeast(0) + direction !in cycle.options.indices
 }
 
 fun LibretroSettingsAccessor.step(setting: LibretroSettingDef, direction: Int): InputResult {
@@ -82,6 +83,7 @@ class GlobalLibretroSettingsAccessor(
         LibretroSettingDef.SkipDuplicateFrames -> state.skipDuplicateFrames.toString()
         LibretroSettingDef.LowLatencyAudio -> state.lowLatencyAudio.toString()
         LibretroSettingDef.AudioVolume -> state.audioVolume
+        LibretroSettingDef.AudioLatency -> state.audioLatency
         LibretroSettingDef.VSync -> state.vsync.toString()
         LibretroSettingDef.RewindSpeed -> state.rewindSpeed
         LibretroSettingDef.RewindBufferDuration -> state.rewindBufferDuration
@@ -176,6 +178,7 @@ class PlatformLibretroSettingsAccessor(
         LibretroSettingDef.SkipDuplicateFrames -> globalState.skipDuplicateFrames.toString()
         LibretroSettingDef.LowLatencyAudio -> globalState.lowLatencyAudio.toString()
         LibretroSettingDef.AudioVolume -> globalState.audioVolume
+        LibretroSettingDef.AudioLatency -> globalState.audioLatency
         LibretroSettingDef.VSync -> globalState.vsync.toString()
         LibretroSettingDef.RewindSpeed -> globalState.rewindSpeed
         LibretroSettingDef.RewindBufferDuration -> globalState.rewindBufferDuration
@@ -198,11 +201,7 @@ class PlatformLibretroSettingsAccessor(
 
     override fun cycle(setting: LibretroSettingDef, direction: Int) {
         val type = setting.type as? LibretroSettingDef.SettingType.Cycle ?: return
-        val options = type.options
-        val current = getValue(setting)
-        val currentIndex = options.indexOf(current).coerceAtLeast(0)
-        val nextIndex = (currentIndex + direction + options.size) % options.size
-        onUpdate(setting, options[nextIndex])
+        onUpdate(setting, type.next(getValue(setting), direction))
     }
 
     override fun toggle(setting: LibretroSettingDef) {
@@ -235,6 +234,7 @@ class PlatformLibretroSettingsAccessor(
             LibretroSettingDef.SkipDuplicateFrames -> ps.skipDuplicateFrames?.toString()
             LibretroSettingDef.LowLatencyAudio -> ps.lowLatencyAudio?.toString()
             LibretroSettingDef.AudioVolume -> ps.audioVolume?.let { "${it}%" }
+            LibretroSettingDef.AudioLatency -> ps.audioLatencyMs?.let(AudioLatencySteps::tokenFor)
             LibretroSettingDef.VSync -> ps.vsync?.toString()
             LibretroSettingDef.RewindSpeed -> ps.rewindSpeed?.let { "${it}x" }
             LibretroSettingDef.RewindBufferDuration -> ps.rewindBufferDuration?.let { "${it}s" }

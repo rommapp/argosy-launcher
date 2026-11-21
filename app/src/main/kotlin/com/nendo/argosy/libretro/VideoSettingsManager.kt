@@ -12,6 +12,7 @@ import com.nendo.argosy.data.preferences.EffectiveLibretroSettingsResolver
 import com.nendo.argosy.data.preferences.UserPreferencesRepository
 import com.nendo.argosy.libretro.frame.FrameRegistry
 import com.nendo.argosy.libretro.shader.ShaderRegistry
+import com.nendo.argosy.core.emulator.AudioLatencySteps
 import com.nendo.argosy.core.emulator.LibretroSettingDef
 import com.swordfish.libretrodroid.GLRetroView
 import com.swordfish.libretrodroid.ShaderConfig
@@ -45,6 +46,7 @@ class VideoSettingsManager(
     var currentSkipDupFrames by mutableStateOf(false)
     var currentLowLatencyAudio by mutableStateOf(true)
     var currentAudioVolume by mutableStateOf("100%")
+    var currentAudioLatency by mutableStateOf(AudioLatencySteps.AUTO_TOKEN)
     var currentVSync by mutableStateOf(true)
     var currentRewindSpeed by mutableStateOf("1x")
     var currentRewindBufferDuration by mutableStateOf("15s")
@@ -97,6 +99,7 @@ class VideoSettingsManager(
         currentSkipDupFrames = settings.skipDuplicateFrames
         currentLowLatencyAudio = settings.lowLatencyAudio
         currentAudioVolume = settings.audioVolumeDisplay
+        currentAudioLatency = settings.audioLatencyDisplay
         currentVSync = !settings.forceSoftwareTiming
         currentRewindSpeed = settings.rewindSpeedDisplay
         currentRewindBufferDuration = settings.rewindBufferDurationDisplay
@@ -141,6 +144,7 @@ class VideoSettingsManager(
         LibretroSettingDef.SkipDuplicateFrames -> currentSkipDupFrames.toString()
         LibretroSettingDef.LowLatencyAudio -> currentLowLatencyAudio.toString()
         LibretroSettingDef.AudioVolume -> currentAudioVolume
+        LibretroSettingDef.AudioLatency -> currentAudioLatency
         LibretroSettingDef.VSync -> currentVSync.toString()
         LibretroSettingDef.RewindSpeed -> currentRewindSpeed
         LibretroSettingDef.RewindBufferDuration -> currentRewindBufferDuration
@@ -167,6 +171,7 @@ class VideoSettingsManager(
         LibretroSettingDef.SkipDuplicateFrames -> globalSettings.skipDuplicateFrames.toString()
         LibretroSettingDef.LowLatencyAudio -> globalSettings.lowLatencyAudio.toString()
         LibretroSettingDef.AudioVolume -> globalSettings.audioVolumeDisplay
+        LibretroSettingDef.AudioLatency -> globalSettings.audioLatencyDisplay
         LibretroSettingDef.VSync -> (!globalSettings.forceSoftwareTiming).toString()
         LibretroSettingDef.RewindSpeed -> globalSettings.rewindSpeedDisplay
         LibretroSettingDef.RewindBufferDuration -> globalSettings.rewindBufferDurationDisplay
@@ -282,6 +287,7 @@ class VideoSettingsManager(
             LibretroSettingDef.FastForwardEnabled -> currentFastForwardEnabled = globalValue.toBooleanStrictOrNull() ?: true
             LibretroSettingDef.FastForwardSpeed -> currentFastForwardSpeed = globalValue
             LibretroSettingDef.AudioVolume -> currentAudioVolume = globalValue
+            LibretroSettingDef.AudioLatency -> currentAudioLatency = globalValue
             LibretroSettingDef.Frame -> currentFrame = getGlobalFrameForPlatform()
             else -> {}
         }
@@ -336,6 +342,7 @@ class VideoSettingsManager(
                 LibretroSettingDef.SkipDuplicateFrames -> current.copy(skipDuplicateFrames = null)
                 LibretroSettingDef.LowLatencyAudio -> current.copy(lowLatencyAudio = null)
                 LibretroSettingDef.AudioVolume -> current.copy(audioVolume = null)
+                LibretroSettingDef.AudioLatency -> current.copy(audioLatencyMs = null)
                 LibretroSettingDef.VSync -> current.copy(vsync = null)
                 LibretroSettingDef.RewindSpeed -> current.copy(rewindSpeed = null)
                 LibretroSettingDef.RewindBufferDuration -> current.copy(rewindBufferDuration = null)
@@ -355,11 +362,7 @@ class VideoSettingsManager(
 
     fun cycleVideoSetting(setting: LibretroSettingDef, direction: Int) {
         val type = setting.type as? LibretroSettingDef.SettingType.Cycle ?: return
-        val options = type.options
-        val current = getVideoSettingValue(setting)
-        val currentIndex = options.indexOf(current).coerceAtLeast(0)
-        val nextIndex = (currentIndex + direction + options.size) % options.size
-        val newValue = options[nextIndex]
+        val newValue = type.next(getVideoSettingValue(setting), direction)
 
         when (setting) {
             LibretroSettingDef.Shader -> currentShader = newValue
@@ -371,6 +374,7 @@ class VideoSettingsManager(
             LibretroSettingDef.FastForwardEnabled -> currentFastForwardEnabled = newValue.toBooleanStrictOrNull() ?: true
             LibretroSettingDef.FastForwardSpeed -> currentFastForwardSpeed = newValue
             LibretroSettingDef.AudioVolume -> currentAudioVolume = newValue
+            LibretroSettingDef.AudioLatency -> currentAudioLatency = newValue
             LibretroSettingDef.RewindSpeed -> currentRewindSpeed = newValue
             LibretroSettingDef.RewindBufferDuration -> currentRewindBufferDuration = newValue
             else -> {}
@@ -484,6 +488,7 @@ class VideoSettingsManager(
             }
             LibretroSettingDef.SkipDuplicateFrames,
             LibretroSettingDef.LowLatencyAudio,
+            LibretroSettingDef.AudioLatency,
             LibretroSettingDef.VSync -> {
             }
             LibretroSettingDef.AutoSaveState,
@@ -572,6 +577,7 @@ class VideoSettingsManager(
                 LibretroSettingDef.SkipDuplicateFrames -> current.copy(skipDuplicateFrames = value.toBooleanStrictOrNull())
                 LibretroSettingDef.LowLatencyAudio -> current.copy(lowLatencyAudio = value.toBooleanStrictOrNull())
                 LibretroSettingDef.AudioVolume -> current.copy(audioVolume = value.removeSuffix("%").toIntOrNull())
+                LibretroSettingDef.AudioLatency -> current.copy(audioLatencyMs = AudioLatencySteps.latencyMsFor(value))
                 LibretroSettingDef.VSync -> current.copy(vsync = value.toBooleanStrictOrNull())
                 LibretroSettingDef.RewindSpeed -> current.copy(rewindSpeed = value.removeSuffix("x").toIntOrNull())
                 LibretroSettingDef.RewindBufferDuration -> current.copy(rewindBufferDuration = value.removeSuffix("s").toIntOrNull())

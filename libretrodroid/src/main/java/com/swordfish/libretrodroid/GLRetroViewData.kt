@@ -35,6 +35,7 @@ class GLRetroViewData(context: Context) {
     var sunSensorEnabled: Boolean = false
     var coreAccelerometerScale: Float = 1f
     var preferLowLatencyAudio: Boolean = true
+    var audioLatencyMs: Int = 0
     var forceSoftwareTiming: Boolean = false
     var skipDuplicateFrames: Boolean = false
     var timingFollowsGeometry: Boolean = false

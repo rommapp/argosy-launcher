@@ -100,8 +100,35 @@ class PushInstallCoordinatorTest {
             storagePreferences,
             accountRepository,
             deviceSocket,
-            pushInstall
+            pushInstall,
+            mockk { every { screenOn } returns this@PushInstallCoordinatorTest.screenOn }
         )
+    }
+
+    private val screenOn = MutableStateFlow(true)
+
+    @Test
+    fun `the socket closes while the screen is off and nothing is claimed`() = runBlocking {
+        screenOn.value = false
+        coordinator("5.4.0", allowRemoteInstalls = true).start()
+
+        verify(timeout = WAIT_MS) { deviceSocket.disconnect() }
+        delay(SETTLE_MS)
+
+        verify(exactly = 0) { deviceSocket.connect(any()) }
+        coVerify(exactly = 0) { api.claimInstallRequests(any()) }
+    }
+
+    @Test
+    fun `waking the screen reopens the socket and claims what queued in standby`() = runBlocking {
+        screenOn.value = false
+        coordinator("5.4.0", allowRemoteInstalls = true).start()
+        verify(timeout = WAIT_MS) { deviceSocket.disconnect() }
+
+        screenOn.value = true
+
+        verify(timeout = WAIT_MS) { deviceSocket.connect(any()) }
+        coVerify(timeout = WAIT_MS) { api.claimInstallRequests(any()) }
     }
 
     private suspend fun awaitSocketSubscriber() {

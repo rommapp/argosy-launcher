@@ -19,6 +19,7 @@ import com.nendo.argosy.domain.usecase.download.PushInstallOutcome
 import com.nendo.argosy.domain.usecase.download.PushInstallUseCase
 import com.nendo.argosy.util.Logger
 import com.nendo.argosy.util.SafeCoroutineScope
+import com.nendo.argosy.util.ScreenInteractivity
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.Channel
@@ -41,7 +42,8 @@ internal const val DRAIN_SETTLE_MS = 500L
 /**
  * Sole sender of this device's install capability; drains the claim endpoint on start, foreground,
  * socket connect and `install:queued`. A refused socket stays closed until the token or device id
- * changes. Inert below [com.nendo.argosy.data.remote.romm.RomMCapabilities.DEVICE_INSTALL_MIN_VERSION]
+ * changes. The socket is closed while the screen is off and reopened when it comes back on, so
+ * requests queued during standby are claimed on wake. Inert below [com.nendo.argosy.data.remote.romm.RomMCapabilities.DEVICE_INSTALL_MIN_VERSION]
  * and while setup is incomplete; requests pushed before then stay queued on the server.
  */
 @Singleton
@@ -51,7 +53,8 @@ class PushInstallCoordinator @Inject constructor(
     private val storagePreferences: StoragePreferencesRepository,
     private val accountRepository: RomMAccountRepository,
     private val deviceSocket: RomMDeviceSocket,
-    private val pushInstall: PushInstallUseCase
+    private val pushInstall: PushInstallUseCase,
+    private val screen: ScreenInteractivity
 ) {
     private data class Session(
         val baseUrl: String,
@@ -70,7 +73,8 @@ class PushInstallCoordinator @Inject constructor(
         val deviceId: String?,
         val allowRemoteInstalls: Boolean,
         val accountId: Long?,
-        val setupComplete: Boolean
+        val setupComplete: Boolean,
+        val screenOn: Boolean
     )
 
     private val scope = SafeCoroutineScope(Dispatchers.IO, TAG)
@@ -98,12 +102,12 @@ class PushInstallCoordinator @Inject constructor(
         scope.launch {
             combine(
                 combine(connectionManager.connectionState, connectionManager.baseUrlState, ::Pair),
-                connectionManager.deviceIdState,
+                combine(connectionManager.deviceIdState, screen.screenOn, ::Pair),
                 storagePreferences.preferences.map { it.allowRemoteInstalls }.distinctUntilChanged(),
                 accountRepository.observeActiveAccount().map { it?.id }.distinctUntilChanged(),
                 setupState.state.map { it.isComplete }.distinctUntilChanged()
-            ) { (state, baseUrl), deviceId, allow, accountId, setupComplete ->
-                RefreshKey(state, baseUrl, deviceId, allow, accountId, setupComplete)
+            ) { (state, baseUrl), (deviceId, screenOn), allow, accountId, setupComplete ->
+                RefreshKey(state, baseUrl, deviceId, allow, accountId, setupComplete, screenOn)
             }
                 .distinctUntilChanged()
                 .collect { refresh() }
@@ -140,6 +144,7 @@ class PushInstallCoordinator @Inject constructor(
             reportCapability(current)
             when {
                 !current.allowRemoteInstalls -> closeSocket()
+                !screen.screenOn.value -> closeSocket()
                 current.credentials == refusedCredentials -> closeSocket()
                 else -> {
                     refusedCredentials = null
@@ -149,7 +154,7 @@ class PushInstallCoordinator @Inject constructor(
             }
             current
         }
-        if (session?.allowRemoteInstalls == true) requestDrain()
+        if (session?.allowRemoteInstalls == true && screen.screenOn.value) requestDrain()
     }
 
     private fun closeSocket() {

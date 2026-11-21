@@ -788,6 +788,15 @@ object EmulatorRegistry {
             downloadUrl = "https://play.google.com/store/apps/details?id=it.dbtecno.pizzaboygba"
         ),
         EmulatorDef(
+            id = "pizza_boy_ds",
+            packageName = "com.pizzaemulators.pbds",
+            displayName = "Pizza Boy Double Slice",
+            supportedPlatforms = setOf("nds"),
+            launchAction = Intent.ACTION_MAIN,
+            launchConfig = pizzaBoyLaunch("com.pizzaemulators.pbds"),
+            downloadUrl = "https://play.google.com/store/apps/details?id=com.pizzaemulators.pbds"
+        ),
+        EmulatorDef(
             id = "pizza_boy_gb",
             packageName = "it.dbtecno.pizzaboy",
             displayName = "Pizza Boy GB",
@@ -1293,7 +1302,7 @@ object EmulatorRegistry {
         "n64" to listOf(
             BUILTIN_ID, "mupen64plus_fz", "mupen64plus_fz_pro", "retroarch", "retroarch_64", "retroarch_32"
         ),
-        "nds" to listOf(BUILTIN_ID, "drastic", "seedlessds", "melonds", "melondualds", "retroarch", "retroarch_64", "retroarch_32", "pokedaisy"),
+        "nds" to listOf(BUILTIN_ID, "drastic", "seedlessds", "melonds", "melondualds", "pizza_boy_ds", "retroarch", "retroarch_64", "retroarch_32", "pokedaisy"),
         "3ds" to listOf(
             BUILTIN_ID, "azahar", "citra_mmj", "borked3ds", "citra",
             "retroarch", "retroarch_64", "retroarch_32"

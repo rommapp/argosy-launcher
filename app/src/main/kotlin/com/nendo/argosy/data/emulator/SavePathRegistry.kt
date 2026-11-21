@@ -454,6 +454,13 @@ object SavePathRegistry {
             ),
             saveExtensions = listOf("sav")
         ),
+        "pizza_boy_ds" to SavePathConfig(
+            emulatorId = "pizza_boy_ds",
+            defaultPaths = listOf(
+                "{extStorage}/Android/data/com.pizzaemulators.pbds/files/save"
+            ),
+            saveExtensions = listOf("sav")
+        ),
         "pizza_boy_gb" to SavePathConfig(
             emulatorId = "pizza_boy_gb",
             defaultPaths = listOf(
@@ -930,6 +937,7 @@ object SavePathRegistry {
         "com.seedlessds.app" to "seedlessds",
         "com.pokedaisy.app" to "pokedaisy",
         "it.dbtecno.pizzaboygba" to "pizza_boy_gba",
+        "com.pizzaemulators.pbds" to "pizza_boy_ds",
         "it.dbtecno.pizzaboy" to "pizza_boy_gb",
         "it.dbtecno.pizzaboygbapro" to "pizza_boy_gba_pro",
         "it.dbtecno.pizzaboypro" to "pizza_boy_gb_pro",

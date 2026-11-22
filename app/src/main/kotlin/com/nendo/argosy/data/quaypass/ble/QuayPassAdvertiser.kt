@@ -8,7 +8,6 @@ import android.bluetooth.le.AdvertiseData
 import android.bluetooth.le.AdvertiseSettings
 import android.content.Context
 import android.util.Log
-import java.security.SecureRandom
 
 class QuayPassAdvertiser(private val application: Application) {
 
@@ -17,7 +16,6 @@ class QuayPassAdvertiser(private val application: Application) {
     }
 
     private var isAdvertising = false
-    private val secureRandom = SecureRandom()
 
     @SuppressLint("MissingPermission")
     fun start() {
@@ -34,11 +32,7 @@ class QuayPassAdvertiser(private val application: Application) {
             .setTxPowerLevel(AdvertiseSettings.ADVERTISE_TX_POWER_HIGH)
             .build()
 
-        val ephemeralId = ByteArray(EPHEMERAL_ID_BYTES).also { secureRandom.nextBytes(it) }
-        val manufacturerData =
-            QuayPassConfig.MAGIC_BYTES +
-                byteArrayOf(QuayPassConfig.PROTOCOL_MAJOR) +
-                ephemeralId
+        val manufacturerData = QuayPassConfig.MAGIC_BYTES + byteArrayOf(QuayPassConfig.PROTOCOL_MAJOR)
 
         val data = AdvertiseData.Builder()
             .addManufacturerData(QuayPassConfig.MANUFACTURER_ID, manufacturerData)
@@ -69,6 +63,5 @@ class QuayPassAdvertiser(private val application: Application) {
 
     companion object {
         private const val TAG = "QuayPassAdvertiser"
-        private const val EPHEMERAL_ID_BYTES = 8
     }
 }

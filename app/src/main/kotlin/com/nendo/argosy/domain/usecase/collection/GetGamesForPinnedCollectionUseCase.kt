@@ -18,10 +18,18 @@ class GetGamesForPinnedCollectionUseCase @Inject constructor(
     private val gameDao: GameDao,
     private val syncPreferencesRepository: SyncPreferencesRepository
 ) {
-    operator fun invoke(pinned: PinnedCollection): Flow<List<GameEntity>> {
+    /**
+     * The collection's games in its own order. A [limit] stops a regular collection from loading
+     * games past it; a virtual one is ordered by title, so it loads whole and then takes [limit].
+     */
+    operator fun invoke(pinned: PinnedCollection, limit: Int = Int.MAX_VALUE): Flow<List<GameEntity>> =
+        games(pinned, limit).map { it.take(limit) }
+
+    private fun games(pinned: PinnedCollection, limit: Int): Flow<List<GameEntity>> {
         return when (pinned) {
             is PinnedCollection.Regular -> {
-                collectionDao.observeGameIdsInCollection(pinned.collectionId).map { ids ->
+                collectionDao.observeGameIdsInCollection(pinned.collectionId).map { all ->
+                    val ids = all.take(limit)
                     val byId = gameDao.getByIdsChunked(ids).associateBy { it.id }
                     ids.mapNotNull { byId[it] }
                 }

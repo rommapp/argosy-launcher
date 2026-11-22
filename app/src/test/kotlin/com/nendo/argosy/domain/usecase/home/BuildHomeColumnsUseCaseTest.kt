@@ -130,7 +130,7 @@ class BuildHomeColumnsUseCaseTest {
     }
 
     @Test
-    fun `show every game keeps more than ten in every column`() {
+    fun `show every game uncaps only the columns fetched in full`() {
         val many = (1L..15L).map { game(it, platformId = 2) }
         val sources = HomeColumnSources(
             recent = many,
@@ -138,11 +138,33 @@ class BuildHomeColumnsUseCaseTest {
             platforms = listOf(HomePlatformGames(platformId = 2, name = "SNES", games = many)),
             media = listOf(HomeMediaRow(id = "next", mediaKind = HomeMediaColumnKind.NEXT_UP, itemIds = (1..15).map { "m$it" }))
         )
+        val full = setOf(
+            BuildHomeColumnsUseCase.collectionColumnId(3),
+            BuildHomeColumnsUseCase.platformColumnId(2),
+            "media:next"
+        )
 
-        val columns = build(sources, ColumnsConfig(showAllGames = true))
+        val columns = build(sources, ColumnsConfig(showAllGames = true), full)
 
-        assertEquals(listOf(15, 15, 15, 0), columns.map { it.games.size })
+        assertEquals(listOf(10, 15, 15, 0), columns.map { it.games.size })
         assertEquals(15, columns.last().mediaItemIds.size)
+    }
+
+    @Test
+    fun `a column fetched in full stays at ten while every game is not shown`() {
+        val many = (1L..15L).map { game(it) }
+        val full = setOf(BuildHomeColumnsUseCase.themeColumnId(HomeColumnTheme.CONTINUE))
+
+        val column = build(HomeColumnSources(recent = many), ColumnsConfig(showAllGames = false), full).single()
+
+        assertEquals(10, column.games.size)
+    }
+
+    @Test
+    fun `column ids read back the collection and platform they name`() {
+        assertEquals(3L, BuildHomeColumnsUseCase.collectionIdOf(BuildHomeColumnsUseCase.collectionColumnId(3)))
+        assertEquals(2L, BuildHomeColumnsUseCase.platformIdOf(BuildHomeColumnsUseCase.platformColumnId(2)))
+        assertEquals(null, BuildHomeColumnsUseCase.platformIdOf(BuildHomeColumnsUseCase.collectionColumnId(2)))
     }
 
     @Test
@@ -191,9 +213,10 @@ class BuildHomeColumnsUseCaseTest {
     }
 
     @Test
-    fun `the column game limit is ten unless every game shows`() {
-        assertEquals(HOME_COLUMN_MAX_GAMES, homeColumnGameLimit(showAllGames = false))
-        assertEquals(Int.MAX_VALUE, homeColumnGameLimit(showAllGames = true))
+    fun `the column game limit is ten unless every game shows and the column is fetched in full`() {
+        assertEquals(HOME_COLUMN_MAX_GAMES, homeColumnGameLimit(showAllGames = false, fetchedInFull = true))
+        assertEquals(HOME_COLUMN_MAX_GAMES, homeColumnGameLimit(showAllGames = true, fetchedInFull = false))
+        assertEquals(Int.MAX_VALUE, homeColumnGameLimit(showAllGames = true, fetchedInFull = true))
     }
 
     @Test

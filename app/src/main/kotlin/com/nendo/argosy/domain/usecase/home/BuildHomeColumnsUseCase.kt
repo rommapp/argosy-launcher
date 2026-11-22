@@ -24,21 +24,27 @@ const val ALMOST_THERE_MAX_REMAINING_SEC = 3L * 60 * 60
 const val MOST_PLAYED_GENRE_WINDOW_DAYS = 90L
 
 /**
- * How many games one Columns column holds, and so how many each of its queries asks for.
+ * How many games one Columns column holds. Every column starts with [HOME_COLUMN_MAX_GAMES]; with
+ * every game shown, a column holds all of its games once they have been fetched in full.
  */
-fun homeColumnGameLimit(showAllGames: Boolean): Int = if (showAllGames) Int.MAX_VALUE else HOME_COLUMN_MAX_GAMES
+fun homeColumnGameLimit(showAllGames: Boolean, fetchedInFull: Boolean): Int =
+    if (showAllGames && fetchedInFull) Int.MAX_VALUE else HOME_COLUMN_MAX_GAMES
 
 /**
  * The ordered Columns loop: themes, then platforms, then media. Empty columns, themes in
  * [ColumnsConfig.hiddenThemes] and, with [ColumnsConfig.showPlatformColumns] off, platforms are
- * dropped. Each column holds at most [homeColumnGameLimit] games. A platform column leads with its
- * most recently played game, else its best rated, passing over any game that already leads an
- * earlier column.
+ * dropped. Each column holds at most [homeColumnGameLimit] games, where [fullColumns] names the
+ * column ids whose sources carry every game. A platform column leads with its most recently played
+ * game, else its best rated, passing over any game that already leads an earlier column.
  */
 class BuildHomeColumnsUseCase @Inject constructor() {
 
-    operator fun invoke(sources: HomeColumnSources, config: ColumnsConfig = ColumnsConfig()): List<HomeColumn> {
-        val limit = homeColumnGameLimit(config.showAllGames)
+    operator fun invoke(
+        sources: HomeColumnSources,
+        config: ColumnsConfig = ColumnsConfig(),
+        fullColumns: Set<String> = emptySet()
+    ): List<HomeColumn> {
+        val limit = { id: String -> homeColumnGameLimit(config.showAllGames, id in fullColumns) }
         val themes = themeColumns(sources, limit).filter { column ->
             (column.label as? HomeColumnLabel.Theme)?.let { config.showsTheme(it.theme) } ?: true
         }
@@ -51,9 +57,10 @@ class BuildHomeColumnsUseCase @Inject constructor() {
             }
         }
         val media = sources.media.mapNotNull { row ->
-            row.itemIds.distinct().take(limit).takeIf { it.isNotEmpty() }?.let { ids ->
+            val id = "$ID_MEDIA${row.id}"
+            row.itemIds.distinct().take(limit(id)).takeIf { it.isNotEmpty() }?.let { ids ->
                 HomeColumn(
-                    id = "$ID_MEDIA${row.id}",
+                    id = id,
                     label = HomeColumnLabel.Media(row.mediaKind),
                     mediaItemIds = ids
                 )
@@ -62,7 +69,7 @@ class BuildHomeColumnsUseCase @Inject constructor() {
         return themes + platforms + media
     }
 
-    private fun themeColumns(sources: HomeColumnSources, limit: Int): List<HomeColumn> {
+    private fun themeColumns(sources: HomeColumnSources, limit: (String) -> Int): List<HomeColumn> {
         val genre = mostPlayedGenre(sources.genrePlay)
         return listOfNotNull(
             theme(HomeColumnTheme.CONTINUE, sources.recent, limit),
@@ -78,7 +85,7 @@ class BuildHomeColumnsUseCase @Inject constructor() {
                 collection.games,
                 limit,
                 subject = collection.name,
-                id = "$ID_COLLECTION${collection.collectionId}"
+                id = collectionColumnId(collection.collectionId)
             )
         } + listOfNotNull(
             genre?.let { (name, games) ->
@@ -90,22 +97,23 @@ class BuildHomeColumnsUseCase @Inject constructor() {
     private fun theme(
         theme: HomeColumnTheme,
         games: List<GameEntity>,
-        limit: Int,
+        limit: (String) -> Int,
         subject: String? = null,
-        id: String = "$ID_THEME${theme.name}"
+        id: String = themeColumnId(theme)
     ): HomeColumn? {
-        val capped = games.distinctBy { it.id }.take(limit)
+        val capped = games.distinctBy { it.id }.take(limit(id))
         if (capped.isEmpty()) return null
         return HomeColumn(id = id, label = HomeColumnLabel.Theme(theme, subject), games = capped)
     }
 
-    private fun platformColumn(platform: HomePlatformGames, leads: Set<Long>, limit: Int): HomeColumn? {
+    private fun platformColumn(platform: HomePlatformGames, leads: Set<Long>, limit: (String) -> Int): HomeColumn? {
         val ranked = platform.games.distinctBy { it.id }.sortedWith(LEAD_ORDER)
         if (ranked.isEmpty()) return null
+        val id = platformColumnId(platform.platformId)
         val lead = ranked.firstOrNull { it.id !in leads } ?: ranked.first()
-        val games = (listOf(lead) + ranked.filter { it.id != lead.id }).take(limit)
+        val games = (listOf(lead) + ranked.filter { it.id != lead.id }).take(limit(id))
         return HomeColumn(
-            id = "$ID_PLATFORM${platform.platformId}",
+            id = id,
             label = HomeColumnLabel.Platform(platform.name),
             games = games
         )
@@ -142,6 +150,18 @@ class BuildHomeColumnsUseCase @Inject constructor() {
         private const val ID_PLATFORM = "platform:"
         private const val ID_MEDIA = "media:"
         private const val GENRE_SEPARATOR = ","
+
+        fun themeColumnId(theme: HomeColumnTheme): String = "$ID_THEME${theme.name}"
+
+        fun collectionColumnId(collectionId: Long): String = "$ID_COLLECTION$collectionId"
+
+        fun platformColumnId(platformId: Long): String = "$ID_PLATFORM$platformId"
+
+        fun collectionIdOf(columnId: String): Long? =
+            columnId.removePrefix(ID_COLLECTION).takeIf { it != columnId }?.toLongOrNull()
+
+        fun platformIdOf(columnId: String): Long? =
+            columnId.removePrefix(ID_PLATFORM).takeIf { it != columnId }?.toLongOrNull()
 
         private val LEAD_ORDER: Comparator<GameEntity> =
             compareBy<GameEntity> { it.lastPlayed == null }

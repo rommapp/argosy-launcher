@@ -840,6 +840,14 @@ class GameRepository @Inject constructor(
     suspend fun getFavorites(): List<GameEntity> =
         hydrateByIds(gameDao.getFavoriteIds(hiddenOwnerId()))
 
+    /**
+     * The first [limit] favorites in [getFavorites] order, with how many favorites there are in all.
+     */
+    suspend fun getFavoritesPage(limit: Int): Pair<List<GameEntity>, Int> {
+        val ids = gameDao.getFavoriteIds(hiddenOwnerId())
+        return hydrateByIds(ids.take(limit)) to ids.size
+    }
+
     suspend fun getRandomGame(): GameEntity? = gameDao.getRandomGame(hiddenOwnerId())
 
     /**

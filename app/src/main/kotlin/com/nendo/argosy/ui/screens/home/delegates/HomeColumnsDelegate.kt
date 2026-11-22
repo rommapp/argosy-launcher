@@ -31,7 +31,6 @@ import com.nendo.argosy.domain.usecase.collection.GetPinnedCollectionsUseCase
 import com.nendo.argosy.domain.usecase.home.ALMOST_THERE_MAX_REMAINING_SEC
 import com.nendo.argosy.domain.usecase.home.BuildHomeColumnsUseCase
 import com.nendo.argosy.domain.usecase.home.HOME_COLUMN_MAX_GAMES
-import com.nendo.argosy.domain.usecase.home.homeColumnGameLimit
 import com.nendo.argosy.ui.screens.home.ColumnsGameProgress
 import com.nendo.argosy.ui.screens.home.ColumnsState
 import com.nendo.argosy.ui.screens.home.HomeColumnUi
@@ -43,7 +42,9 @@ import com.nendo.argosy.ui.theme.generated.ComponentDefaults
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
@@ -75,18 +76,15 @@ private val SETTLED_STATUSES = CompletionStatus.entries
     .map { it.apiValue }
     .toSet()
 
-private data class ColumnSourceQuery(val showAllGames: Boolean, val loadsPlatforms: Boolean) {
-    val limit: Int get() = homeColumnGameLimit(showAllGames)
-    val platformLimit: Int get() = if (showAllGames) limit else PLATFORM_CANDIDATE_LIMIT
-    val genreLimit: Int get() = if (showAllGames) limit else GENRE_CANDIDATE_LIMIT
-}
+private const val ALL_GAMES = Int.MAX_VALUE
 
-private fun ColumnsConfig.sourceQuery(): ColumnSourceQuery =
-    ColumnSourceQuery(showAllGames = showAllGames, loadsPlatforms = showPlatformColumns)
+private data class ColumnSourceQuery(val loadsPlatforms: Boolean)
+
+private fun ColumnsConfig.sourceQuery(): ColumnSourceQuery = ColumnSourceQuery(loadsPlatforms = showPlatformColumns)
 
 private data class ColumnGameSources(
-    val query: ColumnSourceQuery,
     val sources: HomeColumnSources,
+    val pins: List<PinnedCollection>,
     val favoriteCount: Int,
     val platformCounts: Map<Long, Int>,
     val collectionCounts: Map<String, Int>
@@ -95,8 +93,11 @@ private data class ColumnGameSources(
 private data class ResolvedGameSources(
     val games: ColumnGameSources,
     val friends: List<HomeFriendsPlayingGame>,
-    val resolved: Map<Long, HomeGameUi>
+    val resolved: Map<Long, HomeGameUi>,
+    val fullColumns: Set<String>
 )
+
+private typealias FullColumnSources = (HomeColumnSources) -> HomeColumnSources
 
 private const val TAG = "HomeColumns"
 
@@ -108,8 +109,9 @@ private data class ColumnMediaRows(
 )
 
 /**
- * Owns the Columns loop: builds it from the repositories and the media state already on screen,
- * and moves its cursor. Inactive while another layout is selected.
+ * Owns the Columns loop and its cursor. Columns load [HOME_COLUMN_MAX_GAMES] games; with every game
+ * shown, a column fetches in full once focus settles on it. A library change forgets those fetches
+ * except the focused column's, which fetches again so the cursor keeps its place.
  */
 class HomeColumnsDelegate @Inject constructor(
     private val gameRepository: GameRepository,
@@ -124,8 +126,14 @@ class HomeColumnsDelegate @Inject constructor(
 ) {
     private val refreshes = MutableStateFlow(0L)
     private val progressCache = ConcurrentHashMap<ProgressKey, ColumnsGameProgress>()
+    private val fullColumns = MutableStateFlow<Map<String, FullColumnSources>>(emptyMap())
+    private val fullFetches = ConcurrentHashMap<String, Job>()
+    private var latestSources: ColumnGameSources? = null
+    private var settling: Job? = null
+    private var settlingColumnId: String? = null
     private var scope: CoroutineScope? = null
     private var read: () -> ColumnsState = { ColumnsState() }
+    private var showsAllGames: () -> Boolean = { false }
     private var write: ((ColumnsState) -> ColumnsState) -> Unit = {}
 
     fun refresh() {
@@ -141,7 +149,9 @@ class HomeColumnsDelegate @Inject constructor(
     ) {
         this.scope = scope
         read = { state.value.columns }
+        showsAllGames = { state.value.columnsConfig.showAllGames }
         write = { transform -> update { it.copy(columns = transform(it.columns)) } }
+        forgetFullColumns(keep = null)
 
         val active = state.map { it.layoutKind == HomeLayoutKind.COLUMNS }.distinctUntilChanged()
         val config = state.map { it.columnsConfig }.distinctUntilChanged()
@@ -152,29 +162,37 @@ class HomeColumnsDelegate @Inject constructor(
                 flowOf<ColumnGameSources?>(null)
             } else {
                 combine(
-                    gameRepository.observeRecentlyPlayed(query.limit),
+                    gameRepository.observeRecentlyPlayed(HOME_COLUMN_MAX_GAMES),
                     platformRepository.observePlatformsWithGames(),
                     getPinnedCollectionsUseCase(),
                     refreshes
                 ) { recent, platforms, pinned, _ -> Triple(recent, platforms, pinned) }
                     .mapLatest { (recent, platforms, pinned) -> loadGameSources(query, recent, platforms, pinned) }
             }
+        }.onEach { sources ->
+            latestSources = sources
+            forgetFullColumns(keep = read().focusedColumn)
         }
         val friendActivity = combine(active, state.map { it.friendsActivity }.distinctUntilChanged()) { on, activity ->
             if (on) activity else emptyMap()
         }.distinctUntilChanged()
         val media = state.map { mediaRows(it) }.distinctUntilChanged()
 
-        combine(gameSources, friendActivity) { games, activity -> games?.let { it to activity } }
-            .mapLatest { pair ->
-                pair?.let { (games, activity) -> resolve(games, activity) }
+        combine(gameSources, friendActivity, fullColumns) { games, activity, full ->
+            games?.let { Triple(it, activity, full) }
+        }
+            .mapLatest { loaded ->
+                loaded?.let { (games, activity, full) -> resolve(games, activity, full) }
             }
             .filterNotNull()
             .let { resolved ->
                 combine(resolved, media, config) { games, rows, columns -> columnsFor(games, rows, columns) }
             }
             .flowOn(Dispatchers.Default)
-            .onEach { columns -> write { it.rebuiltWith(columns) } }
+            .onEach { columns ->
+                write { it.rebuiltWith(columns) }
+                fetchFocusedColumnOnceSettled()
+            }
             .launchIn(scope)
 
         state.map { focusedProgressKey(it) }
@@ -217,6 +235,48 @@ class HomeColumnsDelegate @Inject constructor(
 
     fun step(delta: Int): Boolean = moveCursor { it.steppedBy(delta) }
 
+    private fun fetchFocusedColumnOnceSettled() {
+        val owner = scope ?: return
+        val column = read().focusedColumn ?: return
+        if (column.id == settlingColumnId && settling?.isActive == true) return
+        settling?.cancel()
+        settlingColumnId = column.id
+        settling = owner.launch {
+            delay(ComponentDefaults.HomeColumns.progressLoadDebounceMs.toLong())
+            requestFullColumn(column)
+        }
+    }
+
+    private fun requestFullColumn(column: HomeColumnUi) {
+        if (!showsAllGames()) return
+        if (column.id in fullColumns.value || fullFetches[column.id]?.isActive == true) return
+        fetchFullColumn(column)
+    }
+
+    private fun fetchFullColumn(column: HomeColumnUi) {
+        val owner = scope ?: return
+        val pins = latestSources?.pins ?: return
+        fullFetches.remove(column.id)?.cancel()
+        fullFetches[column.id] = owner.launch {
+            val full = try {
+                fullColumnSources(column, pins)
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                Log.w(TAG, "Column ${column.id} failed to load in full", e)
+                return@launch
+            }
+            fullColumns.update { it + (column.id to full) }
+        }
+    }
+
+    private fun forgetFullColumns(keep: HomeColumnUi?) {
+        val kept = keep?.takeIf { it.id in fullColumns.value || fullFetches[it.id]?.isActive == true }
+        fullFetches.keys.filter { it != kept?.id }.forEach { id -> fullFetches.remove(id)?.cancel() }
+        fullColumns.update { full -> full.filterKeys { it == kept?.id } }
+        kept?.let { fetchFullColumn(it) }
+    }
+
     fun jumpRun(direction: Int): Boolean = moveCursor { it.jumpedRun(direction) }
 
     fun reset(): Boolean = moveCursor { it.reset() }
@@ -227,6 +287,7 @@ class HomeColumnsDelegate @Inject constructor(
         val next = transform(read()) ?: return false
         write { current -> transform(current) ?: current }
         extractFocusedGradients(next)
+        fetchFocusedColumnOnceSettled()
         return true
     }
 
@@ -242,29 +303,10 @@ class HomeColumnsDelegate @Inject constructor(
         platforms: List<PlatformEntity>,
         pinned: List<PinnedCollection>
     ): ColumnGameSources = withContext(Dispatchers.IO) {
-        val installedOnly = preferencesRepository.userPreferences.first().installedOnlyHome
-        suspend fun List<GameEntity>.shown(): List<GameEntity> =
-            if (installedOnly) filter { downloadFileStatusRepository.isContentAvailable(it) } else this
-
-        val now = Instant.now()
-        val zone = ZoneId.systemDefault()
-        val againWindow = BuildHomeColumnsUseCase.playItAgainWindow(LocalDate.now(zone), zone)
-        val playItAgain = playedGames(
-            playStatsRepository.activeMsPerGameInRange(againWindow.start, againWindow.end, query.limit)
-        )
-        val genreWindow = BuildHomeColumnsUseCase.mostPlayedGenreWindow(now)
-        val genrePlay = playedGames(
-            playStatsRepository.activeMsPerGameInRange(genreWindow.start, genreWindow.end, query.genreLimit)
-        )
-        val favorites = gameRepository.getFavorites().shown()
+        val reader = sourceReader()
+        val limit = HOME_COLUMN_MAX_GAMES
+        val (favorites, favoriteCount) = reader.favorites(limit)
         val orderedPins = pinned.sortedByDescending { it.displayOrder }
-        val pinnedGames = orderedPins.map { pin ->
-            HomePinnedCollection(
-                collectionId = pin.id,
-                name = pin.displayName,
-                games = getGamesForPinnedCollectionUseCase(pin).first().shown()
-            )
-        }
         val platformGames = if (!query.loadsPlatforms) {
             emptyList()
         } else {
@@ -272,37 +314,142 @@ class HomeColumnsDelegate @Inject constructor(
                 HomePlatformGames(
                     platformId = platform.id,
                     name = platform.getDisplayName(),
-                    games = gameRepository.getPlatformLeadOrdered(platform.id, query.platformLimit).shown()
+                    games = reader.platform(platform.id, PLATFORM_CANDIDATE_LIMIT)
                 )
             }
         }
-        val shownPlayItAgain = playItAgain.map { it.game }.shown().map { it.id }.toSet()
-        val shownGenre = genrePlay.map { it.game }.shown().map { it.id }.toSet()
         ColumnGameSources(
-            query = query,
             sources = HomeColumnSources(
-                recent = recent.shown(),
-                playItAgain = playItAgain.filter { it.game.id in shownPlayItAgain }.map { it.game },
-                almostThere = gameRepository.getAlmostThere(ALMOST_THERE_MAX_REMAINING_SEC, query.limit)
-                    .shown(),
-                newlyAdded = gameRepository.getNewlyAdded(
-                    threshold = now.minus(JUST_ADDED_DAYS, ChronoUnit.DAYS),
-                    installedOnly = installedOnly,
-                    limit = query.limit
-                ),
-                gatheringDust = gameRepository.getGatheringDust(
-                    BuildHomeColumnsUseCase.gatheringDustCutoff(now),
-                    query.limit
-                ).shown(),
+                recent = reader.shown(recent),
+                playItAgain = reader.playItAgain(limit),
+                almostThere = reader.almostThere(limit),
+                newlyAdded = reader.newlyAdded(limit),
+                gatheringDust = reader.gatheringDust(limit),
                 favorites = favorites,
-                pinnedCollections = pinnedGames,
-                genrePlay = genrePlay.filter { it.game.id in shownGenre },
+                pinnedCollections = orderedPins.map { pin ->
+                    HomePinnedCollection(collectionId = pin.id, name = pin.displayName, games = reader.pinned(pin, limit))
+                },
+                genrePlay = reader.genrePlay(GENRE_CANDIDATE_LIMIT),
                 platforms = platformGames
             ),
-            favoriteCount = favorites.size,
+            pins = orderedPins,
+            favoriteCount = favoriteCount,
             platformCounts = platforms.associate { it.id to it.gameCount },
             collectionCounts = orderedPins.associate { it.displayName to it.gameCount }
         )
+    }
+
+    private suspend fun fullColumnSources(
+        column: HomeColumnUi,
+        pins: List<PinnedCollection>
+    ): FullColumnSources = withContext(Dispatchers.IO) {
+        val reader = sourceReader()
+        val unchanged: FullColumnSources = { it }
+        when (val label = column.label) {
+            is HomeColumnLabel.Media -> unchanged
+            is HomeColumnLabel.Platform -> {
+                val platformId = BuildHomeColumnsUseCase.platformIdOf(column.id) ?: return@withContext unchanged
+                val games = reader.platform(platformId, ALL_GAMES)
+                val full: FullColumnSources = { sources ->
+                    sources.copy(platforms = sources.platforms.map { if (it.platformId == platformId) it.copy(games = games) else it })
+                }
+                full
+            }
+            is HomeColumnLabel.Theme -> fullThemeSources(label.theme, column.id, pins, reader) ?: unchanged
+        }
+    }
+
+    private suspend fun fullThemeSources(
+        theme: HomeColumnTheme,
+        columnId: String,
+        pins: List<PinnedCollection>,
+        reader: ColumnSourceReader
+    ): FullColumnSources? = when (theme) {
+        HomeColumnTheme.CONTINUE -> reader.shown(gameRepository.getRecentlyPlayed(ALL_GAMES)).let { games ->
+            { sources -> sources.copy(recent = games) }
+        }
+        HomeColumnTheme.PLAY_IT_AGAIN -> reader.playItAgain(ALL_GAMES).let { games ->
+            { sources -> sources.copy(playItAgain = games) }
+        }
+        HomeColumnTheme.ALMOST_THERE -> reader.almostThere(ALL_GAMES).let { games ->
+            { sources -> sources.copy(almostThere = games) }
+        }
+        HomeColumnTheme.JUST_ADDED -> reader.newlyAdded(ALL_GAMES).let { games ->
+            { sources -> sources.copy(newlyAdded = games) }
+        }
+        HomeColumnTheme.GATHERING_DUST -> reader.gatheringDust(ALL_GAMES).let { games ->
+            { sources -> sources.copy(gatheringDust = games) }
+        }
+        HomeColumnTheme.FAVORITES -> reader.favorites(ALL_GAMES).first.let { games ->
+            { sources -> sources.copy(favorites = games) }
+        }
+        HomeColumnTheme.MOST_PLAYED_GENRE -> reader.genrePlay(ALL_GAMES).let { played ->
+            { sources -> sources.copy(genrePlay = played) }
+        }
+        HomeColumnTheme.PINNED_COLLECTION -> {
+            val pinId = BuildHomeColumnsUseCase.collectionIdOf(columnId)
+            pins.firstOrNull { it.id == pinId }?.let { pin ->
+                val games = reader.pinned(pin, ALL_GAMES)
+                val full: FullColumnSources = { sources ->
+                    sources.copy(
+                        pinnedCollections = sources.pinnedCollections.map {
+                            if (it.collectionId == pin.id) it.copy(games = games) else it
+                        }
+                    )
+                }
+                full
+            }
+        }
+        HomeColumnTheme.FRIENDS_PLAYING -> null
+    }
+
+    private suspend fun sourceReader(): ColumnSourceReader =
+        ColumnSourceReader(preferencesRepository.userPreferences.first().installedOnlyHome, Instant.now())
+
+    private inner class ColumnSourceReader(private val installedOnly: Boolean, private val now: Instant) {
+        private val zone = ZoneId.systemDefault()
+
+        suspend fun shown(games: List<GameEntity>): List<GameEntity> =
+            if (installedOnly) games.filter { downloadFileStatusRepository.isContentAvailable(it) } else games
+
+        suspend fun playItAgain(limit: Int): List<GameEntity> {
+            val window = BuildHomeColumnsUseCase.playItAgainWindow(LocalDate.now(zone), zone)
+            return shown(playedGames(playStatsRepository.activeMsPerGameInRange(window.start, window.end, limit)).map { it.game })
+        }
+
+        suspend fun genrePlay(limit: Int): List<HomePlayedGame> {
+            val window = BuildHomeColumnsUseCase.mostPlayedGenreWindow(now)
+            val played = playedGames(playStatsRepository.activeMsPerGameInRange(window.start, window.end, limit))
+            val shownIds = shown(played.map { it.game }).map { it.id }.toSet()
+            return played.filter { it.game.id in shownIds }
+        }
+
+        suspend fun almostThere(limit: Int): List<GameEntity> =
+            shown(gameRepository.getAlmostThere(ALMOST_THERE_MAX_REMAINING_SEC, limit))
+
+        suspend fun newlyAdded(limit: Int): List<GameEntity> = gameRepository.getNewlyAdded(
+            threshold = now.minus(JUST_ADDED_DAYS, ChronoUnit.DAYS),
+            installedOnly = installedOnly,
+            limit = limit
+        )
+
+        suspend fun gatheringDust(limit: Int): List<GameEntity> =
+            shown(gameRepository.getGatheringDust(BuildHomeColumnsUseCase.gatheringDustCutoff(now), limit))
+
+        suspend fun favorites(limit: Int): Pair<List<GameEntity>, Int> {
+            if (installedOnly) return shown(gameRepository.getFavorites()).let { it.take(limit) to it.size }
+            return gameRepository.getFavoritesPage(limit)
+        }
+
+        suspend fun pinned(pin: PinnedCollection, limit: Int): List<GameEntity> =
+            if (installedOnly) {
+                shown(getGamesForPinnedCollectionUseCase(pin).first()).take(limit)
+            } else {
+                getGamesForPinnedCollectionUseCase(pin, limit).first()
+            }
+
+        suspend fun platform(platformId: Long, limit: Int): List<GameEntity> =
+            shown(gameRepository.getPlatformLeadOrdered(platformId, limit))
     }
 
     private suspend fun playedGames(activeMs: Map<Long, Long>): List<HomePlayedGame> {
@@ -314,19 +461,21 @@ class HomeColumnsDelegate @Inject constructor(
     }
 
     private suspend fun resolve(
-        games: ColumnGameSources,
-        activity: Map<Int, List<FriendActivity>>
+        loaded: ColumnGameSources,
+        activity: Map<Int, List<FriendActivity>>,
+        full: Map<String, FullColumnSources>
     ): ResolvedGameSources {
         val friends = friendsPlaying(activity)
+        val games = loaded.copy(sources = full.values.fold(loaded.sources) { sources, apply -> apply(sources) })
         val sources = games.sources
         val ids = (
             sources.recent + sources.playItAgain + sources.almostThere + sources.newlyAdded +
                 sources.gatheringDust + sources.favorites + friends.map { it.game } +
-                sources.pinnedCollections.flatMap { it.games.take(games.query.limit) } +
+                sources.pinnedCollections.flatMap { it.games } +
                 sources.genrePlay.map { it.game } +
                 sources.platforms.flatMap { it.games }
             ).map { it.id }.distinct()
-        return ResolvedGameSources(games, friends, libraryDelegate.resolveTileGames(ids))
+        return ResolvedGameSources(games, friends, libraryDelegate.resolveTileGames(ids), full.keys)
     }
 
     private suspend fun friendsPlaying(activity: Map<Int, List<FriendActivity>>): List<HomeFriendsPlayingGame> {
@@ -362,7 +511,7 @@ class HomeColumnsDelegate @Inject constructor(
     ): List<HomeColumnUi> {
         val sources = games.games.sources.copy(friendsPlaying = games.friends, media = media.rows)
         val liveFriends = games.friends.filter { it.playingNow }.map { it.game.id }.toSet()
-        return buildHomeColumns(sources, config).mapNotNull { column ->
+        return buildHomeColumns(sources, config, games.fullColumns).mapNotNull { column ->
             val items = itemsFor(column, games.resolved, media)
             if (items.isEmpty()) return@mapNotNull null
             HomeColumnUi(

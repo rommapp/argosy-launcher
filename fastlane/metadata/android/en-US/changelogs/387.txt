@@ -1,0 +1,7 @@
+- Read RetroAchievements comments on achievements (#625)
+- Disc swapping for multi-disc PBP games on built-in cores (#353)
+- Play time includes every device
+- Faster Columns Home loading
+- Fix a crash searching collections in the Home tile picker
+- Fix duplicate names in the Collections browser
+- QuayPass no longer broadcasts a fixed device id (#627)

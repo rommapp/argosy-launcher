@@ -92,15 +92,24 @@ internal sealed class AboutItem(
     ) : AboutItem(key, section, visibleWhen), SearchableSetting
 
     data object VersionInfo : AboutItem("versionInfo", "version")
-    data object CheckUpdates :
-        Row("checkUpdates", "version", R.string.settings_about_update_title_check)
+    data object CheckUpdates : Row(
+        key = "checkUpdates",
+        section = "version",
+        labelRes = R.string.settings_about_update_title_check,
+        visibleWhen = { BuildChannel.selfUpdates }
+    )
     data object ChangelogPreview : Row(
         key = "changelogPreview",
         section = "version",
         labelRes = R.string.settings_search_label_about_changelog,
         visibleWhen = { it.hasChangelog }
     )
-    data object BetaUpdates : Row("betaUpdates", "version", R.string.settings_about_beta_updates_title)
+    data object BetaUpdates : Row(
+        key = "betaUpdates",
+        section = "version",
+        labelRes = R.string.settings_about_beta_updates_title,
+        visibleWhen = { BuildChannel.selfUpdates }
+    )
     data object BackupSpacer : AboutItem("backupSpacer", "backup")
     data object ExportSettings : Row("exportSettings", "backup", R.string.settings_about_export_title)
     data object ImportSettings : Row("importSettings", "backup", R.string.settings_about_import_title)

@@ -57,6 +57,7 @@ android {
         buildConfigField("String", "UCDATA_PATH", "\"$ucdataPath\"")
         buildConfigField("String", "DISCORD_APP_ID", "\"${envString("DISCORD_APP_ID")}\"")
         buildConfigField("Boolean", "DISCORD_SDK_ENABLED", envString("DISCORD_SDK_ENABLED", "false"))
+        buildConfigField("Boolean", "SELF_UPDATE", (!project.hasProperty("fdroid")).toString())
         buildConfigField("String", "SOCIAL_API_URL", "\"https://api.argosy.dev/\"")
         // QuayPass server signing pubkey(s): comma-separated base64 Ed25519
         // public keys. Multiple values supported for zero-downtime rotation.
@@ -93,10 +94,10 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
-            signingConfig = if (keystorePropertiesFile.exists()) {
-                signingConfigs.getByName("release")
-            } else {
-                signingConfigs.getByName("debug")
+            signingConfig = when {
+                project.hasProperty("fdroid") -> null
+                keystorePropertiesFile.exists() -> signingConfigs.getByName("release")
+                else -> signingConfigs.getByName("debug")
             }
         }
         debug {

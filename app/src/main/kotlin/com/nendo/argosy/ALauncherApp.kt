@@ -262,8 +262,10 @@ class ArgosyApp : Application(), Configuration.Provider, ImageLoaderFactory {
                 .distinctUntilChanged()
                 .collect { rooted -> if (rooted) com.nendo.argosy.hardware.pad.PadDriverLauncher.ensureRunning(this@ArgosyApp) }
         }
-        UpdateCheckWorker.schedule(this)
-        appUpdateManager.startupPass()
+        if (com.nendo.argosy.data.update.BuildChannel.selfUpdates) {
+            UpdateCheckWorker.schedule(this)
+            appUpdateManager.startupPass()
+        }
         SaveSyncWorker.schedule(this)
         SocialSyncWorker.schedule(this)
         CoreUpdateCheckWorker.schedule(this)

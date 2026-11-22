@@ -1,0 +1,52 @@
+AntiFeatures:
+  NonFreeNet:
+    en-US: Optional sign-ins reach proprietary services (Steam, RetroAchievements, and the api.argosy.dev social backend for friends, presence and netplay matchmaking). Library sync with a self-hosted RomM server works without them.
+  NonFreeAdd:
+    en-US: Offers to install emulator apps, some of which are not free software, from the Play Store or their GitHub releases.
+Categories:
+  - Games
+License: GPL-3.0-only
+AuthorName: nendo
+SourceCode: https://github.com/rommapp/argosy-launcher
+IssueTracker: https://github.com/rommapp/argosy-launcher/issues
+Changelog: https://github.com/rommapp/argosy-launcher/releases
+
+AutoName: Argosy
+
+RepoType: git
+Repo: https://github.com/rommapp/argosy-launcher.git
+
+Builds:
+  - versionName: 3.0.1
+    versionCode: 1000387
+    commit: v3.0.1
+    subdir: app
+    submodules: true
+    gradle:
+      - yes
+    output: build/outputs/apk/release/app-armeabi-v7a-release-unsigned.apk
+    gradleprops:
+      - allAbis
+      - fdroid
+    ndk: 27.0.12077973
+
+  - versionName: 3.0.1
+    versionCode: 2000387
+    commit: v3.0.1
+    subdir: app
+    submodules: true
+    gradle:
+      - yes
+    output: build/outputs/apk/release/app-arm64-v8a-release-unsigned.apk
+    gradleprops:
+      - allAbis
+      - fdroid
+    ndk: 27.0.12077973
+
+AutoUpdateMode: Version
+UpdateCheckMode: Tags ^v[0-9.]+$
+VercodeOperation:
+  - '%c + 1000000'
+  - '%c + 2000000'
+CurrentVersion: 3.0.1
+CurrentVersionCode: 2000387

@@ -13,5 +13,11 @@ object BuildChannel {
 
     val isPrereleaseBuild: Boolean = isPrerelease(BuildConfig.DEBUG, BuildConfig.VERSION_NAME)
 
+    /**
+     * Whether this build checks GitHub for Argosy updates and installs them. Off for builds a
+     * store signs and updates itself (`-Pfdroid`), where a GitHub APK cannot install over them.
+     */
+    val selfUpdates: Boolean = BuildConfig.SELF_UPDATE
+
     private const val PRERELEASE_SEPARATOR = '-'
 }

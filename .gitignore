@@ -31,7 +31,6 @@ captures/
 *.log
 *.jar
 !gradle/wrapper/gradle-wrapper.jar
-!libs/maven/**/*.jar
 *.war
 
 # Kotlin Language Server (fwcd) local classpath cache (db + sqlite sidecars)

@@ -426,7 +426,8 @@ open class LibretroActivity : ComponentActivity() {
     private var quickHistoryLoadJob: Job? = null
     private var menuDiscCount = 0
     private var discPaths: List<File> = emptyList()
-    private var currentDiscIndex = 0
+    private var coreDiscCount = 0
+    private val discCount: Int get() = if (discPaths.isNotEmpty()) discPaths.size else coreDiscCount
     private var discMenuVisible by mutableStateOf(false)
     private var discMenuFocusIndex by mutableStateOf(0)
     private var discMenuCurrentIndex by mutableStateOf(0)
@@ -1288,6 +1289,7 @@ open class LibretroActivity : ComponentActivity() {
                             Log.i(TAG, "[Startup] First frame rendered - emulation running successfully")
                             Log.d(TAG, "[Startup] gameId=$gameId, core=$coreName, hardcore=$hardcoreMode")
                             checkStateSupport()
+                            readCoreDiscCount()
                             enforceHardcoreCoreSettings()
                             cheatManager.applyAllEnabledCheats(hardcoreMode)
                             if (retroView.sramLoadFailed) {
@@ -1855,8 +1857,7 @@ open class LibretroActivity : ComponentActivity() {
                         onFocusChange = { discMenuFocusIndex = it },
                         onSelect = { index ->
                             if (index != discMenuCurrentIndex) {
-                                discPaths.getOrNull(index)?.let { retroView.changeDisk(index, it.absolutePath) }
-                                currentDiscIndex = index
+                                swapToDisc(index)
                                 val discName = discMenuLabels.getOrNull(index)
                                     ?: getString(R.string.ingame_libretro_disc_swap_fallback_name, index + 1)
                                 showNotice(NotificationSeverity.SUCCESS, R.string.ingame_libretro_disc_swap_inserted, discName)
@@ -2883,15 +2884,42 @@ open class LibretroActivity : ComponentActivity() {
         }
     }
 
+    private fun readCoreDiscCount() {
+        if (discPaths.isNotEmpty()) return
+        lifecycleScope.launch {
+            coreDiscCount = withContext(Dispatchers.IO) { retroView.getAvailableDisks() }
+        }
+    }
+
+    private fun discLabels(): List<String> =
+        if (discPaths.isNotEmpty()) {
+            discPaths.map { it.nameWithoutExtension }
+        } else {
+            (1..coreDiscCount).map { getString(R.string.ingame_libretro_disc_swap_fallback_name, it) }
+        }
+
+    private fun openDiscMenu() {
+        lifecycleScope.launch {
+            val current = withContext(Dispatchers.IO) { retroView.getCurrentDisk() }
+            val labels = discLabels()
+            discMenuLabels = labels
+            discMenuCurrentIndex = current.coerceIn(0, (labels.size - 1).coerceAtLeast(0))
+            discMenuFocusIndex = discMenuCurrentIndex
+            menuVisible = false
+            discMenuVisible = true
+        }
+    }
+
+    private fun swapToDisc(index: Int) {
+        val path = discPaths.getOrNull(index)?.absolutePath
+        lifecycleScope.launch(Dispatchers.IO) {
+            if (path != null) retroView.changeDisk(index, path) else retroView.changeDisk(index)
+        }
+    }
+
     private fun handleMenuAction(action: InGameMenuAction) {
         when (action) {
-            InGameMenuAction.SwapDisc -> {
-                menuVisible = false
-                discMenuLabels = discPaths.map { it.nameWithoutExtension }
-                discMenuCurrentIndex = currentDiscIndex.coerceIn(0, (discPaths.size - 1).coerceAtLeast(0))
-                discMenuFocusIndex = discMenuCurrentIndex
-                discMenuVisible = true
-            }
+            InGameMenuAction.SwapDisc -> openDiscMenu()
             InGameMenuAction.Resume -> hideMenu()
             InGameMenuAction.QuickSave -> {
                 if (!canSerialize) {
@@ -3458,7 +3486,7 @@ open class LibretroActivity : ComponentActivity() {
         }
         pendingSaveScreenshot?.recycle()
         pendingSaveScreenshot = try { retroView.captureRawFrame() } catch (_: Exception) { null }
-        menuDiscCount = if (netplay.inSession) 0 else discPaths.size
+        menuDiscCount = if (netplay.inSession) 0 else discCount
         val discSwapShown = menuDiscCount > 1
         menuFocusIndex = if (discSwapShown) 1 else 0
         collapseQuickHistory()

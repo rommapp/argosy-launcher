@@ -4379,6 +4379,12 @@ object Migration_227_228 : Migration(227, 228) {
     }
 }
 
+object Migration_228_229 : Migration(228, 229) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL("ALTER TABLE `play_sessions` ADD COLUMN `foldedIntoTotal` INTEGER NOT NULL DEFAULT 0")
+    }
+}
+
 object Migration_203_204 : Migration(203, 204) {
     override fun migrate(db: SupportSQLiteDatabase) {
         db.execSQL(

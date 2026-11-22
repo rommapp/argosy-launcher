@@ -27,7 +27,8 @@ class PlaySessionPull @Inject constructor(
     private val playRecordDeletionDao: PlayRecordDeletionDao,
     private val gameDao: GameDao,
     private val syncPreferencesRepository: SyncPreferencesRepository,
-    private val connectionManager: RomMConnectionManager
+    private val connectionManager: RomMConnectionManager,
+    private val remotePlayTimeFolder: RemotePlayTimeFolder
 ) {
     data class Summary(
         val added: Int,
@@ -42,9 +43,17 @@ class PlaySessionPull @Inject constructor(
             connectionManager.isConnected()
 
     suspend fun run(): Summary = runMutex.withLock {
+        val ownerUserId = syncPreferencesRepository.getRommUserId() ?: return Summary(0, 0, "No account")
+        try {
+            pullFor(ownerUserId)
+        } finally {
+            remotePlayTimeFolder.fold(ownerUserId)
+        }
+    }
+
+    private suspend fun pullFor(ownerUserId: Long): Summary {
         if (!canPull) return Summary(0, 0, "Capability or connection unavailable")
         val api = connectionManager.getApi() ?: return Summary(0, 0, "No api")
-        val ownerUserId = syncPreferencesRepository.getRommUserId() ?: return Summary(0, 0, "No account")
         val thisDeviceId = connectionManager.getDeviceId()
         val cutoffs = playRecordDeletionDao.cutoffsFor(ownerUserId)
         val previousPull = syncPreferencesRepository.getRommPlaySessionLastPull()
@@ -124,7 +133,7 @@ class PlaySessionPull @Inject constructor(
         }
         syncPreferencesRepository.setRommPlaySessionLastPull(Instant.now())
         Logger.info(TAG, "run: added=$added devices=$devicesDone")
-        Summary(added, devicesDone)
+        return Summary(added, devicesDone)
     }
 
     internal suspend fun insertMissing(

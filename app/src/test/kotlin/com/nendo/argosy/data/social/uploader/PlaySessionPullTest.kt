@@ -53,12 +53,16 @@ class PlaySessionPullTest {
         every { getApi() } returns api
         every { getDeviceId() } returns "dev-this"
     }
+    private val remotePlayTimeFolder: RemotePlayTimeFolder = mockk {
+        coEvery { fold(any()) } returns 0
+    }
     private val pull = PlaySessionPull(
         playSessionDao,
         playRecordDeletionDao,
         gameDao,
         syncPreferencesRepository,
-        connectionManager
+        connectionManager,
+        remotePlayTimeFolder
     )
 
     private val otherDevice = RomMDevice(
@@ -227,6 +231,17 @@ class PlaySessionPullTest {
 
         assertEquals("Play sessions returned 500", summary.stoppedBy)
         coVerify(exactly = 0) { syncPreferencesRepository.setRommPlaySessionLastPull(any()) }
+        coVerify(exactly = 1) { remotePlayTimeFolder.fold(7L) }
+    }
+
+    @Test
+    fun `a run without a connection still adds sessions already pulled to the totals`() = runTest {
+        every { connectionManager.isConnected() } returns false
+
+        val summary = pull.run()
+
+        assertEquals("Capability or connection unavailable", summary.stoppedBy)
+        coVerify(exactly = 1) { remotePlayTimeFolder.fold(7L) }
     }
 
     @Test

@@ -1,5 +1,6 @@
 package com.nendo.argosy.data.local.entity
 
+import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.Index
 import androidx.room.PrimaryKey
@@ -55,7 +56,13 @@ data class PlaySessionEntity(
      * The achievements unlocked between this session's launch and end snapshots, in the encoding
      * of RaUnlockSnapshots. Null when no pair of snapshots was taken.
      */
-    val raSnapshotUnlocks: String? = null
+    val raSnapshotUnlocks: String? = null,
+    /**
+     * Whether another device's session has been added to the game's play time total. A session
+     * recorded here is counted when it ends and never carries this flag.
+     */
+    @ColumnInfo(defaultValue = "0")
+    val foldedIntoTotal: Boolean = false
 ) {
     companion object {
         const val ROMM_SESSION_ID_UNKNOWN = -1L

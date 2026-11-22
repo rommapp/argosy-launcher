@@ -151,6 +151,23 @@ interface PlaySessionDao {
     """)
     suspend fun relinkOrphans(ownerUserId: Long?): Int
 
+    @Query("""
+        SELECT gameId, SUM((activePlayMs + 30000) / 60000) AS minutes FROM play_sessions
+        WHERE ownerUserId = :ownerUserId AND foldedIntoTotal = 0 AND deviceId != :localDeviceId
+          AND rommSessionId IS NOT NULL
+          AND EXISTS (SELECT 1 FROM games WHERE games.id = play_sessions.gameId)
+        GROUP BY gameId
+    """)
+    suspend fun getUnfoldedRemoteMinutes(ownerUserId: Long, localDeviceId: String): List<GameMinutes>
+
+    @Query("""
+        UPDATE play_sessions SET foldedIntoTotal = 1
+        WHERE ownerUserId = :ownerUserId AND foldedIntoTotal = 0 AND deviceId != :localDeviceId
+          AND rommSessionId IS NOT NULL
+          AND EXISTS (SELECT 1 FROM games WHERE games.id = play_sessions.gameId)
+    """)
+    suspend fun markRemoteFolded(ownerUserId: Long, localDeviceId: String): Int
+
     @Query("DELETE FROM play_sessions WHERE ownerUserId = :ownerUserId")
     suspend fun deleteByOwner(ownerUserId: Long)
 
@@ -362,6 +379,11 @@ data class GamePlayTotal(
     val activeMs: Long,
     val sessionCount: Int,
     val lastPlayed: Instant
+)
+
+data class GameMinutes(
+    val gameId: Long,
+    val minutes: Int
 )
 
 data class GameFirstPlayed(

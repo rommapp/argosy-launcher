@@ -87,8 +87,7 @@ data class TilePickerEntry(
         get() = (target as? com.nendo.argosy.domain.model.HomeTileTargetRef.Media)?.itemId
 
     val key: String
-        get() = "$action:${target::class.simpleName}:" +
-            "${gameId ?: mediaItemId ?: packageName ?: title}"
+        get() = "$action:${libraryId ?: target}"
 }
 
 /**

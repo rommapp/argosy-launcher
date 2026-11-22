@@ -581,6 +581,11 @@ fun HomeScreen(
         label = "columnsTakeover"
     )
     var focusedColumnBounds by remember { mutableStateOf<androidx.compose.ui.geometry.Rect?>(null) }
+    OfferColumnsLaunchHero(
+        enabled = isColumns && !uiState.videoPreviewPhase.isExpanded,
+        item = uiState.columns.focusedItem,
+        columnBounds = focusedColumnBounds
+    )
 
     val backgroundBlurDp = uiState.backgroundBlur.backgroundBlurDp
     val saturationFraction = uiState.backgroundSaturation / 100f

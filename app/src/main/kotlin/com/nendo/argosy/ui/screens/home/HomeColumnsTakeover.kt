@@ -25,27 +25,20 @@ import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
-import androidx.compose.ui.geometry.RoundRect
-import androidx.compose.ui.geometry.Size
-import androidx.compose.ui.geometry.lerp
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.Outline
-import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.positionInRoot
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.Dp
-import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.em
 import coil.compose.AsyncImage
+import com.nendo.argosy.ui.common.ExpandingClipShape
 import com.nendo.argosy.ui.common.rememberFileImageModel
 import com.nendo.argosy.ui.components.GameTitle
 import com.nendo.argosy.ui.components.GameVideoPlayer
@@ -118,7 +111,7 @@ internal fun HomeColumnsTakeover(
             Modifier
                 .fillMaxSize()
                 .graphicsLayer {
-                    shape = TakeoverClipShape(bounds.translate(-origin), progress(), radiusPx)
+                    shape = ExpandingClipShape(bounds.translate(-origin), progress(), radiusPx)
                     clip = true
                     alpha = videoAlpha
                 }
@@ -236,16 +229,5 @@ private fun TakeoverInfo(
                 overflow = TextOverflow.Ellipsis
             )
         }
-    }
-}
-
-private class TakeoverClipShape(
-    private val from: Rect,
-    private val progress: Float,
-    private val radiusPx: Float
-) : Shape {
-    override fun createOutline(size: Size, layoutDirection: LayoutDirection, density: Density): Outline {
-        val rect = lerp(from, Rect(Offset.Zero, size), progress)
-        return Outline.Rounded(RoundRect(rect, CornerRadius(radiusPx * (1f - progress))))
     }
 }

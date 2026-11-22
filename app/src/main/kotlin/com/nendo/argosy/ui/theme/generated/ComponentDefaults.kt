@@ -441,6 +441,8 @@ object ComponentDefaults {
     object LaunchOverlay {
         const val scrimAlphaDark = 0.8f
         const val scrimAlphaLight = 0.55f
+        const val heroScrimAlphaDark = 0.5f
+        const val heroScrimAlphaLight = 0.35f
         const val progressWidthDp = 280
         const val fadeMs = 300
         const val veilMs = 700

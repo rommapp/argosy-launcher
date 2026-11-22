@@ -4,7 +4,9 @@ import android.app.Activity
 import android.content.Context
 import android.content.ContextWrapper
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.EnterExitState
 import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -42,7 +44,11 @@ import com.nendo.argosy.domain.model.RunningGameQuestion
 import com.nendo.argosy.domain.model.SnapshotConflictChoice
 import com.nendo.argosy.domain.model.SyncProgress
 import com.nendo.argosy.ui.components.launch.CalmLaunchContent
+import com.nendo.argosy.ui.components.launch.LaunchHeroBackdrop
+import com.nendo.argosy.ui.components.launch.LaunchHeroOrigin
+import com.nendo.argosy.ui.components.launch.LaunchHeroOrigins
 import com.nendo.argosy.ui.components.launch.LaunchHostSignal
+import com.nendo.argosy.ui.components.launch.heroOriginFor
 import com.nendo.argosy.ui.components.launch.LaunchQuestionCard
 import com.nendo.argosy.ui.components.launch.LaunchQuestionChoice
 import com.nendo.argosy.ui.components.launch.LaunchVeil
@@ -76,6 +82,7 @@ import dagger.hilt.components.SingletonComponent
 interface LaunchProgressEntryPoint {
     fun launchProgressTracker(): LaunchProgressTracker
     fun launchRecapCursor(): LaunchRecapCursor
+    fun launchHeroOrigins(): LaunchHeroOrigins
 }
 
 private fun launchProgressEntryPoint(context: Context): LaunchProgressEntryPoint =
@@ -100,6 +107,9 @@ fun LaunchOverlay(
     val gameDisplayId by viewModel.gameDisplayId.collectAsState()
     val context = LocalContext.current
     val surfaceDisplayId = ContextCompat.getDisplayOrDefault(context).displayId
+    val heroOrigins = remember(context) { launchProgressEntryPoint(context).launchHeroOrigins() }
+    val offeredHero by heroOrigins.origin.collectAsState()
+    val gameOpensHere = opensOnSurface(hasPresentationSurface, gameDisplayId, surfaceDisplayId)
     val lifecycleOwner = LocalLifecycleOwner.current
     DisposableEffect(lifecycleOwner, viewModel, context) {
         val activity = context.findActivity()
@@ -133,7 +143,8 @@ fun LaunchOverlay(
         promptFocus = promptFocus,
         recapCursor = recapCursor,
         surface = RecapSurface.CONTROL,
-        gameOpensHere = opensOnSurface(hasPresentationSurface, gameDisplayId, surfaceDisplayId),
+        gameOpensHere = gameOpensHere,
+        heroOrigin = heroOriginFor(offeredHero, progress?.gameId, surfaceDisplayId, gameOpensHere),
         onAnswer = viewModel::answer,
         onCancel = { viewModel.cancel() },
         onRecapCurrent = viewModel::recapCurrent,
@@ -157,6 +168,7 @@ fun LaunchOverlayMirror(modifier: Modifier = Modifier) {
         recapCursor = recapCursor,
         surface = RecapSurface.PRESENTATION,
         gameOpensHere = false,
+        heroOrigin = null,
         onAnswer = tracker::answer,
         onCancel = { tracker.cancel() },
         onRecapCurrent = { index ->
@@ -227,6 +239,7 @@ private fun LaunchOverlayContent(
     recapCursor: RecapCursor,
     surface: RecapSurface,
     gameOpensHere: Boolean,
+    heroOrigin: LaunchHeroOrigin?,
     onAnswer: (LaunchPromptOption) -> Unit,
     onCancel: () -> Unit,
     onRecapCurrent: (Int) -> Unit,
@@ -235,15 +248,16 @@ private fun LaunchOverlayContent(
     modifier: Modifier = Modifier
 ) {
     var lastShown by remember { mutableStateOf<LaunchProgress?>(null) }
-    SideEffect { progress?.let { lastShown = it } }
-
-    val scrimAlpha = if (LocalLauncherTheme.current.isDarkTheme) {
-        ComponentDefaults.LaunchOverlay.scrimAlphaDark
-    } else {
-        ComponentDefaults.LaunchOverlay.scrimAlphaLight
+    var lastHero by remember { mutableStateOf<LaunchHeroOrigin?>(null) }
+    SideEffect {
+        progress?.let {
+            lastShown = it
+            lastHero = heroOrigin
+        }
     }
-    val scrimColor = MaterialTheme.colorScheme.background.copy(alpha = scrimAlpha)
+
     val fadeMs = launchOverlayFadeMs()
+    val expandMs = motionDuration(Motion.durationMedium)
 
     AnimatedVisibility(
         visible = progress != null,
@@ -252,6 +266,19 @@ private fun LaunchOverlayContent(
         modifier = modifier.fillMaxSize().focusProperties { canFocus = false }
     ) {
         val shown = progress ?: lastShown ?: return@AnimatedVisibility
+        val hero = if (progress != null) heroOrigin else lastHero
+        val expansion by transition.animateFloat(
+            transitionSpec = { tween(expandMs, easing = Motion.argosyEase) },
+            label = "launchHeroExpansion"
+        ) { state -> if (state == EnterExitState.Visible) 1f else 0f }
+        if (hero != null) LaunchHeroBackdrop(origin = hero, expansion = { expansion })
+        val scrimAlpha = when {
+            hero != null && LocalLauncherTheme.current.isDarkTheme -> ComponentDefaults.LaunchOverlay.heroScrimAlphaDark
+            hero != null -> ComponentDefaults.LaunchOverlay.heroScrimAlphaLight
+            LocalLauncherTheme.current.isDarkTheme -> ComponentDefaults.LaunchOverlay.scrimAlphaDark
+            else -> ComponentDefaults.LaunchOverlay.scrimAlphaLight
+        }
+        val scrimColor = MaterialTheme.colorScheme.background.copy(alpha = scrimAlpha)
         Box(
             modifier = Modifier
                 .fillMaxSize()

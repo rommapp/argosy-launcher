@@ -97,6 +97,9 @@ import com.nendo.argosy.ui.screens.settings.sections.DistributeResultModal
 import com.nendo.argosy.ui.screens.settings.sections.RomMItem
 import com.nendo.argosy.ui.screens.settings.sections.RomMLayoutState
 import com.nendo.argosy.ui.screens.settings.sections.rommFocusIndexOf
+import com.nendo.argosy.ui.screens.settings.sections.raFocusIndexOf
+import com.nendo.argosy.ui.screens.settings.sections.RAItem
+import com.nendo.argosy.ui.screens.settings.sections.RALayoutState
 import com.nendo.argosy.ui.screens.settings.sections.DriversSection
 import com.nendo.argosy.ui.screens.settings.sections.AmbientLedSection
 import com.nendo.argosy.ui.screens.settings.sections.AudioSection
@@ -179,6 +182,8 @@ import com.nendo.argosy.ui.screens.settings.sections.LibrarySection
 import com.nendo.argosy.ui.screens.common.ClientCertPasswordModal
 import com.nendo.argosy.ui.screens.settings.components.ClientCertManagerModal
 
+const val SETTINGS_ACTION_RA_WEB_API_KEY = "raWebApiKey"
+
 @Composable
 fun SettingsScreen(
     onBack: () -> Unit,
@@ -207,6 +212,10 @@ fun SettingsScreen(
                     "syncLibrary" -> viewModel.setFocusIndex(
                         rommFocusIndexOf(RomMItem.SyncLibrary, RomMLayoutState.from(viewModel.uiState.value))
                     )
+                    SETTINGS_ACTION_RA_WEB_API_KEY ->
+                        raFocusIndexOf(RAItem.WebApiKey, RALayoutState.from(viewModel.uiState.value))
+                            .takeIf { it >= 0 }
+                            ?.let(viewModel::setFocusIndex)
                 }
             }
         }

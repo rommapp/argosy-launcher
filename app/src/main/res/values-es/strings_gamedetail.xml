@@ -161,6 +161,23 @@
     </plurals>
     <string name="gamedetail_achievement_list_footer_navigate">Navegar</string>
     <string name="gamedetail_achievement_list_footer_back">Atrás</string>
+    <string name="gamedetail_achievement_list_footer_comments">Comentarios</string>
+    <string name="achievement_comments_heading">Comentarios</string>
+    <string name="achievement_comments_loading">Cargando comentarios...</string>
+    <string name="achievement_comments_empty">Nadie ha comentado este logro todavía.</string>
+    <string name="achievement_comments_unavailable">No se pudo contactar con RetroAchievements.</string>
+    <string name="achievement_comments_retry">Reintentar</string>
+    <string name="achievement_comments_not_signed_in">Inicia sesión en RetroAchievements en Ajustes para leer los comentarios.</string>
+    <string name="achievement_comments_needs_key">Los comentarios vienen de RetroAchievements y necesitan tu clave de API web.</string>
+    <string name="achievement_comments_key_rejected">RetroAchievements no aceptó la clave de API web que guardaste.</string>
+    <string name="achievement_comments_open_settings">Añadir clave de API web</string>
+    <string name="achievement_comments_enter_key">Introducir clave de API web</string>
+    <string name="achievement_comments_key_field_label">Clave de API web</string>
+    <string name="achievement_comments_key_save">Guardar</string>
+    <string name="achievement_comments_key_checking">Comprobando la clave con RetroAchievements...</string>
+    <string name="achievement_comments_key_status_rejected">RetroAchievements no aceptó esta clave.</string>
+    <string name="achievement_comments_key_status_unreachable">No se pudo contactar con RetroAchievements. Inténtalo de nuevo.</string>
+    <string name="achievement_comments_back">Atrás</string>
 
     <!-- ============================= Screenshot viewer ================================= -->
 

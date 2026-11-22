@@ -140,6 +140,23 @@
     </plurals>
     <string name="gamedetail_achievement_list_footer_navigate">导航</string>
     <string name="gamedetail_achievement_list_footer_back">返回</string>
+    <string name="gamedetail_achievement_list_footer_comments">评论</string>
+    <string name="achievement_comments_heading">评论</string>
+    <string name="achievement_comments_loading">正在加载评论...</string>
+    <string name="achievement_comments_empty">还没有人评论这个成就。</string>
+    <string name="achievement_comments_unavailable">无法连接 RetroAchievements。</string>
+    <string name="achievement_comments_retry">重试</string>
+    <string name="achievement_comments_not_signed_in">请在设置中登录 RetroAchievements 以查看评论。</string>
+    <string name="achievement_comments_needs_key">评论来自 RetroAchievements，需要你的 Web API 密钥。</string>
+    <string name="achievement_comments_key_rejected">RetroAchievements 未接受你保存的 Web API 密钥。</string>
+    <string name="achievement_comments_open_settings">添加 Web API 密钥</string>
+    <string name="achievement_comments_enter_key">输入 Web API 密钥</string>
+    <string name="achievement_comments_key_field_label">Web API 密钥</string>
+    <string name="achievement_comments_key_save">保存</string>
+    <string name="achievement_comments_key_checking">正在向 RetroAchievements 验证密钥...</string>
+    <string name="achievement_comments_key_status_rejected">RetroAchievements 未接受此密钥。</string>
+    <string name="achievement_comments_key_status_unreachable">无法连接 RetroAchievements。请重试。</string>
+    <string name="achievement_comments_back">返回</string>
 
     <string name="gamedetail_screenshot_viewer_position">%1$d / %2$d</string>
     <string name="gamedetail_screenshot_viewer_footer_navigate">导航</string>

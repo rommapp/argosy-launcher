@@ -40,6 +40,7 @@ class RAWebClient internal constructor(
 
     private val api: RAWebApi by lazy(apiProvider)
     private val progressCache = RAWebProgressCache(PROGRESS_CACHE_TTL, clock)
+    private val commentsCache = ConcurrentHashMap<Long, List<RAWebComment>>()
 
     suspend fun userSummary(credentials: RAWebCredentials): RAWebResult<RAWebUserSummary> =
         call { api.getUserSummary(credentials.apiKey, credentials.username) }
@@ -93,8 +94,36 @@ class RAWebClient internal constructor(
     ): RAWebResult<List<RAWebEarnedAchievement>> =
         call { api.getAchievementsEarnedBetween(credentials.apiKey, credentials.username, from.epochSecond, to.epochSecond) }
 
+    /**
+     * The newest [COMMENTS_PAGE_SIZE] comments on achievement [achievementId], newest first. A
+     * successful answer is kept until [clearCache].
+     */
+    suspend fun achievementComments(
+        credentials: RAWebCredentials,
+        achievementId: Long
+    ): RAWebResult<List<RAWebComment>> {
+        commentsCache[achievementId]?.let { return RAWebResult.Success(it) }
+        val result = call {
+            api.getComments(
+                credentials.apiKey,
+                achievementId,
+                RAWebApi.COMMENT_KIND_ACHIEVEMENT,
+                COMMENTS_PAGE_SIZE,
+                RAWebApi.COMMENT_SORT_NEWEST_FIRST
+            )
+        }
+        return when (result) {
+            is RAWebResult.Success -> RAWebResult.Success(result.value.results).also {
+                commentsCache[achievementId] = it.value
+            }
+            is RAWebResult.Rejected -> result
+            is RAWebResult.Failed -> result
+        }
+    }
+
     fun clearCache() {
         progressCache.clear()
+        commentsCache.clear()
     }
 
     private suspend fun <T> call(request: suspend () -> Response<T>): RAWebResult<T> = try {
@@ -115,6 +144,7 @@ class RAWebClient internal constructor(
         val PROGRESS_CACHE_TTL: Duration = Duration.ofMinutes(15)
         const val COMPLETION_PAGE_SIZE = 500
         const val MAX_COMPLETION_PAGES = 10
+        const val COMMENTS_PAGE_SIZE = 100
         private const val HTTP_UNAUTHORIZED = 401
         private const val HTTP_FORBIDDEN = 403
         private const val TIMEOUT_SECONDS = 15L

@@ -526,7 +526,7 @@
     <string name="settings_ra_logout_title_busy">登出中&#8230;</string>
     <string name="settings_ra_logout_subtitle">登出RetroAchievements</string>
     <string name="settings_ra_web_api_key_title">Web API 金鑰（選用）</string>
-    <string name="settings_ra_web_api_key_subtitle">可在 RetroAchievements 控制台的 Keys 區段找到。讓回顧更快、更豐富。</string>
+    <string name="settings_ra_web_api_key_subtitle">可在 RetroAchievements 控制台的 Keys 區段找到。讓回顧更快、更豐富，並顯示成就留言。</string>
     <string name="settings_ra_web_api_key_value_not_set">未設定</string>
     <string name="settings_ra_web_api_key_value_saved_short">已儲存</string>
     <string name="settings_ra_web_api_key_value_rejected">金鑰遭拒</string>

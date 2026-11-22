@@ -28,6 +28,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableLongStateOf
@@ -53,7 +54,12 @@ import com.nendo.argosy.ui.components.runPlayTimeText
 import com.nendo.argosy.ui.components.showsRunPlayTime
 import com.nendo.argosy.ui.common.rememberFileImageModel
 import com.nendo.argosy.ui.dualscreen.COVER_ASPECT
+import com.nendo.argosy.ui.common.achievements.AchievementCommentsPane
+import com.nendo.argosy.ui.common.achievements.CommentsKeyEntry
+import com.nendo.argosy.ui.common.achievements.rememberAchievementCommentsController
+import com.nendo.argosy.ui.components.keyboard.ControllerKeyboardHost
 import com.nendo.argosy.ui.screens.gamedetail.components.AchievementList
+import com.nendo.argosy.ui.screens.gamedetail.components.unlockedFirst
 import com.nendo.argosy.ui.theme.ALauncherColors
 import com.nendo.argosy.ui.theme.Dimens
 import com.nendo.argosy.ui.theme.LocalArgosyTheme
@@ -184,26 +190,61 @@ internal fun TrophiesSection(content: DashboardContent) {
             fraction = content.achievementFraction(),
             modifier = Modifier.padding(horizontal = Dimens.spacingLg, vertical = Dimens.spacingMd)
         )
+        val comments = rememberAchievementCommentsController()
+        val commentsState by comments.state.collectAsState()
         val listState = rememberLazyListState()
-        AchievementList(
-            achievements = content.achievements,
-            focusIndex = -1,
-            unlockedHeadingRes = R.string.ingame_achievements_unlocked_heading,
-            lockedHeadingRes = R.string.ingame_achievements_locked_heading,
-            emptyTextRes = R.string.ingame_achievements_empty,
+        Box(
             modifier = Modifier
                 .weight(1f)
                 .fillMaxWidth()
                 .padding(bottom = content.bottomInset)
-                .verticalEdgeFade(listState, fadeHeight = Dimens.spacingSm + Dimens.spacingXs, top = false),
-            contentPadding = PaddingValues(
-                start = Dimens.spacingLg,
-                end = Dimens.spacingLg,
-                bottom = Dimens.spacingLg
-            ),
-            listState = listState
-        )
+        ) {
+            val openComments = commentsState
+            if (openComments != null) {
+                AchievementCommentsPane(
+                    state = openComments,
+                    controller = comments,
+                    keyEntry = CommentsKeyEntry.INLINE,
+                    onOpenKeySettings = {},
+                    showsButtonGlyphs = false
+                )
+                DashboardBackButton(
+                    onClick = comments::close,
+                    modifier = Modifier.align(Alignment.TopEnd).padding(Dimens.spacingSm)
+                )
+            } else {
+                AchievementList(
+                    achievements = content.achievements,
+                    focusIndex = -1,
+                    unlockedHeadingRes = R.string.ingame_achievements_unlocked_heading,
+                    lockedHeadingRes = R.string.ingame_achievements_locked_heading,
+                    emptyTextRes = R.string.ingame_achievements_empty,
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .verticalEdgeFade(listState, fadeHeight = Dimens.spacingSm + Dimens.spacingXs, top = false),
+                    contentPadding = PaddingValues(
+                        start = Dimens.spacingLg,
+                        end = Dimens.spacingLg,
+                        bottom = Dimens.spacingLg
+                    ),
+                    onRowTapped = { index ->
+                        content.achievements.unlockedFirst().getOrNull(index)?.let(comments::open)
+                    },
+                    listState = listState
+                )
+            }
+            ControllerKeyboardHost(routeInput = {})
+        }
     }
+}
+
+@Composable
+private fun DashboardBackButton(onClick: () -> Unit, modifier: Modifier = Modifier) {
+    com.nendo.argosy.ui.primitives.ActionButton(
+        label = stringResource(R.string.achievement_comments_back),
+        onClick = onClick,
+        modifier = modifier
+    )
 }
 
 @Composable

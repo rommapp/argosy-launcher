@@ -8,6 +8,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -30,6 +31,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -45,17 +47,27 @@ import com.nendo.argosy.ui.components.FooterHints
 import com.nendo.argosy.ui.components.FooterSpacer
 import com.nendo.argosy.ui.components.InputButton
 import com.nendo.argosy.core.game.AchievementUi
+import com.nendo.argosy.ui.common.achievements.AchievementCommentsController
+import com.nendo.argosy.ui.common.achievements.AchievementCommentsPane
+import com.nendo.argosy.ui.common.achievements.CommentsKeyEntry
+import com.nendo.argosy.ui.common.achievements.rememberAchievementCommentsInput
+import com.nendo.argosy.ui.input.ModalInputEffect
 import com.nendo.argosy.ui.theme.ALauncherColors
 import com.nendo.argosy.ui.theme.Dimens
+import com.nendo.argosy.ui.util.clickableNoFocus
 
 @Composable
 fun AchievementListOverlay(
     visible: Boolean,
     gameTitle: String,
     achievements: List<AchievementUi>,
+    comments: AchievementCommentsController,
+    onRowTapped: (Int) -> Unit,
+    onOpenKeySettings: () -> Unit,
     focusIndex: Int = 0,
     modifier: Modifier = Modifier
 ) {
+    val commentsState by comments.state.collectAsState()
     AnimatedVisibility(
         visible = visible,
         enter = fadeIn(),
@@ -74,6 +86,23 @@ fun AchievementListOverlay(
                 )
 
                 HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+
+                val openComments = commentsState
+                if (openComments != null) {
+                    ModalInputEffect(
+                        active = true,
+                        handler = rememberAchievementCommentsInput(comments, CommentsKeyEntry.SETTINGS, onOpenKeySettings)
+                    )
+                    AchievementCommentsPane(
+                        state = openComments,
+                        controller = comments,
+                        keyEntry = CommentsKeyEntry.SETTINGS,
+                        onOpenKeySettings = onOpenKeySettings,
+                        modifier = Modifier.weight(1f),
+                        contentPadding = PaddingValues(horizontal = Dimens.spacingXl)
+                    )
+                    return@Column
+                }
 
                 val unlocked = achievements.filter { it.isUnlocked }
                 val locked = achievements.filter { !it.isUnlocked }
@@ -128,7 +157,8 @@ fun AchievementListOverlay(
                         AchievementRow(
                             achievement = achievement,
                             isLocked = !isUnlockedItem,
-                            isFocused = isFocused
+                            isFocused = isFocused,
+                            onClick = { onRowTapped(index) }
                         )
                     }
 
@@ -139,6 +169,8 @@ fun AchievementListOverlay(
                     hints = listOf(
                         InputButton.DPAD_VERTICAL to
                             stringResource(R.string.gamedetail_achievement_list_footer_navigate),
+                        InputButton.A to
+                            stringResource(R.string.gamedetail_achievement_list_footer_comments),
                         InputButton.B to
                             stringResource(R.string.gamedetail_achievement_list_footer_back)
                     )
@@ -215,7 +247,8 @@ private fun SectionLabel(
 private fun AchievementRow(
     achievement: AchievementUi,
     isLocked: Boolean,
-    isFocused: Boolean = false
+    isFocused: Boolean = false,
+    onClick: () -> Unit
 ) {
     val scale by animateFloatAsState(
         targetValue = if (isFocused) 1.05f else 1f,
@@ -234,6 +267,7 @@ private fun AchievementRow(
             .scale(scale)
             .clip(RoundedCornerShape(Dimens.radiusMd))
             .background(backgroundColor)
+            .clickableNoFocus(onClick = onClick)
             .padding(Dimens.spacingMd),
         verticalAlignment = Alignment.CenterVertically
     ) {

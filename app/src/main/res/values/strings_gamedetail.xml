@@ -494,6 +494,29 @@
     <!-- Footer hint in the full achievement list. Verb: closes the list and returns to the game
          page. -->
     <string name="gamedetail_achievement_list_footer_back">Back</string>
+    <!-- Footer hint: A opens the focused achievement's community comments -->
+    <string name="gamedetail_achievement_list_footer_comments">Comments</string>
+    <!-- Heading above the RetroAchievements community comments on one achievement -->
+    <string name="achievement_comments_heading">Comments</string>
+    <string name="achievement_comments_loading">Loading comments...</string>
+    <string name="achievement_comments_empty">No one has commented on this achievement yet.</string>
+    <string name="achievement_comments_unavailable">Couldn\'t reach RetroAchievements.</string>
+    <string name="achievement_comments_retry">Try again</string>
+    <string name="achievement_comments_not_signed_in">Sign in to RetroAchievements in Settings to read comments.</string>
+    <string name="achievement_comments_needs_key">Comments come from RetroAchievements and need your web API key.</string>
+    <string name="achievement_comments_key_rejected">RetroAchievements did not accept your saved web API key.</string>
+    <!-- Button that opens Settings > RetroAchievements on the web API key row -->
+    <string name="achievement_comments_open_settings">Add web API key</string>
+    <!-- Button that opens the on-screen keyboard to type the web API key -->
+    <string name="achievement_comments_enter_key">Enter web API key</string>
+    <string name="achievement_comments_key_field_label">Web API key</string>
+    <!-- Verb: store the typed key -->
+    <string name="achievement_comments_key_save">Save</string>
+    <string name="achievement_comments_key_checking">Checking the key with RetroAchievements...</string>
+    <string name="achievement_comments_key_status_rejected">RetroAchievements did not accept this key.</string>
+    <string name="achievement_comments_key_status_unreachable">Couldn\'t reach RetroAchievements. Try again.</string>
+    <!-- Touch button that closes the comments and returns to the achievement list -->
+    <string name="achievement_comments_back">Back</string>
 
     <!-- ============================= Screenshot viewer ================================= -->
 

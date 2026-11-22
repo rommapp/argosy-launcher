@@ -16,6 +16,8 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Alignment
@@ -28,14 +30,19 @@ import com.nendo.argosy.R
 import com.nendo.argosy.core.game.AchievementUi
 import com.nendo.argosy.ui.input.InputHandler
 import com.nendo.argosy.ui.input.InputResult
+import com.nendo.argosy.ui.common.achievements.AchievementCommentsController
+import com.nendo.argosy.ui.common.achievements.AchievementCommentsPane
+import com.nendo.argosy.ui.common.achievements.CommentsKeyEntry
+import com.nendo.argosy.ui.common.achievements.rememberAchievementCommentsInput
 import com.nendo.argosy.ui.screens.gamedetail.components.AchievementList
+import com.nendo.argosy.ui.screens.gamedetail.components.unlockedFirst
 import com.nendo.argosy.ui.theme.Dimens
 import com.nendo.argosy.ui.theme.generated.ColorTokens
 
 /**
  * List of the running game's RetroAchievements, opened inside the in-game menu panel. Up
- * and down walk the unlocked-first order the shared list draws, wrapping at both ends; back
- * returns to the menu. Touch on a row moves focus to it.
+ * and down walk the unlocked-first order the shared list draws, wrapping at both ends; A or a tap
+ * opens the row's community comments; back returns to the menu.
  */
 @Composable
 fun InGameAchievements(
@@ -43,12 +50,35 @@ fun InGameAchievements(
     achievements: List<AchievementUi>,
     focusedIndex: Int,
     onFocusChange: (Int) -> Unit,
+    comments: AchievementCommentsController,
     onDismiss: () -> Unit
 ): InputHandler {
     val currentFocusedIndex = rememberUpdatedState(focusedIndex)
     val currentCount = rememberUpdatedState(achievements.size)
+    val currentAchievements = rememberUpdatedState(achievements)
     val currentOnFocusChange = rememberUpdatedState(onFocusChange)
     val currentOnDismiss = rememberUpdatedState(onDismiss)
+    val openComments: (Int) -> Unit = { index ->
+        currentAchievements.value.unlockedFirst().getOrNull(index)?.let { achievement ->
+            currentOnFocusChange.value(index)
+            comments.open(achievement)
+        }
+    }
+    val currentOpenComments = rememberUpdatedState(openComments)
+
+    val commentsState by comments.state.collectAsState()
+    val commentsInput = rememberAchievementCommentsInput(comments, CommentsKeyEntry.INLINE, onOpenKeySettings = {})
+    commentsState?.let { state ->
+        AchievementCommentsPane(
+            state = state,
+            controller = comments,
+            keyEntry = CommentsKeyEntry.INLINE,
+            onOpenKeySettings = {},
+            modifier = Modifier.focusProperties { canFocus = false },
+            contentPadding = PaddingValues(horizontal = Dimens.spacingMd)
+        )
+        return commentsInput
+    }
 
     val inputHandler = remember {
         object : InputHandler {
@@ -64,7 +94,10 @@ fun InGameAchievements(
                 return InputResult.HANDLED
             }
 
-            override fun onConfirm(): InputResult = InputResult.HANDLED
+            override fun onConfirm(): InputResult {
+                currentOpenComments.value(currentFocusedIndex.value)
+                return InputResult.HANDLED
+            }
 
             override fun onBack(): InputResult {
                 currentOnDismiss.value()
@@ -130,7 +163,7 @@ fun InGameAchievements(
                     .weight(1f)
                     .fillMaxWidth(),
                 contentPadding = PaddingValues(horizontal = Dimens.spacingMd),
-                onRowTapped = onFocusChange
+                onRowTapped = openComments
             )
         }
     }

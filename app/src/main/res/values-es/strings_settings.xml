@@ -583,7 +583,7 @@
     <string name="settings_ra_logout_title_busy">Cerrando sesión...</string>
     <string name="settings_ra_logout_subtitle">Cerrar sesión en RetroAchievements</string>
     <string name="settings_ra_web_api_key_title">Clave de API web (opcional)</string>
-    <string name="settings_ra_web_api_key_subtitle">Está en la sección Keys del panel de control de RetroAchievements. Hace los resúmenes más rápidos y completos.</string>
+    <string name="settings_ra_web_api_key_subtitle">Está en la sección Keys del panel de control de RetroAchievements. Hace los resúmenes más rápidos y completos, y muestra los comentarios de los logros.</string>
     <string name="settings_ra_web_api_key_value_not_set">Sin configurar</string>
     <string name="settings_ra_web_api_key_value_saved_short">Guardada</string>
     <string name="settings_ra_web_api_key_value_rejected">Clave rechazada</string>

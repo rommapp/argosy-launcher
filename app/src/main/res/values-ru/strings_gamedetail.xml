@@ -150,6 +150,23 @@
     </plurals>
     <string name="gamedetail_achievement_list_footer_navigate">Навигация</string>
     <string name="gamedetail_achievement_list_footer_back">Назад</string>
+    <string name="gamedetail_achievement_list_footer_comments">Комментарии</string>
+    <string name="achievement_comments_heading">Комментарии</string>
+    <string name="achievement_comments_loading">Загрузка комментариев...</string>
+    <string name="achievement_comments_empty">К этому достижению пока никто не оставил комментариев.</string>
+    <string name="achievement_comments_unavailable">Не удалось связаться с RetroAchievements.</string>
+    <string name="achievement_comments_retry">Повторить</string>
+    <string name="achievement_comments_not_signed_in">Войдите в RetroAchievements в разделе Настройки, чтобы читать комментарии.</string>
+    <string name="achievement_comments_needs_key">Комментарии загружаются из RetroAchievements, и для них нужен ваш ключ веб-API.</string>
+    <string name="achievement_comments_key_rejected">RetroAchievements не принял сохранённый ключ веб-API.</string>
+    <string name="achievement_comments_open_settings">Добавить ключ веб-API</string>
+    <string name="achievement_comments_enter_key">Ввести ключ веб-API</string>
+    <string name="achievement_comments_key_field_label">Ключ веб-API</string>
+    <string name="achievement_comments_key_save">Сохранить</string>
+    <string name="achievement_comments_key_checking">Проверка ключа в RetroAchievements...</string>
+    <string name="achievement_comments_key_status_rejected">RetroAchievements не принял этот ключ.</string>
+    <string name="achievement_comments_key_status_unreachable">Не удалось связаться с RetroAchievements. Попробуйте ещё раз.</string>
+    <string name="achievement_comments_back">Назад</string>
 
     <string name="gamedetail_screenshot_viewer_position">%1$d / %2$d</string>
     <string name="gamedetail_screenshot_viewer_footer_navigate">Навигация</string>

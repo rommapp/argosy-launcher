@@ -244,6 +244,9 @@ open class LibretroActivity : ComponentActivity() {
     @Inject lateinit var romMRepository: com.nendo.argosy.data.remote.romm.RomMRepository
     @Inject lateinit var gameDocumentLoader: com.nendo.argosy.data.repository.GameDocumentLoader
     @Inject lateinit var documentHighlightStore: com.nendo.argosy.data.repository.DocumentHighlightStore
+    @Inject lateinit var achievementCommentsFactory: com.nendo.argosy.ui.common.achievements.AchievementCommentsController.Factory
+    private val achievementComments by lazy { achievementCommentsFactory.create(lifecycleScope) }
+    private var keyboardMenuHandler: InputHandler? = null
 
     private val inGameDocuments by lazy {
         com.nendo.argosy.libretro.ui.InGameDocuments(
@@ -1076,7 +1079,7 @@ open class LibretroActivity : ComponentActivity() {
         gamepadInputBridge = LibretroGamepadInputHandler(
             menuInputHandler = menuInputHandler,
             dispatcher = com.nendo.argosy.ui.input.InputDispatcher(hapticManager, soundManager),
-            getActiveHandler = { activeMenuHandler }
+            getActiveHandler = { keyboardMenuHandler ?: activeMenuHandler }
         )
     }
 
@@ -2079,6 +2082,10 @@ open class LibretroActivity : ComponentActivity() {
                     )
                 }
 
+                com.nendo.argosy.ui.components.keyboard.ControllerKeyboardHost(
+                    routeInput = { keyboardMenuHandler = it }
+                )
+
                 if (isClosing) {
                     ClosingSaveOverlay()
                 }
@@ -2417,6 +2424,7 @@ open class LibretroActivity : ComponentActivity() {
                 achievements = inGameAchievements,
                 focusedIndex = achievementsFocusIndex,
                 onFocusChange = { achievementsFocusIndex = it },
+                comments = achievementComments,
                 onDismiss = ::closeMenuSection
             )
             com.nendo.argosy.libretro.ui.InGameMenuSection.CHEATS -> CheatsScreen(
@@ -2573,7 +2581,7 @@ open class LibretroActivity : ComponentActivity() {
                     inGameDocuments.reader(com.nendo.argosy.libretro.ui.InGameDocumentKind.WALKTHROUGH).dismiss()
                 }
             }
-            com.nendo.argosy.libretro.ui.InGameMenuSection.ACHIEVEMENTS,
+            com.nendo.argosy.libretro.ui.InGameMenuSection.ACHIEVEMENTS -> achievementComments.close()
             com.nendo.argosy.libretro.ui.InGameMenuSection.SETTINGS,
             com.nendo.argosy.libretro.ui.InGameMenuSection.NETPLAY,
             null -> Unit

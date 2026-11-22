@@ -5,6 +5,7 @@ import com.nendo.argosy.data.preferences.UserPreferencesRepository
 import com.nendo.argosy.data.remote.ra.RAWebAchievementProgress
 import com.nendo.argosy.data.remote.ra.RAWebAchievements
 import com.nendo.argosy.data.remote.ra.RAWebClient
+import com.nendo.argosy.data.remote.ra.RAWebComment
 import com.nendo.argosy.data.remote.ra.RAWebCompletionEntry
 import com.nendo.argosy.data.remote.ra.RAWebCredentials
 import com.nendo.argosy.data.remote.ra.RAWebEarnedAchievement
@@ -15,6 +16,8 @@ import com.nendo.argosy.data.remote.romm.RomMAchievementService
 import com.nendo.argosy.data.remote.romm.RomMEarnedAchievement
 import com.nendo.argosy.data.remote.romm.RomMRAGameProgression
 import com.nendo.argosy.data.remote.romm.RomMResult
+import com.nendo.argosy.domain.model.AchievementComment
+import com.nendo.argosy.domain.model.AchievementComments
 import com.nendo.argosy.domain.model.SnapshotUnlock
 import io.mockk.coEvery
 import io.mockk.coVerify
@@ -395,5 +398,54 @@ class RaMetadataSourceTest {
         source("  ").unlockEvidence(55L, end)
 
         coVerify(exactly = 0) { webClient.gameProgress(any(), any(), any()) }
+    }
+
+    @Test
+    fun `comments without an RA sign-in ask for one and never call RetroAchievements`() = runTest {
+        val prefs = mockk<UserPreferencesRepository> {
+            every { userPreferences } returns flowOf(UserPreferences(raUsername = null, raWebApiKey = "key-1234"))
+        }
+        val source = RaMetadataSource(webClient, achievementService, raRepository, prefs, keyHealth)
+
+        assertEquals(AchievementComments.NotSignedIn, source.achievementComments(9L))
+        coVerify(exactly = 0) { webClient.achievementComments(any(), any()) }
+    }
+
+    @Test
+    fun `comments without a web API key ask for the key and never call RetroAchievements`() = runTest {
+        assertEquals(AchievementComments.NeedsKey, source(" ").achievementComments(9L))
+        coVerify(exactly = 0) { webClient.achievementComments(any(), any()) }
+    }
+
+    @Test
+    fun `comments keep RetroAchievements order and drop blank entries`() = runTest {
+        coEvery { webClient.achievementComments(credentials, 9L) } returns RAWebResult.Success(
+            listOf(
+                RAWebComment(user = "Newest", submitted = "2026-10-02T10:00:00.000000Z", commentText = "Use the left door"),
+                RAWebComment(user = "Blank", submitted = "2026-10-01T10:00:00.000000Z", commentText = "  "),
+                RAWebComment(user = "Oldest", submitted = "2026-09-01T10:00:00.000000Z", commentText = "Missable on disc 1")
+            )
+        )
+
+        val result = source("key-1234").achievementComments(9L)
+
+        assertEquals(
+            AchievementComments.Loaded(
+                listOf(
+                    AchievementComment("Newest", "2026-10-02T10:00:00.000000Z", "Use the left door"),
+                    AchievementComment("Oldest", "2026-09-01T10:00:00.000000Z", "Missable on disc 1")
+                )
+            ),
+            result
+        )
+    }
+
+    @Test
+    fun `a refused key reads as rejected and a failed call as unavailable`() = runTest {
+        coEvery { webClient.achievementComments(credentials, 9L) } returns RAWebResult.Rejected
+        coEvery { webClient.achievementComments(credentials, 10L) } returns RAWebResult.Failed("HTTP 500")
+
+        assertEquals(AchievementComments.KeyRejected, source("key-1234").achievementComments(9L))
+        assertEquals(AchievementComments.Unavailable, source("key-1234").achievementComments(10L))
     }
 }

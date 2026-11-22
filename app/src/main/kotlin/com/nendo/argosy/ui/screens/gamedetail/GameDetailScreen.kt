@@ -141,10 +141,16 @@ fun GameDetailScreen(
     onNavigateToPlatformSettings: (platformId: Long) -> Unit = {},
     onNavigateToGame: (gameId: Long) -> Unit = {},
     onOpenSaveTimeline: (gameId: Long) -> Unit = {},
+    onOpenRAWebApiKeySettings: () -> Unit = {},
     viewModel: GameDetailViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val context = LocalContext.current
+
+    androidx.lifecycle.compose.LifecycleResumeEffect(viewModel) {
+        if (viewModel.achievementComments.state.value?.needsKey == true) viewModel.achievementComments.retry()
+        onPauseOrDispose { }
+    }
 
     LaunchedEffect(gameId) {
         viewModel.loadGame(gameId)
@@ -402,7 +408,8 @@ fun GameDetailScreen(
                 onRelatedPositioned = { relatedTopY = it },
                 onBack = onBack,
                 onNavigateToPlatformSettings = onNavigateToPlatformSettings,
-                onNavigateToGame = onNavigateToGame
+                onNavigateToGame = onNavigateToGame,
+                onOpenRAWebApiKeySettings = onOpenRAWebApiKeySettings
             )
         }
         documentReader?.let { reader ->
@@ -437,7 +444,8 @@ private fun GameDetailContent(
     onRelatedPositioned: (Int) -> Unit,
     onBack: () -> Unit,
     onNavigateToPlatformSettings: (Long) -> Unit,
-    onNavigateToGame: (Long) -> Unit
+    onNavigateToGame: (Long) -> Unit,
+    onOpenRAWebApiKeySettings: () -> Unit
 ) {
     val coroutineScope = rememberCoroutineScope()
     val pickerState by viewModel.pickerModalDelegate.state.collectAsState()
@@ -937,6 +945,9 @@ private fun GameDetailContent(
             visible = uiState.showAchievementList,
             gameTitle = game.title,
             achievements = game.achievements,
+            comments = viewModel.achievementComments,
+            onRowTapped = viewModel::openAchievementComments,
+            onOpenKeySettings = onOpenRAWebApiKeySettings,
             focusIndex = uiState.achievementListFocusIndex
         )
     }

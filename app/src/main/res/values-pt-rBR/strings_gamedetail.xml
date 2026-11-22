@@ -202,6 +202,23 @@
     </plurals>
     <string name="gamedetail_achievement_list_footer_navigate">Navegar</string>
     <string name="gamedetail_achievement_list_footer_back">Voltar</string>
+    <string name="gamedetail_achievement_list_footer_comments">Comentários</string>
+    <string name="achievement_comments_heading">Comentários</string>
+    <string name="achievement_comments_loading">Carregando comentários...</string>
+    <string name="achievement_comments_empty">Ninguém comentou esta conquista ainda.</string>
+    <string name="achievement_comments_unavailable">Não foi possível alcançar o RetroAchievements.</string>
+    <string name="achievement_comments_retry">Tentar novamente</string>
+    <string name="achievement_comments_not_signed_in">Entre no RetroAchievements em Configurações para ler os comentários.</string>
+    <string name="achievement_comments_needs_key">Os comentários vêm do RetroAchievements e precisam da sua Chave Web API.</string>
+    <string name="achievement_comments_key_rejected">O RetroAchievements não aceitou a Chave Web API salva.</string>
+    <string name="achievement_comments_open_settings">Adicionar Chave Web API</string>
+    <string name="achievement_comments_enter_key">Digitar Chave Web API</string>
+    <string name="achievement_comments_key_field_label">Chave Web API</string>
+    <string name="achievement_comments_key_save">Salvar</string>
+    <string name="achievement_comments_key_checking">Verificando a chave com o RetroAchievements...</string>
+    <string name="achievement_comments_key_status_rejected">O RetroAchievements não aceitou esta chave.</string>
+    <string name="achievement_comments_key_status_unreachable">Não foi possível alcançar o RetroAchievements. Tente novamente.</string>
+    <string name="achievement_comments_back">Voltar</string>
 
     <string name="gamedetail_screenshot_viewer_position">%1$d / %2$d</string>
     <string name="gamedetail_screenshot_viewer_footer_navigate">Navegar</string>

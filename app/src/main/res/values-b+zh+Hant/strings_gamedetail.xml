@@ -140,6 +140,23 @@
     </plurals>
     <string name="gamedetail_achievement_list_footer_navigate">移動</string>
     <string name="gamedetail_achievement_list_footer_back">返回</string>
+    <string name="gamedetail_achievement_list_footer_comments">留言</string>
+    <string name="achievement_comments_heading">留言</string>
+    <string name="achievement_comments_loading">正在載入留言...</string>
+    <string name="achievement_comments_empty">還沒有人在這個成就留言。</string>
+    <string name="achievement_comments_unavailable">無法連線至 RetroAchievements。</string>
+    <string name="achievement_comments_retry">再試一次</string>
+    <string name="achievement_comments_not_signed_in">請在設定中登入 RetroAchievements 以查看留言。</string>
+    <string name="achievement_comments_needs_key">留言來自 RetroAchievements，需要你的 Web API 金鑰。</string>
+    <string name="achievement_comments_key_rejected">RetroAchievements 未接受你儲存的 Web API 金鑰。</string>
+    <string name="achievement_comments_open_settings">新增 Web API 金鑰</string>
+    <string name="achievement_comments_enter_key">輸入 Web API 金鑰</string>
+    <string name="achievement_comments_key_field_label">Web API 金鑰</string>
+    <string name="achievement_comments_key_save">儲存</string>
+    <string name="achievement_comments_key_checking">正在向 RetroAchievements 驗證金鑰...</string>
+    <string name="achievement_comments_key_status_rejected">RetroAchievements 未接受此金鑰。</string>
+    <string name="achievement_comments_key_status_unreachable">無法連線至 RetroAchievements。請再試一次。</string>
+    <string name="achievement_comments_back">返回</string>
 
     <string name="gamedetail_screenshot_viewer_position">%1$d / %2$d</string>
     <string name="gamedetail_screenshot_viewer_footer_navigate">移動</string>

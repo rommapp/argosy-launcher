@@ -11,6 +11,8 @@ import com.nendo.argosy.data.remote.ra.RAWebUserSummary
 import com.nendo.argosy.data.remote.romm.RomMAchievementService
 import com.nendo.argosy.data.remote.romm.RomMEarnedAchievement
 import com.nendo.argosy.data.remote.romm.RomMRAGameProgression
+import com.nendo.argosy.domain.model.AchievementComment
+import com.nendo.argosy.domain.model.AchievementComments
 import com.nendo.argosy.domain.model.RecapAwardKind
 import com.nendo.argosy.domain.model.SnapshotUnlock
 import com.nendo.argosy.util.Logger
@@ -40,11 +42,11 @@ data class RaGameAward(
 )
 
 /**
- * The one place that picks the source of RetroAchievements metadata for recaps. Unlocks try the
- * user's web API key first, then RomM's RA progression, then a session's stored unlock snapshots;
- * awards try the web API key, then RomM; rich presence comes from the web API key alone. A failing
- * source hands the call to the next one. Reads the RA username and web API key once per call.
- * Never calls `startsession` or `ping` and never uses the RA password.
+ * The one place that picks the source of RetroAchievements metadata. Unlocks try the user's web
+ * API key first, then RomM's RA progression, then a session's stored unlock snapshots; awards try
+ * the web API key, then RomM; rich presence and achievement comments come from the web API key
+ * alone. A failing source hands the call to the next one. Reads the RA username and web API key
+ * once per call. Never calls `startsession` or `ping` and never uses the RA password.
  */
 @Singleton
 class RaMetadataSource @Inject constructor(
@@ -120,6 +122,29 @@ class RaMetadataSource @Inject constructor(
             else -> {
                 Logger.debug(TAG, "Web unlocks between $from and $to unavailable (${result.describe()}), asking RomM")
                 null
+            }
+        }
+    }
+
+    /**
+     * The community comments on achievement [raAchievementId], newest first. Comments exist only
+     * through the web API key, so there is no fallback source.
+     */
+    suspend fun achievementComments(raAchievementId: Long): AchievementComments {
+        val prefs = preferencesRepository.userPreferences.first()
+        if (prefs.raUsername.isNullOrBlank()) return AchievementComments.NotSignedIn
+        val credentials = webCredentials() ?: return AchievementComments.NeedsKey
+        return when (val result = webClient.achievementComments(credentials, raAchievementId).recordedFor(credentials)) {
+            is RAWebResult.Success -> AchievementComments.Loaded(
+                result.value.mapNotNull { comment ->
+                    val text = comment.commentText?.takeIf { it.isNotBlank() } ?: return@mapNotNull null
+                    AchievementComment(comment.user.orEmpty(), comment.submitted.orEmpty(), text)
+                }
+            )
+            is RAWebResult.Rejected -> AchievementComments.KeyRejected
+            is RAWebResult.Failed -> {
+                Logger.debug(TAG, "Comments for achievement $raAchievementId unavailable (${result.describe()})")
+                AchievementComments.Unavailable
             }
         }
     }

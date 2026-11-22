@@ -158,6 +158,23 @@
     </plurals>
     <string name="gamedetail_achievement_list_footer_navigate">Navigieren</string>
     <string name="gamedetail_achievement_list_footer_back">Zurück</string>
+    <string name="gamedetail_achievement_list_footer_comments">Kommentare</string>
+    <string name="achievement_comments_heading">Kommentare</string>
+    <string name="achievement_comments_loading">Kommentare werden geladen...</string>
+    <string name="achievement_comments_empty">Zu diesem Erfolg hat noch niemand einen Kommentar geschrieben.</string>
+    <string name="achievement_comments_unavailable">RetroAchievements ist nicht erreichbar.</string>
+    <string name="achievement_comments_retry">Erneut versuchen</string>
+    <string name="achievement_comments_not_signed_in">Melde dich in den Einstellungen bei RetroAchievements an, um Kommentare zu lesen.</string>
+    <string name="achievement_comments_needs_key">Kommentare kommen von RetroAchievements und benötigen deinen Web-API-Schlüssel.</string>
+    <string name="achievement_comments_key_rejected">RetroAchievements hat deinen gespeicherten Web-API-Schlüssel nicht akzeptiert.</string>
+    <string name="achievement_comments_open_settings">Web-API-Schlüssel hinzufügen</string>
+    <string name="achievement_comments_enter_key">Web-API-Schlüssel eingeben</string>
+    <string name="achievement_comments_key_field_label">Web-API-Schlüssel</string>
+    <string name="achievement_comments_key_save">Speichern</string>
+    <string name="achievement_comments_key_checking">Schlüssel wird bei RetroAchievements geprüft...</string>
+    <string name="achievement_comments_key_status_rejected">RetroAchievements hat diesen Schlüssel nicht akzeptiert.</string>
+    <string name="achievement_comments_key_status_unreachable">RetroAchievements ist nicht erreichbar. Versuche es erneut.</string>
+    <string name="achievement_comments_back">Zurück</string>
 
     <!-- ============================= Screenshot viewer ================================= -->
 

@@ -312,6 +312,14 @@ fun NavGraph(
                 },
                 onOpenSaveTimeline = { timelineGameId ->
                     navController.navigate(Screen.SaveTimeline.createRoute(timelineGameId))
+                },
+                onOpenRAWebApiKeySettings = {
+                    navController.navigate(
+                        Screen.Settings.createRoute(
+                            section = com.nendo.argosy.ui.screens.settings.SettingsSection.RETRO_ACHIEVEMENTS.name,
+                            action = com.nendo.argosy.ui.screens.settings.SETTINGS_ACTION_RA_WEB_API_KEY
+                        )
+                    )
                 }
             )
         }

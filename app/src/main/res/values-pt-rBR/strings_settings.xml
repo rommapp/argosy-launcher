@@ -1076,7 +1076,7 @@
     <!-- Row title. "Web API Key" is the name RetroAchievements gives this key on its site. -->
     <string name="settings_ra_web_api_key_title">Chave Web API (opcional)</string>
     <!-- Second line of that row: where the key is found and what it does. -->
-    <string name="settings_ra_web_api_key_subtitle">Encontre-a na seção Chaves do seu painel de controle do RetroAchievements. Torna os resumos mais rápidos e ricos.</string>
+    <string name="settings_ra_web_api_key_subtitle">Encontre-a na seção Chaves do seu painel de controle do RetroAchievements. Torna os resumos mais rápidos e ricos, e mostra os comentários das conquistas.</string>
     <!-- Trailing value of that row when no key is stored. -->
     <string name="settings_ra_web_api_key_value_not_set">Não definida</string>
     <!-- Trailing value when a key is stored but too short to show its end. Adjective. -->

@@ -1130,7 +1130,7 @@
     <!-- Row title. "Web API Key" is the name RetroAchievements gives this key on its site. -->
     <string name="settings_ra_web_api_key_title">Web API Key (optional)</string>
     <!-- Second line of that row: where the key is found and what it does. -->
-    <string name="settings_ra_web_api_key_subtitle">Find it in the Keys section of your RetroAchievements control panel. Makes recaps faster and richer.</string>
+    <string name="settings_ra_web_api_key_subtitle">Find it in the Keys section of your RetroAchievements control panel. Makes recaps faster and richer, and shows achievement comments.</string>
     <!-- Trailing value of that row when no key is stored. -->
     <string name="settings_ra_web_api_key_value_not_set">Not set</string>
     <string name="settings_ra_web_api_key_value_saved" translatable="false">****%1$s</string>

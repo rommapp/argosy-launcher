@@ -561,7 +561,7 @@
     <string name="settings_ra_logout_title_busy">लॉगआउट हो रहा है...</string>
     <string name="settings_ra_logout_subtitle">RetroAchievements से साइन आउट करें</string>
     <string name="settings_ra_web_api_key_title">वेब API की (वैकल्पिक)</string>
-    <string name="settings_ra_web_api_key_subtitle">यह आपके RetroAchievements कंट्रोल पैनल के Keys सेक्शन में मिलेगी। इससे रीकैप तेज़ और ज़्यादा विस्तृत होते हैं।</string>
+    <string name="settings_ra_web_api_key_subtitle">यह आपके RetroAchievements कंट्रोल पैनल के Keys सेक्शन में मिलेगी। इससे रीकैप तेज़ और ज़्यादा विस्तृत होते हैं, और अचीवमेंट के कमेंट दिखते हैं।</string>
     <string name="settings_ra_web_api_key_value_not_set">सेट नहीं है</string>
     <string name="settings_ra_web_api_key_value_saved_short">सेव है</string>
     <string name="settings_ra_web_api_key_value_rejected">की अस्वीकार हुई</string>

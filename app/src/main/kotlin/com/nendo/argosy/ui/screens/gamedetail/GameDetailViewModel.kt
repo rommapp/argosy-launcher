@@ -33,6 +33,7 @@ import com.nendo.argosy.ui.components.TextEntryRow
 import com.nendo.argosy.ui.screens.gamedetail.components.MenuItem
 import com.nendo.argosy.ui.screens.gamedetail.components.MenuLayoutState
 import com.nendo.argosy.ui.screens.gamedetail.components.menuLayout
+import com.nendo.argosy.ui.screens.gamedetail.components.unlockedFirst
 import com.nendo.argosy.ui.screens.gamedetail.components.SaveStatusEvent
 import com.nendo.argosy.ui.screens.gamedetail.components.SaveStatusInfo
 import com.nendo.argosy.domain.usecase.cache.RepairImageCacheUseCase
@@ -149,12 +150,15 @@ class GameDetailViewModel @Inject constructor(
     private val appsRepository: com.nendo.argosy.data.repository.AppsRepository,
     private val runningGames: com.nendo.argosy.data.emulator.background.RunningGames,
     val runningGameMenu: com.nendo.argosy.ui.screens.running.RunningGameMenu,
-    streamLaunch: com.nendo.argosy.ui.screens.stream.StreamLaunchController.Factory
+    streamLaunch: com.nendo.argosy.ui.screens.stream.StreamLaunchController.Factory,
+    achievementCommentsFactory: com.nendo.argosy.ui.common.achievements.AchievementCommentsController.Factory
 ) : ViewModel() {
 
     val siblingChoiceState = siblingChoice.state
 
     val streamLauncher = streamLaunch.create(viewModelScope)
+
+    val achievementComments = achievementCommentsFactory.create(viewModelScope)
 
     private val companionOwner = com.nendo.argosy.ui.dualscreen.SlotOwner.of("game.detail", this)
     private var isDescribing = false
@@ -2540,7 +2544,14 @@ class GameDetailViewModel @Inject constructor(
     }
 
     fun hideAchievementList() {
+        achievementComments.close()
         _uiState.update { it.copy(showAchievementList = false, achievementListFocusIndex = 0) }
+    }
+
+    fun openAchievementComments(index: Int = _uiState.value.achievementListFocusIndex) {
+        val achievement = _uiState.value.game?.achievements?.unlockedFirst()?.getOrNull(index) ?: return
+        _uiState.update { it.copy(achievementListFocusIndex = index) }
+        achievementComments.open(achievement)
     }
 
     fun moveAchievementListFocus(delta: Int) {
@@ -2638,6 +2649,7 @@ class GameDetailViewModel @Inject constructor(
         playOptionsDelegate.reset()
         screenshotDelegate.reset()
         siblingChoice.reset()
+        achievementComments.close()
         _uiState.update {
             it.copy(
                 showPermissionModal = false,
@@ -2866,7 +2878,7 @@ class GameDetailViewModel @Inject constructor(
                 saveState.isVisible -> confirmSaveCacheSelection()
                 state.isViewerOnVideo -> toggleViewerVideoPlayback()
                 state.showScreenshotViewer -> closeScreenshotViewer()
-                state.showAchievementList -> {}
+                state.showAchievementList -> openAchievementComments()
                 state.showReviewList -> confirmReviewListSelection()
                 state.showPermissionModal -> return InputResult.HANDLED
                 state.showRatingPicker -> confirmRating()

@@ -13,10 +13,12 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
+import com.nendo.argosy.ui.input.InputHandler
 import com.nendo.argosy.ui.input.ModalInputEffect
 import com.nendo.argosy.ui.input.ModalPresenceEffect
 import dagger.hilt.EntryPoint
@@ -37,10 +39,11 @@ private object KeyboardLayoutMemory {
 
 /**
  * Draws and drives the open Argosy keyboard for this surface. Place it last in the surface's root
- * box so the sheet lies above every modal it serves.
+ * box so the sheet lies above every modal it serves. A surface outside the app's input dispatcher
+ * passes [routeInput], which receives the keyboard's handler while it is open and null after.
  */
 @Composable
-fun ControllerKeyboardHost() {
+fun ControllerKeyboardHost(routeInput: ((InputHandler?) -> Unit)? = null) {
     val active by ControllerKeyboard.active.collectAsState()
     val current = active ?: return
     DisposableEffect(Unit) {
@@ -138,8 +141,16 @@ fun ControllerKeyboardHost() {
     val handler = remember(keyboard) {
         ControllerKeyboardInputHandler(keyboard, onFeedback, cycleLayout, request.onTopEdge)
     }
-    ModalPresenceEffect()
-    ModalInputEffect(active = true, handler = handler)
+    if (routeInput != null) {
+        val currentRouteInput by rememberUpdatedState(routeInput)
+        DisposableEffect(handler) {
+            currentRouteInput(handler)
+            onDispose { currentRouteInput(null) }
+        }
+    } else {
+        ModalPresenceEffect()
+        ModalInputEffect(active = true, handler = handler)
+    }
 
     val state by keyboard.state.collectAsState()
     ControllerKeyboardSheet(

@@ -573,7 +573,7 @@
     <string name="settings_ra_logout_title_busy">Déconnexion en cours...</string>
     <string name="settings_ra_logout_subtitle">Se déconnecter de RetroAchievements</string>
     <string name="settings_ra_web_api_key_title">Clé d\'API web (facultatif)</string>
-    <string name="settings_ra_web_api_key_subtitle">Elle se trouve dans la section Keys de votre panneau de contrôle RetroAchievements. Rend les récapitulatifs plus rapides et plus complets.</string>
+    <string name="settings_ra_web_api_key_subtitle">Elle se trouve dans la section Keys de votre panneau de contrôle RetroAchievements. Rend les récapitulatifs plus rapides et plus complets, et affiche les commentaires des succès.</string>
     <string name="settings_ra_web_api_key_value_not_set">Non définie</string>
     <string name="settings_ra_web_api_key_value_saved_short">Enregistrée</string>
     <string name="settings_ra_web_api_key_value_rejected">Clé refusée</string>

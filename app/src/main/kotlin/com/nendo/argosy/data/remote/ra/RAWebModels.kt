@@ -49,6 +49,23 @@ data class RAWebCompletionPage(
     @Json(name = "Results") val results: List<RAWebCompletionEntry> = emptyList()
 )
 
+@JsonClass(generateAdapter = true)
+data class RAWebCommentsPage(
+    @Json(name = "Count") val count: Int = 0,
+    @Json(name = "Total") val total: Int = 0,
+    @Json(name = "Results") val results: List<RAWebComment> = emptyList()
+)
+
+/**
+ * One comment of `API_GetComments`. [submitted] is ISO 8601 in UTC.
+ */
+@JsonClass(generateAdapter = true)
+data class RAWebComment(
+    @Json(name = "User") val user: String? = null,
+    @Json(name = "Submitted") val submitted: String? = null,
+    @Json(name = "CommentText") val commentText: String? = null
+)
+
 /**
  * One game of `API_GetUserCompletionProgress`. [highestAwardKind] is one of `beaten-softcore`,
  * `beaten-hardcore`, `completed`, `mastered`; the dates are ISO 8601 with an offset.

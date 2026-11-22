@@ -28,6 +28,27 @@ class RAWebModelsTest {
     }
 
     @Test
+    fun `comments page reads each commenter, date and text`() {
+        val json = """
+            {"Count":2,"Total":7,"Results":[
+              {"User":"PlayTester","ULID":"00003EMFWR7XB8SDPEHB3K56ZQ","Submitted":"2024-07-31T11:22:23.000000Z","CommentText":"Comment 1"},
+              {"User":"Other","ULID":"00003EMFWR7XB8SDPEHB3K56ZR","Submitted":"2024-07-30T09:00:00.000000Z","CommentText":"Comment 2"}
+            ]}
+        """.trimIndent()
+
+        val page = moshi.adapter(RAWebCommentsPage::class.java).fromJson(json)!!
+
+        assertEquals(7, page.total)
+        assertEquals(
+            listOf(
+                RAWebComment("PlayTester", "2024-07-31T11:22:23.000000Z", "Comment 1"),
+                RAWebComment("Other", "2024-07-30T09:00:00.000000Z", "Comment 2")
+            ),
+            page.results
+        )
+    }
+
+    @Test
     fun `game progress reads per-achievement earned dates and award metadata`() {
         val json = """
             {"ID":55,"Title":"Zelda","NumAchievements":2,

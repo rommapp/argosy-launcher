@@ -584,7 +584,7 @@
     <string name="settings_ra_logout_title_busy">Выход...</string>
     <string name="settings_ra_logout_subtitle">Выйти из RetroAchievements</string>
     <string name="settings_ra_web_api_key_title">Ключ веб-API (необязательно)</string>
-    <string name="settings_ra_web_api_key_subtitle">Находится в разделе Keys панели управления RetroAchievements. Делает итоги быстрее и подробнее.</string>
+    <string name="settings_ra_web_api_key_subtitle">Находится в разделе Keys панели управления RetroAchievements. Делает итоги быстрее и подробнее, а также показывает комментарии к достижениям.</string>
     <string name="settings_ra_web_api_key_value_not_set">Не задан</string>
     <string name="settings_ra_web_api_key_value_saved_short">Сохранён</string>
     <string name="settings_ra_web_api_key_value_rejected">Ключ отклонён</string>

@@ -571,7 +571,7 @@
     <string name="settings_ra_logout_title_busy">Wird abgemeldet…</string>
     <string name="settings_ra_logout_subtitle">Von RetroAchievements abmelden</string>
     <string name="settings_ra_web_api_key_title">Web-API-Schlüssel (optional)</string>
-    <string name="settings_ra_web_api_key_subtitle">Zu finden im Bereich Keys deines RetroAchievements-Kontrollzentrums. Macht Rückblicke schneller und ausführlicher.</string>
+    <string name="settings_ra_web_api_key_subtitle">Zu finden im Bereich Keys deines RetroAchievements-Kontrollzentrums. Macht Rückblicke schneller und ausführlicher und zeigt Kommentare zu Erfolgen an.</string>
     <string name="settings_ra_web_api_key_value_not_set">Nicht festgelegt</string>
     <string name="settings_ra_web_api_key_value_saved_short">Gespeichert</string>
     <string name="settings_ra_web_api_key_value_rejected">Schlüssel abgelehnt</string>

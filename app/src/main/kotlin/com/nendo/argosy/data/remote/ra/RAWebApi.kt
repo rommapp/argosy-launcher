@@ -42,7 +42,18 @@ interface RAWebApi {
         @Query("t") toEpochSeconds: Long
     ): Response<List<RAWebEarnedAchievement>>
 
+    @GET("API_GetComments.php")
+    suspend fun getComments(
+        @Query("y") apiKey: String,
+        @Query("i") targetId: Long,
+        @Query("t") kind: Int,
+        @Query("c") count: Int,
+        @Query("sort") sort: String
+    ): Response<RAWebCommentsPage>
+
     companion object {
         const val BASE_URL = "https://retroachievements.org/API/"
+        const val COMMENT_KIND_ACHIEVEMENT = 2
+        const val COMMENT_SORT_NEWEST_FIRST = "-submitted"
     }
 }

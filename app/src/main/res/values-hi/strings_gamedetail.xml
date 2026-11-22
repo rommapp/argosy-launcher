@@ -157,6 +157,23 @@
     </plurals>
     <string name="gamedetail_achievement_list_footer_navigate">नेविगेट</string>
     <string name="gamedetail_achievement_list_footer_back">वापस</string>
+    <string name="gamedetail_achievement_list_footer_comments">कमेंट</string>
+    <string name="achievement_comments_heading">कमेंट</string>
+    <string name="achievement_comments_loading">कमेंट लोड हो रहे हैं...</string>
+    <string name="achievement_comments_empty">इस अचीवमेंट पर अभी तक किसी ने कमेंट नहीं किया है।</string>
+    <string name="achievement_comments_unavailable">RetroAchievements से संपर्क नहीं हो सका।</string>
+    <string name="achievement_comments_retry">फिर से कोशिश करें</string>
+    <string name="achievement_comments_not_signed_in">कमेंट पढ़ने के लिए सेटिंग्स में RetroAchievements में साइन इन करें।</string>
+    <string name="achievement_comments_needs_key">कमेंट RetroAchievements से आते हैं और इनके लिए आपकी वेब API की ज़रूरी है।</string>
+    <string name="achievement_comments_key_rejected">RetroAchievements ने आपकी सेव की हुई वेब API की स्वीकार नहीं की।</string>
+    <string name="achievement_comments_open_settings">वेब API की जोड़ें</string>
+    <string name="achievement_comments_enter_key">वेब API की डालें</string>
+    <string name="achievement_comments_key_field_label">वेब API की</string>
+    <string name="achievement_comments_key_save">सेव करें</string>
+    <string name="achievement_comments_key_checking">RetroAchievements से की जाँची जा रही है...</string>
+    <string name="achievement_comments_key_status_rejected">RetroAchievements ने यह की स्वीकार नहीं की।</string>
+    <string name="achievement_comments_key_status_unreachable">RetroAchievements से संपर्क नहीं हो सका। फिर से कोशिश करें।</string>
+    <string name="achievement_comments_back">वापस</string>
 
     <!-- ============================= Screenshot viewer ================================= -->
 

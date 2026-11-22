@@ -134,7 +134,7 @@ class VirtualBrowserViewModel @Inject constructor(
         _isRefreshing,
         _search
     ) { categories, focusedIndex, pinnedCategories, isRefreshing, search ->
-        val sorted = categories.sortedWith(compareBy(String.CASE_INSENSITIVE_ORDER) { it.name })
+        val sorted = categories.distinctBy { it.name }.sortedWith(compareBy(String.CASE_INSENSITIVE_ORDER) { it.name })
         val visible = if (search.query.isBlank()) {
             sorted
         } else {

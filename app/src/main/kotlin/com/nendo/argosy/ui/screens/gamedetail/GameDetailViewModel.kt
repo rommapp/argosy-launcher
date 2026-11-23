@@ -75,6 +75,7 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.drop
 import com.nendo.argosy.ui.common.toRunningGamesUi
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.map
@@ -245,6 +246,7 @@ class GameDetailViewModel @Inject constructor(
     override fun onCleared() {
         super.onCleared()
         isDescribing = false
+        if (moreOptionsDelegate.state.value.showMoreOptions) showLaunchDisplayNumbers(false)
         releaseCompanionSlot()
         imageCacheManager.resumeBackgroundCaching()
         gameThemeAudio.exit(currentGameId)
@@ -466,6 +468,13 @@ class GameDetailViewModel @Inject constructor(
                 }
             }
         }
+
+        moreOptionsDelegate.state
+            .map { it.showMoreOptions }
+            .distinctUntilChanged()
+            .drop(1)
+            .onEach { showing -> showLaunchDisplayNumbers(showing && _uiState.value.launchDisplayNumbers.size > 1) }
+            .launchIn(viewModelScope)
 
         viewModelScope.launch {
             perGameSettingsDelegate.state.collect { pgState ->
@@ -1369,11 +1378,14 @@ class GameDetailViewModel @Inject constructor(
         val targets = if (opening) launchDisplayTargets() else emptyList()
         _uiState.update { it.copy(launchDisplayNumbers = targets.map { target -> target.number }) }
         moreOptionsDelegate.toggleMoreOptions()
-        val dsm = com.nendo.argosy.DualScreenManagerHolder.instance
-        if (opening && targets.size > 1) {
-            dsm?.showScreenNumbers(com.nendo.argosy.hardware.DisplayBadgeSize.SMALL)
+    }
+
+    private fun showLaunchDisplayNumbers(show: Boolean) {
+        val dsm = com.nendo.argosy.DualScreenManagerHolder.instance ?: return
+        if (show) {
+            dsm.showScreenNumbers(com.nendo.argosy.hardware.DisplayBadgeSize.SMALL)
         } else {
-            dsm?.hideScreenNumbers()
+            dsm.hideScreenNumbers()
         }
     }
 

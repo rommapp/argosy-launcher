@@ -1,0 +1,72 @@
+name: Bug Report
+description: Report a bug to help improve Argosy
+labels: ["bug"]
+body:
+  - type: input
+    id: device
+    attributes:
+      label: Device
+      description: Make and model.
+      placeholder: Retroid Pocket 5, AYN Thor, Anbernic RG556
+    validations:
+      required: true
+  - type: input
+    id: android-version
+    attributes:
+      label: Android version
+      placeholder: Android 13
+    validations:
+      required: true
+  - type: input
+    id: argosy-version
+    attributes:
+      label: Argosy version
+      description: Shown in Settings > About.
+      placeholder: 3.0.1
+    validations:
+      required: true
+  - type: textarea
+    id: description
+    attributes:
+      label: Bug description
+      description: What went wrong.
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. Go to '...'
+        2. Select '...'
+        3. Press '...'
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behavior
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs
+      description: |
+        Reproduce the bug, then open Settings > About > Export Diagnostics. It saves a file to Download/Argosy with accounts and server addresses removed. Drag that file in here. If you can't export one, say why.
+    validations:
+      required: true
+  - type: textarea
+    id: screenshots
+    attributes:
+      label: Screenshots or video
+  - type: textarea
+    id: context
+    attributes:
+      label: Additional context

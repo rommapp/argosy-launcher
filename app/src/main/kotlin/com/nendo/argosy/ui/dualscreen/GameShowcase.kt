@@ -410,24 +410,26 @@ private fun LogoShowcase(
         val logo = detail.logoUrl?.takeIf { !logoFailed }
         val floatLayer = Modifier.showcaseFloat(motion, durations, enabled = logo != null)
         Box(Modifier.fillMaxSize().then(coverLayer).then(floatLayer), contentAlignment = Alignment.Center) {
-            if (logo != null && glowAlpha > 0f) {
-                val glow = theme.surfaceBase
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .drawBehind {
-                            val brush = Brush.radialGradient(
-                                0f to glow.copy(alpha = glowAlpha),
-                                LOGO_GLOW_HOLD to glow.copy(alpha = glowAlpha * LOGO_GLOW_HOLD_FADE),
-                                1f to Color.Transparent,
-                                center = center,
-                                radius = size.height / 2f
-                            )
-                            scale(scaleX = size.width / size.height, scaleY = 1f, pivot = center) {
-                                drawCircle(brush = brush, radius = size.height / 2f, center = center)
+            if (logo != null) {
+                if (glowAlpha > 0f) {
+                    val glow = theme.surfaceBase
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .drawBehind {
+                                val brush = Brush.radialGradient(
+                                    0f to glow.copy(alpha = glowAlpha),
+                                    LOGO_GLOW_HOLD to glow.copy(alpha = glowAlpha * LOGO_GLOW_HOLD_FADE),
+                                    1f to Color.Transparent,
+                                    center = center,
+                                    radius = size.height / 2f
+                                )
+                                scale(scaleX = size.width / size.height, scaleY = 1f, pivot = center) {
+                                    drawCircle(brush = brush, radius = size.height / 2f, center = center)
+                                }
                             }
-                        }
-                )
+                    )
+                }
                 AsyncImage(
                     model = rememberFileImageModel(logo),
                     contentDescription = detail.title,

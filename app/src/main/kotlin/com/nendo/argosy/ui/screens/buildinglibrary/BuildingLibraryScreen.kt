@@ -145,7 +145,7 @@ fun BuildingLibraryScreen(
     if (presenting) {
         PresentOnCompanion(LIBRARY_WALL_OWNER, PresentationSlot.LibraryWall(uiState.tiles))
     }
-    Box(
+    BoxWithConstraints(
         modifier = Modifier
             .fillMaxSize()
             .background(theme.surfaceBase)
@@ -159,6 +159,26 @@ fun BuildingLibraryScreen(
                     .fillMaxSize()
                     .padding(Dimens.spacingXl)
             )
+        } else if (maxWidth <= maxHeight) {
+            Column(Modifier.fillMaxSize()) {
+                Box(Modifier.fillMaxWidth()) {
+                    HexField(diagonal = false, modifier = Modifier.matchParentSize())
+                    BuildingLibraryInfo(
+                        state = uiState,
+                        onBrowse = onBrowse,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(Dimens.spacingXl)
+                    )
+                }
+                LibraryCoverWall(
+                    tiles = uiState.tiles,
+                    columns = ComponentDefaults.BuildingLibrary.wallColumns,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .weight(1f)
+                )
+            }
         } else {
             LibraryCoverWall(
                 tiles = uiState.tiles,

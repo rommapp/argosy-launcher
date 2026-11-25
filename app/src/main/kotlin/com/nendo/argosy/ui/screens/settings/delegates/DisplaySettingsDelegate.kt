@@ -41,6 +41,7 @@ import com.nendo.argosy.data.preferences.ThemeMode
 import com.nendo.argosy.data.preferences.AmbientLedColorMode
 import com.nendo.argosy.data.preferences.UserPreferencesRepository
 import com.nendo.argosy.hardware.LEDController
+import com.nendo.argosy.hardware.LedBrightnessSteps
 import com.nendo.argosy.hardware.ScreenCaptureManager
 import com.nendo.argosy.data.local.entity.GameListItem
 import com.nendo.argosy.data.preferences.SyncPreferencesRepository
@@ -1002,20 +1003,14 @@ class DisplaySettingsDelegate @Inject constructor(
 
     fun setAmbientLedBrightness(scope: CoroutineScope, brightness: Int) {
         scope.launch {
-            val clamped = brightness.coerceIn(0, 100)
+            val clamped = brightness.coerceIn(0, LedBrightnessSteps.MAX)
             preferencesRepository.setAmbientLedBrightness(clamped)
             _state.update { it.copy(ambientLedBrightness = clamped) }
         }
     }
 
-    fun adjustAmbientLedBrightness(scope: CoroutineScope, delta: Int) {
-        setAmbientLedBrightness(scope, _state.value.ambientLedBrightness + delta)
-    }
-
-    fun cycleAmbientLedBrightness(scope: CoroutineScope) {
-        val current = _state.value.ambientLedBrightness
-        val next = (current + 10) % 110
-        setAmbientLedBrightness(scope, next)
+    fun stepAmbientLedBrightness(scope: CoroutineScope, direction: Int) {
+        setAmbientLedBrightness(scope, LedBrightnessSteps.step(_state.value.ambientLedBrightness, direction))
     }
 
     fun setAmbientLedAudioBrightness(scope: CoroutineScope, enabled: Boolean) {

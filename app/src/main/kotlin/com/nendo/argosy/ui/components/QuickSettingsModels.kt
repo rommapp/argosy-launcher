@@ -82,6 +82,9 @@ data class QuickSettingsState(
     val systemVolume: Float = 1f,
     val screenBrightness: Float = 0.5f,
     val secondaryBrightness: Float? = null,
+    val ledAvailable: Boolean = false,
+    val ledEnabled: Boolean = false,
+    val ledBrightness: Float = 1f,
     val isDualScreenActive: Boolean = false,
     val isRolesSwapped: Boolean = false,
     val hudEnabled: Boolean = false,
@@ -153,6 +156,10 @@ sealed class QuickSettingsItem(
     )
     data object ScreenOrientation : QuickSettingsItem(
         "screenOrientation", QuickSettingsPage.QUICK, QuickSettingsGroup.DISPLAY
+    )
+    data object Led : QuickSettingsItem(
+        "led", QuickSettingsPage.QUICK, QuickSettingsGroup.DISPLAY,
+        visibleWhen = { it.ledAvailable }
     )
     data object SystemVolume : QuickSettingsItem("systemVolume", QuickSettingsPage.QUICK, QuickSettingsGroup.SOUND)
     data object UISounds : QuickSettingsItem("uiSounds", QuickSettingsPage.QUICK, QuickSettingsGroup.SOUND)
@@ -269,7 +276,7 @@ sealed class QuickSettingsItem(
         val ALL: List<QuickSettingsItem>
             get() = listOf(
                 FriendsPage,
-                DisplayHeader, Theme, Accent, ScreenBrightness, SecondScreenBrightness, SwapDisplays, ScreenOrientation,
+                DisplayHeader, Theme, Accent, ScreenBrightness, SecondScreenBrightness, SwapDisplays, ScreenOrientation, Led,
                 SoundHeader, SystemVolume, UISounds,
                 ControlsHeader, Haptic, SwapAB, SwapXY, SwapStartSelect,
                 ActivityNowHeader, ActivityDownloads, ActivitySync, ActivityIdle,

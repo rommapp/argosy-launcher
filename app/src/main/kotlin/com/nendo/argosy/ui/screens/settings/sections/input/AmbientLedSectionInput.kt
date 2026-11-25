@@ -37,7 +37,7 @@ internal class AmbientLedSectionInput(
         val hueStep = SettingsInputHandler.HUE_STEP
         when (ambientLedItemAtFocusIndex(state.focusedIndex, state.display)) {
             AmbientLedItem.Brightness -> {
-                viewModel.adjustAmbientLedBrightness(direction * 5)
+                viewModel.stepAmbientLedBrightness(direction)
                 return InputResult.HANDLED
             }
             AmbientLedItem.CustomColorHue -> {

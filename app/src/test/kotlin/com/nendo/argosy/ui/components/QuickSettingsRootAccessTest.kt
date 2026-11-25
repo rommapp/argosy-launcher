@@ -99,6 +99,7 @@ class QuickSettingsRootAccessTest {
             performanceStore = store,
             refreshController = mockk(relaxed = true),
             hardwareStatsReader = mockk(relaxed = true),
+            ledController = mockk(relaxed = true),
             socialRepository = mockk<SocialRepository>(relaxed = true) {
                 every { connectionState } returns MutableStateFlow(SocialConnectionState.Disconnected)
             },

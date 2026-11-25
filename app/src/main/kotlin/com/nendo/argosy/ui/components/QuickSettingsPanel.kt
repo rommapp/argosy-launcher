@@ -33,6 +33,7 @@ import androidx.compose.material.icons.automirrored.filled.VolumeUp
 import androidx.compose.material.icons.filled.DarkMode
 import androidx.compose.material.icons.filled.Layers
 import androidx.compose.material.icons.filled.LightMode
+import androidx.compose.material.icons.filled.Lightbulb
 import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material.icons.filled.ScreenRotation
 import androidx.compose.material.icons.filled.SettingsBrightness
@@ -454,6 +455,18 @@ private fun QuickSettingsItemRow(
             isFocused = isFocused,
             onFocus = focus,
             onToggle = controller::setSoundEnabled
+        )
+
+        QuickSettingsItem.Led -> QuickSwitchedSliderRow(
+            icon = Icons.Default.Lightbulb,
+            label = stringResource(R.string.ui_quick_settings_led),
+            on = state.ledEnabled,
+            fraction = state.ledBrightness,
+            valueText = quickPercentLabel(state.ledBrightness),
+            isFocused = isFocused,
+            onFocus = focus,
+            onToggle = controller::setLedEnabled,
+            onFractionChange = controller::setLedBrightness
         )
 
         QuickSettingsItem.Haptic -> QuickSwitchedSliderRow(

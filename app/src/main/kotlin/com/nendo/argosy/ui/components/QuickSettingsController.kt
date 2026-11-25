@@ -16,6 +16,8 @@ import com.nendo.argosy.hardware.DevicePerformanceResolver
 import com.nendo.argosy.hardware.DisplayRefreshController
 import com.nendo.argosy.hardware.FanController
 import com.nendo.argosy.hardware.HardwareStatsReader
+import com.nendo.argosy.hardware.LEDController
+import com.nendo.argosy.hardware.LedBrightnessSteps
 import com.nendo.argosy.hardware.PerformanceMode
 import com.nendo.argosy.hardware.PerformanceModeStore
 import com.nendo.argosy.hardware.VolumeController
@@ -116,6 +118,7 @@ class QuickSettingsController(
     private val performanceStore: PerformanceModeStore,
     private val refreshController: DisplayRefreshController,
     private val hardwareStatsReader: HardwareStatsReader,
+    private val ledController: LEDController,
     socialRepository: SocialRepository,
     private val hapticManager: HapticFeedbackManager,
     private val soundManager: SoundFeedbackManager,
@@ -218,6 +221,9 @@ class QuickSettingsController(
             systemVolume = displayLevels.volume,
             screenBrightness = displayLevels.brightness,
             secondaryBrightness = displayLevels.secondaryBrightness,
+            ledAvailable = ledController.isAvailable,
+            ledEnabled = prefs.ambientLedEnabled,
+            ledBrightness = prefs.ambientLedBrightness / LedBrightnessSteps.MAX.toFloat(),
             isDualScreenActive = screens.active,
             isRolesSwapped = screens.rolesSwapped,
             hudEnabled = hud,
@@ -328,6 +334,24 @@ class QuickSettingsController(
         hapticManager.setStrength(coerced)
         hapticManager.vibrate(HapticPattern.STRENGTH_PREVIEW)
         scope.launch { preferencesRepository.setHapticStrength(coerced) }
+    }
+
+    fun setLedEnabled(enabled: Boolean) {
+        scope.launch { preferencesRepository.setAmbientLedEnabled(enabled) }
+    }
+
+    fun setLedBrightness(fraction: Float) {
+        val level = (fraction.coerceIn(0f, 1f) * LedBrightnessSteps.MAX).roundToInt()
+        scope.launch { preferencesRepository.setAmbientLedBrightness(level) }
+    }
+
+    private fun stepLed(state: QuickSettingsState, delta: Int): InputResult {
+        if (!state.ledEnabled) return InputResult.handled(SoundType.BOUNDARY)
+        val current = (state.ledBrightness * LedBrightnessSteps.MAX).roundToInt()
+        val next = LedBrightnessSteps.step(current, delta)
+        if (next == current) return InputResult.handled(SoundType.BOUNDARY)
+        scope.launch { preferencesRepository.setAmbientLedBrightness(next) }
+        return InputResult.HANDLED
     }
 
     fun setSwapAB(enabled: Boolean) {
@@ -575,6 +599,7 @@ class QuickSettingsController(
                 delta,
                 ::setScreenOrientation
             )
+            QuickSettingsItem.Led -> stepLed(snapshot, delta)
             QuickSettingsItem.SystemVolume ->
                 stepVolume(snapshot.systemVolume, delta)
             QuickSettingsItem.UISounds ->
@@ -640,6 +665,11 @@ class QuickSettingsController(
             QuickSettingsItem.Accent -> {
                 val enabled = snapshot.primaryColor == null
                 setAccentEnabled(enabled)
+                InputResult.toggled(enabled, if (enabled) SoundType.TOGGLE else SoundType.SILENT)
+            }
+            QuickSettingsItem.Led -> {
+                val enabled = !snapshot.ledEnabled
+                setLedEnabled(enabled)
                 InputResult.toggled(enabled, if (enabled) SoundType.TOGGLE else SoundType.SILENT)
             }
             QuickSettingsItem.Haptic -> {

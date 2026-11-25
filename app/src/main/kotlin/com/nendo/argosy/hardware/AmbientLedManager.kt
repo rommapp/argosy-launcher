@@ -549,7 +549,7 @@ class AmbientLedManager @Inject constructor(
         private const val HOVER_FRAME_MS = 83L
         private const val MIN_WRITE_INTERVAL_MS = 33L
         private const val COLOR_EPSILON = 0.012f
-        private const val BRIGHTNESS_EPSILON = 0.01f
+        private const val BRIGHTNESS_EPSILON = 0.005f
         private val HARDCORE_FLASH_COLOR = Color(0xFFFFE566)
         private val CASUAL_FLASH_COLOR = Color(0xFFFFAA44)
     }

@@ -3,8 +3,33 @@ package com.nendo.argosy.data.platform
 import com.nendo.argosy.data.local.entity.PlatformEntity
 import java.io.File
 
-fun platformDownloadDir(platform: PlatformEntity?, fallbackSlug: String, storageBase: File): File =
-    platform?.customRomPath?.let { File(it) } ?: File(storageBase, platform?.slug ?: fallbackSlug)
+/**
+ * The folder [platform]'s roms download into: its custom folder, else the shared folder named by
+ * [platformFolderName].
+ */
+fun platformDownloadDir(
+    platform: PlatformEntity?,
+    fallbackSlug: String,
+    storageBase: File,
+    allPlatforms: List<PlatformEntity>,
+    useFsSlug: Boolean
+): File = platform?.customRomPath?.let { File(it) }
+    ?: File(storageBase, platform?.let { platformFolderName(it, allPlatforms, useFsSlug) } ?: fallbackSlug)
+
+/**
+ * The shared folder name for [platform]: its RomM `fs_slug` when [useFsSlug] is on and no other
+ * platform owns that name, else its slug.
+ */
+fun platformFolderName(platform: PlatformEntity, allPlatforms: List<PlatformEntity>, useFsSlug: Boolean): String =
+    if (useFsSlug) ownFsSlug(platform, allPlatforms) ?: platform.slug else platform.slug
+
+private fun ownFsSlug(platform: PlatformEntity, allPlatforms: List<PlatformEntity>): String? {
+    val fsSlug = platform.fsSlug?.takeIf { it.isNotBlank() && it != platform.slug } ?: return null
+    val claimedByAnother = allPlatforms.any { other ->
+        other.id != platform.id && (other.slug == fsSlug || other.fsSlug == fsSlug)
+    }
+    return fsSlug.takeUnless { claimedByAnother }
+}
 
 /**
  * Every directory a platform's roms may legitimately sit directly inside, most specific first.
@@ -21,22 +46,17 @@ fun platformDownloadDir(platform: PlatformEntity?, fallbackSlug: String, storage
  * The `fs_slug` root is RomM's own on-disk layout, which is what a mirrored RomM or ES-DE library
  * looks like. It is dropped when another platform already owns that directory by slug or fs_slug,
  * so a platform whose `fs_slug` collides with a second platform's slug cannot reach into it.
+ * The shared folder [platformFolderName] picks comes before the other one.
  */
 fun platformRomRoots(
     platform: PlatformEntity,
     storageBase: File,
-    allPlatforms: List<PlatformEntity>
+    allPlatforms: List<PlatformEntity>,
+    useFsSlug: Boolean = false
 ): List<File> {
     val roots = mutableListOf<File>()
     platform.customRomPath?.let { roots += File(it) }
-    roots += File(storageBase, platform.slug)
-
-    val fsSlug = platform.fsSlug?.takeIf { it.isNotBlank() && it != platform.slug }
-    if (fsSlug != null) {
-        val claimedByAnother = allPlatforms.any { other ->
-            other.id != platform.id && (other.slug == fsSlug || other.fsSlug == fsSlug)
-        }
-        if (!claimedByAnother) roots += File(storageBase, fsSlug)
-    }
+    val shared = listOfNotNull(platform.slug, ownFsSlug(platform, allPlatforms)).map { File(storageBase, it) }
+    roots += if (useFsSlug) shared.reversed() else shared
     return roots.distinctBy { it.absolutePath }
 }

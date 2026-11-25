@@ -14,6 +14,7 @@ import com.nendo.argosy.ui.screens.settings.sections.aboutUpdateActions
 import com.nendo.argosy.util.LogLevel
 import com.nendo.argosy.R
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
@@ -98,8 +99,14 @@ internal fun routeConfirmImportSettings(vm: SettingsViewModel) {
 
 internal fun routeImportSettingsFrom(vm: SettingsViewModel, path: String) {
     vm.viewModelScope.launch {
+        val serverFolderNames = vm.preferencesRepository.userPreferences.first().platformFoldersFromServer
         when (val result = vm.settingsBackupRepository.importFromFile(path)) {
             is SettingsImportResult.Success -> {
+                val restoredServerFolderNames = vm.preferencesRepository.userPreferences.first().platformFoldersFromServer
+                if (restoredServerFolderNames != serverFolderNames) {
+                    vm.preferencesRepository.setPlatformFoldersFromServer(serverFolderNames)
+                    vm.storageDelegate.requestPlatformFolderNames(vm.viewModelScope, restoredServerFolderNames)
+                }
                 vm.loadSettings()
                 vm.notificationManager.show(
                     title = NotificationText.Res(R.string.settings_shell_router_settings_imported_title),

@@ -76,7 +76,7 @@ class MigrateStorageUseCase @Inject constructor(
                     return@forEachIndexed
                 }
                 val outcome = relocator.relocate(current, platformFolder, newRoot) { file ->
-                    GameFileRelocator.mapped(file, oldRoot, newRoot, platformFolder, File(newRoot, current.platformSlug))
+                    GameFileRelocator.mapped(file, oldRoot, newRoot, platformFolder, File(newRoot, platformFolder.name))
                 }
                 when (outcome) {
                     RelocationOutcome.MOVED, RelocationOutcome.ALREADY_MOVED -> {

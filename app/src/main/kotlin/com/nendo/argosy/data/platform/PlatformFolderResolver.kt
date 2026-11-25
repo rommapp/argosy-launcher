@@ -3,6 +3,7 @@ package com.nendo.argosy.data.platform
 import android.content.Context
 import com.nendo.argosy.data.local.dao.GameDao
 import com.nendo.argosy.data.local.dao.PlatformDao
+import com.nendo.argosy.data.local.entity.PlatformEntity
 import com.nendo.argosy.data.preferences.UserPreferencesRepository
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.first
@@ -33,14 +34,26 @@ class PlatformFolderResolver @Inject constructor(
             ?.takeIf { it.isNotBlank() }
             ?.let { File(it) }
 
+    suspend fun usesServerFolderNames(): Boolean =
+        preferencesRepository.userPreferences.first().platformFoldersFromServer
+
     suspend fun downloadDirForPlatform(platformId: Long, fallbackSlug: String): File? {
         val base = storageBase() ?: return null
-        return platformDownloadDir(platformDao.getById(platformId), fallbackSlug, base)
+        return platformDownloadDir(
+            platformDao.getById(platformId), fallbackSlug, base,
+            platformDao.getAllPlatforms(), usesServerFolderNames()
+        )
+    }
+
+    suspend fun sharedDirForPlatform(platform: PlatformEntity, useFsSlug: Boolean? = null): File? {
+        val base = storageBase() ?: return null
+        val name = platformFolderName(platform, platformDao.getAllPlatforms(), useFsSlug ?: usesServerFolderNames())
+        return File(base, name)
     }
 
     suspend fun downloadDirForGame(gameId: Long, fallbackSlug: String): File? {
         val platformId = gameDao.getById(gameId)?.platformId
-            ?: return storageBase()?.let { platformDownloadDir(null, fallbackSlug, it) }
+            ?: return storageBase()?.let { File(it, fallbackSlug) }
         return downloadDirForPlatform(platformId, fallbackSlug)
     }
 
@@ -49,6 +62,6 @@ class PlatformFolderResolver @Inject constructor(
         val base = storageBase()
             ?: return platform?.customRomPath?.let { listOf(File(it)) }.orEmpty()
         if (platform == null) return listOf(File(base, fallbackSlug))
-        return platformRomRoots(platform, base, platformDao.getAllPlatforms())
+        return platformRomRoots(platform, base, platformDao.getAllPlatforms(), usesServerFolderNames())
     }
 }

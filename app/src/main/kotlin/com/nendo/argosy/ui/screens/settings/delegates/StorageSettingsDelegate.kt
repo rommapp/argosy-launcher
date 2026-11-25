@@ -12,7 +12,6 @@ import com.nendo.argosy.core.notification.showSuccess
 import com.nendo.argosy.ui.common.notificationType
 import com.nendo.argosy.ui.common.toNotificationText
 import com.nendo.argosy.data.platform.PlatformFolderResolver
-import com.nendo.argosy.data.platform.platformDownloadDir
 import com.nendo.argosy.data.preferences.UserPreferencesRepository
 import com.nendo.argosy.data.repository.DatabaseAdminRepository
 import com.nendo.argosy.data.repository.HardResetBlocker
@@ -20,6 +19,10 @@ import com.nendo.argosy.data.repository.PlatformRepository
 import com.nendo.argosy.data.repository.GameRepository
 import com.nendo.argosy.domain.usecase.MigratePlatformStorageUseCase
 import com.nendo.argosy.domain.usecase.MigrateStorageUseCase
+import com.nendo.argosy.domain.usecase.FolderNameSwitchResult
+import com.nendo.argosy.domain.usecase.SwitchPlatformFolderNamesUseCase
+import com.nendo.argosy.data.download.DownloadManager
+import com.nendo.argosy.ui.screens.settings.FolderNameSwitchInfo
 import com.nendo.argosy.domain.usecase.PurgePlatformUseCase
 import com.nendo.argosy.domain.usecase.sync.SyncPlatformUseCase
 import com.nendo.argosy.libretro.LibretroCoreRegistry
@@ -63,7 +66,9 @@ class StorageSettingsDelegate @Inject constructor(
     private val databaseAdminRepository: DatabaseAdminRepository,
     private val saveCacheRepository: com.nendo.argosy.data.repository.SaveCacheRepository,
     private val notificationManager: NotificationManager,
-    private val platformFolderResolver: PlatformFolderResolver
+    private val platformFolderResolver: PlatformFolderResolver,
+    private val switchPlatformFolderNames: SwitchPlatformFolderNamesUseCase,
+    private val downloadManager: DownloadManager
 ) {
     private val _state = MutableStateFlow(StorageState())
     val state: StateFlow<StorageState> = _state.asStateFlow()
@@ -162,6 +167,65 @@ class StorageSettingsDelegate @Inject constructor(
             preferencesRepository.setFolderNameFromRom(next)
             _state.update { it.copy(folderNameFromRom = next) }
         }
+    }
+
+    fun togglePlatformFoldersFromServer(scope: CoroutineScope) =
+        requestPlatformFolderNames(scope, !_state.value.platformFoldersFromServer)
+
+    /**
+     * Switches platform folders to [useServerNames], asking first when downloaded games would
+     * move. Refused while any download is queued or running.
+     */
+    fun requestPlatformFolderNames(scope: CoroutineScope, useServerNames: Boolean) {
+        scope.launch {
+            if (!downloadsIdle()) {
+                notificationManager.showError(NotificationText.Res(R.string.notif_storage_folder_names_busy))
+                return@launch
+            }
+            val games = switchPlatformFolderNames.pendingMoves(useServerNames)
+            if (games == 0) {
+                applyPlatformFolderNames(scope, useServerNames)
+            } else {
+                _state.update { it.copy(showFolderNameSwitchConfirm = FolderNameSwitchInfo(useServerNames, games)) }
+            }
+        }
+    }
+
+    fun confirmPlatformFolderNames(scope: CoroutineScope) {
+        val info = _state.value.showFolderNameSwitchConfirm ?: return
+        _state.update { it.copy(showFolderNameSwitchConfirm = null) }
+        scope.launch {
+            if (!downloadsIdle()) {
+                notificationManager.showError(NotificationText.Res(R.string.notif_storage_folder_names_busy))
+                return@launch
+            }
+            applyPlatformFolderNames(scope, info.useServerNames)
+        }
+    }
+
+    fun cancelPlatformFolderNames() {
+        _state.update { it.copy(showFolderNameSwitchConfirm = null) }
+    }
+
+    private fun downloadsIdle(): Boolean =
+        downloadManager.state.value.let { it.activeDownloads.isEmpty() && it.queue.isEmpty() }
+
+    private suspend fun applyPlatformFolderNames(scope: CoroutineScope, useServerNames: Boolean) {
+        when (val result = switchPlatformFolderNames(useServerNames)) {
+            is FolderNameSwitchResult.Switched -> {
+                _state.update { it.copy(platformFoldersFromServer = useServerNames) }
+                if (result.moved > 0) {
+                    notificationManager.showSuccess(NotificationText.Res(R.string.notif_storage_folder_names_done))
+                }
+            }
+            is FolderNameSwitchResult.Failed -> notificationManager.show(
+                title = NotificationText.Res(R.string.notif_storage_folder_names_failed_title),
+                subtitle = NotificationText.Res(R.string.notif_storage_folder_names_failed_subtitle, listOf(result.path)),
+                type = NotificationType.ERROR
+            )
+        }
+        rediscoverAllPlatforms()
+        loadPlatformConfigs(scope)
     }
 
     fun cycleInstantDownloadThreshold(scope: CoroutineScope, direction: Int = 1) {
@@ -346,13 +410,12 @@ class StorageSettingsDelegate @Inject constructor(
 
     fun loadPlatformConfigs(scope: CoroutineScope) {
         scope.launch {
-            val storageBase = platformFolderResolver.storageBase()
             val platforms = platformRepository.observeConfigurablePlatforms().first()
             val emulatorInfo = pendingEmulatorInfo
 
             val configs = platforms.map { platform ->
-                val effectivePath = storageBase
-                    ?.let { platformDownloadDir(platform, platform.slug, it).absolutePath }
+                val effectivePath = platformFolderResolver.downloadDirForPlatform(platform.id, platform.slug)
+                    ?.absolutePath
                     ?: platform.customRomPath.orEmpty()
                 val downloadedCount = gameRepository.countDownloadedByPlatform(platform.id)
                 val info = emulatorInfo?.get(platform.id)
@@ -475,8 +538,7 @@ class StorageSettingsDelegate @Inject constructor(
         if (rejectIfPrivateAppPath(newPath)) return
         scope.launch {
             val platform = platformRepository.getById(platformId) ?: return@launch
-            val oldPath = platformFolderResolver.storageBase()
-                ?.let { platformDownloadDir(platform, platform.slug, it).absolutePath }
+            val oldPath = platformFolderResolver.downloadDirForPlatform(platformId, platform.slug)?.absolutePath
                 ?: platform.customRomPath
 
             val gamesWithPaths = gameRepository.getGamesWithLocalPathsForPlatform(platformId)
@@ -519,13 +581,10 @@ class StorageSettingsDelegate @Inject constructor(
         scope.launch {
             val platform = platformRepository.getById(platformId) ?: return@launch
             val customPath = platform.customRomPath ?: return@launch
-            val storageBase = platformFolderResolver.storageBase() ?: run {
+            val newPath = platformFolderResolver.sharedDirForPlatform(platform)?.absolutePath ?: run {
                 Logger.warn(TAG, "resetPlatformToGlobal: no game folder to reset platform $platformId to")
                 return@launch
             }
-            val newPath = platformDownloadDir(
-                platform.copy(customRomPath = null), platform.slug, storageBase
-            ).absolutePath
 
             val gamesWithPaths = gameRepository.getGamesWithLocalPathsForPlatform(platformId)
             if (gamesWithPaths.isNotEmpty()) {

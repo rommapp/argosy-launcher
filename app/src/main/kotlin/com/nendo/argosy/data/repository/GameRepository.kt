@@ -33,8 +33,6 @@ import com.nendo.argosy.data.local.entity.GameListItem
 import com.nendo.argosy.data.local.entity.GameScreenshotEntity
 import com.nendo.argosy.data.local.entity.PlatformEntity
 import com.nendo.argosy.data.platform.PlatformFolderResolver
-import com.nendo.argosy.data.platform.platformDownloadDir
-import com.nendo.argosy.data.platform.platformRomRoots
 import com.nendo.argosy.data.model.FileOrigin
 import com.nendo.argosy.data.model.ResolvedGameArt
 import com.nendo.argosy.data.model.GameSource
@@ -105,13 +103,12 @@ class GameRepository @Inject constructor(
      */
     suspend fun getDownloadDirForPlatformId(platformId: Long): File? = withContext(Dispatchers.IO) {
         val platform = platformDao.getById(platformId) ?: return@withContext null
-        val base = platformFolderResolver.storageBase() ?: return@withContext null
-        platformDownloadDir(platform, platform.slug, base).also { it.mkdirs() }
+        platformFolderResolver.downloadDirForPlatform(platformId, platform.slug)?.also { it.mkdirs() }
     }
 
     private suspend fun candidateRootsFor(platform: PlatformEntity): List<File> {
-        val base = platformFolderResolver.storageBase() ?: return emptyList()
-        return platformRomRoots(platform, base, platformDao.getAllPlatforms())
+        if (platformFolderResolver.storageBase() == null) return emptyList()
+        return platformFolderResolver.romRootsForPlatform(platform.id, platform.slug)
     }
 
     private suspend fun getGlobalDownloadDir(): File? = platformFolderResolver.storageBase()
@@ -217,11 +214,8 @@ class GameRepository @Inject constructor(
         platformSlug: String
     ): String? {
         val fileName = File(originalPath).name
-        val candidateDirs = buildList {
-            platformDao.getById(platformId)?.customRomPath?.let { add(File(it)) }
-            preferencesRepository.userPreferences.first().romStoragePath?.let { add(File(it, platformSlug)) }
-            add(File(legacyDownloadDir, platformSlug))
-        }
+        val candidateDirs = platformFolderResolver.romRootsForPlatform(platformId, platformSlug) +
+            File(legacyDownloadDir, platformSlug)
 
         for (dir in candidateDirs) {
             if (!dir.exists()) continue

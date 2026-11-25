@@ -82,7 +82,9 @@ class StorageSettingsDelegateTest {
             databaseAdminRepository = databaseAdminRepository,
             saveCacheRepository = mockk(relaxed = true),
             notificationManager = mockk(relaxed = true),
-            platformFolderResolver = platformFolderResolver
+            platformFolderResolver = platformFolderResolver,
+            switchPlatformFolderNames = mockk(relaxed = true),
+            downloadManager = mockk(relaxed = true)
         )
 
     private val appContext: Context = mockk(relaxed = true) {

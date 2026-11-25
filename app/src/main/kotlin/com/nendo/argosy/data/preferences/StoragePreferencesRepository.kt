@@ -25,6 +25,7 @@ data class StoragePreferences(
     val instantDownloadThresholdMb: Int = 50,
     val stageDownloadsInternally: Boolean = true,
     val folderNameFromRom: Boolean = false,
+    val platformFoldersFromServer: Boolean = false,
     val customBiosPath: String? = null,
     val weeklyIntegrityCheckEnabled: Boolean = true,
     val lastIntegrityCheckTime: Long? = null,
@@ -46,6 +47,7 @@ class StoragePreferencesRepository @Inject constructor(
         val INSTANT_DOWNLOAD_THRESHOLD_MB = intPreferencesKey("instant_download_threshold_mb")
         val STAGE_DOWNLOADS_INTERNALLY = booleanPreferencesKey("stage_downloads_internally")
         val FOLDER_NAME_FROM_ROM = booleanPreferencesKey("folder_name_from_rom")
+        val PLATFORM_FOLDERS_FROM_SERVER = booleanPreferencesKey("platform_folders_from_server")
         val CUSTOM_BIOS_PATH = stringPreferencesKey("custom_bios_path")
         val WEEKLY_INTEGRITY_CHECK = booleanPreferencesKey("weekly_integrity_check_enabled")
         val LAST_INTEGRITY_CHECK = longPreferencesKey("last_integrity_check_time")
@@ -67,6 +69,7 @@ class StoragePreferencesRepository @Inject constructor(
             instantDownloadThresholdMb = prefs[Keys.INSTANT_DOWNLOAD_THRESHOLD_MB] ?: 50,
             stageDownloadsInternally = prefs[Keys.STAGE_DOWNLOADS_INTERNALLY] ?: true,
             folderNameFromRom = prefs[Keys.FOLDER_NAME_FROM_ROM] ?: false,
+            platformFoldersFromServer = prefs[Keys.PLATFORM_FOLDERS_FROM_SERVER] ?: false,
             customBiosPath = prefs[Keys.CUSTOM_BIOS_PATH],
             weeklyIntegrityCheckEnabled = prefs[Keys.WEEKLY_INTEGRITY_CHECK] ?: true,
             lastIntegrityCheckTime = prefs[Keys.LAST_INTEGRITY_CHECK],
@@ -132,6 +135,10 @@ class StoragePreferencesRepository @Inject constructor(
 
     suspend fun setFolderNameFromRom(enabled: Boolean) {
         dataStore.edit { it[Keys.FOLDER_NAME_FROM_ROM] = enabled }
+    }
+
+    suspend fun setPlatformFoldersFromServer(enabled: Boolean) {
+        dataStore.edit { it[Keys.PLATFORM_FOLDERS_FROM_SERVER] = enabled }
     }
 
     suspend fun setCustomBiosPath(path: String?) {

@@ -161,6 +161,8 @@ internal sealed class StorageItem(
         Row("internalStaging", "downloads", R.string.settings_storage_internal_staging_title)
     data object FolderNameFromRom :
         Row("folderNameFromRom", "downloads", R.string.settings_storage_folder_name_from_rom_title)
+    data object PlatformFoldersFromServer :
+        Row("platformFoldersFromServer", "downloads", R.string.settings_storage_platform_folders_from_server_title)
 
     data object ResetLibrary : Row("resetLibrary", "danger", R.string.settings_storage_reset_library_title)
     data object HardReset : Row("hardReset", "danger", R.string.settings_storage_hard_reset_title)
@@ -183,7 +185,7 @@ internal sealed class StorageItem(
                 DownloadsSpacer, DownloadsHeader, MaxDownloads, RemoteInstalls, RemoteInstallsLocked,
                 AutoStartDownloads,
                 Threshold, InternalStaging,
-                FolderNameFromRom,
+                FolderNameFromRom, PlatformFoldersFromServer,
                 DangerSpacer, DangerHeader, ResetLibrary, HardReset
             )
     }
@@ -732,6 +734,14 @@ fun StorageSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
                 isEnabled = storage.folderNameFromRom,
                 isFocused = isFocused(item),
                 onToggle = { viewModel.toggleFolderNameFromRom() }
+            )
+
+            is StorageItem.PlatformFoldersFromServer -> SwitchPreference(
+                title = stringResource(item.labelRes),
+                subtitle = stringResource(R.string.settings_storage_platform_folders_from_server_subtitle),
+                isEnabled = storage.platformFoldersFromServer,
+                isFocused = isFocused(item),
+                onToggle = { viewModel.togglePlatformFoldersFromServer() }
             )
 
             is StorageItem.ResetLibrary -> {

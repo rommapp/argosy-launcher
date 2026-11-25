@@ -61,6 +61,41 @@ class PlatformRomRootsTest {
     }
 
     @Test
+    fun `downloads use the slug folder while server names are off`() {
+        val p = platform(1, "psx", fsSlug = "ps")
+        assertEquals(File(base, "psx"), platformDownloadDir(p, "psx", base, listOf(p), useFsSlug = false))
+    }
+
+    @Test
+    fun `downloads use the server folder while server names are on`() {
+        val p = platform(1, "psx", fsSlug = "ps")
+        assertEquals(File(base, "ps"), platformDownloadDir(p, "psx", base, listOf(p), useFsSlug = true))
+    }
+
+    @Test
+    fun `downloads keep the slug folder when another platform owns the server name`() {
+        val famicom = platform(1, "famicom", fsSlug = "nes")
+        val nes = platform(2, "nes")
+        assertEquals(
+            File(base, "famicom"),
+            platformDownloadDir(famicom, "famicom", base, listOf(famicom, nes), useFsSlug = true)
+        )
+    }
+
+    @Test
+    fun `a custom folder wins over server names`() {
+        val p = platform(1, "psx", fsSlug = "ps", customRomPath = "/sd/psx")
+        assertEquals(File("/sd/psx"), platformDownloadDir(p, "psx", base, listOf(p), useFsSlug = true))
+    }
+
+    @Test
+    fun `the folder downloads use is searched first`() {
+        val p = platform(1, "psx", fsSlug = "ps")
+        assertEquals(File(base, "ps"), platformRomRoots(p, base, listOf(p), useFsSlug = true).first())
+        assertEquals(File(base, "psx"), platformRomRoots(p, base, listOf(p), useFsSlug = false).first())
+    }
+
+    @Test
     fun `a custom folder equal to the shared one is not listed twice`() {
         val p = platform(1, "snes", customRomPath = File(base, "snes").absolutePath)
         assertEquals(1, platformRomRoots(p, base, listOf(p)).size)

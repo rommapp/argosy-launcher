@@ -22,6 +22,19 @@ import javax.inject.Inject
 
 private const val TAG = "GetUnifiedStates"
 
+internal fun supersededServerStates(
+    states: List<RomMState>,
+    slotOf: (RomMState) -> Int,
+    writtenAt: (RomMState) -> Instant?
+): List<Long> =
+    states.groupBy { it.emulator.orEmpty() to slotOf(it) }
+        .values
+        .filter { it.size > 1 }
+        .flatMap { group ->
+            val canonical = group.maxBy { writtenAt(it) ?: Instant.EPOCH }
+            group.filter { it.id != canonical.id }.map { it.id }
+        }
+
 class GetUnifiedStatesUseCase @Inject constructor(
     private val stateCacheManager: StateCacheManager,
     private val saveSyncRepository: SaveSyncRepository,
@@ -76,9 +89,9 @@ class GetUnifiedStatesUseCase @Inject constructor(
      * state is a whole emulator snapshot, so fetching the channels nothing is going to draw spends
      * the user's bandwidth and storage on files that will not be read.
      *
-     * Deduplication stays inside one channel for the same reason it must: two channels each holding
-     * a slot 1 hold two different states, and collapsing them on slot number alone would tombstone
-     * one of them.
+     * Deduplication stays inside one channel and one emulator tag for the same reason it must: two
+     * channels, or two cores, each holding a slot 1 hold two different states, and collapsing them on
+     * slot number alone would tombstone one of them.
      */
     private suspend fun syncServerStates(
         rommId: Long,
@@ -100,16 +113,11 @@ class GetUnifiedStatesUseCase @Inject constructor(
             channelName == null || belongsToChannel(parsed.channelName, channelName)
         }
 
-        channelMatched
-            .groupBy { stateCacheManager.parseStateFileName(it.fileName).slotNumber }
-            .forEach { (_, states) ->
-                if (states.size <= 1) return@forEach
-                val canonical = states.maxByOrNull {
-                    stateCacheManager.serverStateWrittenAt(it) ?: Instant.EPOCH
-                } ?: return@forEach
-                states.filter { it.id != canonical.id }
-                    .forEach { stateCacheManager.tombstoneServerState(gameId, it.id) }
-            }
+        supersededServerStates(
+            states = channelMatched,
+            slotOf = { stateCacheManager.parseStateFileName(it.fileName).slotNumber },
+            writtenAt = { stateCacheManager.serverStateWrittenAt(it) }
+        ).forEach { stateCacheManager.tombstoneServerState(gameId, it) }
 
         stateCacheManager.pruneStateTombstones(gameId, serverStates.map { it.id })
         val tombstoned = stateCacheManager.getStateTombstones(gameId)

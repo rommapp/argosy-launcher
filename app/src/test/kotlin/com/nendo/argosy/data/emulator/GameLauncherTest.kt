@@ -180,7 +180,8 @@ class GameLauncherTest {
             ),
             keepAlivePolicy = mockk {
                 coEvery { launchFlags(any(), any()) } answers { secondArg() }
-            }
+            },
+            emulatorEditLocks = com.nendo.argosy.data.emulator.config.EmulatorEditLocks()
         )
     }
 

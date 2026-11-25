@@ -158,6 +158,7 @@ class SettingsViewModel @Inject constructor(
     val permissionsDelegate: PermissionsSettingsDelegate,
     val biosDelegate: BiosSettingsDelegate,
     val driversDelegate: com.nendo.argosy.ui.screens.settings.delegates.DriversSettingsDelegate,
+    val emulatorOptionsDelegate: com.nendo.argosy.ui.screens.settings.delegates.EmulatorOptionsDelegate,
     val aboutTools: com.nendo.argosy.ui.screens.settings.delegates.AboutToolsDelegate,
     internal val modalResetSignal: ModalResetSignal,
     internal val gradientColorExtractor: GradientColorExtractor,
@@ -681,6 +682,35 @@ class SettingsViewModel @Inject constructor(
         if (!selectBuiltinPlatformContext(platformIndex)) return
         emulatorDelegate.navigateToBuiltinSaves(viewModelScope)
     }
+
+    fun navigateToEmulatorOptionsForPlatform(platformIndex: Int) {
+        val config = _uiState.value.emulators.platforms.getOrNull(platformIndex) ?: return
+        emulatorOptionsDelegate.open(
+            viewModelScope,
+            emulatorId = config.effectiveEmulatorId,
+            packageName = config.effectiveEmulatorPackage,
+            emulatorName = config.effectiveEmulatorName
+        )
+        routePushSection(this, SettingsSection.EMULATOR_OPTIONS)
+    }
+
+    fun toggleEmulatorOptionsOtherKeys(fileId: String) = emulatorOptionsDelegate.toggleOtherKeys(fileId)
+
+    fun retryEmulatorOptions() = emulatorOptionsDelegate.retry(viewModelScope)
+
+    fun adjustEmulatorOption(optionId: String, direction: Int) =
+        emulatorOptionsDelegate.adjust(viewModelScope, optionId, direction)
+
+    fun toggleEmulatorOption(optionId: String) = emulatorOptionsDelegate.toggle(viewModelScope, optionId)
+
+    fun selectEmulatorOptionValue(optionId: String, token: String) =
+        emulatorOptionsDelegate.select(viewModelScope, optionId, token)
+
+    fun confirmEmulatorOptionEdit() = emulatorOptionsDelegate.confirmPendingEdit(viewModelScope)
+
+    fun cancelEmulatorOptionEdit() = emulatorOptionsDelegate.cancelPendingEdit()
+
+    fun undoEmulatorOption(optionId: String) = emulatorOptionsDelegate.undo(viewModelScope, optionId)
 
     private fun selectBuiltinPlatformContext(platformIndex: Int): Boolean {
         val config = _uiState.value.emulators.platforms.getOrNull(platformIndex) ?: return false

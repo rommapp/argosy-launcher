@@ -1,5 +1,9 @@
 package com.nendo.argosy.data.emulator
 
+import com.nendo.argosy.data.emulator.config.ConfigPatchers
+import com.nendo.argosy.data.emulator.config.EdenConfigSpec
+import com.nendo.argosy.data.emulator.config.EmulatorEditLocks
+import com.nendo.argosy.data.emulator.savepath.IniSections
 import com.nendo.argosy.data.storage.FileAccessLayer
 import com.nendo.argosy.util.Logger
 import kotlinx.coroutines.Dispatchers
@@ -14,7 +18,8 @@ import javax.inject.Singleton
 
 @Singleton
 class GpuDriverManager @Inject constructor(
-    private val fal: FileAccessLayer
+    private val fal: FileAccessLayer,
+    private val editLocks: EmulatorEditLocks
 ) {
     private val okHttpClient = OkHttpClient.Builder()
         .connectTimeout(30, TimeUnit.SECONDS)
@@ -26,7 +31,7 @@ class GpuDriverManager @Inject constructor(
         private const val GITHUB_API_URL = "https://api.github.com/repos/MrPurple666/purple-turnip/releases/latest"
         private const val GPU_MODEL_PATH = "/sys/class/kgsl/kgsl-3d0/gpu_model"
         private const val DRIVER_PACKAGE_SUFFIX = ".adpkg"
-        private const val DRIVERS_DIR = "gpu_drivers"
+        private const val DRIVERS_DIR = EdenConfigSpec.DRIVERS_DIR
         private const val CONFIG_FILE = "config/config.ini"
 
         private val SUPPORTED_ADRENO_GPUS = setOf(
@@ -137,8 +142,7 @@ class GpuDriverManager @Inject constructor(
 
             Logger.info(TAG, "Driver downloaded to: $targetPath")
 
-            updateEdenConfig(edenBasePath, targetPath)
-            requireCommitted(edenBasePath)
+            updateEdenConfig(edenPackage, edenBasePath, targetPath)
 
             true
         } catch (e: Exception) {
@@ -162,73 +166,21 @@ class GpuDriverManager @Inject constructor(
         }
     }
 
-    private fun readEdenConfig(edenBasePath: String): List<String>? =
-        fal.readBytes("$edenBasePath/$CONFIG_FILE")?.toString(Charsets.UTF_8)?.lines()
+    private fun readEdenConfig(edenBasePath: String): String? =
+        fal.readBytes("$edenBasePath/$CONFIG_FILE")?.toString(Charsets.UTF_8)
 
-    private fun updateEdenConfig(edenBasePath: String, driverPath: String) {
-        val configPath = "$edenBasePath/$CONFIG_FILE"
-        val existing = readEdenConfig(edenBasePath)
-
-        if (existing == null) {
-            Logger.warn(TAG, "Eden config not found, creating minimal config")
-            fal.mkdirs(configPath.substringBeforeLast('/'))
-            writeEdenConfig(configPath, """
-                [GpuDriver]
-                driver_path\default=false
-                driver_path=$driverPath
-            """.trimIndent())
-            return
-        }
-
-        val lines = existing.toMutableList()
-        var inGpuDriverSection = false
-        var driverPathIndex = -1
-        var driverPathDefaultIndex = -1
-        var gpuDriverSectionIndex = -1
-
-        for ((index, line) in lines.withIndex()) {
-            val trimmed = line.trim()
-            if (trimmed == "[GpuDriver]") {
-                inGpuDriverSection = true
-                gpuDriverSectionIndex = index
-            } else if (trimmed.startsWith("[") && trimmed.endsWith("]")) {
-                inGpuDriverSection = false
-            } else if (inGpuDriverSection) {
-                if (trimmed.startsWith("driver_path\\default=")) {
-                    driverPathDefaultIndex = index
-                } else if (trimmed.startsWith("driver_path=")) {
-                    driverPathIndex = index
-                }
+    private suspend fun updateEdenConfig(edenPackage: String, edenBasePath: String, driverPath: String) {
+        editLocks.withEdit(edenPackage) {
+            val configPath = "$edenBasePath/$CONFIG_FILE"
+            val existing = readEdenConfig(edenBasePath)
+            if (existing == null) {
+                Logger.warn(TAG, "Eden config not found, creating minimal config")
+                fal.mkdirs(configPath.substringBeforeLast('/'))
             }
+            writeEdenConfig(configPath, EdenDriverConfig.withDriverPath(existing.orEmpty(), driverPath))
+            Logger.info(TAG, "Updated Eden config with driver path: $driverPath")
+            requireCommitted(edenBasePath)
         }
-
-        if (gpuDriverSectionIndex == -1) {
-            lines.add("")
-            lines.add("[GpuDriver]")
-            lines.add("driver_path\\default=false")
-            lines.add("driver_path=$driverPath")
-        } else {
-            if (driverPathDefaultIndex != -1) {
-                lines[driverPathDefaultIndex] = "driver_path\\default=false"
-            } else {
-                lines.add(gpuDriverSectionIndex + 1, "driver_path\\default=false")
-                if (driverPathIndex != -1) driverPathIndex++
-            }
-
-            if (driverPathIndex != -1) {
-                lines[driverPathIndex] = "driver_path=$driverPath"
-            } else {
-                val insertIndex = if (driverPathDefaultIndex != -1) {
-                    driverPathDefaultIndex + 1
-                } else {
-                    gpuDriverSectionIndex + 2
-                }
-                lines.add(insertIndex, "driver_path=$driverPath")
-            }
-        }
-
-        writeEdenConfig(configPath, lines.joinToString("\n"))
-        Logger.info(TAG, "Updated Eden config with driver path: $driverPath")
     }
 
     private fun writeEdenConfig(configPath: String, content: String) {
@@ -248,8 +200,7 @@ class GpuDriverManager @Inject constructor(
 
             Logger.info(TAG, "Driver copied to: $targetPath")
 
-            updateEdenConfig(edenBasePath, targetPath)
-            requireCommitted(edenBasePath)
+            updateEdenConfig(edenPackage, edenBasePath, targetPath)
 
             true
         } catch (e: Exception) {
@@ -266,8 +217,17 @@ class GpuDriverManager @Inject constructor(
 
     private fun configuredDriverPath(edenBasePath: String): String? =
         readEdenConfig(edenBasePath)
-            ?.firstOrNull { it.trim().startsWith("driver_path=") }
-            ?.substringAfter("=")
-            ?.trim()
+            ?.let(EdenDriverConfig::driverPath)
             ?.takeIf { it.isNotEmpty() && fal.exists(it) }
+}
+
+internal object EdenDriverConfig {
+    private val SPEC = EdenConfigSpec.SPEC
+    private val OPTION = EdenConfigSpec.DRIVER_PATH
+
+    fun withDriverPath(text: String, driverPath: String): String =
+        requireNotNull(ConfigPatchers.patch(SPEC, OPTION, driverPath, text))
+
+    fun driverPath(text: String): String? =
+        IniSections.entries(text, OPTION.section)[OPTION.key]?.trim()
 }

@@ -204,6 +204,17 @@ internal fun routeObserveDelegateStates(vm: SettingsViewModel) {
     vm.driversDelegate.state.onEach { drivers ->
         vm._uiState.update { it.copy(drivers = drivers) }
     }.launchIn(vm.viewModelScope)
+
+    vm.emulatorOptionsDelegate.state.onEach { emulatorOptions ->
+        vm._uiState.update { state ->
+            val updated = state.copy(emulatorOptions = emulatorOptions)
+            if (state.currentSection == SettingsSection.EMULATOR_OPTIONS) {
+                updated.copy(focusedIndex = state.focusedIndex.coerceIn(0, routeMaxFocusIndexOf(vm, updated)))
+            } else {
+                updated
+            }
+        }
+    }.launchIn(vm.viewModelScope)
 }
 
 internal fun routeUpdateSteamState(vm: SettingsViewModel, steam: SteamSettingsState) {

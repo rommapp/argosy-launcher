@@ -19,7 +19,7 @@ internal val BUILTIN_PLATFORM_CONTEXT_SECTIONS = setOf(
 
 internal fun settingsPlatformScope(state: SettingsUiState): SettingsPlatformScope? =
     when (state.currentSection) {
-        SettingsSection.PLATFORM_DETAIL ->
+        SettingsSection.PLATFORM_DETAIL, SettingsSection.EMULATOR_OPTIONS ->
             state.emulators.platforms.getOrNull(state.platformDetail.platformIndex)?.platform
                 ?.let { SettingsPlatformScope(it.id, it.name) }
         SettingsSection.STORAGE_PLATFORM_GAMES ->

@@ -3452,6 +3452,119 @@
     <string name="settings_platform_core_options_title">Core Options</string>
     <!-- Second line of that row. -->
     <string name="settings_platform_core_options_subtitle">Per-core settings for this platform</string>
+    <!-- Row opening a read-only view of the external emulator app's own settings files. Noun
+         phrase, plural. -->
+    <string name="settings_platform_emulator_options_title">Emulator Options</string>
+    <!-- Second line of that row. "Config files" are the emulator's settings files. -->
+    <string name="settings_platform_emulator_options_subtitle">Config files and the values in them</string>
+
+    <!-- ===== Emulator options submenu (Settings > Platforms > platform > Emulator Options) ===== -->
+    <!-- Screen heading. Rendered in caps in English. -->
+    <string name="settings_emulator_options_header">EMULATOR OPTIONS</string>
+    <!-- Section rail name for the rows describing how Argosy reaches the emulator's files. Noun. -->
+    <string name="settings_emulator_options_section_access">Access</string>
+    <!-- Row label; the value beside it is the emulator app's name. Noun, singular. -->
+    <string name="settings_emulator_options_emulator">Emulator</string>
+    <!-- Shown while the emulator's settings files are being read. -->
+    <string name="settings_emulator_options_loading">Reading config files</string>
+    <!-- Heading when Argosy has no reader for this emulator's settings files. -->
+    <string name="settings_emulator_options_unsupported_title">Not supported</string>
+    <!-- Second line of that heading. "Argosy" is this app's name. -->
+    <string name="settings_emulator_options_unsupported_message">Argosy does not read this emulator\'s config files</string>
+    <!-- Row shown when reading the settings files failed; pressing it reads them again. -->
+    <string name="settings_emulator_options_failed_title">Couldn\'t read the config files</string>
+    <!-- Second line of that row. Verb phrase. -->
+    <string name="settings_emulator_options_failed_retry">Try again</string>
+    <!-- Row label; the line under it is the folder path where the emulator keeps its files. -->
+    <string name="settings_emulator_options_data_folder">Data folder</string>
+    <!-- Shown in place of that path when the device reports no storage at all. -->
+    <string name="settings_emulator_options_data_folder_none">No storage volume found</string>
+    <!-- Row label; the value is the method Argosy uses to read the emulator's files. -->
+    <string name="settings_emulator_options_read_access">Read access</string>
+    <!-- Value of that row when Argosy has no way to read the files. -->
+    <string name="settings_emulator_options_read_none">None</string>
+    <!-- A way of reading files: ordinary file access with storage permission. -->
+    <string name="settings_emulator_options_route_file_access">Direct file access</string>
+    <!-- A way of reading files: a fallback path Android allows when ordinary access is refused. -->
+    <string name="settings_emulator_options_route_alt_access">Alternate file access</string>
+    <!-- A way of reading files: superuser access on a rooted device. -->
+    <string name="settings_emulator_options_route_root">Root</string>
+    <!-- A way of reading files: a shell-level helper such as Shizuku. -->
+    <string name="settings_emulator_options_route_app_data_shell">Shell access</string>
+    <!-- Row label; the value says whether Argosy can change the emulator's settings. Noun. -->
+    <string name="settings_emulator_options_editing">Editing</string>
+    <!-- Value: Argosy can change the settings using superuser access. -->
+    <string name="settings_emulator_options_edit_available">Available through root</string>
+    <!-- Value: changing the settings requires a rooted device. -->
+    <string name="settings_emulator_options_edit_needs_root">Needs root</string>
+    <!-- Value of an emulator's GPU driver option when it uses the device's own Vulkan driver. -->
+    <string name="settings_emulator_options_driver_system">System driver</string>
+    <!-- Value: the device is rooted, but the check that a change could be written safely failed. -->
+    <string name="settings_emulator_options_edit_probe_failed">Root failed the safety check</string>
+    <!-- Heading when the emulator's folder cannot be read at all. -->
+    <string name="settings_emulator_options_no_access_title">No read access</string>
+    <!-- Second line of that heading. "Argosy" is this app's name. -->
+    <string name="settings_emulator_options_no_access_message">Argosy can\'t read this emulator\'s data folder</string>
+    <!-- State of one settings file: it was found and read. Past participle. -->
+    <string name="settings_emulator_options_file_read">Read</string>
+    <!-- State of one settings file: it does not exist yet. Adjective. -->
+    <string name="settings_emulator_options_file_missing">Missing</string>
+    <!-- State of one settings file: it exists but Argosy is not allowed to open it. -->
+    <string name="settings_emulator_options_file_blocked">Can\'t read</string>
+    <!-- When a settings file last changed. %1$s is a date and time. -->
+    <string name="settings_emulator_options_file_modified">Modified %1$s</string>
+    <!-- Value of an option the emulator has left at its built-in default. Noun. -->
+    <string name="settings_emulator_options_value_default">Default</string>
+    <!-- Value of an option at its default. %1$s is the value, as the emulator names it. -->
+    <string name="settings_emulator_options_value_with_default">%1$s (default)</string>
+    <!-- Value shown in place of a password or token, which Argosy never displays. Adjective. -->
+    <string name="settings_emulator_options_value_hidden">Hidden</string>
+    <!-- Value of an option whose file could not be understood. Adjective. -->
+    <string name="settings_emulator_options_value_unknown">Unknown</string>
+    <!-- Expandable row listing the settings Argosy has no name for, shown as they are stored. -->
+    <string name="settings_emulator_options_other_keys_title">Other keys</string>
+    <!-- Second line of that row. A "key" is one stored setting name. -->
+    <plurals name="settings_emulator_options_other_keys_count">
+        <item quantity="one">%d key</item>
+        <item quantity="other">%d keys</item>
+    </plurals>
+    <!-- Footer hint: the shoulder buttons jump between settings files. Noun, plural. -->
+    <string name="settings_emulator_options_footer_files">Files</string>
+    <!-- Value of the Editing row while Argosy writes a change into the emulator's settings file. -->
+    <string name="settings_emulator_options_edit_applying">Applying change</string>
+    <!-- Second line of a setting Argosy could change if it had access. %1$s is the settings group name as the emulator writes it, %2$s is why changing it is unavailable. -->
+    <string name="settings_emulator_options_option_blocked">%1$s (%2$s)</string>
+    <!-- Row under a changed setting; pressing it puts the setting back. Verb phrase. -->
+    <string name="settings_emulator_options_undo_title">Undo change</string>
+    <!-- Second line of that row. %1$s is the setting name as the emulator writes it. -->
+    <string name="settings_emulator_options_undo_subtitle">Put %1$s back as it was</string>
+    <!-- Title of the prompt shown before the first change to an emulator's settings. -->
+    <string name="settings_emulator_options_edit_confirm_title">Close the emulator?</string>
+    <!-- Body of that prompt. %1$s is the emulator app's name. "Argosy" is this app's name. -->
+    <string name="settings_emulator_options_edit_confirm_message">Argosy closes %1$s to change its settings. Progress not saved in a running game is lost.</string>
+    <!-- Button in that prompt that closes the emulator and makes the change. Verb phrase. -->
+    <string name="settings_emulator_options_edit_confirm_action">Close and change</string>
+    <!-- Error title after a change to an emulator's settings failed. %1$s is the setting name as the emulator writes it. -->
+    <string name="settings_emulator_options_edit_failed_title">Couldn\'t change %1$s</string>
+    <!-- Error reason: the value is not one Argosy may write for this setting. -->
+    <string name="settings_emulator_options_edit_failed_not_allowed">That value isn\'t allowed here</string>
+    <!-- Error reason: changing settings requires superuser access the device does not give. -->
+    <string name="settings_emulator_options_edit_failed_no_route">Changing settings needs root</string>
+    <!-- Error reason: the emulator's settings file does not exist. -->
+    <string name="settings_emulator_options_edit_failed_missing">The settings file is missing</string>
+    <!-- Error reason: the emulator's settings file could not be opened or understood. -->
+    <string name="settings_emulator_options_edit_failed_unreadable">The settings file couldn\'t be read</string>
+    <!-- Error reason: the emulator kept running after Argosy asked it to close. -->
+    <string name="settings_emulator_options_edit_failed_running">The emulator didn\'t close</string>
+    <!-- Error reason: writing the settings file failed; nothing changed. -->
+    <string name="settings_emulator_options_edit_failed_write">The settings file couldn\'t be written</string>
+    <!-- Error reason: the written value did not read back, and the original file was put back. -->
+    <string name="settings_emulator_options_edit_failed_verify">The change didn\'t hold, and the file is back as it was</string>
+    <!-- Error reason: no saved copy of the file is left to undo the change with. -->
+    <string name="settings_emulator_options_edit_failed_no_backup">No saved copy is left to undo with</string>
+    <!-- Undo failure: the emulator itself changed the setting after Argosy did. -->
+    <string name="settings_emulator_options_edit_failed_changed_since">The emulator has changed this setting since</string>
+    <string name="settings_emulator_options_edit_failed_game_running">A game is running in this emulator. Close the game first</string>
 
     <!-- Figure label: how many of this console's games the library holds. -->
     <string name="settings_platform_stat_total_games">Games in Library</string>

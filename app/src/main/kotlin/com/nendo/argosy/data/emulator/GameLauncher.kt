@@ -150,7 +150,8 @@ class GameLauncher @Inject constructor(
     private val steamInstallReports: SteamInstallReports,
     private val appsRepository: com.nendo.argosy.data.repository.AppsRepository,
     private val emulatorResolver: EmulatorResolver,
-    private val keepAlivePolicy: com.nendo.argosy.data.emulator.background.KeepAlivePolicy
+    private val keepAlivePolicy: com.nendo.argosy.data.emulator.background.KeepAlivePolicy,
+    private val emulatorEditLocks: com.nendo.argosy.data.emulator.config.EmulatorEditLocks
 ) {
     private val shellAmAvailable: Boolean by lazy {
         try {
@@ -968,6 +969,9 @@ class GameLauncher @Inject constructor(
 
         val built = buildEffectiveCommand(emulator, romFile, game, forResume) ?: return null
         val command = built.pinnedPastPathPattern(romFile.extension) { path -> resolveViewActivity(built, path) }
+        if (!emulatorEditLocks.awaitEdits(command.packageName)) {
+            Logger.warn(TAG, "config edit still running, launching anyway | pkg=${command.packageName}")
+        }
 
         Logger.info(TAG, buildString {
             append("[Command] method=${command.launchMethod}")

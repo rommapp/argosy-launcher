@@ -8,7 +8,6 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.TextStyle
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
@@ -21,6 +20,7 @@ import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Sync
+import androidx.compose.material.icons.filled.Tune
 import com.nendo.argosy.data.emulator.EmulatorRegistry
 import com.nendo.argosy.data.emulator.PackageDataAccess
 import com.nendo.argosy.data.local.entity.getDisplayName
@@ -51,6 +51,7 @@ import com.nendo.argosy.ui.screens.settings.SettingsViewModel
 import com.nendo.argosy.ui.screens.settings.components.EmulatorPickerPopup
 import com.nendo.argosy.ui.screens.settings.components.SavePathModal
 import com.nendo.argosy.ui.screens.settings.components.SectionPaneLayout
+import com.nendo.argosy.ui.screens.settings.components.StatRow
 import com.nendo.argosy.ui.screens.settings.components.VariantPickerModal
 import com.nendo.argosy.ui.screens.settings.menu.SettingsLayout
 import com.nendo.argosy.ui.screens.settings.search.SearchableSetting
@@ -114,6 +115,12 @@ internal sealed class PlatformDetailItem(
         R.string.settings_platform_core_options_title,
         { it.isBuiltin && !it.isAndroid }
     )
+    data object EmulatorOptions : Row(
+        "emulator_options",
+        "emulator",
+        R.string.settings_platform_emulator_options_title,
+        { it.showEmulatorOptions && !it.isAndroid }
+    )
 
     data object ClearArtCache : Row("clear_art_cache", "platform", R.string.settings_platform_clear_art_title)
     data object ScanFiles : Row("scan_files", "platform", R.string.settings_platform_scan_files_title, { !it.isAndroid })
@@ -165,7 +172,8 @@ internal sealed class PlatformDetailItem(
         val ALL: List<PlatformDetailItem>
             get() = listOf(
                 Header("header_emulator", "emulator", R.string.settings_platform_section_emulator, { !it.isAndroid }),
-                Emulator, Core, Extension, DisplayTarget, LegacyMode, LaunchArgs, BuiltinVideo, BuiltinControls, BuiltinSaves, BuiltinCoreOptions,
+                Emulator, Core, Extension, DisplayTarget, LegacyMode, LaunchArgs, EmulatorOptions,
+                BuiltinVideo, BuiltinControls, BuiltinSaves, BuiltinCoreOptions,
                 Header("header_platform", "platform", R.string.settings_platform_section_platform),
                 InfoItem("info_platform_stats", "platform"),
                 ScanFiles, ScanApps, ClearArtCache,
@@ -199,6 +207,7 @@ internal data class PlatformDetailVisibility(
     val canDistribute: Boolean = false,
     val showMemoryCard: Boolean = false,
     val showCombineContent: Boolean = false,
+    val showEmulatorOptions: Boolean = false,
     /**
      * Installed apps, not rom files. Nothing on this platform is downloaded, emulated or stored
      * by us, so the emulator, BIOS and storage rows have nothing to act on and an emulator
@@ -237,7 +246,12 @@ internal data class PlatformDetailVisibility(
             showCombineContent = com.nendo.argosy.data.download.ZipExtractor
                 .isNswPlatform(config.platform.slug) &&
                 com.nendo.argosy.data.emulator.EmulatorRegistry
-                    .familyBaseIdFor(config.effectiveEmulatorId ?: "") == "eden"
+                    .familyBaseIdFor(config.effectiveEmulatorId ?: "") == "eden",
+            showEmulatorOptions = config.effectiveEmulatorPackage != null &&
+                !config.effectiveEmulatorIsRetroArch &&
+                config.effectiveEmulatorId
+                    ?.takeIf { it != EmulatorRegistry.BUILTIN_ID }
+                    ?.let { com.nendo.argosy.data.emulator.config.EmulatorConfigRegistry.specFor(it) } != null
         )
     }
 }
@@ -477,6 +491,13 @@ fun PlatformDetailSection(
                     subtitle = stringResource(R.string.settings_platform_launch_args_subtitle),
                     isFocused = isFocused(item),
                     onClick = { viewModel.openLaunchArgsModal(config.platform.id) }
+                )
+                is PlatformDetailItem.EmulatorOptions -> NavigationPreference(
+                    icon = Icons.Default.Tune,
+                    title = stringResource(item.labelRes),
+                    subtitle = stringResource(R.string.settings_platform_emulator_options_subtitle),
+                    isFocused = isFocused(item),
+                    onClick = { openFrom(item) { viewModel.navigateToEmulatorOptionsForPlatform(detail.platformIndex) } }
                 )
                 is PlatformDetailItem.BuiltinVideo -> NavigationPreference(
                     icon = Icons.Default.Gamepad,
@@ -977,23 +998,6 @@ private fun platformDisplayTargetLabel(
     } else {
         stringResource(target.labelRes)
     }
-
-@Composable
-private fun StatRow(
-    label: String,
-    value: String,
-    labelColor: Color,
-    valueColor: Color,
-    style: TextStyle
-) {
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.SpaceBetween
-    ) {
-        Text(text = label, style = style, color = labelColor)
-        Text(text = value, style = style, color = valueColor)
-    }
-}
 
 internal fun formatPath(context: android.content.Context, path: String?): String {
     if (path == null) return context.getString(R.string.settings_platform_path_unconfigured)

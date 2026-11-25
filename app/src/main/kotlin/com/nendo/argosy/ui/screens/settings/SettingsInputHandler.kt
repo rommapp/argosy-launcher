@@ -91,7 +91,8 @@ class SettingsInputHandler(
             SettingsSection.NAVIGATION, SettingsSection.AUDIO, SettingsSection.SYNC_SETTINGS,
             SettingsSection.ABOUT, SettingsSection.STEAM_SETTINGS, SettingsSection.JELLYFIN,
             SettingsSection.CORE_MANAGEMENT,
-            SettingsSection.SOCIAL, SettingsSection.BUILTIN_EMULATOR
+            SettingsSection.SOCIAL, SettingsSection.BUILTIN_EMULATOR,
+            SettingsSection.EMULATOR_OPTIONS
         )) {
             put(s, lightHandler)
         }

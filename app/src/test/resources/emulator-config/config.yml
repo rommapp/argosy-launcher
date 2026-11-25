@@ -1,0 +1,59 @@
+---
+boot-fail: false
+initial-setup: true
+gdbstub: false
+validation-layer: true
+pstv-mode: false
+show-gui: false
+icon-size: 64
+backend-renderer: Vulkan
+custom-driver-name: ""
+turbo-mode: false
+gpu-idx: 0
+high-accuracy: false
+resolution-multiplier: 2
+disable-surface-sync: true
+screen-filter: FXAA
+v-sync: true
+anisotropic-filtering: 2
+texture-cache: true
+async-pipeline-compilation: true
+memory-mapping: double-buffer
+vk-mapping: Mailbox
+deep-stencil: D32Sfloat
+audio-backend: Cubeb
+audio-volume: 100
+ngs-enable: true
+audio-drv: auto
+sys-button: 1
+sys-lang: 1
+modules-mode: 0
+background-alpha: 0.3
+cpu-backend: Dynarmic
+cpu-opt: true
+cpu-unsafe: false
+pref-path: /storage/emulated/0/Android/data/org.vita3k.emulator.ikhoeyZX/files/vita/
+show-touchpad-cursor: true
+performance-overlay: true
+performance-overlay-detail: 1
+performance-overlay-position: 1
+screenshot-format: 1
+keyboard-button-select: 229
+keyboard-button-start: 40
+user-id: 00
+user-auto-connect: true
+user-lang: ""
+fps-hack: false
+use-astc: false
+psn-signed-in: true
+controller-binds:
+  - 1
+  - 0
+  - 3
+controller-led-color:
+  []
+lle-modules:
+  []
+ime-langs:
+  - 4
+...

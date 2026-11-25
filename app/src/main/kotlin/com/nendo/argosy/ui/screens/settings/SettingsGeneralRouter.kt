@@ -122,6 +122,7 @@ private fun routeApplySectionExit(vm: SettingsViewModel, section: SettingsSectio
             routeRefreshNavigationMenu(vm)
         }
         SettingsSection.LAUNCH_TARGETS -> routeLeaveLaunchTargets(vm)
+        SettingsSection.EMULATOR_OPTIONS -> vm.emulatorOptionsDelegate.close()
         else -> {}
     }
 }

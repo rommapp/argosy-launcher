@@ -428,6 +428,7 @@ internal fun settingsSearchSource(section: SettingsSection): SettingsSearchSourc
         SettingsSearchSource.Provided(SettingsSection.CORE_OPTIONS, SettingsSearchProvider.DOWNLOADED_CORE_OPTIONS)
     SettingsSection.PLATFORM_DETAIL ->
         SettingsSearchSource.Provided(SettingsSection.PLATFORM_DETAIL, SettingsSearchProvider.ENABLED_PLATFORM_ROWS)
+    SettingsSection.EMULATOR_OPTIONS -> SettingsSearchSource.NotSearchable(SettingsSection.EMULATOR_OPTIONS)
     SettingsSection.SOCIAL -> SettingsSearchSource.Rows(
         section = SettingsSection.SOCIAL,
         path = listOf(R.string.settings_search_crumb_social),

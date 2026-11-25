@@ -48,6 +48,10 @@ import com.nendo.argosy.ui.screens.settings.sections.aboutItemAtFocusIndex
 import com.nendo.argosy.ui.screens.settings.sections.aboutSections
 import com.nendo.argosy.ui.screens.settings.sections.biosItemAtFocusIndex
 import com.nendo.argosy.ui.screens.settings.sections.biosSections
+import com.nendo.argosy.ui.screens.settings.delegates.EmulatorOptionAdjust
+import com.nendo.argosy.ui.screens.settings.sections.EmulatorOptionsRow
+import com.nendo.argosy.ui.screens.settings.sections.emulatorOptionsRowAtFocusIndex
+import com.nendo.argosy.ui.screens.settings.sections.emulatorOptionsSections
 import com.nendo.argosy.ui.screens.settings.sections.RomMLayoutState
 import com.nendo.argosy.ui.screens.settings.sections.JellyfinItem
 import com.nendo.argosy.ui.screens.settings.sections.JellyfinLayoutState
@@ -151,7 +155,20 @@ internal class LightSectionsInput(
             SettingsSection.ABOUT -> handleAboutLeftRight(direction)
             SettingsSection.BUILTIN_EMULATOR -> handleBuiltinEmulatorLeftRight(direction)
             SettingsSection.CORE_MANAGEMENT -> handleCoreManagementLeftRight(direction)
+            SettingsSection.EMULATOR_OPTIONS -> handleEmulatorOptionsLeftRight(direction)
             else -> InputResult.UNHANDLED
+        }
+    }
+
+    private fun handleEmulatorOptionsLeftRight(direction: Int): InputResult {
+        val state = viewModel.uiState.value
+        val row = emulatorOptionsRowAtFocusIndex(state.focusedIndex, state.emulatorOptions)
+            as? EmulatorOptionsRow.Option ?: return InputResult.UNHANDLED
+        return when (viewModel.adjustEmulatorOption(row.option.id, direction)) {
+            EmulatorOptionAdjust.CHANGED -> InputResult.HANDLED
+            EmulatorOptionAdjust.UNCHANGED -> InputResult.handled(SoundType.SILENT)
+            EmulatorOptionAdjust.AT_BOUND -> InputResult.handled(SoundType.BOUNDARY)
+            EmulatorOptionAdjust.IGNORED -> InputResult.UNHANDLED
         }
     }
 
@@ -529,6 +546,7 @@ internal class LightSectionsInput(
             SettingsSection.NAVIGATION -> navigationSections(state.controls)
             SettingsSection.AUDIO -> audioSections()
             SettingsSection.ABOUT -> aboutSections(state.fileLoggingPath != null, aboutHasChangelog(state.updateCheck))
+            SettingsSection.EMULATOR_OPTIONS -> emulatorOptionsSections(state.emulatorOptions)
             else -> return InputResult.HANDLED
         }
         val jumped = if (direction < 0) viewModel.jumpToPrevSection(sections)

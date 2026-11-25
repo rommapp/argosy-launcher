@@ -116,6 +116,8 @@ import com.nendo.argosy.ui.screens.settings.sections.EmulatorsSection
 import com.nendo.argosy.ui.screens.settings.sections.PlatformDetailSection
 import com.nendo.argosy.ui.screens.settings.sections.PlatformDetailItem
 import com.nendo.argosy.ui.screens.settings.sections.platformDetailItemAtFocusIndex
+import com.nendo.argosy.ui.screens.settings.sections.EmulatorOptionsSection
+import com.nendo.argosy.ui.screens.settings.sections.emulatorOptionsSections
 import com.nendo.argosy.ui.screens.settings.sections.FrameSection
 import com.nendo.argosy.ui.screens.settings.sections.BuiltinVideoSection
 import com.nendo.argosy.ui.screens.settings.sections.BuiltinControlsSection
@@ -725,6 +727,7 @@ fun SettingsScreen(
                                 }
                             }
                         )
+                        SettingsSection.EMULATOR_OPTIONS -> EmulatorOptionsSection(uiState, viewModel)
                         SettingsSection.BUILTIN_VIDEO -> BuiltinVideoSection(uiState, viewModel)
                         SettingsSection.BUILTIN_CONTROLS -> BuiltinControlsSection(uiState, viewModel)
                         SettingsSection.BUILTIN_SAVES -> BuiltinSavesSection(uiState, viewModel)
@@ -921,6 +924,20 @@ fun SettingsScreen(
         confirmLabel = stringResource(R.string.settings_shell_modal_import_settings_confirm),
         onConfirm = { viewModel.confirmImportSettings() },
         onDismiss = { viewModel.cancelImportSettings() }
+    )
+
+    val emulatorOptions = uiState.emulatorOptions
+    ArgosyConfirmModalHost(
+        visible = uiState.currentSection == SettingsSection.EMULATOR_OPTIONS && emulatorOptions.pendingEdit != null,
+        title = stringResource(R.string.settings_emulator_options_edit_confirm_title),
+        message = stringResource(
+            R.string.settings_emulator_options_edit_confirm_message,
+            emulatorOptions.emulatorName.orEmpty()
+        ),
+        confirmLabel = stringResource(R.string.settings_emulator_options_edit_confirm_action),
+        onConfirm = { viewModel.confirmEmulatorOptionEdit() },
+        onDismiss = { viewModel.cancelEmulatorOptionEdit() },
+        working = if (emulatorOptions.writing) stringResource(R.string.settings_emulator_options_edit_applying) else null
     )
 
     val syncWarning = uiState.permissions.saveSyncWarning
@@ -1602,6 +1619,7 @@ private fun settingsSectionTitle(uiState: SettingsUiState): String = when (uiSta
         config?.platform?.name?.uppercase()
             ?: stringResource(R.string.settings_shell_header_platform_detail_fallback)
     }
+    SettingsSection.EMULATOR_OPTIONS -> stringResource(R.string.settings_emulator_options_header)
     SettingsSection.BUILTIN_VIDEO -> stringResource(R.string.settings_shell_header_builtin_video)
     SettingsSection.BUILTIN_CONTROLS -> stringResource(R.string.settings_shell_header_builtin_controls)
     SettingsSection.BUILTIN_SAVES -> stringResource(R.string.settings_shell_header_builtin_saves)
@@ -1950,6 +1968,7 @@ private fun SettingsFooter(
     val launchTargetsResetHint = stringResource(R.string.settings_shell_footer_launch_targets_reset)
     val networkForgetHint = stringResource(R.string.settings_shell_footer_network_forget)
     val networkGroupHint = stringResource(R.string.settings_shell_footer_network_group)
+    val emulatorOptionsFilesHint = stringResource(R.string.settings_emulator_options_footer_files)
     val launchTargetRows = remember(uiState.launchTargets) { launchTargetsLayout(uiState.launchTargets) }
 
     val hints = buildList {
@@ -1996,6 +2015,11 @@ private fun SettingsFooter(
         }
         if (customFrameFocused) {
             add(InputButton.Y to removeFrameHint)
+        }
+        if (uiState.currentSection == SettingsSection.EMULATOR_OPTIONS &&
+            emulatorOptionsSections(uiState.emulatorOptions).size >= 2
+        ) {
+            add(InputButton.LB_RB to emulatorOptionsFilesHint)
         }
         if (uiState.currentSection == SettingsSection.NETWORK_BLUETOOTH) {
             add(InputButton.LB_RB to networkGroupHint)
@@ -2160,11 +2184,13 @@ private fun SettingsFooter(
             val aLabel = when (focusedItem) {
                 is PlatformDetailItem.SyncToggle, is PlatformDetailItem.LegacyMode -> toggleLabelHint
                 is PlatformDetailItem.BuiltinVideo, is PlatformDetailItem.BuiltinControls,
-                is PlatformDetailItem.BuiltinSaves, is PlatformDetailItem.BuiltinCoreOptions -> openLabelHint
+                is PlatformDetailItem.BuiltinSaves, is PlatformDetailItem.BuiltinCoreOptions,
+                is PlatformDetailItem.EmulatorOptions -> openLabelHint
                 else -> selectLabelHint
             }
             add(InputButton.A to aLabel)
         } else if (uiState.currentSection != SettingsSection.SHADER_STACK &&
+            uiState.currentSection != SettingsSection.EMULATOR_OPTIONS &&
             uiState.currentSection != SettingsSection.PLAY_TIME &&
             uiState.currentSection != SettingsSection.PLAY_TIME_PLATFORMS &&
             uiState.currentSection != SettingsSection.PLAY_TIME_DEVICES &&

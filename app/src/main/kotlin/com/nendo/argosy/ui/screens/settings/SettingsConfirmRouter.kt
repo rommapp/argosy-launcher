@@ -309,6 +309,7 @@ internal fun routeConfirm(vm: SettingsViewModel): InputResult {
         SettingsSection.PLATFORMS -> routeEmulatorsConfirm(vm, state)
         SettingsSection.BUILTIN_EMULATOR -> routeBuiltinEmulatorConfirm(vm, state)
         SettingsSection.PLATFORM_DETAIL -> routePlatformDetailConfirm(vm, state)
+        SettingsSection.EMULATOR_OPTIONS -> routeEmulatorOptionsConfirm(vm, state)
         SettingsSection.BIOS -> routeBiosConfirm(vm, state)
         SettingsSection.PERMISSIONS -> routePermissionsConfirm(vm, state)
         SettingsSection.DRIVERS -> InputResult.HANDLED
@@ -1502,6 +1503,8 @@ private fun computeMaxFocusIndex(
     SettingsSection.PLATFORMS -> emulatorsMaxFocusIndex(state.emulators.platforms)
     SettingsSection.BUILTIN_EMULATOR -> builtinEmulatorLayout.maxFocusIndex(state.emulators)
     SettingsSection.PLATFORM_DETAIL -> platformDetailMaxFocusIndex(state)
+    SettingsSection.EMULATOR_OPTIONS ->
+        com.nendo.argosy.ui.screens.settings.sections.emulatorOptionsMaxFocusIndex(state.emulatorOptions)
     SettingsSection.BUILTIN_VIDEO -> builtinVideoMaxFocusIndex(state.builtinVideo, state.platformLibretro.platformSettings)
     SettingsSection.BUILTIN_CONTROLS -> builtinControlsMaxFocusIndex(state.builtinControls)
     SettingsSection.BUILTIN_SAVES -> builtinSavesMaxFocusIndex(state.builtinVideo, state.platformLibretro.platformSettings)
@@ -1556,6 +1559,8 @@ private fun routePlatformDetailConfirm(vm: SettingsViewModel, state: SettingsUiS
         PlatformDetailItem.BuiltinControls -> vm.navigateToBuiltinControlsForPlatform(state.platformDetail.platformIndex)
         PlatformDetailItem.BuiltinSaves -> vm.navigateToBuiltinSavesForPlatform(state.platformDetail.platformIndex)
         PlatformDetailItem.BuiltinCoreOptions -> vm.navigateToCoreOptionsForPlatform()
+        PlatformDetailItem.EmulatorOptions ->
+            vm.navigateToEmulatorOptionsForPlatform(state.platformDetail.platformIndex)
         PlatformDetailItem.ClearArtCache -> vm.clearPlatformArtCache(config.platform.slug)
         PlatformDetailItem.ScanFiles -> vm.scanFilesForPlatform(config.platform.id)
         PlatformDetailItem.ScanApps -> vm.scanInstalledAndroidGames()
@@ -1587,6 +1592,50 @@ private fun routePlatformDetailConfirm(vm: SettingsViewModel, state: SettingsUiS
         else -> {}
     }
     return InputResult.HANDLED
+}
+
+private fun routeEmulatorOptionsConfirm(vm: SettingsViewModel, state: SettingsUiState): InputResult =
+    when (val row = com.nendo.argosy.ui.screens.settings.sections
+        .emulatorOptionsRowAtFocusIndex(state.focusedIndex, state.emulatorOptions)
+    ) {
+        is com.nendo.argosy.ui.screens.settings.sections.EmulatorOptionsRow.OtherKeysToggle -> {
+            vm.toggleEmulatorOptionsOtherKeys(row.fileId)
+            InputResult.handled(SoundType.TOGGLE)
+        }
+        com.nendo.argosy.ui.screens.settings.sections.EmulatorOptionsRow.Failed -> {
+            vm.retryEmulatorOptions()
+            InputResult.handled(SoundType.SELECT)
+        }
+        is com.nendo.argosy.ui.screens.settings.sections.EmulatorOptionsRow.Option ->
+            routeEmulatorOptionValueConfirm(vm, state, row.option)
+        is com.nendo.argosy.ui.screens.settings.sections.EmulatorOptionsRow.Undo -> {
+            if (state.emulatorOptions.writing) {
+                InputResult.handled(SoundType.SILENT)
+            } else {
+                vm.undoEmulatorOption(row.option.id)
+                InputResult.handled(SoundType.SELECT)
+            }
+        }
+        else -> InputResult.handled(SoundType.SILENT)
+    }
+
+private fun routeEmulatorOptionValueConfirm(
+    vm: SettingsViewModel,
+    state: SettingsUiState,
+    option: EmulatorOptionUi
+): InputResult {
+    if (!option.editable || !state.emulatorOptions.canWrite(option.id) || state.emulatorOptions.writing) {
+        return InputResult.handled(SoundType.SILENT)
+    }
+    return when {
+        option.choices.isNotEmpty() || option.id == state.emulatorOptions.driverOptionId -> {
+            vm.requestEnumPicker(com.nendo.argosy.ui.screens.settings.sections.emulatorOptionPickerKey(option))
+            InputResult.handled(SoundType.SELECT)
+        }
+        option.type == com.nendo.argosy.data.emulator.config.ConfigValueType.BOOL ->
+            vm.toggleEmulatorOption(option.id)?.let { InputResult.toggled(it) } ?: InputResult.handled(SoundType.SILENT)
+        else -> InputResult.handled(SoundType.SILENT)
+    }
 }
 
 private fun routeBuiltinEmulatorConfirm(vm: SettingsViewModel, state: SettingsUiState): InputResult {

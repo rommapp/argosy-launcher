@@ -1,0 +1,6 @@
+<?xml version='1.0' encoding='utf-8' standalone='yes' ?>
+<map>
+    <string name="config.global">{&quot;renderer&quot;:&quot;vulkan&quot;,&quot;upscaleFloat&quot;:1,&quot;customDriverId&quot;:&quot;&quot;,&quot;aspectRatio&quot;:1,&quot;vsyncEnable&quot;:false,&quot;memoryCardSlot1Filename&quot;:&quot;maincard&quot;}</string>
+    <boolean name="firstRun" value="false" />
+    <int name="lastTab" value="2" />
+</map>

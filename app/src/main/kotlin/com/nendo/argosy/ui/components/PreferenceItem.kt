@@ -203,8 +203,10 @@ fun CyclePreference(
     options: List<String>? = null,
     onSelect: ((Int) -> Unit)? = null,
     pickerRequestToken: Int = 0,
-    onPickerVisibilityChange: ((Boolean) -> Unit)? = null
+    onPickerVisibilityChange: ((Boolean) -> Unit)? = null,
+    selectedIndex: Int? = null
 ) {
+    val selected = selectedIndex ?: options?.indexOf(value)
     val valueColor = when {
         isFocused -> MaterialTheme.colorScheme.onPrimaryContainer
         isCustom -> MaterialTheme.colorScheme.primary
@@ -262,7 +264,7 @@ fun CyclePreference(
                     focused = isFocused,
                     onPrev = onPrev ?: onClick,
                     onNext = onClick,
-                    selectedIndex = options?.indexOf(value)?.takeIf { it >= 0 },
+                    selectedIndex = selected?.takeIf { it >= 0 },
                     optionCount = options?.size,
                     onOpen = if (hasPicker) ({ pickerVisible = true }) else onClick,
                     valueColor = if (isFocused) null else valueColor
@@ -283,7 +285,7 @@ fun CyclePreference(
         EnumPickerModal(
             title = title,
             options = options,
-            selectedIndex = options.indexOf(value),
+            selectedIndex = selected ?: -1,
             onSelect = { index ->
                 pickerVisible = false
                 onSelect(index)

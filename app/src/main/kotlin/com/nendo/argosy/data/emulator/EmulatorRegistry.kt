@@ -544,7 +544,8 @@ object EmulatorRegistry {
                 activityClass = "info.cemu.cemu.emulation.EmulationActivity"
             ),
             downloadUrl = "https://github.com/SSimco/Cemu/releases",
-            releaseSource = ReleaseSource.GitHub("SSimco/Cemu")
+            releaseSource = ReleaseSource.GitHub("SSimco/Cemu"),
+            drawsBothScreens = true
         ),
         // NOTE: Dual-screen fork uses same package name as official Cemu - only one can be installed
         EmulatorDef(
@@ -556,7 +557,8 @@ object EmulatorRegistry {
                 activityClass = "info.cemu.cemu.emulation.EmulationActivity"
             ),
             downloadUrl = "https://github.com/SapphireRhodonite/Cemu/releases",
-            releaseSource = ReleaseSource.GitHub("SapphireRhodonite/Cemu")
+            releaseSource = ReleaseSource.GitHub("SapphireRhodonite/Cemu"),
+            drawsBothScreens = true
         ),
         // NOTE: Original Citra is discontinued - use Azahar or Borked3DS instead
         EmulatorDef(

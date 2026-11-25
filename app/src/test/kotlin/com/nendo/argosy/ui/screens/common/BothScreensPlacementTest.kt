@@ -26,6 +26,13 @@ class BothScreensPlacementTest {
     }
 
     @Test
+    fun `Cemu draws the GamePad on the second screen whichever build holds the package`() {
+        assertTrue(EmulatorLaunchTargetResolver.drawsBothScreens("info.cemu.cemu"))
+        assertTrue(com.nendo.argosy.data.emulator.EmulatorRegistry.getById("cemu")!!.drawsBothScreens)
+        assertTrue(com.nendo.argosy.data.emulator.EmulatorRegistry.getById("cemu_dualscreen")!!.drawsBothScreens)
+    }
+
+    @Test
     fun `emulators without a second screen of their own keep the normal placement`() {
         for (pkg in listOf("io.github.borked3ds.android", "org.citra.emu", "org.citra.citra_emu", "me.magnum.melonds")) {
             assertFalse(pkg, EmulatorLaunchTargetResolver.drawsBothScreens(pkg))

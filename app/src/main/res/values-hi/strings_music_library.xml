@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="music_library_title">संगीत</string>
+    <string name="music_library_group_by_label">इसके अनुसार समूह</string>
+    <string name="music_library_grouping_playlists">प्लेलिस्ट</string>
+    <string name="music_library_grouping_artists">कलाकार</string>
+    <string name="music_library_grouping_albums">एल्बम</string>
+    <string name="music_library_grouping_years">वर्ष</string>
+    <string name="music_library_grouping_genres">शैलियाँ</string>
+    <string name="music_library_kicker_recent">हाल का</string>
+    <string name="music_library_kicker_playlist">प्लेलिस्ट</string>
+    <string name="music_library_kicker_artist">कलाकार</string>
+    <string name="music_library_kicker_album">एल्बम</string>
+    <string name="music_library_kicker_year">वर्ष</string>
+    <string name="music_library_kicker_genre">शैली</string>
+    <string name="music_library_unknown_artist">अज्ञात कलाकार</string>
+    <string name="music_library_unknown_genre">अज्ञात शैली</string>
+    <string name="music_library_unknown_year">अज्ञात वर्ष</string>
+    <string name="music_library_recent_title">हाल ही में सुना गया</string>
+    <string name="music_library_separator">" &#183; "</string>
+    <string name="music_library_source_all">सभी स्रोत</string>
+    <plurals name="music_library_count_albums">
+        <item quantity="one">%d एल्बम</item>
+        <item quantity="other">%d एल्बम</item>
+    </plurals>
+    <plurals name="music_library_count_tracks">
+        <item quantity="one">%d ट्रैक</item>
+        <item quantity="other">%d ट्रैक</item>
+    </plurals>
+    <string name="music_library_more_albums">+%1$d</string>
+    <string name="music_library_offline">ऑफ़लाइन। डाउनलोड किया गया संगीत दिखाया जा रहा है।</string>
+    <string name="music_library_footer_group_by">समूह</string>
+    <string name="music_library_footer_flip">एल्बम पलटें</string>
+    <string name="music_library_footer_jump">जाएँ</string>
+    <string name="music_library_footer_play">चलाएँ</string>
+    <string name="music_library_footer_filter">फ़िल्टर</string>
+    <string name="music_library_footer_options">विकल्प</string>
+    <string name="music_library_footer_play_album">एल्बम चलाएँ</string>
+    <string name="music_library_footer_play_all">सभी चलाएँ</string>
+    <string name="music_library_footer_track_options">ट्रैक विकल्प</string>
+    <string name="music_library_empty_title">कोई संगीत स्रोत नहीं</string>
+    <string name="music_library_empty_message">यहाँ अपना संगीत देखने और चलाने के लिए Navidrome सर्वर कनेक्ट करें।</string>
+    <string name="music_library_empty_action">Navidrome सेट करें</string>
+    <string name="music_library_no_columns_title">दिखाने के लिए कुछ नहीं</string>
+    <string name="music_library_no_columns_message">कोई दूसरा समूह या स्रोत आज़माएँ।</string>
+    <string name="music_library_error_title">संगीत लोड नहीं हो सका</string>
+    <string name="music_library_error_message">अपने संगीत सर्वर का कनेक्शन जाँचें और फिर से कोशिश करें।</string>
+    <string name="music_library_error_retry">फिर से कोशिश करें</string>
+    <string name="music_library_contents_error">ये ट्रैक लोड नहीं हो सके।</string>
+    <string name="music_library_contents_empty">कोई ट्रैक नहीं</string>
+    <string name="music_library_contents_back_desc">कॉलम पर वापस जाएँ</string>
+    <string name="music_library_contents_previous_album">पिछला एल्बम</string>
+    <string name="music_library_contents_next_album">अगला एल्बम</string>
+    <string name="music_library_badge_playing">चल रहा है</string>
+    <string name="music_library_filter_title">स्रोत</string>
+    <string name="music_library_options_play">चलाएँ</string>
+    <string name="music_library_options_shuffle">शफ़ल</string>
+    <string name="music_library_options_download">डाउनलोड करें</string>
+    <string name="music_library_options_add_to_playlist">प्लेलिस्ट में जोड़ें</string>
+    <string name="music_library_options_now_playing">अभी चल रहा है</string>
+    <string name="music_library_playlists_title">प्लेलिस्ट में जोड़ें</string>
+    <string name="music_library_playlists_empty">ऐसी कोई प्लेलिस्ट नहीं जिसमें आप जोड़ सकें</string>
+    <string name="music_library_playlists_loading">प्लेलिस्ट लोड हो रही हैं</string>
+    <string name="music_library_notice_added">%1$s में जोड़ा गया</string>
+    <string name="music_library_notice_add_failed">प्लेलिस्ट में नहीं जोड़ा जा सका</string>
+    <plurals name="music_library_notice_download_queued">
+        <item quantity="one">%d ट्रैक डाउनलोड हो रहा है</item>
+        <item quantity="other">%d ट्रैक डाउनलोड हो रहे हैं</item>
+    </plurals>
+    <string name="music_library_notice_download_failed">डाउनलोड शुरू नहीं हो सका</string>
+    <string name="music_library_notice_play_failed">प्लेबैक शुरू नहीं हो सका</string>
+    <string name="music_library_notice_nothing_to_play">यहाँ चलाने के लिए कुछ नहीं है</string>
+</resources>

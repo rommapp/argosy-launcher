@@ -163,6 +163,8 @@
     <string name="settings_installers_variant_universal">通用</string>
     <string name="settings_storage_folder_name_from_rom_title">以 ROM 命名資料夾</string>
     <string name="settings_storage_folder_name_from_rom_subtitle">以主要 ROM 檔案（含副檔名）命名遊戲資料夾，讓其他前端能辨識。套用於新的下載。</string>
+    <string name="settings_storage_platform_folders_from_server_title">使用伺服器的資料夾名稱</string>
+    <string name="settings_storage_platform_folders_from_server_subtitle">依照 RomM 伺服器的方式命名每個平台資料夾，讓本機遊戲庫與伺服器結構一致。</string>
     <string name="settings_installers_add_error_invalid">這不是 GitHub 儲存庫連結</string>
     <string name="settings_installers_add_error_duplicate">此儲存庫已在清單中</string>
     <string name="settings_installers_subtitle_installed">已安裝：%1$s</string>
@@ -779,6 +781,7 @@
     <string name="settings_music_toggle_title">背景音樂</string>
     <string name="settings_music_toggle_subtitle">使用啟動器時播放音樂</string>
     <string name="settings_music_volume_title">音量</string>
+    <string name="settings_music_game_volume_title">遊戲中的音樂音量</string>
 
     <string name="settings_music_playlist_title">音樂播放清單</string>
     <string name="settings_music_playlist_empty">沒有曲目</string>
@@ -2318,7 +2321,6 @@
     <string name="settings_steam_delegate_invalid_app_id">請輸入有效的Steam App ID</string>
 
     <string name="settings_jellyfin_delegate_config_error_empty">請輸入伺服器位址</string>
-    <string name="settings_jellyfin_delegate_config_error_scheme">位址必須以http://或https://開頭</string>
     <string name="settings_jellyfin_delegate_signin_error_empty">請輸入您的使用者名稱與密碼</string>
 
     <string name="settings_server_delegate_signout_switch_in_progress">帳號切換仍在完成中，請稍後再試。</string>

@@ -623,6 +623,7 @@
     <string name="ui_quick_settings_orientation_landscape">लैंडस्केप</string>
     <string name="ui_quick_settings_orientation_portrait">पोर्ट्रेट</string>
     <string name="ui_quick_settings_haptics">हैप्टिक्स</string>
+    <string name="ui_quick_settings_led">LED</string>
     <string name="ui_quick_settings_ui_sounds">UI साउंड</string>
     <string name="ui_quick_settings_swap_ab">A/B बदलें</string>
     <string name="ui_quick_settings_swap_xy">X/Y बदलें</string>
@@ -633,8 +634,7 @@
     <string name="ui_quick_settings_brightness_main">मुख्य स्क्रीन</string>
     <string name="ui_quick_settings_brightness_second">दूसरी स्क्रीन</string>
     <string name="ui_quick_settings_off">बंद</string>
-    <string name="ui_quick_settings_percent">%1$d%%</string>
-    <string name="ui_quick_settings_page_performance">परफ़ॉर्मेंस</string>
+    <string name="ui_quick_settings_percent">%1$d%%</string>    <string name="ui_quick_settings_page_performance">परफ़ॉर्मेंस</string>
     <string name="ui_quick_settings_page_friends">दोस्त</string>
     <string name="ui_quick_settings_page_music">संगीत</string>
     <string name="ui_quick_settings_group_display">डिस्प्ले</string>
@@ -655,6 +655,9 @@
     <string name="ui_quick_settings_music_pause">रोकें</string>
     <string name="ui_quick_settings_music_next">अगला ट्रैक</string>
     <string name="ui_quick_settings_music_shuffle">शफ़ल</string>
+    <string name="ui_quick_settings_music_repeat_all">सभी दोहराएं</string>
+    <string name="ui_quick_settings_music_repeat_one">एक दोहराएं</string>
+    <string name="ui_quick_settings_music_repeat_off">दोहराना बंद</string>
     <string name="ui_quick_settings_music_play_in_background">बैकग्राउंड में चलाएं</string>
     <string name="ui_quick_settings_music_playlists">प्लेलिस्ट</string>
     <string name="ui_quick_settings_music_soundtracks">गेम साउंडट्रैक</string>
@@ -709,6 +712,7 @@
     <string name="ui_drawer_nav_collections">कलेक्शन</string>
     <string name="ui_drawer_nav_library">लाइब्रेरी</string>
     <string name="ui_drawer_nav_media">मीडिया</string>
+    <string name="ui_drawer_nav_music">संगीत</string>
     <string name="ui_drawer_nav_downloads">डाउनलोड</string>
     <string name="ui_drawer_nav_save_sync">सेव सिंक</string>
     <string name="ui_drawer_nav_apps">ऐप्स</string>

@@ -219,7 +219,8 @@ data class MoreOptionsContext(
     val hasManageableFiles: Boolean = false,
     val platformSlug: String? = null,
     val launchDisplayCount: Int = 0,
-    val offersDownload: Boolean = false
+    val offersDownload: Boolean = false,
+    val hasMusic: Boolean = false
 )
 
 /**
@@ -235,6 +236,7 @@ fun buildMoreOptions(ctx: MoreOptionsContext): List<MoreOptionAction> = buildLis
     if (ctx.isDownloaded && ctx.launchDisplayCount > 1) add(MoreOptionAction.LaunchOnDisplay)
     if (ctx.canManageSaves || ctx.canManageStates) add(MoreOptionAction.ManageSaves)
     if (canTrackProgress) add(MoreOptionAction.RatingsStatus)
+    if (ctx.hasMusic) add(MoreOptionAction.PlayMusic)
     if (ctx.isSteamGame) add(MoreOptionAction.ChangeSteamLauncher)
     if (isEmulatedGame) add(MoreOptionAction.SpeedrunSplits)
     if (usesTitleId && isEmulatedGame) add(MoreOptionAction.RefreshTitleId)
@@ -255,6 +257,7 @@ sealed class MoreOptionAction {
     data object LaunchOnDisplay : MoreOptionAction()
     data object ManageSaves : MoreOptionAction()
     data object RatingsStatus : MoreOptionAction()
+    data object PlayMusic : MoreOptionAction()
     data object RateGame : MoreOptionAction()
     data object SetDifficulty : MoreOptionAction()
     data object SetProgress : MoreOptionAction()
@@ -360,6 +363,7 @@ data class GameDetailUiState(
     val reviewEditor: ReviewEditorState? = null,
     val hasVariants: Boolean = false,
     val hasSiblingGroup: Boolean = false,
+    val hasGameMusic: Boolean = false,
     val hasSocialAccount: Boolean = false,
     val isPrivate: Boolean = false,
     val perGameSettings: com.nendo.argosy.ui.screens.gamedetail.delegates.PerGameSettingsState =

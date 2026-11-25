@@ -1,26 +1,14 @@
 package com.nendo.argosy.ui.components.musicplayer
 
-import androidx.compose.animation.AnimatedContent
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.SizeTransform
-import androidx.compose.animation.core.tween
-import androidx.compose.animation.expandVertically
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.shrinkVertically
-import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.BoxWithConstraints
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -37,14 +25,8 @@ import androidx.compose.material.icons.filled.Album
 import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.GraphicEq
 import androidx.compose.material.icons.filled.MusicNote
-import androidx.compose.material.icons.filled.Pause
-import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Search
-import androidx.compose.material.icons.filled.Shuffle
-import androidx.compose.material.icons.filled.Bedtime
-import androidx.compose.material.icons.filled.SkipNext
-import androidx.compose.material.icons.filled.SkipPrevious
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -57,12 +39,9 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
-import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
@@ -76,11 +55,16 @@ import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import com.nendo.argosy.R
 import com.nendo.argosy.domain.model.MusicSelection
-import com.nendo.argosy.ui.common.backgroundBlurDp
 import com.nendo.argosy.ui.common.rememberFileImageModel
 import com.nendo.argosy.ui.components.QuickRowFrame
 import com.nendo.argosy.ui.components.QuickSwitchedSliderRow
 import com.nendo.argosy.ui.components.animateScrollToItemCentered
+import com.nendo.argosy.ui.components.nowplaying.DiscArt
+import com.nendo.argosy.ui.components.nowplaying.NowPlayingProgress
+import com.nendo.argosy.ui.components.nowplaying.PlaybackTransportRow
+import com.nendo.argosy.ui.components.nowplaying.displayArt
+import com.nendo.argosy.ui.components.nowplaying.displayArtist
+import com.nendo.argosy.ui.components.nowplaying.displayTitle
 import com.nendo.argosy.ui.components.quickPercentLabel
 import com.nendo.argosy.ui.primitives.ActionButton
 import com.nendo.argosy.ui.primitives.FocusIndicators
@@ -88,7 +72,6 @@ import com.nendo.argosy.ui.primitives.PanelSectionHeader
 import com.nendo.argosy.ui.primitives.argosyFocusIndicators
 import com.nendo.argosy.ui.theme.Dimens
 import com.nendo.argosy.ui.theme.LocalArgosyTheme
-import com.nendo.argosy.ui.theme.Motion
 import com.nendo.argosy.ui.theme.generated.ComponentDefaults
 import com.nendo.argosy.ui.theme.reducedMotion
 import com.nendo.argosy.ui.util.clickableNoFocus
@@ -96,16 +79,19 @@ import com.nendo.argosy.ui.util.verticalEdgeFade
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.isActive
-import java.util.Locale
 
 private const val LOAD_MORE_LOOKAHEAD = 4
-private const val PLAYER_MAX_HEIGHT_FRACTION = 2f / 3f
 
-private val TransportFocus = FocusIndicators(fill = true)
-private val PlayFocus = FocusIndicators(ring = true)
-
+/**
+ * [onOpenNowPlaying] opens the Now Playing screen; null where the panel cannot open an Argosy
+ * screen, which shows the row disabled.
+ */
 @Composable
-fun QuickSettingsMusicPage(viewModel: MusicPlayerViewModel, onOpenRommSignIn: (() -> Unit)?) {
+fun QuickSettingsMusicPage(
+    viewModel: MusicPlayerViewModel,
+    onOpenRommSignIn: (() -> Unit)?,
+    onOpenNowPlaying: (() -> Unit)? = null
+) {
     val state by viewModel.uiState.collectAsState()
 
     LaunchedEffect(viewModel) {
@@ -117,7 +103,7 @@ fun QuickSettingsMusicPage(viewModel: MusicPlayerViewModel, onOpenRommSignIn: ((
 
     val browse = state.browse
     if (browse == null) {
-        MusicPlayerMain(state = state, viewModel = viewModel)
+        MusicPlayerMain(state = state, viewModel = viewModel, onOpenNowPlaying = onOpenNowPlaying)
     } else {
         MusicBrowseList(
             browse = browse,
@@ -129,97 +115,87 @@ fun QuickSettingsMusicPage(viewModel: MusicPlayerViewModel, onOpenRommSignIn: ((
 }
 
 @Composable
-private fun MusicPlayerMain(state: MusicPlayerUiState, viewModel: MusicPlayerViewModel) {
+private fun MusicPlayerMain(
+    state: MusicPlayerUiState,
+    viewModel: MusicPlayerViewModel,
+    onOpenNowPlaying: (() -> Unit)?
+) {
     val launcherLabel = stringResource(R.string.ui_quick_settings_music_source_launcher)
     val openSource: (MusicBrowseKind) -> Unit = { kind ->
         viewModel.focusSource(kind)
         viewModel.openBrowse(kind)
     }
-    BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
-        val playerMaxHeight = maxHeight * PLAYER_MAX_HEIGHT_FRACTION
-        Column(modifier = Modifier.fillMaxSize()) {
-            if (state.hasQueue) {
-                val coverPath = state.playback.coverPath.takeIf { state.playback.overrideTitle == null }
-                val expanded = state.showsFullPlayer && coverPath != null
-                Box(modifier = Modifier.heightIn(max = playerMaxHeight)) {
-                    if (expanded) CoverBloom(coverPath = coverPath, modifier = Modifier.matchParentSize())
-                    Column {
-                        AnimatedVisibility(
-                            visible = expanded,
-                            enter = expandVertically(tween(Motion.durationContent)) +
-                                fadeIn(tween(Motion.durationContent)),
-                            exit = shrinkVertically(tween(Motion.durationContent)) +
-                                fadeOut(tween(Motion.durationContent)),
-                            modifier = Modifier.weight(1f, fill = false)
-                        ) {
-                            ExpandedCover(
-                                coverPath = coverPath,
-                                modifier = Modifier.padding(
-                                    start = Dimens.spacingLg,
-                                    end = Dimens.spacingLg,
-                                    top = Dimens.spacingSm
-                                )
-                            )
-                        }
-                        NowPlayingHeader(state = state, launcherLabel = launcherLabel, expanded = expanded)
-                        TransportRow(
-                            state = state,
-                            onButton = { button ->
-                                viewModel.focusTransport(button)
-                                viewModel.activateTransport(button)
-                            }
-                        )
+    Column(modifier = Modifier.fillMaxSize()) {
+        if (state.hasQueue) {
+            NowPlayingHeader(state = state, launcherLabel = launcherLabel)
+            TransportRow(
+                state = state,
+                onButton = { button ->
+                    viewModel.focusTransport(button)
+                    viewModel.activateTransport(button)
+                }
+            )
+            NowPlayingLinkRow(
+                isFocused = state.focusedRow == MusicPlayerRow.NOW_PLAYING,
+                onClick = onOpenNowPlaying?.let { open ->
+                    {
+                        viewModel.focusNowPlayingLink()
+                        open()
                     }
                 }
-                QuickSwitchedSliderRow(
-                    icon = Icons.Default.MusicNote,
-                    label = stringResource(R.string.ui_quick_settings_music_volume),
-                    on = state.launcherEnabled,
-                    fraction = state.volumeFraction,
-                    valueText = quickPercentLabel(state.volumeFraction),
-                    isFocused = state.focusedRow == MusicPlayerRow.VOLUME,
-                    onFocus = viewModel::focusVolume,
-                    onToggle = viewModel::setMusicEnabled,
-                    onFractionChange = viewModel::setVolumeFraction
-                )
-                SourceButtons(state = state, onSelect = openSource)
-            } else {
-                EmptyNowPlaying()
-                SourceTiles(state = state, onSelect = openSource)
-            }
-            TrackList(
-                state = state,
-                onPlay = { position -> viewModel.playTrack(position) },
-                modifier = Modifier.weight(1f)
             )
+            QuickSwitchedSliderRow(
+                icon = Icons.Default.MusicNote,
+                label = stringResource(R.string.ui_quick_settings_music_volume),
+                on = state.launcherEnabled,
+                fraction = state.volumeFraction,
+                valueText = quickPercentLabel(state.volumeFraction),
+                isFocused = state.focusedRow == MusicPlayerRow.VOLUME,
+                onFocus = viewModel::focusVolume,
+                onToggle = viewModel::setMusicEnabled,
+                onFractionChange = viewModel::setVolumeFraction
+            )
+            SourceButtons(state = state, onSelect = openSource)
+        } else {
+            EmptyNowPlaying()
+            SourceTiles(state = state, onSelect = openSource)
         }
+        TrackList(
+            state = state,
+            onPlay = { position -> viewModel.playTrack(position) },
+            modifier = Modifier.weight(1f)
+        )
     }
 }
 
 @Composable
-private fun CoverBloom(coverPath: String?, modifier: Modifier = Modifier) {
-    val model = rememberFileImageModel(coverPath) ?: return
+private fun NowPlayingLinkRow(isFocused: Boolean, onClick: (() -> Unit)?) {
     val theme = LocalArgosyTheme.current
-    val bloomAlpha = if (theme.isDark) {
-        ComponentDefaults.MusicPlayer.artBloomAlphaDark
-    } else {
-        ComponentDefaults.MusicPlayer.artBloomAlphaLight
-    }
-    Box(modifier = modifier) {
-        AsyncImage(
-            model = model,
-            contentDescription = null,
-            contentScale = ContentScale.Crop,
-            alpha = bloomAlpha,
-            modifier = Modifier
-                .fillMaxSize()
-                .blur(ComponentDefaults.Background.blur.backgroundBlurDp)
-        )
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(Brush.verticalGradient(listOf(Color.Transparent, theme.surfaceBase)))
-        )
+    val enabled = onClick != null
+    QuickRowFrame(isFocused = isFocused, onClick = onClick, enabled = enabled) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Icon(
+                imageVector = Icons.Default.Album,
+                contentDescription = null,
+                tint = if (isFocused && enabled) theme.focusAccent else theme.textDim,
+                modifier = Modifier.size(Dimens.iconMd)
+            )
+            Spacer(modifier = Modifier.width(Dimens.spacingSm))
+            Text(
+                text = stringResource(R.string.now_playing_quick_open),
+                style = MaterialTheme.typography.bodyLarge,
+                color = theme.textPrimary,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.weight(1f)
+            )
+            Icon(
+                imageVector = Icons.Default.ChevronRight,
+                contentDescription = null,
+                tint = theme.textDim,
+                modifier = Modifier.size(Dimens.iconSm)
+            )
+        }
     }
 }
 
@@ -462,88 +438,57 @@ private fun TrackRow(
 }
 
 @Composable
-private fun NowPlayingHeader(state: MusicPlayerUiState, launcherLabel: String, expanded: Boolean) {
+private fun NowPlayingHeader(state: MusicPlayerUiState, launcherLabel: String) {
     val playback = state.playback
-    val overrideTitle = playback.overrideTitle
-    val title = overrideTitle ?: playback.trackTitle
-        ?: stringResource(R.string.ui_quick_settings_music_nothing_playing)
-    val gameTitle = if (overrideTitle == null) playback.gameTitle else null
+    val title = playback.displayTitle ?: stringResource(R.string.ui_quick_settings_music_nothing_playing)
+    val artist = playback.displayArtist
     val sourceLabel = if (playback.sourceId == MusicSelection.LAUNCHER_ID) {
         launcherLabel
     } else {
-        playback.sourceLabel.orEmpty().takeUnless { it == gameTitle }.orEmpty()
+        playback.sourceLabel.orEmpty().takeUnless { it == artist }.orEmpty()
     }
-    val coverPath = if (overrideTitle == null) playback.coverPath else null
 
     Column(
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = Dimens.spacingLg, vertical = Dimens.spacingSm)
     ) {
-        AnimatedContent(
-            targetState = expanded,
-            transitionSpec = {
-                fadeIn(tween(Motion.durationContent)) togetherWith
-                    fadeOut(tween(Motion.durationContent)) using
-                    SizeTransform(clip = false) { _, _ -> tween(Motion.durationContent) }
-            },
-            label = "nowPlayingHeader"
-        ) { isExpanded ->
-            if (isExpanded) {
-                Column(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
-                    NowPlayingText(
-                        title = title,
-                        gameTitle = gameTitle,
-                        sourceLabel = sourceLabel,
-                        alignment = Alignment.CenterHorizontally
-                    )
-                }
-            } else {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    MusicCover(coverPath = coverPath, size = ComponentDefaults.MusicPlayer.coverSizeDp.dp)
-                    Spacer(modifier = Modifier.width(Dimens.spacingMd))
-                    NowPlayingText(
-                        title = title,
-                        gameTitle = gameTitle,
-                        sourceLabel = sourceLabel,
-                        alignment = Alignment.Start,
-                        modifier = Modifier.weight(1f)
-                    )
-                }
-            }
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            DiscArt(
+                art = playback.displayArt,
+                style = state.nowPlaying.style,
+                spinning = state.nowPlaying.spin,
+                playing = state.isAudible,
+                modifier = Modifier.size(ComponentDefaults.MusicPlayer.coverSizeDp.dp)
+            )
+            Spacer(modifier = Modifier.width(Dimens.spacingMd))
+            NowPlayingText(
+                title = title,
+                artist = artist,
+                sourceLabel = sourceLabel,
+                modifier = Modifier.weight(1f)
+            )
         }
         Spacer(modifier = Modifier.height(Dimens.spacingSm))
-        PlaybackProgress(positionMs = state.positionMs, durationMs = state.durationMs)
+        NowPlayingProgress(
+            positionMs = state.positionMs,
+            durationMs = state.durationMs,
+            playing = state.isAudible,
+            compact = true,
+            analysis = state.analysis
+        )
     }
-}
-
-@Composable
-private fun ExpandedCover(coverPath: String?, modifier: Modifier = Modifier) {
-    val model = rememberFileImageModel(coverPath) ?: return
-    AsyncImage(
-        model = model,
-        contentDescription = null,
-        contentScale = ContentScale.Fit,
-        modifier = modifier
-            .fillMaxWidth()
-            .heightIn(max = ComponentDefaults.MusicPlayer.coverExpandedMaxHeightDp.dp)
-            .clip(RoundedCornerShape(Dimens.radiusMd))
-    )
 }
 
 @Composable
 private fun NowPlayingText(
     title: String,
-    gameTitle: String?,
+    artist: String?,
     sourceLabel: String,
-    alignment: Alignment.Horizontal,
     modifier: Modifier = Modifier
 ) {
     val theme = LocalArgosyTheme.current
-    Column(modifier = modifier, horizontalAlignment = alignment) {
+    Column(modifier = modifier) {
         Text(
             text = title,
             style = MaterialTheme.typography.titleMedium,
@@ -551,9 +496,9 @@ private fun NowPlayingText(
             maxLines = 1,
             overflow = TextOverflow.Ellipsis
         )
-        if (gameTitle != null) {
+        if (artist != null) {
             Text(
-                text = gameTitle,
+                text = artist,
                 style = MaterialTheme.typography.bodySmall,
                 color = theme.textDim,
                 maxLines = 1,
@@ -573,162 +518,22 @@ private fun NowPlayingText(
 }
 
 @Composable
-private fun PlaybackProgress(positionMs: Long, durationMs: Long) {
-    val theme = LocalArgosyTheme.current
-    val fraction = if (durationMs > 0L) (positionMs.toFloat() / durationMs).coerceIn(0f, 1f) else 0f
-    val shape = RoundedCornerShape(Dimens.radiusSm)
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(Dimens.spacingSm)
-    ) {
-        Text(
-            text = formatPlaybackTime(positionMs),
-            style = MaterialTheme.typography.labelSmall,
-            color = theme.textDim
-        )
-        Box(
-            modifier = Modifier
-                .weight(1f)
-                .height(ComponentDefaults.MusicPlayer.progressHeightDp.dp)
-                .clip(shape)
-                .background(theme.surfaceElevated)
-        ) {
-            Box(
-                modifier = Modifier
-                    .fillMaxHeight()
-                    .fillMaxWidth(fraction)
-                    .background(theme.focusAccent)
-            )
-        }
-        Text(
-            text = if (durationMs > 0L) formatPlaybackTime(durationMs) else formatPlaybackTime(0L),
-            style = MaterialTheme.typography.labelSmall,
-            color = theme.textDim
-        )
-    }
-}
-
-@Composable
 private fun TransportRow(
     state: MusicPlayerUiState,
     onButton: (MusicTransportButton) -> Unit
 ) {
-    val rowFocused = state.focusedRow == MusicPlayerRow.TRANSPORT
-    fun focused(button: MusicTransportButton) = rowFocused && state.transportButton == button
-    val buttonSize = ComponentDefaults.MusicPlayer.transportButtonDp.dp
-
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = Dimens.spacingLg, vertical = Dimens.spacingSm),
+    PlaybackTransportRow(
+        isAudible = state.isAudible,
+        shuffle = state.playback.shuffle,
+        repeat = state.playback.repeat,
+        playInBackground = state.playInBackground,
+        focusedButton = state.transportButton.takeIf { state.focusedRow == MusicPlayerRow.TRANSPORT },
+        buttonSize = ComponentDefaults.MusicPlayer.transportButtonDp.dp,
+        playButtonSize = ComponentDefaults.MusicPlayer.playButtonDp.dp,
         horizontalArrangement = Arrangement.SpaceEvenly,
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        TransportButton(
-            icon = Icons.Default.SkipPrevious,
-            description = stringResource(R.string.ui_quick_settings_music_previous),
-            size = buttonSize,
-            isFocused = focused(MusicTransportButton.PREVIOUS),
-            onClick = { onButton(MusicTransportButton.PREVIOUS) }
-        )
-        PlayPauseButton(
-            isPlaying = state.isAudible,
-            isFocused = focused(MusicTransportButton.PLAY_PAUSE),
-            onClick = { onButton(MusicTransportButton.PLAY_PAUSE) }
-        )
-        TransportButton(
-            icon = Icons.Default.SkipNext,
-            description = stringResource(R.string.ui_quick_settings_music_next),
-            size = buttonSize,
-            isFocused = focused(MusicTransportButton.NEXT),
-            onClick = { onButton(MusicTransportButton.NEXT) }
-        )
-        TransportButton(
-            icon = Icons.Default.Shuffle,
-            description = stringResource(R.string.ui_quick_settings_music_shuffle),
-            size = buttonSize,
-            isFocused = focused(MusicTransportButton.SHUFFLE),
-            showDot = state.playback.shuffle,
-            onClick = { onButton(MusicTransportButton.SHUFFLE) }
-        )
-        TransportButton(
-            icon = Icons.Default.Bedtime,
-            description = stringResource(R.string.ui_quick_settings_music_play_in_background),
-            size = buttonSize,
-            isFocused = focused(MusicTransportButton.BACKGROUND),
-            showDot = state.playInBackground,
-            onClick = { onButton(MusicTransportButton.BACKGROUND) }
-        )
-    }
-}
-
-@Composable
-private fun PlayPauseButton(isPlaying: Boolean, isFocused: Boolean, onClick: () -> Unit) {
-    val theme = LocalArgosyTheme.current
-    Box(
-        modifier = Modifier
-            .size(ComponentDefaults.MusicPlayer.playButtonDp.dp)
-            .argosyFocusIndicators(
-                focused = isFocused,
-                indicators = PlayFocus,
-                shape = CircleShape,
-                ringThickness = Dimens.borderThin
-            )
-            .clip(CircleShape)
-            .background(theme.focusAccent)
-            .clickableNoFocus(onClick = onClick),
-        contentAlignment = Alignment.Center
-    ) {
-        Icon(
-            imageVector = if (isPlaying) Icons.Default.Pause else Icons.Default.PlayArrow,
-            contentDescription = stringResource(
-                if (isPlaying) R.string.ui_quick_settings_music_pause else R.string.ui_quick_settings_music_play
-            ),
-            tint = MaterialTheme.colorScheme.onPrimary,
-            modifier = Modifier.size(Dimens.iconMd)
-        )
-    }
-}
-
-@Composable
-private fun TransportButton(
-    icon: ImageVector,
-    description: String,
-    size: Dp,
-    isFocused: Boolean,
-    onClick: () -> Unit,
-    showDot: Boolean = false
-) {
-    val theme = LocalArgosyTheme.current
-    Box(
-        modifier = Modifier
-            .size(size)
-            .argosyFocusIndicators(focused = isFocused, indicators = TransportFocus, shape = CircleShape)
-            .clip(CircleShape)
-            .clickableNoFocus(onClick = onClick),
-        contentAlignment = Alignment.Center
-    ) {
-        Icon(
-            imageVector = icon,
-            contentDescription = description,
-            tint = when {
-                isFocused || showDot -> theme.focusAccent
-                else -> theme.textPrimary
-            },
-            modifier = Modifier.size(Dimens.iconMd)
-        )
-        if (showDot) {
-            Box(
-                modifier = Modifier
-                    .align(Alignment.BottomCenter)
-                    .padding(bottom = Dimens.spacingXs)
-                    .size(Dimens.spacingXs)
-                    .clip(CircleShape)
-                    .background(theme.focusAccent)
-            )
-        }
-    }
+        onButton = onButton,
+        modifier = Modifier.padding(horizontal = Dimens.spacingLg, vertical = Dimens.spacingSm)
+    )
 }
 
 @Composable
@@ -1094,9 +899,4 @@ private fun noticeRes(kind: MusicBrowseKind, notice: MusicBrowseNotice): Int = w
     MusicBrowseNotice.SERVER_FAILED -> R.string.ui_quick_settings_music_notice_server_failed
     MusicBrowseNotice.NO_PLAYABLE_TRACKS -> R.string.ui_quick_settings_music_notice_no_tracks
     MusicBrowseNotice.SIGN_IN_FOR_PLAYLISTS -> R.string.ui_quick_settings_music_notice_sign_in_playlists
-}
-
-private fun formatPlaybackTime(ms: Long): String {
-    val totalSeconds = (ms / 1000L).coerceAtLeast(0L)
-    return String.format(Locale.ROOT, "%d:%02d", totalSeconds / 60L, totalSeconds % 60L)
 }

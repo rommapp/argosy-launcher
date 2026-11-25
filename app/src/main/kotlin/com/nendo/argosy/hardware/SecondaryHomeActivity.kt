@@ -364,7 +364,7 @@ class SecondaryHomeActivity :
             val dimmed = isMediaDimmed()
             if (::dsm.isInitialized) {
                 dsm.notifyUserActivity("companionTouchDown")
-                dsm.ambientAudioManager.resumeFromSuspend()
+                dsm.ambientAudioManager.resumeFromLauncherInput()
             }
             if (dimmed) {
                 mediaDimSwallowsTouch = true
@@ -434,7 +434,7 @@ class SecondaryHomeActivity :
         }
         if (::dsm.isInitialized && !dsm.claimInput(event)) return true
         if (::dsm.isInitialized && event.action == android.view.KeyEvent.ACTION_DOWN) {
-            dsm.ambientAudioManager.resumeFromSuspend()
+            dsm.ambientAudioManager.resumeFromLauncherInput()
         }
         if (HomeKeys.isHome(event)) return gamepadInputHandler.handleHomeKey(event)
         if (gamepadInputHandler.handleKeyEvent(event)) return true

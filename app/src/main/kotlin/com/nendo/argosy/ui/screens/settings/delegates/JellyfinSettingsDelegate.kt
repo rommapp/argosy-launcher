@@ -23,6 +23,7 @@ import com.nendo.argosy.data.preferences.UserPreferencesRepository
 import com.nendo.argosy.ui.screens.settings.JellyfinState
 import com.nendo.argosy.ui.screens.settings.MediaRelocationPrompt
 import com.nendo.argosy.util.Logger
+import com.nendo.argosy.util.ServerAddress
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -121,16 +122,10 @@ class JellyfinSettingsDelegate @Inject constructor(
     }
 
     fun commitServerConfig(scope: CoroutineScope, onFocusReset: () -> Unit, onSaved: () -> Unit) {
-        val url = _state.value.configUrl.trim().trimEnd('/')
+        val url = ServerAddress.withDefaultScheme(_state.value.configUrl).trimEnd('/')
         if (url.isBlank()) {
             _state.update {
                 it.copy(configError = context.getString(R.string.settings_jellyfin_delegate_config_error_empty))
-            }
-            return
-        }
-        if (!url.startsWith("http://") && !url.startsWith("https://")) {
-            _state.update {
-                it.copy(configError = context.getString(R.string.settings_jellyfin_delegate_config_error_scheme))
             }
             return
         }

@@ -35,7 +35,9 @@ data class ControlsPreferences(
     val ambientAudioVolume: Int = 50,
     val ambientAudioUri: String? = null,
     val ambientAudioShuffle: Boolean = false,
+    val ambientAudioRepeat: MusicRepeatMode = MusicRepeatMode.ALL,
     val ambientAudioPlayInBackground: Boolean = false,
+    val ambientAudioGameVolume: Int = DEFAULT_AMBIENT_AUDIO_GAME_VOLUME,
     val gameDetailThemeEnabled: Boolean = false,
     val selectLCombo: String = "quick_menu",
     val selectRCombo: String = "quick_settings",
@@ -55,6 +57,7 @@ data class ControlsPreferences(
 ) {
     companion object {
         const val DEFAULT_HAPTIC_STRENGTH = 0.5f
+        const val DEFAULT_AMBIENT_AUDIO_GAME_VOLUME = 60
         const val HAPTIC_STRENGTH_STEPS = 10
         const val HAPTIC_STRENGTH_STEP = 1f / HAPTIC_STRENGTH_STEPS
         const val DEFAULT_OPEN_NAVIGATION_KEY = KeyEvent.KEYCODE_BUTTON_C
@@ -82,7 +85,9 @@ class ControlsPreferencesRepository @Inject constructor(
         val AMBIENT_AUDIO_VOLUME = intPreferencesKey("ambient_audio_volume")
         val AMBIENT_AUDIO_URI = stringPreferencesKey("ambient_audio_uri")
         val AMBIENT_AUDIO_SHUFFLE = booleanPreferencesKey("ambient_audio_shuffle")
+        val AMBIENT_AUDIO_REPEAT = stringPreferencesKey("ambient_audio_repeat")
         val AMBIENT_AUDIO_PLAY_IN_BACKGROUND = booleanPreferencesKey("ambient_audio_play_in_background")
+        val AMBIENT_AUDIO_GAME_VOLUME = intPreferencesKey("ambient_audio_game_volume")
         val GAME_DETAIL_THEME = booleanPreferencesKey("game_detail_theme")
         val SELECT_L_COMBO = stringPreferencesKey("select_l_combo")
         val SELECT_R_COMBO = stringPreferencesKey("select_r_combo")
@@ -113,7 +118,10 @@ class ControlsPreferencesRepository @Inject constructor(
             ambientAudioVolume = prefs[Keys.AMBIENT_AUDIO_VOLUME] ?: 50,
             ambientAudioUri = prefs[Keys.AMBIENT_AUDIO_URI],
             ambientAudioShuffle = prefs[Keys.AMBIENT_AUDIO_SHUFFLE] ?: false,
+            ambientAudioRepeat = MusicRepeatMode.fromString(prefs[Keys.AMBIENT_AUDIO_REPEAT]),
             ambientAudioPlayInBackground = prefs[Keys.AMBIENT_AUDIO_PLAY_IN_BACKGROUND] ?: false,
+            ambientAudioGameVolume = prefs[Keys.AMBIENT_AUDIO_GAME_VOLUME]
+                ?: ControlsPreferences.DEFAULT_AMBIENT_AUDIO_GAME_VOLUME,
             gameDetailThemeEnabled = prefs[Keys.GAME_DETAIL_THEME] ?: false,
             selectLCombo = prefs[Keys.SELECT_L_COMBO] ?: "quick_menu",
             selectRCombo = prefs[Keys.SELECT_R_COMBO] ?: "quick_settings",
@@ -316,8 +324,16 @@ class ControlsPreferencesRepository @Inject constructor(
         dataStore.edit { it[Keys.AMBIENT_AUDIO_SHUFFLE] = shuffle }
     }
 
+    suspend fun setAmbientAudioRepeat(mode: MusicRepeatMode) {
+        dataStore.edit { it[Keys.AMBIENT_AUDIO_REPEAT] = mode.name }
+    }
+
     suspend fun setAmbientAudioPlayInBackground(enabled: Boolean) {
         dataStore.edit { it[Keys.AMBIENT_AUDIO_PLAY_IN_BACKGROUND] = enabled }
+    }
+
+    suspend fun setAmbientAudioGameVolume(volume: Int) {
+        dataStore.edit { it[Keys.AMBIENT_AUDIO_GAME_VOLUME] = volume.coerceIn(0, 100) }
     }
 
     suspend fun setGameDetailThemeEnabled(enabled: Boolean) {

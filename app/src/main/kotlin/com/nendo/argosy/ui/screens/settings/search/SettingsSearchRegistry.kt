@@ -33,6 +33,8 @@ import com.nendo.argosy.ui.screens.settings.sections.SavesLayoutState
 import com.nendo.argosy.ui.screens.settings.sections.SocialLayoutState
 import com.nendo.argosy.ui.screens.settings.sections.aboutLayout
 import com.nendo.argosy.ui.screens.settings.sections.jellyfinLayout
+import com.nendo.argosy.ui.screens.settings.sections.NavidromeLayoutState
+import com.nendo.argosy.ui.screens.settings.sections.navidromeLayout
 import com.nendo.argosy.ui.screens.settings.sections.permissionsLayout
 import com.nendo.argosy.ui.screens.settings.sections.raLayout
 import com.nendo.argosy.ui.screens.settings.sections.rommFocusIndexOf
@@ -161,6 +163,15 @@ internal fun settingsSearchSource(section: SettingsSection): SettingsSearchSourc
         keyOf = { it.key },
         reachable = { !it.jellyfin.configuring && !it.jellyfin.showLoginForm },
         open = { it.navigateToSection(SettingsSection.JELLYFIN) }
+    )
+    SettingsSection.NAVIDROME -> SettingsSearchSource.Rows(
+        section = SettingsSection.NAVIDROME,
+        path = listOf(R.string.settings_navidrome_search_crumb),
+        layout = navidromeLayout,
+        stateOf = { NavidromeLayoutState.from(it) },
+        keyOf = { it.key },
+        reachable = { !it.navidrome.configuring && !it.navidrome.showLoginForm },
+        open = { it.navigateToSection(SettingsSection.NAVIDROME) }
     )
     SettingsSection.NETWORK_BLUETOOTH -> SettingsSearchSource.NotSearchable(SettingsSection.NETWORK_BLUETOOTH)
     SettingsSection.RETRO_ACHIEVEMENTS -> SettingsSearchSource.Rows(

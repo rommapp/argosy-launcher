@@ -15,6 +15,7 @@ import com.nendo.argosy.data.sync.UnflushedQueuePolicy
 import android.net.ConnectivityManager
 import android.net.Network
 import com.nendo.argosy.util.Logger
+import com.nendo.argosy.util.ServerAddress
 import com.squareup.moshi.Moshi
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CancellationException
@@ -1027,31 +1028,11 @@ class RomMConnectionManager @Inject constructor(
 
     private fun buildUrlsToTry(url: String): List<String> {
         val trimmed = url.trim()
-        if (hasScheme(trimmed)) return listOf(trimmed)
+        if (ServerAddress.hasScheme(trimmed)) return listOf(trimmed)
         val hostPart = trimmed.removePrefix("//")
-        val preferred = withDefaultScheme(hostPart)
+        val preferred = ServerAddress.withDefaultScheme(hostPart)
         val fallback = if (preferred.startsWith("http://")) "https://$hostPart" else "http://$hostPart"
         return listOf(preferred, fallback)
-    }
-
-    companion object {
-        private val IPV4 = Regex("""^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$""")
-
-        private fun hasScheme(url: String): Boolean =
-            url.startsWith("http://") || url.startsWith("https://")
-
-        /**
-         * A bare address gains the scheme the app tries first for it: plain http for an IP or
-         * localhost, https for a hostname. Addresses that already carry a scheme are returned as is.
-         */
-        fun withDefaultScheme(url: String): String {
-            val trimmed = url.trim()
-            if (trimmed.isBlank() || hasScheme(trimmed)) return trimmed
-            val hostPart = trimmed.removePrefix("//")
-            val host = hostPart.split("/").first().split(":").first()
-            val plain = host.matches(IPV4) || host == "localhost"
-            return if (plain) "http://$hostPart" else "https://$hostPart"
-        }
     }
 
     fun createApi(baseUrl: String, token: String?): RomMApi = apiFactory.create(baseUrl, token)

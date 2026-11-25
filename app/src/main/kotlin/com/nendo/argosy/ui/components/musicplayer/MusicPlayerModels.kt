@@ -1,24 +1,37 @@
 package com.nendo.argosy.ui.components.musicplayer
 
+import com.nendo.argosy.data.music.analysis.TrackAnalysis
+import com.nendo.argosy.data.preferences.NowPlayingPreferences
 import com.nendo.argosy.domain.model.MusicSelection
 import com.nendo.argosy.ui.audio.AmbientPlaybackState
+import com.nendo.argosy.ui.components.nowplaying.hasQueue
+import com.nendo.argosy.ui.components.nowplaying.isAudible
 import com.nendo.argosy.ui.screens.settings.delegates.VolumeLevels
 import com.nendo.argosy.ui.screens.settings.delegates.levelIndexIn
 
 enum class MusicPlayerRow {
     TRANSPORT,
+    NOW_PLAYING,
     VOLUME,
     SOURCES,
     TRACKS
 }
 
 enum class MusicTransportButton {
+    ADD_TO_PLAYLIST,
+    SHUFFLE,
     PREVIOUS,
     PLAY_PAUSE,
     NEXT,
-    SHUFFLE,
+    REPEAT,
     BACKGROUND
 }
+
+fun transportButtons(withPlaylist: Boolean): List<MusicTransportButton> =
+    if (withPlaylist) MusicTransportButton.entries else MusicTransportButton.entries - MusicTransportButton.ADD_TO_PLAYLIST
+
+fun List<MusicTransportButton>.stepFrom(current: MusicTransportButton, delta: Int): MusicTransportButton =
+    this[(indexOf(current).coerceAtLeast(0) + delta).mod(size)]
 
 enum class MusicBrowseKind {
     PLAYLISTS,
@@ -84,16 +97,16 @@ data class MusicPlayerUiState(
     val launcherEnabled: Boolean = false,
     val volumeLevel: Int = 0,
     val playInBackground: Boolean = false,
+    val nowPlaying: NowPlayingPreferences = NowPlayingPreferences(),
     val focusedRow: MusicPlayerRow = MusicPlayerRow.TRANSPORT,
     val transportButton: MusicTransportButton = MusicTransportButton.PLAY_PAUSE,
     val sourceButton: MusicBrowseKind = MusicBrowseKind.PLAYLISTS,
     val trackFocus: Int = 0,
-    val browse: MusicBrowseUi? = null
+    val browse: MusicBrowseUi? = null,
+    val analysis: TrackAnalysis? = null
 ) {
-    val isAudible: Boolean get() = playback.isPlaying && !playback.userPaused
-    val hasQueue: Boolean get() = playback.count > 0 || playback.overrideTitle != null
-    val showsFullPlayer: Boolean
-        get() = focusedRow == MusicPlayerRow.TRANSPORT || focusedRow == MusicPlayerRow.VOLUME
+    val isAudible: Boolean get() = playback.isAudible
+    val hasQueue: Boolean get() = playback.hasQueue
     val volumeFraction: Float
         get() = (levelIndexIn(volumeLevel, VolumeLevels.AMBIENT_AUDIO) + 1).toFloat() /
             VolumeLevels.AMBIENT_AUDIO.size

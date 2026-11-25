@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="now_playing_empty_title">未在播放</string>
+    <string name="now_playing_empty_body">从快捷菜单开始播放一个播放列表或原声音乐。</string>
+    <string name="now_playing_source_launcher">启动器音乐</string>
+    <string name="now_playing_unknown_title">未知曲目</string>
+    <string name="now_playing_add_to_playlist">添加到播放列表</string>
+    <string name="now_playing_running_order">曲目顺序</string>
+    <string name="now_playing_current_track">当前曲目</string>
+    <string name="now_playing_hint_previous">上一首</string>
+    <string name="now_playing_hint_next">下一首</string>
+    <string name="now_playing_hint_queue">队列</string>
+    <string name="now_playing_hint_options">选项</string>
+    <string name="now_playing_options_title">正在播放</string>
+    <string name="now_playing_option_style">样式</string>
+    <string name="now_playing_option_spin">旋转</string>
+    <string name="now_playing_option_layout">布局</string>
+    <string name="now_playing_style_record">黑胶唱片</string>
+    <string name="now_playing_style_cd">CD</string>
+    <string name="now_playing_style_cover">封面</string>
+    <string name="now_playing_layout_shelf">书架</string>
+    <string name="now_playing_layout_simple">简洁</string>
+    <string name="now_playing_quick_open">正在播放</string>
+</resources>

@@ -980,6 +980,7 @@ private fun GameDetailModals(
             launchDisplayNumbers = uiState.launchDisplayNumbers,
             launchDisplayIndex = uiState.launchDisplayIndex,
             offersDownload = uiState.stream?.leads == true,
+            hasMusic = uiState.hasGameMusic,
             onAction = { action -> viewModel.handleMoreOptionAction(action, onBack, onNavigateToPlatformSettings) },
             onDismiss = viewModel::toggleMoreOptions
         )
@@ -1174,6 +1175,7 @@ private fun GameDetailModals(
             availableCores = pickerState.availableCores,
             selectedCoreId = uiState.selectedCoreId,
             focusIndex = pickerState.corePickerFocusIndex,
+            isBuiltIn = uiState.game?.isBuiltInEmulator == true,
             onSelectCore = viewModel.pickerModalDelegate::selectCore,
             onDismiss = viewModel.pickerModalDelegate::dismissCorePicker
         )

@@ -360,4 +360,20 @@ object DatabaseModule {
     @Provides
     fun provideMediaDownloadQueueDao(database: ALauncherDatabase): MediaDownloadQueueDao =
         database.mediaDownloadQueueDao()
+
+    @Provides
+    fun provideRommMusicIndexDao(database: ALauncherDatabase): com.nendo.argosy.data.local.dao.RommMusicIndexDao =
+        database.rommMusicIndexDao()
+
+    @Provides
+    fun provideMusicListenDao(database: ALauncherDatabase): com.nendo.argosy.data.local.dao.MusicListenDao =
+        database.musicListenDao()
+
+    @Provides
+    fun provideMusicGameContextDao(database: ALauncherDatabase): com.nendo.argosy.data.local.dao.MusicGameContextDao =
+        database.musicGameContextDao()
+
+    @Provides
+    fun provideMusicStatsDao(database: ALauncherDatabase): com.nendo.argosy.data.local.dao.MusicStatsDao =
+        database.musicStatsDao()
 }

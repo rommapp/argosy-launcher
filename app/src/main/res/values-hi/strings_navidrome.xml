@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="settings_navidrome_main_subtitle_unconfigured">सर्वर सेट नहीं है</string>
+    <string name="settings_navidrome_main_subtitle_signed_in_as">%1$s के रूप में साइन इन है</string>
+    <string name="settings_navidrome_main_subtitle_signed_out">साइन इन नहीं है</string>
+    <string name="settings_navidrome_section_server">सर्वर</string>
+    <string name="settings_navidrome_server_title">म्यूज़िक सर्वर</string>
+    <string name="settings_navidrome_server_unconfigured">सेट नहीं है</string>
+    <string name="settings_navidrome_account_label">अकाउंट</string>
+    <string name="settings_navidrome_account_sign_in">साइन इन करें</string>
+    <string name="settings_navidrome_account_sign_out">साइन आउट करें</string>
+    <string name="settings_navidrome_account_signed_in_as">%1$s के रूप में साइन इन है</string>
+    <string name="settings_navidrome_account_password">अपने Navidrome यूज़रनेम और पासवर्ड से साइन इन करें</string>
+    <string name="settings_navidrome_connection_title">कनेक्शन</string>
+    <string name="settings_navidrome_connection_checking">सर्वर जाँचा जा रहा है</string>
+    <string name="settings_navidrome_connection_connected">कनेक्ट है</string>
+    <string name="settings_navidrome_connection_connected_version">Navidrome %1$s से कनेक्ट है</string>
+    <string name="settings_navidrome_connection_unknown">कनेक्शन जाँचने के लिए चुनें</string>
+    <string name="settings_navidrome_config_server_address_label">सर्वर पता</string>
+    <string name="settings_navidrome_config_keyboard_submit">सेव करें</string>
+    <string name="settings_navidrome_config_save_title">सेव करें</string>
+    <string name="settings_navidrome_config_save_subtitle">इस पते को अपनी म्यूज़िक लाइब्रेरी के लिए इस्तेमाल करें</string>
+    <string name="settings_navidrome_config_cancel_title">रद्द करें</string>
+    <string name="settings_navidrome_config_cancel_subtitle">Navidrome सेटिंग्स पर वापस जाएँ</string>
+    <string name="settings_navidrome_config_error_empty">सर्वर का पता डालें</string>
+    <string name="settings_navidrome_signin_username_label">यूज़रनेम</string>
+    <string name="settings_navidrome_signin_password_label">पासवर्ड</string>
+    <string name="settings_navidrome_signin_username_keyboard_submit">हो गया</string>
+    <string name="settings_navidrome_signin_password_keyboard_submit">साइन इन करें</string>
+    <string name="settings_navidrome_signin_submit_title">साइन इन करें</string>
+    <string name="settings_navidrome_signin_submitting_title">साइन इन हो रहा है...</string>
+    <string name="settings_navidrome_signin_submit_subtitle">इस अकाउंट को अपनी म्यूज़िक लाइब्रेरी के लिए इस्तेमाल करें</string>
+    <string name="settings_navidrome_signin_cancel_title">रद्द करें</string>
+    <string name="settings_navidrome_signin_cancel_subtitle">Navidrome सेटिंग्स पर वापस जाएँ</string>
+    <string name="settings_navidrome_signin_error_empty">अपना यूज़रनेम और पासवर्ड डालें</string>
+    <string name="settings_navidrome_signin_error_rejected">सर्वर ने साइन इन अस्वीकार कर दिया</string>
+    <string name="settings_navidrome_signin_error_unreachable">सर्वर तक नहीं पहुँच सके। पता जाँचें और फिर से कोशिश करें।</string>
+    <string name="settings_navidrome_signout_title">Navidrome से साइन आउट करें?</string>
+    <string name="settings_navidrome_signout_message">यह डिवाइस आपका Navidrome लॉगिन भूल जाएगा। आपका म्यूज़िक और प्लेलिस्ट सर्वर पर ही रहेंगे।</string>
+    <string name="settings_navidrome_signout_confirm">साइन आउट करें</string>
+</resources>

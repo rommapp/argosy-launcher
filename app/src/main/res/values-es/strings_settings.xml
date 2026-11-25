@@ -188,6 +188,8 @@
     <string name="settings_installers_variant_universal">Universal</string>
     <string name="settings_storage_folder_name_from_rom_title">Nombrar carpetas según la ROM</string>
     <string name="settings_storage_folder_name_from_rom_subtitle">Nombrar la carpeta del juego según su archivo ROM principal, con la extensión incluida, para que otros frontends la reconozcan. Se aplica a las descargas nuevas.</string>
+    <string name="settings_storage_platform_folders_from_server_title">Usar nombres de carpeta del servidor</string>
+    <string name="settings_storage_platform_folders_from_server_subtitle">Nombrar cada carpeta de plataforma como lo hace tu servidor RomM, para que esta biblioteca coincida con la estructura del servidor.</string>
     <string name="settings_installers_add_error_invalid">Eso no es un enlace de repositorio de GitHub</string>
     <string name="settings_installers_add_error_duplicate">Ese repositorio ya está en la lista</string>
     <string name="settings_installers_subtitle_installed">Instalado: %1$s</string>
@@ -857,6 +859,7 @@
     <string name="settings_music_toggle_title">Música de fondo</string>
     <string name="settings_music_toggle_subtitle">Reproducir música mientras usas el lanzador</string>
     <string name="settings_music_volume_title">Volumen</string>
+    <string name="settings_music_game_volume_title">Volumen de la música en juegos</string>
 
     <string name="settings_music_playlist_title">Lista de música</string>
     <string name="settings_music_playlist_empty">Sin pistas</string>
@@ -2587,7 +2590,6 @@
     <!-- ===== Jellyfin settings delegate (Settings > delegates > JellyfinSettingsDelegate) ===== -->
 
     <string name="settings_jellyfin_delegate_config_error_empty">Introduce una dirección de servidor</string>
-    <string name="settings_jellyfin_delegate_config_error_scheme">La dirección debe empezar con http:// o https://</string>
     <string name="settings_jellyfin_delegate_signin_error_empty">Introduce tu nombre de usuario y contraseña</string>
 
     <!-- ===== Server settings delegate (Settings > delegates > ServerSettingsDelegate) ===== -->

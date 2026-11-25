@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="music_library_title">Musik</string>
+    <string name="music_library_group_by_label">Gruppieren nach</string>
+    <string name="music_library_grouping_playlists">Playlists</string>
+    <string name="music_library_grouping_artists">Künstler</string>
+    <string name="music_library_grouping_albums">Alben</string>
+    <string name="music_library_grouping_years">Jahre</string>
+    <string name="music_library_grouping_genres">Genres</string>
+    <string name="music_library_kicker_recent">Zuletzt</string>
+    <string name="music_library_kicker_playlist">Playlist</string>
+    <string name="music_library_kicker_artist">Künstler</string>
+    <string name="music_library_kicker_album">Album</string>
+    <string name="music_library_kicker_year">Jahr</string>
+    <string name="music_library_kicker_genre">Genre</string>
+    <string name="music_library_unknown_artist">Unbekannter Künstler</string>
+    <string name="music_library_unknown_genre">Unbekanntes Genre</string>
+    <string name="music_library_unknown_year">Unbekanntes Jahr</string>
+    <string name="music_library_recent_title">Zuletzt gehört</string>
+    <string name="music_library_separator">" &#183; "</string>
+    <string name="music_library_source_all">Alle Quellen</string>
+    <plurals name="music_library_count_albums">
+        <item quantity="one">%d Album</item>
+        <item quantity="other">%d Alben</item>
+    </plurals>
+    <plurals name="music_library_count_tracks">
+        <item quantity="one">%d Titel</item>
+        <item quantity="other">%d Titel</item>
+    </plurals>
+    <string name="music_library_more_albums">+%1$d</string>
+    <string name="music_library_offline">Offline. Nur heruntergeladene Musik wird angezeigt.</string>
+    <string name="music_library_footer_group_by">Gruppieren</string>
+    <string name="music_library_footer_flip">Alben blättern</string>
+    <string name="music_library_footer_jump">Springen</string>
+    <string name="music_library_footer_play">Abspielen</string>
+    <string name="music_library_footer_filter">Filtern</string>
+    <string name="music_library_footer_options">Optionen</string>
+    <string name="music_library_footer_play_album">Album abspielen</string>
+    <string name="music_library_footer_play_all">Alle abspielen</string>
+    <string name="music_library_footer_track_options">Titeloptionen</string>
+    <string name="music_library_empty_title">Keine Musikquellen</string>
+    <string name="music_library_empty_message">Verbinde einen Navidrome-Server, um deine Musik hier zu durchsuchen und abzuspielen.</string>
+    <string name="music_library_empty_action">Navidrome einrichten</string>
+    <string name="music_library_no_columns_title">Nichts anzuzeigen</string>
+    <string name="music_library_no_columns_message">Versuche eine andere Gruppierung oder Quelle.</string>
+    <string name="music_library_error_title">Musik konnte nicht geladen werden</string>
+    <string name="music_library_error_message">Prüfe die Verbindung zu deinem Musikserver und versuche es erneut.</string>
+    <string name="music_library_error_retry">Erneut versuchen</string>
+    <string name="music_library_contents_error">Diese Titel konnten nicht geladen werden.</string>
+    <string name="music_library_contents_empty">Keine Titel</string>
+    <string name="music_library_contents_back_desc">Zurück zu den Spalten</string>
+    <string name="music_library_contents_previous_album">Vorheriges Album</string>
+    <string name="music_library_contents_next_album">Nächstes Album</string>
+    <string name="music_library_badge_playing">Läuft</string>
+    <string name="music_library_filter_title">Quelle</string>
+    <string name="music_library_options_play">Abspielen</string>
+    <string name="music_library_options_shuffle">Zufallswiedergabe</string>
+    <string name="music_library_options_download">Herunterladen</string>
+    <string name="music_library_options_add_to_playlist">Zur Playlist hinzufügen</string>
+    <string name="music_library_options_now_playing">Aktuelle Wiedergabe</string>
+    <string name="music_library_playlists_title">Zur Playlist hinzufügen</string>
+    <string name="music_library_playlists_empty">Keine bearbeitbaren Playlists</string>
+    <string name="music_library_playlists_loading">Playlists werden geladen</string>
+    <string name="music_library_notice_added">Zu %1$s hinzugefügt</string>
+    <string name="music_library_notice_add_failed">Hinzufügen zur Playlist fehlgeschlagen</string>
+    <plurals name="music_library_notice_download_queued">
+        <item quantity="one">%d Titel wird heruntergeladen</item>
+        <item quantity="other">%d Titel werden heruntergeladen</item>
+    </plurals>
+    <string name="music_library_notice_download_failed">Download konnte nicht gestartet werden</string>
+    <string name="music_library_notice_play_failed">Wiedergabe konnte nicht gestartet werden</string>
+    <string name="music_library_notice_nothing_to_play">Hier gibt es nichts abzuspielen</string>
+</resources>

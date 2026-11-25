@@ -17,7 +17,8 @@ class SettingsBackupKeysTest {
         "romm_device_client_version", "romm_snapshots_server", "romm_snapshots_supported", "ra_token", "ra_web_api_key", "ra_username", "ra_proxy_enabled",
         "ra_proxy_address", "social_session_token", "social_user_id", "social_username",
         "social_display_name", "jellyfin_access_token", "jellyfin_device_id",
-        "jellyfin_server_url", "jellyfin_user_id", "jellyfin_user_name", "quaypass_credential",
+        "jellyfin_server_url", "jellyfin_user_id", "jellyfin_user_name", "navidrome_server_url",
+        "navidrome_username", "navidrome_password", "navidrome_server_version", "quaypass_credential",
         "quaypass_credential_expires_at", "quaypass_client_install_id",
         "quaypass_install_key_alias", "quaypass_install_social_user_id"
     )

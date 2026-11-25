@@ -42,7 +42,10 @@ import androidx.savedstate.setViewTreeSavedStateRegistryOwner
 import com.nendo.argosy.DualScreenManagerHolder
 import com.nendo.argosy.core.input.ConnectedControllerTracker
 import com.nendo.argosy.core.input.SoundType
+import com.nendo.argosy.data.music.analysis.TrackAnalysisStore
 import com.nendo.argosy.data.preferences.ControlsPreferencesRepository
+import com.nendo.argosy.data.preferences.NowPlayingPreferencesRepository
+import com.nendo.argosy.ui.audio.AmbientMusicSwitch
 import com.nendo.argosy.data.preferences.UserPreferences
 import com.nendo.argosy.data.preferences.UserPreferencesRepository
 import com.nendo.argosy.data.social.SocialRepository
@@ -50,6 +53,7 @@ import com.nendo.argosy.domain.usecase.music.GetMusicPlaylistsUseCase
 import com.nendo.argosy.domain.usecase.music.ResolveMusicQueueUseCase
 import com.nendo.argosy.domain.usecase.music.SearchSoundtrackGamesUseCase
 import com.nendo.argosy.hardware.AmbientLedManager
+import com.nendo.argosy.hardware.LEDController
 import com.nendo.argosy.hardware.BrightnessController
 import com.nendo.argosy.hardware.DevicePerformanceResolver
 import com.nendo.argosy.hardware.PerformanceModeStore
@@ -146,6 +150,7 @@ class QuickPanelOverlay @Inject constructor(
     private val performanceStore: PerformanceModeStore,
     private val refreshController: DisplayRefreshController,
     private val hardwareStatsReader: HardwareStatsReader,
+    private val ledController: LEDController,
     private val socialRepository: SocialRepository,
     private val radioController: RadioController,
     private val hapticManager: HapticFeedbackManager,
@@ -154,9 +159,12 @@ class QuickPanelOverlay @Inject constructor(
     private val controllerTracker: ConnectedControllerTracker,
     private val ambientAudioManager: AmbientAudioManager,
     private val controlsPreferences: ControlsPreferencesRepository,
+    private val nowPlayingPreferences: NowPlayingPreferencesRepository,
+    private val ambientMusicSwitch: AmbientMusicSwitch,
     private val getMusicPlaylists: GetMusicPlaylistsUseCase,
     private val searchSoundtrackGames: SearchSoundtrackGamesUseCase,
     private val resolveMusicQueue: ResolveMusicQueueUseCase,
+    private val analysisStore: TrackAnalysisStore,
     private val powerActions: PowerActions,
     private val downloadManager: DownloadManager,
     private val syncQueueManager: SyncQueueManager,
@@ -244,6 +252,7 @@ class QuickPanelOverlay @Inject constructor(
             performanceStore = performanceStore,
             refreshController = refreshController,
             hardwareStatsReader = hardwareStatsReader,
+            ledController = ledController,
             socialRepository = socialRepository,
             hapticManager = hapticManager,
             soundManager = soundManager,
@@ -458,9 +467,12 @@ class QuickPanelOverlay @Inject constructor(
             MusicPlayerViewModel::class.java -> MusicPlayerViewModel(
                 ambientAudioManager = ambientAudioManager,
                 controlsPreferences = controlsPreferences,
+                nowPlayingPreferences = nowPlayingPreferences,
+                ambientMusicSwitch = ambientMusicSwitch,
                 getMusicPlaylists = getMusicPlaylists,
                 searchSoundtrackGames = searchSoundtrackGames,
-                resolveMusicQueue = resolveMusicQueue
+                resolveMusicQueue = resolveMusicQueue,
+                analysisStore = analysisStore
             )
             ThemeViewModel::class.java -> ThemeViewModel(
                 preferencesRepository = preferencesRepository,

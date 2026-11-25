@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="settings_navidrome_main_subtitle_unconfigured">Сервер не настроен</string>
+    <string name="settings_navidrome_main_subtitle_signed_in_as">Вход выполнен: %1$s</string>
+    <string name="settings_navidrome_main_subtitle_signed_out">Вход не выполнен</string>
+    <string name="settings_navidrome_section_server">СЕРВЕР</string>
+    <string name="settings_navidrome_server_title">Музыкальный сервер</string>
+    <string name="settings_navidrome_server_unconfigured">Не настроен</string>
+    <string name="settings_navidrome_account_label">Аккаунт</string>
+    <string name="settings_navidrome_account_sign_in">Войти</string>
+    <string name="settings_navidrome_account_sign_out">Выйти</string>
+    <string name="settings_navidrome_account_signed_in_as">Вход выполнен: %1$s</string>
+    <string name="settings_navidrome_account_password">Войдите с именем пользователя и паролем Navidrome</string>
+    <string name="settings_navidrome_connection_title">Подключение</string>
+    <string name="settings_navidrome_connection_checking">Проверка сервера</string>
+    <string name="settings_navidrome_connection_connected">Подключено</string>
+    <string name="settings_navidrome_connection_connected_version">Подключено к Navidrome %1$s</string>
+    <string name="settings_navidrome_connection_unknown">Выберите, чтобы проверить подключение</string>
+    <string name="settings_navidrome_config_server_address_label">Адрес сервера</string>
+    <string name="settings_navidrome_config_keyboard_submit">Сохранить</string>
+    <string name="settings_navidrome_config_save_title">Сохранить</string>
+    <string name="settings_navidrome_config_save_subtitle">Использовать этот адрес для музыкальной библиотеки</string>
+    <string name="settings_navidrome_config_cancel_title">Отмена</string>
+    <string name="settings_navidrome_config_cancel_subtitle">Вернуться к настройкам Navidrome</string>
+    <string name="settings_navidrome_config_error_empty">Введите адрес сервера</string>
+    <string name="settings_navidrome_signin_username_label">Имя пользователя</string>
+    <string name="settings_navidrome_signin_password_label">Пароль</string>
+    <string name="settings_navidrome_signin_username_keyboard_submit">Готово</string>
+    <string name="settings_navidrome_signin_password_keyboard_submit">Войти</string>
+    <string name="settings_navidrome_signin_submit_title">Войти</string>
+    <string name="settings_navidrome_signin_submitting_title">Вход...</string>
+    <string name="settings_navidrome_signin_submit_subtitle">Использовать этот аккаунт для музыкальной библиотеки</string>
+    <string name="settings_navidrome_signin_cancel_title">Отмена</string>
+    <string name="settings_navidrome_signin_cancel_subtitle">Вернуться к настройкам Navidrome</string>
+    <string name="settings_navidrome_signin_error_empty">Введите имя пользователя и пароль</string>
+    <string name="settings_navidrome_signin_error_rejected">Сервер отклонил вход</string>
+    <string name="settings_navidrome_signin_error_unreachable">Не удалось связаться с сервером. Проверьте адрес и попробуйте снова.</string>
+    <string name="settings_navidrome_signout_title">Выйти из Navidrome?</string>
+    <string name="settings_navidrome_signout_message">Это устройство забудет ваш вход в Navidrome. Ваша музыка и плейлисты останутся на сервере.</string>
+    <string name="settings_navidrome_signout_confirm">Выйти</string>
+</resources>

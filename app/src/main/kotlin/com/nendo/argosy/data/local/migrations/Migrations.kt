@@ -4385,6 +4385,109 @@ object Migration_228_229 : Migration(228, 229) {
     }
 }
 
+object Migration_229_230 : Migration(229, 230) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL(
+            "CREATE TABLE IF NOT EXISTS `music_downloads` (" +
+                "`trackKey` TEXT NOT NULL, `source` TEXT NOT NULL, `trackId` TEXT NOT NULL, " +
+                "`title` TEXT NOT NULL, `artist` TEXT, `album` TEXT, `albumId` TEXT, " +
+                "`trackNumber` INTEGER, `durationSec` INTEGER, `year` INTEGER, `genre` TEXT, " +
+                "`artCacheKey` TEXT, `artLocalPath` TEXT, `filePath` TEXT, `status` TEXT NOT NULL, " +
+                "`sizeBytes` INTEGER, `downloadedAt` INTEGER, PRIMARY KEY(`trackKey`))"
+        )
+        db.execSQL(
+            "CREATE INDEX IF NOT EXISTS `index_music_downloads_source_albumId` " +
+                "ON `music_downloads` (`source`, `albumId`)"
+        )
+    }
+}
+
+object Migration_230_231 : Migration(230, 231) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL(
+            "CREATE TABLE IF NOT EXISTS `romm_music_tracks` (" +
+                "`ownerUserId` INTEGER NOT NULL, `romFileId` INTEGER NOT NULL, `romId` INTEGER NOT NULL, " +
+                "`title` TEXT, `artist` TEXT, `album` TEXT, `genre` TEXT, `year` INTEGER, " +
+                "`track` INTEGER, `disc` INTEGER, `durationSeconds` REAL, `gameName` TEXT, " +
+                "`platformId` INTEGER NOT NULL, `platformSlug` TEXT NOT NULL, `platformName` TEXT NOT NULL, " +
+                "`streamUrl` TEXT NOT NULL, `coverUrl` TEXT, `gameCoverUrl` TEXT, " +
+                "PRIMARY KEY(`ownerUserId`, `romFileId`))"
+        )
+        db.execSQL(
+            "CREATE INDEX IF NOT EXISTS `index_romm_music_tracks_ownerUserId_romId` " +
+                "ON `romm_music_tracks` (`ownerUserId`, `romId`)"
+        )
+        db.execSQL(
+            "CREATE TABLE IF NOT EXISTS `romm_music_index_state` (" +
+                "`ownerUserId` INTEGER NOT NULL, `fetchedAt` INTEGER NOT NULL, `trackCount` INTEGER NOT NULL, " +
+                "PRIMARY KEY(`ownerUserId`))"
+        )
+    }
+}
+
+object Migration_231_232 : Migration(231, 232) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL(
+            "CREATE TABLE IF NOT EXISTS `music_game_contexts` (" +
+                "`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `ownerKey` INTEGER NOT NULL, " +
+                "`gameId` INTEGER NOT NULL, `sessionStartTime` INTEGER NOT NULL, `gameKey` TEXT NOT NULL, " +
+                "`rommId` INTEGER, `igdbId` INTEGER, `platformSlug` TEXT NOT NULL, `gameTitle` TEXT NOT NULL, " +
+                "`emulatorPackage` TEXT NOT NULL, `isBuiltIn` INTEGER NOT NULL)"
+        )
+        db.execSQL(
+            "CREATE UNIQUE INDEX IF NOT EXISTS `index_music_game_contexts_ownerKey_gameId_sessionStartTime` " +
+                "ON `music_game_contexts` (`ownerKey`, `gameId`, `sessionStartTime`)"
+        )
+        db.execSQL(
+            "CREATE TABLE IF NOT EXISTS `music_game_context_tags` (" +
+                "`contextId` INTEGER NOT NULL, `kind` TEXT NOT NULL, `tagKey` TEXT NOT NULL, " +
+                "`ownerKey` INTEGER NOT NULL, `label` TEXT NOT NULL, " +
+                "PRIMARY KEY(`contextId`, `kind`, `tagKey`), " +
+                "FOREIGN KEY(`contextId`) REFERENCES `music_game_contexts`(`id`) " +
+                "ON UPDATE NO ACTION ON DELETE CASCADE )"
+        )
+        db.execSQL(
+            "CREATE INDEX IF NOT EXISTS `index_music_game_context_tags_ownerKey_kind_tagKey` " +
+                "ON `music_game_context_tags` (`ownerKey`, `kind`, `tagKey`)"
+        )
+        db.execSQL(
+            "CREATE TABLE IF NOT EXISTS `music_listens` (" +
+                "`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `ownerKey` INTEGER NOT NULL, " +
+                "`startedAt` INTEGER NOT NULL, `endedAt` INTEGER NOT NULL, `localDay` INTEGER NOT NULL, " +
+                "`listenedMs` INTEGER NOT NULL, `endPositionMs` INTEGER NOT NULL, `durationMs` INTEGER NOT NULL, " +
+                "`counted` INTEGER NOT NULL, `endReason` TEXT, `source` TEXT NOT NULL, " +
+                "`sourceAccountKey` TEXT NOT NULL, `sourceTrackId` TEXT NOT NULL, `trackKey` TEXT NOT NULL, " +
+                "`recordingKey` TEXT, `albumKey` TEXT, `selectionId` TEXT, `romId` INTEGER, `romFileId` INTEGER, " +
+                "`isrc` TEXT, `title` TEXT NOT NULL, `artistCredit` TEXT, `albumTitle` TEXT, " +
+                "`trackGameTitle` TEXT, `contextId` INTEGER, `scrobbleState` TEXT NOT NULL, `scrobbledAt` INTEGER, " +
+                "FOREIGN KEY(`contextId`) REFERENCES `music_game_contexts`(`id`) " +
+                "ON UPDATE NO ACTION ON DELETE SET NULL )"
+        )
+        listOf(
+            "ownerKey_startedAt" to "`ownerKey`, `startedAt`",
+            "ownerKey_trackKey" to "`ownerKey`, `trackKey`",
+            "ownerKey_albumKey" to "`ownerKey`, `albumKey`",
+            "ownerKey_localDay" to "`ownerKey`, `localDay`",
+            "ownerKey_scrobbleState" to "`ownerKey`, `scrobbleState`",
+            "contextId" to "`contextId`"
+        ).forEach { (suffix, columns) ->
+            db.execSQL("CREATE INDEX IF NOT EXISTS `index_music_listens_$suffix` ON `music_listens` ($columns)")
+        }
+        db.execSQL(
+            "CREATE TABLE IF NOT EXISTS `music_listen_artists` (" +
+                "`listenId` INTEGER NOT NULL, `position` INTEGER NOT NULL, `ownerKey` INTEGER NOT NULL, " +
+                "`artistKey` TEXT NOT NULL, `name` TEXT NOT NULL, " +
+                "PRIMARY KEY(`listenId`, `position`), " +
+                "FOREIGN KEY(`listenId`) REFERENCES `music_listens`(`id`) " +
+                "ON UPDATE NO ACTION ON DELETE CASCADE )"
+        )
+        db.execSQL(
+            "CREATE INDEX IF NOT EXISTS `index_music_listen_artists_ownerKey_artistKey` " +
+                "ON `music_listen_artists` (`ownerKey`, `artistKey`)"
+        )
+    }
+}
+
 object Migration_203_204 : Migration(203, 204) {
     override fun migrate(db: SupportSQLiteDatabase) {
         db.execSQL(

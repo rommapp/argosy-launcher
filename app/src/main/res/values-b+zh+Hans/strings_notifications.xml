@@ -184,6 +184,10 @@
     <string name="notif_review_error_server">服务器无法保存该评价</string>
     <string name="notif_storage_migrate_failed_title">迁移失败</string>
     <string name="notif_storage_migrate_platform_failed_title">%1$s 迁移失败</string>
+    <string name="notif_storage_folder_names_busy">请先完成或取消下载，再重命名平台文件夹</string>
+    <string name="notif_storage_folder_names_done">平台文件夹已重命名</string>
+    <string name="notif_storage_folder_names_failed_title">平台文件夹未更改</string>
+    <string name="notif_storage_folder_names_failed_subtitle">无法移动 %1$s</string>
     <string name="notif_storage_purge_failed_title">%1$s 清除失败</string>
     <string name="notif_settings_cache_validate_failed">图片缓存检查失败</string>
     <string name="notif_settings_downloads_validate_failed">下载检查失败</string>

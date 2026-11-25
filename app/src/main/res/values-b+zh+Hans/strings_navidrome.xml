@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="settings_navidrome_main_subtitle_unconfigured">未配置服务器</string>
+    <string name="settings_navidrome_main_subtitle_signed_in_as">已登录为 %1$s</string>
+    <string name="settings_navidrome_main_subtitle_signed_out">未登录</string>
+    <string name="settings_navidrome_section_server">服务器</string>
+    <string name="settings_navidrome_server_title">音乐服务器</string>
+    <string name="settings_navidrome_server_unconfigured">未配置</string>
+    <string name="settings_navidrome_account_label">账户</string>
+    <string name="settings_navidrome_account_sign_in">登录</string>
+    <string name="settings_navidrome_account_sign_out">退出登录</string>
+    <string name="settings_navidrome_account_signed_in_as">已登录为 %1$s</string>
+    <string name="settings_navidrome_account_password">使用你的 Navidrome 用户名和密码登录</string>
+    <string name="settings_navidrome_connection_title">连接</string>
+    <string name="settings_navidrome_connection_checking">正在检查服务器</string>
+    <string name="settings_navidrome_connection_connected">已连接</string>
+    <string name="settings_navidrome_connection_connected_version">已连接到 Navidrome %1$s</string>
+    <string name="settings_navidrome_connection_unknown">选择以检查连接</string>
+    <string name="settings_navidrome_config_server_address_label">服务器地址</string>
+    <string name="settings_navidrome_config_keyboard_submit">保存</string>
+    <string name="settings_navidrome_config_save_title">保存</string>
+    <string name="settings_navidrome_config_save_subtitle">将此地址用于你的音乐库</string>
+    <string name="settings_navidrome_config_cancel_title">取消</string>
+    <string name="settings_navidrome_config_cancel_subtitle">返回 Navidrome 设置</string>
+    <string name="settings_navidrome_config_error_empty">请输入服务器地址</string>
+    <string name="settings_navidrome_signin_username_label">用户名</string>
+    <string name="settings_navidrome_signin_password_label">密码</string>
+    <string name="settings_navidrome_signin_username_keyboard_submit">完成</string>
+    <string name="settings_navidrome_signin_password_keyboard_submit">登录</string>
+    <string name="settings_navidrome_signin_submit_title">登录</string>
+    <string name="settings_navidrome_signin_submitting_title">正在登录...</string>
+    <string name="settings_navidrome_signin_submit_subtitle">将此账户用于你的音乐库</string>
+    <string name="settings_navidrome_signin_cancel_title">取消</string>
+    <string name="settings_navidrome_signin_cancel_subtitle">返回 Navidrome 设置</string>
+    <string name="settings_navidrome_signin_error_empty">请输入用户名和密码</string>
+    <string name="settings_navidrome_signin_error_rejected">服务器拒绝了登录</string>
+    <string name="settings_navidrome_signin_error_unreachable">无法连接到服务器。请检查地址后重试。</string>
+    <string name="settings_navidrome_signout_title">退出 Navidrome 登录？</string>
+    <string name="settings_navidrome_signout_message">此设备将忘记你的 Navidrome 登录信息。你的音乐和播放列表仍保留在服务器上。</string>
+    <string name="settings_navidrome_signout_confirm">退出登录</string>
+</resources>

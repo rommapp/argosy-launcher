@@ -196,6 +196,10 @@
     <string name="notif_review_error_server">Le serveur n\'a pas pu enregistrer l\'avis</string>
     <string name="notif_storage_migrate_failed_title">Échec de la migration</string>
     <string name="notif_storage_migrate_platform_failed_title">Échec de la migration de %1$s</string>
+    <string name="notif_storage_folder_names_busy">Terminez ou annulez les téléchargements avant de renommer les dossiers de plateforme</string>
+    <string name="notif_storage_folder_names_done">Dossiers de plateforme renommés</string>
+    <string name="notif_storage_folder_names_failed_title">Dossiers de plateforme inchangés</string>
+    <string name="notif_storage_folder_names_failed_subtitle">Impossible de déplacer %1$s</string>
     <string name="notif_storage_purge_failed_title">Échec de la purge de %1$s</string>
     <string name="notif_settings_cache_validate_failed">Échec de la vérification du cache d\'images</string>
     <string name="notif_settings_downloads_validate_failed">Échec de la vérification des téléchargements</string>

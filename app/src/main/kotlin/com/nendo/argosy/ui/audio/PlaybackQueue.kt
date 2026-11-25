@@ -34,6 +34,26 @@ class PlaybackQueue(private val random: Random = Random.Default) {
         index = 0
     }
 
+    /**
+     * Loads [tracks] with play starting at source position [startIndex]. Under shuffle the
+     * chosen track plays first and the rest follow in shuffled order.
+     */
+    fun loadAt(tracks: List<MusicQueueTrack>, startIndex: Int) {
+        val start = tracks.getOrNull(startIndex)
+        if (start == null) {
+            load(tracks)
+            return
+        }
+        sourceTracks = tracks
+        if (shuffle) {
+            order = listOf(start) + tracks.filterIndexed { i, _ -> i != startIndex }.shuffled(random)
+            index = 0
+        } else {
+            order = tracks
+            index = startIndex
+        }
+    }
+
     fun replaceKeepingCurrent(tracks: List<MusicQueueTrack>): Boolean {
         val playingId = current?.id
         val incoming = tracks.associateBy { it.id }
@@ -82,8 +102,14 @@ class PlaybackQueue(private val random: Random = Random.Default) {
         index = (index - 1).mod(order.size)
     }
 
+    val isAtLast: Boolean get() = index >= order.lastIndex
+
     fun previousAction(positionMs: Long): PreviousAction =
-        if (positionMs > SKIP_PREVIOUS_RESTART_THRESHOLD_MS) PreviousAction.RESTART else PreviousAction.STEP_BACK
+        if (index == 0 || positionMs > SKIP_PREVIOUS_RESTART_THRESHOLD_MS) {
+            PreviousAction.RESTART
+        } else {
+            PreviousAction.STEP_BACK
+        }
 
     fun clear() {
         sourceTracks = emptyList()

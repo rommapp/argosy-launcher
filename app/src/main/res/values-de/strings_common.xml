@@ -623,6 +623,7 @@
     <string name="ui_quick_settings_orientation_landscape">Quer</string>
     <string name="ui_quick_settings_orientation_portrait">Hoch</string>
     <string name="ui_quick_settings_haptics">Vibration</string>
+    <string name="ui_quick_settings_led">LEDs</string>
     <string name="ui_quick_settings_ui_sounds">UI-Sounds</string>
     <string name="ui_quick_settings_swap_ab">A/B tauschen</string>
     <string name="ui_quick_settings_swap_xy">X/Y tauschen</string>
@@ -633,8 +634,7 @@
     <string name="ui_quick_settings_brightness_main">Hauptbildschirm</string>
     <string name="ui_quick_settings_brightness_second">Zweitbildschirm</string>
     <string name="ui_quick_settings_off">Aus</string>
-    <string name="ui_quick_settings_percent">%1$d%%</string>
-    <string name="ui_quick_settings_page_performance">Leistung</string>
+    <string name="ui_quick_settings_percent">%1$d%%</string>    <string name="ui_quick_settings_page_performance">Leistung</string>
     <string name="ui_quick_settings_page_friends">Freunde</string>
     <string name="ui_quick_settings_page_music">Musik</string>
     <string name="ui_quick_settings_group_display">Anzeige</string>
@@ -655,6 +655,9 @@
     <string name="ui_quick_settings_music_pause">Pausieren</string>
     <string name="ui_quick_settings_music_next">Nächster Titel</string>
     <string name="ui_quick_settings_music_shuffle">Zufallswiedergabe</string>
+    <string name="ui_quick_settings_music_repeat_all">Alle wiederholen</string>
+    <string name="ui_quick_settings_music_repeat_one">Titel wiederholen</string>
+    <string name="ui_quick_settings_music_repeat_off">Wiederholen aus</string>
     <string name="ui_quick_settings_music_play_in_background">Im Hintergrund abspielen</string>
     <string name="ui_quick_settings_music_playlists">Playlists</string>
     <string name="ui_quick_settings_music_soundtracks">Spiel-Soundtracks</string>
@@ -709,6 +712,7 @@
     <string name="ui_drawer_nav_collections">Sammlungen</string>
     <string name="ui_drawer_nav_library">Bibliothek</string>
     <string name="ui_drawer_nav_media">Medien</string>
+    <string name="ui_drawer_nav_music">Musik</string>
     <string name="ui_drawer_nav_downloads">Downloads</string>
     <string name="ui_drawer_nav_save_sync">Spielstand-Sync</string>
     <string name="ui_drawer_nav_apps">Apps</string>

@@ -10,9 +10,12 @@ import com.nendo.argosy.data.preferences.UserPreferencesRepository
 import com.nendo.argosy.data.repository.MIN_DISPLAY_MS
 import com.nendo.argosy.data.repository.RaMetadataSource
 import com.nendo.argosy.data.social.uploader.PlaySessionPullScheduler
+import com.nendo.argosy.domain.model.DigestMusic
 import com.nendo.argosy.domain.model.MonthlyDigest
 import com.nendo.argosy.domain.model.RecapMonthUnlock
 import com.nendo.argosy.domain.model.SessionUnlock
+import com.nendo.argosy.util.Logger
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
@@ -36,7 +39,8 @@ class GetMonthlyRecapUseCase @Inject constructor(
     private val gameDao: GameDao,
     private val gameArtDao: GameArtDao,
     private val achievementDao: AchievementDao,
-    private val playSessionPullScheduler: PlaySessionPullScheduler
+    private val playSessionPullScheduler: PlaySessionPullScheduler,
+    private val musicDigest: GetMonthlyMusicDigestUseCase
 ) {
     suspend operator fun invoke(month: YearMonth, zone: ZoneId = ZoneId.systemDefault()): MonthlyDigest {
         val window = RecapEligibility.monthWindow(month, zone)
@@ -74,6 +78,16 @@ class GetMonthlyRecapUseCase @Inject constructor(
             playSessionDao.getActiveMsPerDay(owner, window.start, window.end, MIN_DISPLAY_MS, hidden)
         )
         return MonthlyDigestAssembler.assemble(recap, days, unlocks, covers, awardTitles)
+            .copy(music = listening(month))
+    }
+
+    private suspend fun listening(month: YearMonth): DigestMusic? = try {
+        musicDigest(month)
+    } catch (e: CancellationException) {
+        throw e
+    } catch (e: Exception) {
+        Logger.warn(TAG, "Listening for $month left out of the recap", e)
+        null
     }
 
     private suspend fun privateRaIds(privateIgdbIds: List<Long>): Set<Long> =
@@ -94,5 +108,6 @@ class GetMonthlyRecapUseCase @Inject constructor(
 
     private companion object {
         const val COVERED_GAMES = 1
+        const val TAG = "MonthlyRecap"
     }
 }

@@ -166,6 +166,7 @@ private fun routeApplySectionEntry(vm: SettingsViewModel, section: SettingsSecti
             vm.jellyfinDelegate.refreshMediaDirPath(vm.viewModelScope)
             vm.refreshJellyfinConnection()
         }
+        SettingsSection.NAVIDROME -> vm.checkNavidromeConnection()
         SettingsSection.PERMISSIONS -> vm.permissionsDelegate.refreshPermissions()
         SettingsSection.SHADER_STACK -> vm.shaderChainManager.loadChain(
             routeResolveShaderChainSettingsScope(vm._uiState.value).chainJson
@@ -610,6 +611,16 @@ internal fun routeAdjustAmbientAudioVolume(vm: SettingsViewModel, delta: Int) {
         vm.hapticManager.vibrate(HapticPattern.BOUNDARY_HIT)
     }
     vm.ambientAudioDelegate.adjustVolume(vm.viewModelScope, delta)
+}
+
+internal fun routeAdjustAmbientAudioGameVolume(vm: SettingsViewModel, delta: Int) {
+    val levels = VolumeLevels.GAME_MUSIC
+    val currentIndex = levelIndexIn(vm.uiState.value.ambientAudio.gameVolume, levels)
+    val newIndex = (currentIndex + delta).coerceIn(0, levels.lastIndex)
+    if (newIndex == currentIndex && delta != 0) {
+        vm.hapticManager.vibrate(HapticPattern.BOUNDARY_HIT)
+    }
+    vm.ambientAudioDelegate.adjustGameVolume(vm.viewModelScope, delta)
 }
 
 internal fun routeCycleAmbientAudioVolume(vm: SettingsViewModel) {

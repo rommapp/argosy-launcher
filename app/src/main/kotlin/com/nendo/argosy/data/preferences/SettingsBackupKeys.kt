@@ -99,7 +99,9 @@ object SettingsBackupKeys {
         SettingsBackupKey("library_default_source", SettingsBackupType.STRING),
         SettingsBackupKey("sort_favorites_first", SettingsBackupType.BOOLEAN),
         SettingsBackupKey("sort_installed_first", SettingsBackupType.BOOLEAN),
-        SettingsBackupKey("region_priority", SettingsBackupType.STRING)
+        SettingsBackupKey("region_priority", SettingsBackupType.STRING),
+        SettingsBackupKey("music_group_by", SettingsBackupType.STRING),
+        SettingsBackupKey("music_source_filter", SettingsBackupType.STRING)
     )
 
     /**
@@ -122,7 +124,9 @@ object SettingsBackupKeys {
         SettingsBackupKey("ambient_audio_enabled", SettingsBackupType.BOOLEAN),
         SettingsBackupKey("ambient_audio_volume", SettingsBackupType.INT),
         SettingsBackupKey("ambient_audio_shuffle", SettingsBackupType.BOOLEAN),
-        SettingsBackupKey("ambient_audio_play_in_background", SettingsBackupType.BOOLEAN)
+        SettingsBackupKey("ambient_audio_repeat", SettingsBackupType.STRING),
+        SettingsBackupKey("ambient_audio_play_in_background", SettingsBackupType.BOOLEAN),
+        SettingsBackupKey("ambient_audio_game_volume", SettingsBackupType.INT)
     )
 
     private val NAVIGATION = listOf(
@@ -245,6 +249,7 @@ object SettingsBackupKeys {
         SettingsBackupKey("instant_download_threshold_mb", SettingsBackupType.INT),
         SettingsBackupKey("stage_downloads_internally", SettingsBackupType.BOOLEAN),
         SettingsBackupKey("folder_name_from_rom", SettingsBackupType.BOOLEAN),
+        SettingsBackupKey("platform_folders_from_server", SettingsBackupType.BOOLEAN),
         SettingsBackupKey("download_category_defaults", SettingsBackupType.STRING),
         SettingsBackupKey("download_category_platform_overrides", SettingsBackupType.STRING),
         SettingsBackupKey("save_cache_limit", SettingsBackupType.INT)
@@ -299,11 +304,18 @@ object SettingsBackupKeys {
         SettingsBackupKey("notify_controllers", SettingsBackupType.BOOLEAN)
     )
 
+    private val NOW_PLAYING = listOf(
+        SettingsBackupKey("now_playing_style", SettingsBackupType.STRING),
+        SettingsBackupKey("now_playing_spin", SettingsBackupType.BOOLEAN),
+        SettingsBackupKey("now_playing_layout", SettingsBackupType.STRING)
+    )
+
     val EXPORTED: List<SettingsBackupKey> =
         APPEARANCE + BACKDROP + BOX_ART + BACKGROUND + HOME_AND_LIBRARY + APP_SHELVES +
             FEEDBACK + NAVIGATION + BUILTIN_GENERAL + BUILTIN_VIDEO + BUILTIN_AUDIO +
             BUILTIN_MOTION + BUILTIN_INPUT + BUILTIN_TOUCH + BUILTIN_HUD + BUILTIN_SPEEDRUN +
-            DOWNLOADS_AND_CACHES + SYNC_FILTERS + MEDIA_PLAYBACK + UPDATES + SESSIONS + NOTIFICATIONS
+            DOWNLOADS_AND_CACHES + SYNC_FILTERS + MEDIA_PLAYBACK + UPDATES + SESSIONS + NOTIFICATIONS +
+            NOW_PLAYING
 
     val BY_NAME: Map<String, SettingsBackupKey> = EXPORTED.associateBy { it.name }
 }

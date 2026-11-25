@@ -91,6 +91,37 @@ class RomMMusicLibraryService @Inject constructor(
         }
     }
 
+    /**
+     * One page of every track the server lists, oldest file first, so a page walk is not
+     * shifted by tracks added while it runs.
+     */
+    suspend fun getTrackPage(
+        minDurationSeconds: Double,
+        limit: Int,
+        offset: Int
+    ): RomMResult<RomMMusicTrackPage> {
+        val api = connectionManager.getApi() ?: return RomMResult.Error("Not connected")
+        return try {
+            val response = api.getMusicTracks(
+                mapOf(
+                    "min_duration" to minDurationSeconds.toString(),
+                    "order_by" to "added",
+                    "order_dir" to "asc",
+                    "limit" to limit.toString(),
+                    "offset" to offset.toString()
+                )
+            )
+            val body = response.body()
+            if (response.isSuccessful && body != null) {
+                RomMResult.Success(body)
+            } else {
+                RomMResult.Error("Failed to fetch music tracks", response.code())
+            }
+        } catch (e: Exception) {
+            RomMResult.Error(e.message ?: "Failed to fetch music tracks")
+        }
+    }
+
     private suspend fun collectPages(
         fetch: suspend (limit: Int, offset: Int) -> retrofit2.Response<RomMMusicTrackPage>
     ): RomMResult<List<RomMMusicTrack>> {

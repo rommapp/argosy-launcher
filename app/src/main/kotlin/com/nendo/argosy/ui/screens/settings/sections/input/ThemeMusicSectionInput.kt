@@ -67,6 +67,10 @@ internal class ThemeMusicSectionInput(
                 viewModel.adjustAmbientAudioVolume(direction)
                 return InputResult.HANDLED
             }
+            ThemeMusicItem.GameMusicVolume -> if (state.ambientAudio.enabled) {
+                viewModel.adjustAmbientAudioGameVolume(direction)
+                return InputResult.HANDLED
+            }
             ThemeMusicItem.BgmToggle -> {
                 val target = direction > 0
                 if (target == state.ambientAudio.enabled) return InputResult.handled(SoundType.SILENT)

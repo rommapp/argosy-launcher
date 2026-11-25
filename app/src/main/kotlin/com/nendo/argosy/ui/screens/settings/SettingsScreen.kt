@@ -132,6 +132,7 @@ import com.nendo.argosy.ui.screens.settings.sections.ControllerGripSection
 import com.nendo.argosy.ui.screens.settings.sections.HomeScreenSection
 import com.nendo.argosy.ui.screens.settings.sections.InterfaceSection
 import com.nendo.argosy.ui.screens.settings.sections.JellyfinSection
+import com.nendo.argosy.ui.screens.settings.sections.NavidromeSection
 import com.nendo.argosy.ui.screens.settings.sections.NetworkSection
 import com.nendo.argosy.ui.components.connections.quickConnectionsCanForget
 import com.nendo.argosy.ui.components.connections.quickConnectionsFocusedRow
@@ -674,6 +675,7 @@ fun SettingsScreen(
                         SettingsSection.SYNC_SETTINGS -> SyncSettingsSection(uiState, viewModel, imageCacheProgress)
                         SettingsSection.STEAM_SETTINGS -> SteamSection(uiState, viewModel)
                         SettingsSection.JELLYFIN -> JellyfinSection(uiState, viewModel)
+                        SettingsSection.NAVIDROME -> NavidromeSection(uiState, viewModel)
                         SettingsSection.NETWORK_BLUETOOTH -> NetworkSection(viewModel)
                         SettingsSection.RETRO_ACHIEVEMENTS -> RASettingsSection(uiState, viewModel)
                         SettingsSection.STORAGE -> StorageSection(uiState, viewModel)
@@ -918,6 +920,16 @@ fun SettingsScreen(
     )
 
     ArgosyConfirmModalHost(
+        visible = uiState.navidrome.showSignOutConfirm,
+        title = stringResource(R.string.settings_navidrome_signout_title),
+        message = stringResource(R.string.settings_navidrome_signout_message),
+        confirmLabel = stringResource(R.string.settings_navidrome_signout_confirm),
+        destructive = true,
+        onConfirm = { viewModel.confirmNavidromeSignOut() },
+        onDismiss = { viewModel.cancelNavidromeSignOut() }
+    )
+
+    ArgosyConfirmModalHost(
         visible = uiState.showImportSettingsConfirm,
         title = stringResource(R.string.settings_shell_modal_import_settings_title),
         message = stringResource(R.string.settings_shell_modal_import_settings_message),
@@ -992,6 +1004,22 @@ fun SettingsScreen(
         onDismiss = { viewModel.cancelPlatformMigration() },
         neutralLabel = stringResource(R.string.settings_shell_modal_migrate_platform_skip),
         onNeutral = { viewModel.skipPlatformMigration() }
+    )
+
+    val folderNameSwitch = uiState.storage.showFolderNameSwitchConfirm
+    ArgosyConfirmModalHost(
+        visible = folderNameSwitch != null,
+        title = stringResource(
+            if (folderNameSwitch?.useServerNames == false) R.string.settings_shell_modal_folder_names_off_title
+            else R.string.settings_shell_modal_folder_names_on_title
+        ),
+        message = stringResource(
+            if (folderNameSwitch?.useServerNames == false) R.string.settings_shell_modal_folder_names_off_message
+            else R.string.settings_shell_modal_folder_names_on_message
+        ),
+        confirmLabel = stringResource(R.string.settings_shell_modal_folder_names_confirm),
+        onConfirm = { viewModel.confirmPlatformFolderNames() },
+        onDismiss = { viewModel.cancelPlatformFolderNames() }
     )
 
     val purgePlatformConfig = uiState.storage.showPurgePlatformConfirm?.let { platformId ->
@@ -1577,6 +1605,7 @@ private fun settingsSectionTitle(uiState: SettingsUiState): String = when (uiSta
     SettingsSection.SYNC_SETTINGS -> stringResource(R.string.settings_shell_header_sync_settings)
     SettingsSection.STEAM_SETTINGS -> stringResource(R.string.settings_shell_header_steam)
     SettingsSection.JELLYFIN -> stringResource(R.string.settings_shell_header_jellyfin)
+    SettingsSection.NAVIDROME -> stringResource(R.string.settings_navidrome_header)
     SettingsSection.NETWORK_BLUETOOTH -> stringResource(R.string.settings_shell_header_network)
     SettingsSection.RETRO_ACHIEVEMENTS -> stringResource(R.string.settings_shell_header_retroachievements)
     SettingsSection.STORAGE -> stringResource(R.string.settings_shell_header_storage)

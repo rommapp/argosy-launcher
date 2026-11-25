@@ -6,6 +6,9 @@ import com.nendo.argosy.data.local.dao.GameFileDao
 import com.nendo.argosy.data.local.dao.resolved
 import com.nendo.argosy.data.local.entity.GameEntity
 import com.nendo.argosy.data.model.VariantCategory
+import com.nendo.argosy.data.music.identity.MusicAccountReader
+import com.nendo.argosy.data.music.identity.MusicAccounts
+import com.nendo.argosy.data.music.identity.MusicTrackIdentities
 import com.nendo.argosy.data.preferences.UserPreferencesRepository
 import com.nendo.argosy.data.remote.romm.RomMMusicLibraryService
 import com.nendo.argosy.data.remote.romm.RomMMusicTrack
@@ -26,7 +29,8 @@ class ResolveMusicQueueUseCase @Inject constructor(
     private val gameDao: GameDao,
     private val gameFileDao: GameFileDao,
     private val preferencesRepository: UserPreferencesRepository,
-    private val gameArtDao: GameArtDao
+    private val gameArtDao: GameArtDao,
+    private val accountReader: MusicAccountReader
 ) {
     suspend operator fun invoke(selection: MusicSelection): List<MusicQueueTrack> =
         withContext(Dispatchers.IO) {
@@ -42,7 +46,7 @@ class ResolveMusicQueueUseCase @Inject constructor(
         val token = preferencesRepository.userPreferences.first().rommToken
         val result = musicLibrary.getPlaylistTracks(selection.playlistId)
         if (result !is RomMResult.Success) return emptyList()
-        return result.data.toQueue(token, fallbackGame = null)
+        return result.data.toQueue(token, fallbackGame = null, accounts = accountReader.current())
     }
 
     private suspend fun soundtrackQueue(selection: MusicSelection.GameSoundtrack): List<MusicQueueTrack> {
@@ -61,32 +65,35 @@ class ResolveMusicQueueUseCase @Inject constructor(
                         { it.title.orEmpty().lowercase() }
                     )
                 )
-                return ordered.toQueue(token, game)
+                return ordered.toQueue(token, game, accountReader.current())
             }
         }
-        return game?.let { localSoundtrack(it) }.orEmpty()
+        return game?.let { localSoundtrack(it, accountReader.current()) }.orEmpty()
     }
 
-    private suspend fun localSoundtrack(game: GameEntity): List<MusicQueueTrack> {
+    private suspend fun localSoundtrack(game: GameEntity, accounts: MusicAccounts): List<MusicQueueTrack> {
         val cover = gameArtDao.resolved(game.id).coverPath?.takeIf { it.isNotBlank() }
         return gameFileDao.getFilesByCategory(game.id, VariantCategory.SOUNDTRACK.key)
             .filter { isPlayableLocal(it.localPath, it.durationSeconds) }
             .sortedWith(compareBy({ it.trackNumber ?: Int.MAX_VALUE }, { it.fileName }))
             .mapNotNull { row ->
                 val path = row.localPath ?: return@mapNotNull null
+                val title = row.trackTitle?.takeIf { it.isNotBlank() } ?: row.fileName.substringBeforeLast('.')
                 MusicQueueTrack(
                     id = localTrackId(path),
                     source = MusicTrackSource.Local(path),
-                    title = row.trackTitle?.takeIf { it.isNotBlank() } ?: row.fileName.substringBeforeLast('.'),
+                    title = title,
                     gameTitle = game.title,
-                    coverPath = cover
+                    coverPath = cover,
+                    identity = MusicTrackIdentities.forDeviceFile(path, row, game, title, accounts)
                 )
             }
     }
 
     private suspend fun List<RomMMusicTrack>.toQueue(
         token: String?,
-        fallbackGame: GameEntity?
+        fallbackGame: GameEntity?,
+        accounts: MusicAccounts
     ): List<MusicQueueTrack> {
         val locals = getLocalMusicTrackState(map { it.toLookup() })
         val localCovers = mutableMapOf<Long, String?>()
@@ -99,12 +106,14 @@ class ResolveMusicQueueUseCase @Inject constructor(
                     ?.let { gameArtDao.resolved(it.id).coverPath }
                     ?.takeIf { it.isNotBlank() }
             }
+            val title = track.title?.takeIf { it.isNotBlank() } ?: track.fileName()
             MusicQueueTrack(
                 id = serverTrackId(track.romFileId),
                 source = source,
-                title = track.title?.takeIf { it.isNotBlank() } ?: track.fileName(),
+                title = title,
                 gameTitle = track.gameName?.takeIf { it.isNotBlank() } ?: fallbackGame?.title,
-                coverPath = localCover ?: musicLibrary.resourceUrl(track.coverUrl ?: track.gameCoverUrl)
+                coverPath = localCover ?: musicLibrary.resourceUrl(track.coverUrl ?: track.gameCoverUrl),
+                identity = MusicTrackIdentities.forRommTrack(track, title, accounts)
             )
         }
     }

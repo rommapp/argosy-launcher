@@ -202,6 +202,10 @@
     <string name="notif_review_error_server">Сервер не смог сохранить отзыв</string>
     <string name="notif_storage_migrate_failed_title">Не удалось перенести</string>
     <string name="notif_storage_migrate_platform_failed_title">Не удалось перенести %1$s</string>
+    <string name="notif_storage_folder_names_busy">Завершите или отмените загрузки, прежде чем переименовывать папки платформ</string>
+    <string name="notif_storage_folder_names_done">Папки платформ переименованы</string>
+    <string name="notif_storage_folder_names_failed_title">Папки платформ не изменены</string>
+    <string name="notif_storage_folder_names_failed_subtitle">Не удалось переместить %1$s</string>
     <string name="notif_storage_purge_failed_title">Не удалось очистить %1$s</string>
     <string name="notif_settings_cache_validate_failed">Не удалось проверить кэш изображений</string>
     <string name="notif_settings_downloads_validate_failed">Не удалось проверить загрузки</string>

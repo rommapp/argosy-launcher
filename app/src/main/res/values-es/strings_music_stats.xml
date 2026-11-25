@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="music_stats_entry_option">Lo que escuchas</string>
+    <string name="music_stats_entry_header">Lo que escuchas</string>
+    <string name="music_stats_title">Lo que escuchas</string>
+    <string name="music_stats_back_desc">Atrás</string>
+    <string name="music_stats_tab_month">Este mes</string>
+    <string name="music_stats_tab_flashback">Recuerdos</string>
+    <string name="music_stats_tab_games">Con tus juegos</string>
+    <string name="music_stats_kicker_game">Juego</string>
+    <string name="music_stats_kicker_platform">Plataforma</string>
+    <string name="music_stats_kicker_genre">Género</string>
+    <string name="music_stats_kicker_franchise">Saga</string>
+    <string name="music_stats_options_play">Reproducir</string>
+    <string name="music_stats_options_shuffle">Aleatorio</string>
+    <string name="music_stats_shelf_top_tracks">Canciones más escuchadas</string>
+    <string name="music_stats_shelf_top_albums">Álbumes más escuchados</string>
+    <string name="music_stats_shelf_top_artists">Artistas más escuchados</string>
+    <string name="music_stats_shelf_on_this_day">Un día como hoy en %1$d</string>
+    <string name="music_stats_shelf_month_in_year">Este mes en %1$d</string>
+    <plurals name="music_stats_count_plays">
+        <item quantity="one">%d reproducción</item>
+        <item quantity="many">%d reproducciones</item>
+        <item quantity="other">%d reproducciones</item>
+    </plurals>
+    <plurals name="music_stats_count_tracks">
+        <item quantity="one">%d canción</item>
+        <item quantity="many">%d canciones</item>
+        <item quantity="other">%d canciones</item>
+    </plurals>
+    <plurals name="music_stats_count_days">
+        <item quantity="one">%d día</item>
+        <item quantity="many">%d días</item>
+        <item quantity="other">%d días</item>
+    </plurals>
+    <string name="music_stats_error_title">No se pudo cargar el historial de escucha</string>
+    <string name="music_stats_error_message">Vuelve a intentarlo en un momento.</string>
+    <string name="music_stats_error_retry">Reintentar</string>
+    <string name="music_stats_month_empty_title">No escuchaste nada este mes</string>
+    <string name="music_stats_empty_message">Tu historial de escucha se crea a medida que escuchas música.</string>
+    <string name="music_stats_flashback_empty_title">Aún no hay recuerdos</string>
+    <string name="music_stats_flashback_empty_message">Lo que escuches ahora volverá aquí en esta fecha y en este mes el año que viene.</string>
+    <string name="music_stats_games_empty_title">Aún no hay música con juegos</string>
+    <string name="music_stats_games_empty_message">Escucha música mientras juegas y aparecerá aquí por juego, plataforma, género y saga.</string>
+    <string name="music_stats_footer_views">Vistas</string>
+    <string name="music_stats_footer_play">Reproducir</string>
+    <string name="music_stats_footer_options">Opciones</string>
+    <string name="music_stats_game_action">Música para este juego</string>
+    <string name="music_stats_recap_heading">Música</string>
+    <string name="music_stats_recap_top_track">Canción principal</string>
+    <string name="music_stats_recap_top_album">Álbum principal</string>
+    <string name="music_stats_recap_top_artist">Artista principal</string>
+</resources>

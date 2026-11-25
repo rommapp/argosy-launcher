@@ -586,7 +586,7 @@ class ArgosyActivity : ComponentActivity() {
             Logger.verbose(TAG) { "dispatchKeyEvent: LOCAL handling key=${event.keyCode}" }
         }
         if (event.action == KeyEvent.ACTION_DOWN) {
-            ambientAudioManager.resumeFromSuspend()
+            ambientAudioManager.resumeFromLauncherInput()
         }
         if (gamepadInputHandler.handleKeyEvent(event)) {
             return true
@@ -601,7 +601,7 @@ class ArgosyActivity : ComponentActivity() {
         if (pointerGuard.consumes(event)) return true
         if (event.actionMasked == MotionEvent.ACTION_DOWN) {
             val dimmed = isMediaDimmed()
-            ambientAudioManager.resumeFromSuspend()
+            ambientAudioManager.resumeFromLauncherInput()
             if (::dualScreenManager.isInitialized) {
                 dualScreenManager.notifyUserActivity("mainTouchDown")
             }

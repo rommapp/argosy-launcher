@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="music_stats_entry_option">Ваша музыка</string>
+    <string name="music_stats_entry_header">Ваша музыка</string>
+    <string name="music_stats_title">Ваша музыка</string>
+    <string name="music_stats_back_desc">Назад</string>
+    <string name="music_stats_tab_month">Этот месяц</string>
+    <string name="music_stats_tab_flashback">Воспоминания</string>
+    <string name="music_stats_tab_games">С вашими играми</string>
+    <string name="music_stats_kicker_game">Игра</string>
+    <string name="music_stats_kicker_platform">Платформа</string>
+    <string name="music_stats_kicker_genre">Жанр</string>
+    <string name="music_stats_kicker_franchise">Серия</string>
+    <string name="music_stats_options_play">Слушать</string>
+    <string name="music_stats_options_shuffle">Вперемешку</string>
+    <string name="music_stats_shelf_top_tracks">Самые прослушиваемые треки</string>
+    <string name="music_stats_shelf_top_albums">Самые прослушиваемые альбомы</string>
+    <string name="music_stats_shelf_top_artists">Самые прослушиваемые исполнители</string>
+    <string name="music_stats_shelf_on_this_day">В этот день в %1$d году</string>
+    <string name="music_stats_shelf_month_in_year">В этом месяце в %1$d году</string>
+    <plurals name="music_stats_count_plays">
+        <item quantity="one">%d прослушивание</item>
+        <item quantity="few">%d прослушивания</item>
+        <item quantity="many">%d прослушиваний</item>
+        <item quantity="other">%d прослушивания</item>
+    </plurals>
+    <plurals name="music_stats_count_tracks">
+        <item quantity="one">%d трек</item>
+        <item quantity="few">%d трека</item>
+        <item quantity="many">%d треков</item>
+        <item quantity="other">%d трека</item>
+    </plurals>
+    <plurals name="music_stats_count_days">
+        <item quantity="one">%d день</item>
+        <item quantity="few">%d дня</item>
+        <item quantity="many">%d дней</item>
+        <item quantity="other">%d дня</item>
+    </plurals>
+    <string name="music_stats_error_title">Не удалось загрузить историю прослушивания</string>
+    <string name="music_stats_error_message">Попробуйте ещё раз чуть позже.</string>
+    <string name="music_stats_error_retry">Повторить</string>
+    <string name="music_stats_month_empty_title">В этом месяце ничего не звучало</string>
+    <string name="music_stats_empty_message">История прослушивания пополняется, пока вы слушаете музыку.</string>
+    <string name="music_stats_flashback_empty_title">Воспоминаний пока нет</string>
+    <string name="music_stats_flashback_empty_message">То, что вы слушаете сейчас, вернётся сюда в этот день и в этом месяце через год.</string>
+    <string name="music_stats_games_empty_title">Пока нет музыки к играм</string>
+    <string name="music_stats_games_empty_message">Слушайте музыку во время игры, и она появится здесь по играм, платформам, жанрам и сериям.</string>
+    <string name="music_stats_footer_views">Разделы</string>
+    <string name="music_stats_footer_play">Слушать</string>
+    <string name="music_stats_footer_options">Параметры</string>
+    <string name="music_stats_game_action">Музыка к этой игре</string>
+    <string name="music_stats_recap_heading">Музыка</string>
+    <string name="music_stats_recap_top_track">Главный трек</string>
+    <string name="music_stats_recap_top_album">Главный альбом</string>
+    <string name="music_stats_recap_top_artist">Главный исполнитель</string>
+</resources>

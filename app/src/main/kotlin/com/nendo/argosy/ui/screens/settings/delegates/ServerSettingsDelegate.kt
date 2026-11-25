@@ -11,10 +11,10 @@ import com.nendo.argosy.core.notification.showSuccess
 import com.nendo.argosy.data.remote.romm.DeviceAuthOutcome
 import com.nendo.argosy.data.sync.AccountRemovalResult
 import com.nendo.argosy.data.remote.romm.RomMCapabilities
-import com.nendo.argosy.data.remote.romm.RomMConnectionManager
 import com.nendo.argosy.data.remote.romm.RomMRepository
 import com.nendo.argosy.data.remote.romm.RomMResult
 import com.nendo.argosy.data.remote.romm.pollDeviceAuthUntilResolved
+import com.nendo.argosy.util.ServerAddress
 import com.nendo.argosy.data.local.entity.RomMAccountEntity
 import com.nendo.argosy.data.local.entity.serverInstanceKey
 import com.nendo.argosy.data.repository.RomMAccountRepository
@@ -398,7 +398,7 @@ class ServerSettingsDelegate @Inject constructor(
         if (!state.rommEditingAddresses || state.rommAddressVerifyPrompt != null) return
         val current = state.rommAddressRows.getOrNull(row) ?: return
         if (current.saving) return
-        val typed = RomMConnectionManager.withDefaultScheme(current.text)
+        val typed = ServerAddress.withDefaultScheme(current.text)
         if (typed.isBlank()) {
             notificationManager.showError(NotificationText.Res(R.string.settings_romm_config_notif_address_required))
             return

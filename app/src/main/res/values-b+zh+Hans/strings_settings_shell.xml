@@ -198,6 +198,11 @@
     <string name="settings_shell_modal_migrate_platform_message">是否将已下载的游戏移动到新位置？文件将被复制到新位置后从旧位置删除。</string>
     <string name="settings_shell_modal_migrate_platform_confirm">迁移</string>
     <string name="settings_shell_modal_migrate_platform_skip">跳过</string>
+    <string name="settings_shell_modal_folder_names_on_title">使用服务器的文件夹名称？</string>
+    <string name="settings_shell_modal_folder_names_off_title">使用 Argosy 的文件夹名称？</string>
+    <string name="settings_shell_modal_folder_names_on_message">已下载的游戏将移到与 RomM 服务器同名的文件夹中。文件原地重命名，不会复制。</string>
+    <string name="settings_shell_modal_folder_names_off_message">已下载的游戏将移回 Argosy 自己的平台文件夹。文件原地重命名，不会复制。</string>
+    <string name="settings_shell_modal_folder_names_confirm">移动</string>
 
     <string name="settings_shell_modal_purge_platform_title">清空%1$s？</string>
     <string name="settings_shell_modal_purge_platform_fallback">平台</string>

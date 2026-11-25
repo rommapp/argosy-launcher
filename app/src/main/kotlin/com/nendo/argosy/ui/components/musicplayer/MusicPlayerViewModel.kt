@@ -4,6 +4,8 @@ import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.nendo.argosy.data.preferences.ControlsPreferencesRepository
+import com.nendo.argosy.ui.audio.AmbientMusicSwitch
+import com.nendo.argosy.data.preferences.NowPlayingPreferencesRepository
 import com.nendo.argosy.domain.model.MusicPlaylistEntry
 import com.nendo.argosy.domain.model.MusicSelection
 import com.nendo.argosy.domain.model.MusicServerStatus
@@ -11,6 +13,9 @@ import com.nendo.argosy.domain.usecase.music.GetMusicPlaylistsUseCase
 import com.nendo.argosy.domain.usecase.music.ResolveMusicQueueUseCase
 import com.nendo.argosy.domain.usecase.music.SearchSoundtrackGamesUseCase
 import com.nendo.argosy.ui.audio.AmbientAudioManager
+import com.nendo.argosy.data.music.analysis.TrackAnalysisStore
+import com.nendo.argosy.ui.components.nowplaying.currentTrackAnalysis
+import com.nendo.argosy.ui.components.nowplaying.resolvedDurationMs
 import com.nendo.argosy.ui.screens.settings.delegates.VolumeLevels
 import com.nendo.argosy.ui.screens.settings.delegates.adjustInList
 import com.nendo.argosy.ui.theme.generated.ComponentDefaults
@@ -40,9 +45,12 @@ private const val PREFETCH_THRESHOLD = 8
 class MusicPlayerViewModel @Inject constructor(
     private val ambientAudioManager: AmbientAudioManager,
     private val controlsPreferences: ControlsPreferencesRepository,
+    private val nowPlayingPreferences: NowPlayingPreferencesRepository,
+    private val ambientMusicSwitch: AmbientMusicSwitch,
     private val getMusicPlaylists: GetMusicPlaylistsUseCase,
     private val searchSoundtrackGames: SearchSoundtrackGamesUseCase,
-    private val resolveMusicQueue: ResolveMusicQueueUseCase
+    private val resolveMusicQueue: ResolveMusicQueueUseCase,
+    private val analysisStore: TrackAnalysisStore
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(MusicPlayerUiState())
@@ -64,7 +72,7 @@ class MusicPlayerViewModel @Inject constructor(
                         trackFocus = if (sourceChanged) playback.index else state.trackFocus.coerceIn(0, lastTrack)
                     )
                     val rowGone = when (state.focusedRow) {
-                        MusicPlayerRow.TRANSPORT, MusicPlayerRow.VOLUME -> !next.hasQueue
+                        MusicPlayerRow.TRANSPORT, MusicPlayerRow.NOW_PLAYING, MusicPlayerRow.VOLUME -> !next.hasQueue
                         MusicPlayerRow.TRACKS -> playback.tracks.isEmpty()
                         MusicPlayerRow.SOURCES -> false
                     }
@@ -84,6 +92,16 @@ class MusicPlayerViewModel @Inject constructor(
             }
         }
         viewModelScope.launch {
+            ambientAudioManager.playback.currentTrackAnalysis(analysisStore).collect { analysis ->
+                _uiState.update { it.copy(analysis = analysis) }
+            }
+        }
+        viewModelScope.launch {
+            nowPlayingPreferences.preferences.collect { prefs ->
+                _uiState.update { it.copy(nowPlaying = prefs) }
+            }
+        }
+        viewModelScope.launch {
             searchInput
                 .drop(1)
                 .debounce(ComponentDefaults.MusicPlayer.searchDebounceMs.toLong())
@@ -97,7 +115,7 @@ class MusicPlayerViewModel @Inject constructor(
         _uiState.update {
             it.copy(
                 positionMs = position?.positionMs ?: 0L,
-                durationMs = position?.durationMs ?: 0L
+                durationMs = it.playback.resolvedDurationMs(position)
             )
         }
     }
@@ -110,9 +128,12 @@ class MusicPlayerViewModel @Inject constructor(
         val state = _uiState.value
         val trackCount = state.playback.tracks.size
         val next: MusicPlayerUiState = when (state.focusedRow) {
-            MusicPlayerRow.TRANSPORT -> if (delta > 0) state.copy(focusedRow = MusicPlayerRow.VOLUME) else state
+            MusicPlayerRow.TRANSPORT -> if (delta > 0) state.copy(focusedRow = MusicPlayerRow.NOW_PLAYING) else state
+            MusicPlayerRow.NOW_PLAYING -> state.copy(
+                focusedRow = if (delta > 0) MusicPlayerRow.VOLUME else MusicPlayerRow.TRANSPORT
+            )
             MusicPlayerRow.VOLUME -> state.copy(
-                focusedRow = if (delta > 0) MusicPlayerRow.SOURCES else MusicPlayerRow.TRANSPORT
+                focusedRow = if (delta > 0) MusicPlayerRow.SOURCES else MusicPlayerRow.NOW_PLAYING
             )
             MusicPlayerRow.SOURCES -> when {
                 delta < 0 -> if (state.hasQueue) state.copy(focusedRow = MusicPlayerRow.VOLUME) else state
@@ -149,10 +170,8 @@ class MusicPlayerViewModel @Inject constructor(
         val state = _uiState.value
         return when (state.focusedRow) {
             MusicPlayerRow.TRANSPORT -> {
-                val buttons = MusicTransportButton.entries
-                _uiState.update {
-                    it.copy(transportButton = buttons[(it.transportButton.ordinal + delta).mod(buttons.size)])
-                }
+                val buttons = transportButtons(withPlaylist = false)
+                _uiState.update { it.copy(transportButton = buttons.stepFrom(it.transportButton, delta)) }
                 true
             }
             MusicPlayerRow.SOURCES -> {
@@ -164,7 +183,12 @@ class MusicPlayerViewModel @Inject constructor(
             }
             MusicPlayerRow.VOLUME -> stepVolume(delta)
             MusicPlayerRow.TRACKS -> leaveTrackList()
+            MusicPlayerRow.NOW_PLAYING -> false
         }
+    }
+
+    fun focusNowPlayingLink() {
+        _uiState.update { it.copy(focusedRow = MusicPlayerRow.NOW_PLAYING) }
     }
 
     fun focusTransport(button: MusicTransportButton) {
@@ -217,14 +241,16 @@ class MusicPlayerViewModel @Inject constructor(
         _uiState.update { it.copy(focusedRow = MusicPlayerRow.SOURCES, sourceButton = kind) }
     }
 
-    fun confirmRow() {
+    fun confirmRow(): Boolean {
         val state = _uiState.value
         when (state.focusedRow) {
-            MusicPlayerRow.TRANSPORT -> activateTransport(state.transportButton)
+            MusicPlayerRow.TRANSPORT -> return activateTransport(state.transportButton)
             MusicPlayerRow.VOLUME -> toggleMusicEnabled()
             MusicPlayerRow.SOURCES -> openBrowse(state.sourceButton)
             MusicPlayerRow.TRACKS -> playTrack(state.trackFocus)
+            MusicPlayerRow.NOW_PLAYING -> Unit
         }
+        return true
     }
 
     fun playTrack(position: Int) {
@@ -235,21 +261,26 @@ class MusicPlayerViewModel @Inject constructor(
         }
     }
 
-    fun activateTransport(button: MusicTransportButton) {
+    fun activateTransport(button: MusicTransportButton): Boolean {
         when (button) {
             MusicTransportButton.PREVIOUS -> skipPrevious()
             MusicTransportButton.PLAY_PAUSE -> togglePlayPause()
-            MusicTransportButton.NEXT -> skipNext()
+            MusicTransportButton.NEXT -> return skipNext()
             MusicTransportButton.SHUFFLE -> toggleShuffle()
+            MusicTransportButton.ADD_TO_PLAYLIST -> return false
+            MusicTransportButton.REPEAT -> {
+                val next = _uiState.value.playback.repeat.next
+                viewModelScope.launch { ambientMusicSwitch.setRepeat(next) }
+            }
             MusicTransportButton.BACKGROUND -> togglePlayInBackground()
         }
+        return true
     }
 
     fun togglePlayInBackground() {
         val next = !_uiState.value.playInBackground
         _uiState.update { it.copy(playInBackground = next) }
-        ambientAudioManager.setPlayInBackground(next)
-        viewModelScope.launch { controlsPreferences.setAmbientAudioPlayInBackground(next) }
+        viewModelScope.launch { ambientMusicSwitch.setPlayInBackground(next) }
     }
 
     fun togglePlayPause() {
@@ -263,9 +294,9 @@ class MusicPlayerViewModel @Inject constructor(
         }
     }
 
-    fun skipNext() {
-        if (!_uiState.value.launcherEnabled) return
-        ambientAudioManager.skipNext()
+    fun skipNext(): Boolean {
+        if (!_uiState.value.launcherEnabled) return false
+        return ambientAudioManager.skipNext()
     }
 
     fun skipPrevious() {
@@ -275,15 +306,10 @@ class MusicPlayerViewModel @Inject constructor(
 
     fun toggleShuffle() {
         val next = !_uiState.value.playback.shuffle
-        ambientAudioManager.setShuffle(next)
-        viewModelScope.launch { controlsPreferences.setAmbientAudioShuffle(next) }
+        viewModelScope.launch { ambientMusicSwitch.setShuffle(next) }
     }
 
-    private suspend fun ensureEnabled() {
-        if (controlsPreferences.preferences.first().ambientAudioEnabled) return
-        controlsPreferences.setAmbientAudioEnabled(true)
-        ambientAudioManager.setEnabled(true)
-    }
+    private suspend fun ensureEnabled() = ambientMusicSwitch.ensureEnabled()
 
     fun openBrowse(kind: MusicBrowseKind) {
         loadJob?.cancel()

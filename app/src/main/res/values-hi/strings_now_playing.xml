@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="now_playing_empty_title">कुछ नहीं चल रहा</string>
+    <string name="now_playing_empty_body">क्विक मेनू से कोई प्लेलिस्ट या साउंडट्रैक शुरू करें।</string>
+    <string name="now_playing_source_launcher">लॉन्चर संगीत</string>
+    <string name="now_playing_unknown_title">अज्ञात ट्रैक</string>
+    <string name="now_playing_add_to_playlist">प्लेलिस्ट में जोड़ें</string>
+    <string name="now_playing_running_order">ट्रैक क्रम</string>
+    <string name="now_playing_current_track">मौजूदा ट्रैक</string>
+    <string name="now_playing_hint_previous">पिछला</string>
+    <string name="now_playing_hint_next">अगला</string>
+    <string name="now_playing_hint_queue">कतार</string>
+    <string name="now_playing_hint_options">विकल्प</string>
+    <string name="now_playing_options_title">अभी चल रहा है</string>
+    <string name="now_playing_option_style">शैली</string>
+    <string name="now_playing_option_spin">घुमाएं</string>
+    <string name="now_playing_option_layout">लेआउट</string>
+    <string name="now_playing_style_record">रिकॉर्ड</string>
+    <string name="now_playing_style_cd">CD</string>
+    <string name="now_playing_style_cover">कवर</string>
+    <string name="now_playing_layout_shelf">शेल्फ़</string>
+    <string name="now_playing_layout_simple">सरल</string>
+    <string name="now_playing_quick_open">अभी चल रहा है</string>
+</resources>

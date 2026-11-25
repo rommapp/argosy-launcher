@@ -6,7 +6,8 @@ import com.nendo.argosy.ui.input.InputResult
 
 class MusicPlayerInputHandler(
     private val viewModel: MusicPlayerViewModel,
-    private val onOpenRommSignIn: (() -> Unit)?
+    private val onOpenRommSignIn: (() -> Unit)?,
+    private val onOpenNowPlaying: (() -> Unit)? = null
 ) : InputHandler {
 
     private val browseOpen: Boolean get() = viewModel.uiState.value.browse != null
@@ -43,8 +44,12 @@ class MusicPlayerInputHandler(
             return InputResult.HANDLED
         }
         if (volumeFocused) return InputResult.toggled(viewModel.toggleMusicEnabled())
-        viewModel.confirmRow()
-        return InputResult.HANDLED
+        if (viewModel.uiState.value.focusedRow == MusicPlayerRow.NOW_PLAYING) {
+            val open = onOpenNowPlaying ?: return InputResult.handled(SoundType.BOUNDARY)
+            open()
+            return InputResult.HANDLED
+        }
+        return if (viewModel.confirmRow()) InputResult.HANDLED else InputResult.handled(SoundType.BOUNDARY)
     }
 
     override fun onSecondaryAction(): InputResult {

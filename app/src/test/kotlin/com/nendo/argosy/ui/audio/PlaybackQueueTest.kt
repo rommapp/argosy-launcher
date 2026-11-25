@@ -97,11 +97,29 @@ class PlaybackQueueTest {
     }
 
     @Test
-    fun `previous restarts only when more than three seconds in`() {
+    fun `previous past the first track restarts only when more than three seconds in`() {
         val q = queue()
+        q.advance()
         assertEquals(PreviousAction.STEP_BACK, q.previousAction(0L))
         assertEquals(PreviousAction.STEP_BACK, q.previousAction(SKIP_PREVIOUS_RESTART_THRESHOLD_MS))
         assertEquals(PreviousAction.RESTART, q.previousAction(SKIP_PREVIOUS_RESTART_THRESHOLD_MS + 1))
+    }
+
+    @Test
+    fun `previous on the first track always restarts it`() {
+        val q = queue()
+        assertEquals(PreviousAction.RESTART, q.previousAction(0L))
+        assertEquals(PreviousAction.RESTART, q.previousAction(SKIP_PREVIOUS_RESTART_THRESHOLD_MS + 1))
+    }
+
+    @Test
+    fun `only the last track in play order is at the end`() {
+        val q = queue()
+        assertFalse(q.isAtLast)
+        repeat(source.size - 1) { q.advance() }
+        assertTrue(q.isAtLast)
+        val single = PlaybackQueue(Random(1)).apply { load(listOf(track(1))) }
+        assertTrue(single.isAtLast)
     }
 
     @Test
@@ -149,5 +167,31 @@ class PlaybackQueueTest {
         assertFalse(q.advance())
         assertTrue(q.isEmpty)
         assertEquals(null, q.current)
+    }
+
+    @Test
+    fun `loadAt starts at the chosen track in source order`() {
+        val q = PlaybackQueue(Random(42))
+        q.loadAt(source, 4)
+        assertEquals(source.map { it.id }, q.ids())
+        assertEquals("t5", q.current?.id)
+    }
+
+    @Test
+    fun `loadAt under shuffle plays the chosen track first and keeps every track`() {
+        val q = PlaybackQueue(Random(42))
+        q.setShuffle(true)
+        q.loadAt(source, 4)
+        assertEquals("t5", q.current?.id)
+        assertEquals(0, q.index)
+        assertEquals(source.map { it.id }.toSet(), q.ids().toSet())
+        assertEquals(source.size, q.size)
+    }
+
+    @Test
+    fun `loadAt with an out of range index falls back to the top`() {
+        val q = PlaybackQueue(Random(42))
+        q.loadAt(source, 99)
+        assertEquals("t1", q.current?.id)
     }
 }

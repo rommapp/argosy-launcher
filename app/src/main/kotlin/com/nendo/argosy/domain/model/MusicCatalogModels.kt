@@ -13,12 +13,44 @@ sealed interface MusicTrackSource {
     ) : MusicTrackSource
 }
 
+/**
+ * Where a queued track came from, in stored-token form. [source] is a [MusicSourceKind] token or
+ * [SOURCE_LOCAL]; [sourceAccountKey] names the server account (`<user>@<host>`); [trackKey] is
+ * the key listens are filed under and [albumKey] the Music screen album. The remaining fields
+ * are display and matching snapshots.
+ */
+data class MusicTrackIdentity(
+    val source: String,
+    val sourceAccountKey: String,
+    val sourceTrackId: String,
+    val trackKey: String,
+    val albumKey: String?,
+    val romId: Long? = null,
+    val romFileId: Long? = null,
+    val contentHash: String? = null,
+    val isrc: String? = null,
+    val musicBrainzId: String? = null,
+    val artistCredit: String? = null,
+    val albumTitle: String? = null,
+    val title: String,
+    val durationSec: Int? = null
+) {
+    companion object {
+        const val SOURCE_LOCAL = "local"
+    }
+}
+
 data class MusicQueueTrack(
     val id: String,
     val source: MusicTrackSource,
     val title: String,
     val gameTitle: String? = null,
-    val coverPath: String? = null
+    val coverPath: String? = null,
+    val artist: String? = null,
+    val album: String? = null,
+    val art: MusicArt? = null,
+    val durationSec: Int? = null,
+    val identity: MusicTrackIdentity? = null
 ) {
     val localPath: String? get() = (source as? MusicTrackSource.Local)?.path
 }

@@ -238,6 +238,11 @@
     <string name="settings_shell_modal_migrate_platform_message">Mover jogos baixados para o novo local? Os arquivos serão copiados e depois removidos do local original.</string>
     <string name="settings_shell_modal_migrate_platform_confirm">Migrar</string>
     <string name="settings_shell_modal_migrate_platform_skip">Pular</string>
+    <string name="settings_shell_modal_folder_names_on_title">Usar nomes de pasta do servidor?</string>
+    <string name="settings_shell_modal_folder_names_off_title">Usar nomes de pasta do Argosy?</string>
+    <string name="settings_shell_modal_folder_names_on_message">Os jogos baixados vão para pastas com os nomes usados pelo seu servidor RomM. Os arquivos são renomeados no lugar, nada é copiado.</string>
+    <string name="settings_shell_modal_folder_names_off_message">Os jogos baixados voltam para as pastas de plataforma do próprio Argosy. Os arquivos são renomeados no lugar, nada é copiado.</string>
+    <string name="settings_shell_modal_folder_names_confirm">Mover</string>
     <string name="settings_shell_modal_purge_platform_title">Purgar %1$s?</string>
     <string name="settings_shell_modal_purge_platform_fallback">Plataforma</string>
     <string name="settings_shell_modal_purge_platform_message">Isso excluirá todos os %1$d jogos e seus arquivos ROM locais. Isso não pode ser desfeito.</string>

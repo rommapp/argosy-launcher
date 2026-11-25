@@ -101,6 +101,7 @@ enum class SettingsSection {
     SYNC_SETTINGS,
     STEAM_SETTINGS,
     JELLYFIN,
+    NAVIDROME,
     NETWORK_BLUETOOTH,
     RETRO_ACHIEVEMENTS,
     STORAGE,
@@ -608,6 +609,7 @@ data class SoundState(
 data class AmbientAudioState(
     val enabled: Boolean = false,
     val volume: Int = 50,
+    val gameVolume: Int = ControlsPreferences.DEFAULT_AMBIENT_AUDIO_GAME_VOLUME,
     val shuffle: Boolean = false,
     val gameDetailThemeEnabled: Boolean = false,
     val currentTrackName: String? = null,
@@ -1099,6 +1101,8 @@ data class StorageState(
     val instantDownloadThresholdMb: Int = 50,
     val stageDownloadsInternally: Boolean = true,
     val folderNameFromRom: Boolean = false,
+    val platformFoldersFromServer: Boolean = false,
+    val showFolderNameSwitchConfirm: FolderNameSwitchInfo? = null,
     val availableSpace: Long = 0,
     val hasAllFilesAccess: Boolean = false,
     val platformConfigs: List<PlatformStorageConfig> = emptyList(),
@@ -1311,6 +1315,11 @@ data class PlayTimeState(
 data class PlayTimeDeleteConfirm(
     val gameId: Long,
     val gameTitle: String
+)
+
+data class FolderNameSwitchInfo(
+    val useServerNames: Boolean,
+    val gameCount: Int
 )
 
 data class PlatformMigrationInfo(
@@ -1697,6 +1706,34 @@ data class JellyfinState(
     val hasQuickConnectCode: Boolean get() = quickConnectRequested && quickConnectCode.isNotBlank()
 }
 
+enum class NavidromeConnectionStatus { UNKNOWN, CHECKING, CONNECTED, FAILED }
+
+data class NavidromeState(
+    val serverUrl: String = "",
+    val configuring: Boolean = false,
+    val configUrl: String = "",
+    val configFocusField: Int? = null,
+    val configError: String? = null,
+    val isSignedIn: Boolean = false,
+    val userName: String = "",
+    val serverVersion: String? = null,
+    val showLoginForm: Boolean = false,
+    val loginUsername: String = "",
+    val loginPassword: String = "",
+    val loginFocusField: Int? = null,
+    val isSigningIn: Boolean = false,
+    val signInError: String? = null,
+    val showSignOutConfirm: Boolean = false,
+    val connectionStatus: NavidromeConnectionStatus = NavidromeConnectionStatus.UNKNOWN,
+    val connectionError: String? = null
+) {
+    val hasServer: Boolean get() = serverUrl.isNotBlank()
+
+    override fun toString(): String =
+        "NavidromeState(serverUrl=$serverUrl, isSignedIn=$isSignedIn, userName=$userName, " +
+            "connectionStatus=$connectionStatus)"
+}
+
 data class UpdateCheckState(
     val isChecking: Boolean = false,
     val hasChecked: Boolean = false,
@@ -2040,6 +2077,7 @@ data class SettingsUiState(
     val syncSettings: SyncSettingsState = SyncSettingsState(),
     val steam: SteamSettingsState = SteamSettingsState(),
     val jellyfin: JellyfinState = JellyfinState(),
+    val navidrome: NavidromeState = NavidromeState(),
     val retroAchievements: RASettingsState = RASettingsState(),
     val clientCert: ClientCertState = ClientCertState(),
     val accounts: AccountsState = AccountsState(),

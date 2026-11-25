@@ -23,6 +23,7 @@ import androidx.compose.material.icons.filled.GraphicEq
 import androidx.compose.material.icons.filled.Group
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Keyboard
+import androidx.compose.material.icons.filled.LibraryMusic
 import androidx.compose.material.icons.filled.Memory
 import androidx.compose.material.icons.filled.Movie
 import androidx.compose.material.icons.filled.Palette
@@ -166,6 +167,12 @@ internal sealed class MainSettingsItem(
         R.string.settings_main_jellyfin_title,
         "connections"
     )
+    data object Navidrome : MainSettingsItem(
+        "navidrome",
+        Icons.Default.LibraryMusic,
+        R.string.settings_navidrome_main_title,
+        "connections"
+    )
     data object Social :
         MainSettingsItem("social", Icons.Default.Group, R.string.settings_main_social_title, "connections")
 
@@ -195,7 +202,7 @@ internal sealed class MainSettingsItem(
                 Header("libraryHeader", "library", R.string.settings_main_section_library),
                 Platforms, Storage, PlayTime,
                 Header("connectionsHeader", "connections", R.string.settings_main_section_connections),
-                NetworkBluetooth, RomM, Steam, Jellyfin, Social,
+                NetworkBluetooth, RomM, Steam, Jellyfin, Navidrome, Social,
                 Header("systemHeader", "system", R.string.settings_main_section_system),
                 Permissions, ManagedInstallers, DeviceSettings, About
             )
@@ -303,6 +310,13 @@ fun MainSettingsSection(uiState: SettingsUiState, viewModel: SettingsViewModel) 
                 ?: context.getString(R.string.settings_main_jellyfin_subtitle_signed_in)
             else -> context.getString(R.string.settings_main_jellyfin_subtitle_signed_out)
         }
+        MainSettingsItem.Navidrome -> when {
+            !uiState.navidrome.hasServer ->
+                context.getString(R.string.settings_navidrome_main_subtitle_unconfigured)
+            uiState.navidrome.isSignedIn ->
+                context.getString(R.string.settings_navidrome_main_subtitle_signed_in_as, uiState.navidrome.userName)
+            else -> context.getString(R.string.settings_navidrome_main_subtitle_signed_out)
+        }
         MainSettingsItem.Social -> when (uiState.social.authStatus) {
             SocialAuthStatus.CONNECTED -> context.getString(
                 R.string.settings_main_social_subtitle_linked,
@@ -350,6 +364,7 @@ fun MainSettingsSection(uiState: SettingsUiState, viewModel: SettingsViewModel) 
             MainSettingsItem.Drivers -> viewModel.navigateToSection(SettingsSection.DRIVERS)
             MainSettingsItem.Steam -> viewModel.navigateToSection(SettingsSection.STEAM_SETTINGS)
             MainSettingsItem.Jellyfin -> viewModel.navigateToSection(SettingsSection.JELLYFIN)
+            MainSettingsItem.Navidrome -> viewModel.navigateToSection(SettingsSection.NAVIDROME)
             MainSettingsItem.Social -> viewModel.navigateToSection(SettingsSection.SOCIAL)
             MainSettingsItem.Permissions -> viewModel.navigateToSection(SettingsSection.PERMISSIONS)
             MainSettingsItem.About -> viewModel.navigateToSection(SettingsSection.ABOUT)

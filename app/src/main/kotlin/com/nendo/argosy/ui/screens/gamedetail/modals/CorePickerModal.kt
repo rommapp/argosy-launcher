@@ -17,12 +17,13 @@ fun CorePickerModal(
     availableCores: List<RetroArchCore>,
     selectedCoreId: String?,
     focusIndex: Int,
+    isBuiltIn: Boolean,
     onSelectCore: (String?) -> Unit,
     onDismiss: () -> Unit
 ) {
     Modal(
         title = stringResource(R.string.gamedetail_core_picker_title),
-        subtitle = stringResource(R.string.gamedetail_core_picker_subtitle),
+        subtitle = if (isBuiltIn) null else stringResource(R.string.gamedetail_core_picker_subtitle),
         onDismiss = onDismiss
     ) {
         val listState = rememberLazyListState()

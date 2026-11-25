@@ -174,6 +174,8 @@
     <string name="settings_installers_variant_universal">通用</string>
     <string name="settings_storage_folder_name_from_rom_title">以 ROM 命名文件夹</string>
     <string name="settings_storage_folder_name_from_rom_subtitle">以主 ROM 文件（含扩展名）命名游戏文件夹，便于其他前端识别。适用于新的下载。</string>
+    <string name="settings_storage_platform_folders_from_server_title">使用服务器的文件夹名称</string>
+    <string name="settings_storage_platform_folders_from_server_subtitle">按照 RomM 服务器的方式命名每个平台文件夹，使本地游戏库与服务器结构一致。</string>
     <string name="settings_installers_add_error_invalid">这不是 GitHub 仓库链接</string>
     <string name="settings_installers_add_error_duplicate">该仓库已在列表中</string>
     <string name="settings_installers_subtitle_installed">已安装：%1$s</string>
@@ -817,6 +819,7 @@
     <string name="settings_music_toggle_title">背景音乐</string>
     <string name="settings_music_toggle_subtitle">使用启动器时播放音乐</string>
     <string name="settings_music_volume_title">音量</string>
+    <string name="settings_music_game_volume_title">游戏中的音乐音量</string>
 
     <string name="settings_music_playlist_title">音乐播放列表</string>
     <string name="settings_music_playlist_empty">没有曲目</string>
@@ -2454,7 +2457,6 @@
     <!-- ===== Jellyfin settings delegate ===== -->
 
     <string name="settings_jellyfin_delegate_config_error_empty">请输入服务器地址</string>
-    <string name="settings_jellyfin_delegate_config_error_scheme">地址必须以http://或https://开头</string>
     <string name="settings_jellyfin_delegate_signin_error_empty">请输入你的用户名和密码</string>
 
     <!-- ===== Server settings delegate ===== -->

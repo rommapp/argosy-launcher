@@ -207,6 +207,11 @@
     <string name="settings_shell_modal_migrate_platform_message">Heruntergeladene Spiele an den neuen Speicherort verschieben? Dateien werden kopiert und dann vom alten Speicherort entfernt.</string>
     <string name="settings_shell_modal_migrate_platform_confirm">Migrieren</string>
     <string name="settings_shell_modal_migrate_platform_skip">Überspringen</string>
+    <string name="settings_shell_modal_folder_names_on_title">Ordnernamen des Servers verwenden?</string>
+    <string name="settings_shell_modal_folder_names_off_title">Ordnernamen von Argosy verwenden?</string>
+    <string name="settings_shell_modal_folder_names_on_message">Heruntergeladene Spiele werden in Ordner verschoben, die so heißen wie auf deinem RomM-Server. Dateien werden vor Ort umbenannt, nichts wird kopiert.</string>
+    <string name="settings_shell_modal_folder_names_off_message">Heruntergeladene Spiele werden zurück in die eigenen Plattformordner von Argosy verschoben. Dateien werden vor Ort umbenannt, nichts wird kopiert.</string>
+    <string name="settings_shell_modal_folder_names_confirm">Verschieben</string>
 
     <string name="settings_shell_modal_purge_platform_title">%1$s bereinigen?</string>
     <string name="settings_shell_modal_purge_platform_fallback">Plattform</string>

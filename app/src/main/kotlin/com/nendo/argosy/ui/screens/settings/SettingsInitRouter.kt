@@ -184,6 +184,17 @@ internal fun routeObserveDelegateStates(vm: SettingsViewModel) {
         vm._uiState.update { it.copy(jellyfin = jellyfin) }
     }.launchIn(vm.viewModelScope)
 
+    vm.navidromeDelegate.state.onEach { navidrome ->
+        vm._uiState.update { state ->
+            val updated = state.copy(navidrome = navidrome)
+            if (state.currentSection == SettingsSection.NAVIDROME) {
+                updated.copy(focusedIndex = state.focusedIndex.coerceIn(0, routeMaxFocusIndexOf(vm, updated)))
+            } else {
+                updated
+            }
+        }
+    }.launchIn(vm.viewModelScope)
+
     vm.raDelegate.state.onEach { ra ->
         vm._uiState.update { it.copy(retroAchievements = ra) }
     }.launchIn(vm.viewModelScope)
@@ -740,6 +751,7 @@ internal fun routeLoadSettings(vm: SettingsViewModel) {
         vm.ambientAudioDelegate.updateState(AmbientAudioState(
             enabled = prefs.ambientAudioEnabled,
             volume = prefs.ambientAudioVolume,
+            gameVolume = prefs.ambientAudioGameVolume,
             shuffle = prefs.ambientAudioShuffle,
             gameDetailThemeEnabled = prefs.gameDetailThemeEnabled,
             currentTrackName = vm.ambientAudioDelegate.state.value.currentTrackName,
@@ -839,6 +851,7 @@ internal fun routeLoadSettings(vm: SettingsViewModel) {
             librarySyncError = jellyfinInFlight.librarySyncError
         ))
         vm.jellyfinDelegate.refreshMediaDirPath(vm.viewModelScope)
+        vm.navidromeDelegate.hydrate()
 
         vm.storageDelegate.updateState(StorageState(
             romStoragePath = prefs.romStoragePath ?: "",
@@ -851,6 +864,7 @@ internal fun routeLoadSettings(vm: SettingsViewModel) {
             instantDownloadThresholdMb = prefs.instantDownloadThresholdMb,
             stageDownloadsInternally = prefs.stageDownloadsInternally,
             folderNameFromRom = prefs.folderNameFromRom,
+            platformFoldersFromServer = prefs.platformFoldersFromServer,
             availableSpace = availableSpace,
             screenDimmerEnabled = prefs.screenDimmerEnabled,
             screenDimmerTimeoutMinutes = prefs.screenDimmerTimeoutMinutes,

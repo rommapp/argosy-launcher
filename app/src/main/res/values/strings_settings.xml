@@ -1640,6 +1640,7 @@
     <string name="settings_music_toggle_subtitle">Play music while using the launcher</string>
     <!-- Row title. Noun: how loud that music is. -->
     <string name="settings_music_volume_title">Volume</string>
+    <string name="settings_music_game_volume_title">Music volume during games</string>
 
     <!-- Row opening the list of tracks. Noun phrase. -->
     <string name="settings_music_playlist_title">Music Playlist</string>
@@ -1927,6 +1928,8 @@
     <!-- Second line of that row. A game with updates or DLC is stored as a folder; some frontends
          only recognise it when the folder name matches the game file, extension included. -->
     <string name="settings_storage_folder_name_from_rom_subtitle">Name a game\'s folder after its main ROM file, extension included, so other frontends recognise it. Applies to new downloads.</string>
+    <string name="settings_storage_platform_folders_from_server_title">Use Server Folder Names</string>
+    <string name="settings_storage_platform_folders_from_server_subtitle">Name each platform folder the way your RomM server does, so this library matches the server\'s layout.</string>
 
     <!-- Row that empties the library records. Verb phrase. -->
     <string name="settings_storage_reset_library_title">Reset Library</string>
@@ -4863,9 +4866,6 @@
 
     <!-- Inline error under the server address field when it is left empty. -->
     <string name="settings_jellyfin_delegate_config_error_empty">Enter a server address</string>
-    <!-- Inline error under the server address field when it has no http(s) scheme. The
-         protocol tokens are literal and must not be translated. -->
-    <string name="settings_jellyfin_delegate_config_error_scheme">Address must start with http:// or https://</string>
     <!-- Inline error under the sign-in form when username or password is left empty. -->
     <string name="settings_jellyfin_delegate_signin_error_empty">Enter your username and password</string>
 

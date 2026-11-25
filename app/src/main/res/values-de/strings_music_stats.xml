@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="music_stats_entry_option">Dein Hörverlauf</string>
+    <string name="music_stats_entry_header">Dein Hörverlauf</string>
+    <string name="music_stats_title">Dein Hörverlauf</string>
+    <string name="music_stats_back_desc">Zurück</string>
+    <string name="music_stats_tab_month">Dieser Monat</string>
+    <string name="music_stats_tab_flashback">Rückblick</string>
+    <string name="music_stats_tab_games">Mit deinen Spielen</string>
+    <string name="music_stats_kicker_game">Spiel</string>
+    <string name="music_stats_kicker_platform">Plattform</string>
+    <string name="music_stats_kicker_genre">Genre</string>
+    <string name="music_stats_kicker_franchise">Reihe</string>
+    <string name="music_stats_options_play">Abspielen</string>
+    <string name="music_stats_options_shuffle">Zufällig</string>
+    <string name="music_stats_shelf_top_tracks">Top-Titel</string>
+    <string name="music_stats_shelf_top_albums">Top-Alben</string>
+    <string name="music_stats_shelf_top_artists">Top-Künstler</string>
+    <string name="music_stats_shelf_on_this_day">Heute im Jahr %1$d</string>
+    <string name="music_stats_shelf_month_in_year">Dieser Monat im Jahr %1$d</string>
+    <plurals name="music_stats_count_plays">
+        <item quantity="one">%d Wiedergabe</item>
+        <item quantity="other">%d Wiedergaben</item>
+    </plurals>
+    <plurals name="music_stats_count_tracks">
+        <item quantity="one">%d Titel</item>
+        <item quantity="other">%d Titel</item>
+    </plurals>
+    <plurals name="music_stats_count_days">
+        <item quantity="one">%d Tag</item>
+        <item quantity="other">%d Tage</item>
+    </plurals>
+    <string name="music_stats_error_title">Hörverlauf konnte nicht geladen werden</string>
+    <string name="music_stats_error_message">Versuche es gleich noch einmal.</string>
+    <string name="music_stats_error_retry">Erneut versuchen</string>
+    <string name="music_stats_month_empty_title">Diesen Monat nichts gehört</string>
+    <string name="music_stats_empty_message">Dein Hörverlauf entsteht, während du Musik hörst.</string>
+    <string name="music_stats_flashback_empty_title">Noch keine Rückblicke</string>
+    <string name="music_stats_flashback_empty_message">Was du jetzt hörst, erscheint hier nächstes Jahr an diesem Tag und in diesem Monat wieder.</string>
+    <string name="music_stats_games_empty_title">Noch keine Musik zu Spielen</string>
+    <string name="music_stats_games_empty_message">Hör Musik, während du spielst, und sie erscheint hier nach Spiel, Plattform, Genre und Reihe.</string>
+    <string name="music_stats_footer_views">Ansichten</string>
+    <string name="music_stats_footer_play">Abspielen</string>
+    <string name="music_stats_footer_options">Optionen</string>
+    <string name="music_stats_game_action">Musik zu diesem Spiel</string>
+    <string name="music_stats_recap_heading">Musik</string>
+    <string name="music_stats_recap_top_track">Top-Titel</string>
+    <string name="music_stats_recap_top_album">Top-Album</string>
+    <string name="music_stats_recap_top_artist">Top-Künstler</string>
+</resources>

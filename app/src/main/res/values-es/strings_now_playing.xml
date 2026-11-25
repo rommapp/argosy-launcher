@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="now_playing_empty_title">Nada en reproducción</string>
+    <string name="now_playing_empty_body">Inicia una lista de reproducción o una banda sonora desde el menú rápido.</string>
+    <string name="now_playing_source_launcher">Música del launcher</string>
+    <string name="now_playing_unknown_title">Pista desconocida</string>
+    <string name="now_playing_add_to_playlist">Añadir a una lista</string>
+    <string name="now_playing_running_order">Orden de pistas</string>
+    <string name="now_playing_current_track">Pista actual</string>
+    <string name="now_playing_hint_previous">Anterior</string>
+    <string name="now_playing_hint_next">Siguiente</string>
+    <string name="now_playing_hint_queue">Cola</string>
+    <string name="now_playing_hint_options">Opciones</string>
+    <string name="now_playing_options_title">Reproduciendo</string>
+    <string name="now_playing_option_style">Estilo</string>
+    <string name="now_playing_option_spin">Girar</string>
+    <string name="now_playing_option_layout">Diseño</string>
+    <string name="now_playing_style_record">Vinilo</string>
+    <string name="now_playing_style_cd">CD</string>
+    <string name="now_playing_style_cover">Portada</string>
+    <string name="now_playing_layout_shelf">Estantería</string>
+    <string name="now_playing_layout_simple">Sencillo</string>
+    <string name="now_playing_quick_open">Reproduciendo</string>
+</resources>

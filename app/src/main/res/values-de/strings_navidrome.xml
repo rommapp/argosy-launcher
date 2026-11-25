@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="settings_navidrome_main_subtitle_unconfigured">Server nicht eingerichtet</string>
+    <string name="settings_navidrome_main_subtitle_signed_in_as">Angemeldet als %1$s</string>
+    <string name="settings_navidrome_main_subtitle_signed_out">Nicht angemeldet</string>
+    <string name="settings_navidrome_section_server">SERVER</string>
+    <string name="settings_navidrome_server_title">Musikserver</string>
+    <string name="settings_navidrome_server_unconfigured">Nicht eingerichtet</string>
+    <string name="settings_navidrome_account_label">Konto</string>
+    <string name="settings_navidrome_account_sign_in">Anmelden</string>
+    <string name="settings_navidrome_account_sign_out">Abmelden</string>
+    <string name="settings_navidrome_account_signed_in_as">Angemeldet als %1$s</string>
+    <string name="settings_navidrome_account_password">Mit deinem Navidrome-Benutzernamen und Passwort anmelden</string>
+    <string name="settings_navidrome_connection_title">Verbindung</string>
+    <string name="settings_navidrome_connection_checking">Server wird geprüft</string>
+    <string name="settings_navidrome_connection_connected">Verbunden</string>
+    <string name="settings_navidrome_connection_connected_version">Verbunden mit Navidrome %1$s</string>
+    <string name="settings_navidrome_connection_unknown">Auswählen, um die Verbindung zu prüfen</string>
+    <string name="settings_navidrome_config_server_address_label">Serveradresse</string>
+    <string name="settings_navidrome_config_keyboard_submit">Speichern</string>
+    <string name="settings_navidrome_config_save_title">Speichern</string>
+    <string name="settings_navidrome_config_save_subtitle">Diese Adresse für deine Musikbibliothek verwenden</string>
+    <string name="settings_navidrome_config_cancel_title">Abbrechen</string>
+    <string name="settings_navidrome_config_cancel_subtitle">Zurück zu den Navidrome-Einstellungen</string>
+    <string name="settings_navidrome_config_error_empty">Gib eine Serveradresse ein</string>
+    <string name="settings_navidrome_signin_username_label">Benutzername</string>
+    <string name="settings_navidrome_signin_password_label">Passwort</string>
+    <string name="settings_navidrome_signin_username_keyboard_submit">Fertig</string>
+    <string name="settings_navidrome_signin_password_keyboard_submit">Anmelden</string>
+    <string name="settings_navidrome_signin_submit_title">Anmelden</string>
+    <string name="settings_navidrome_signin_submitting_title">Wird angemeldet…</string>
+    <string name="settings_navidrome_signin_submit_subtitle">Dieses Konto für deine Musikbibliothek verwenden</string>
+    <string name="settings_navidrome_signin_cancel_title">Abbrechen</string>
+    <string name="settings_navidrome_signin_cancel_subtitle">Zurück zu den Navidrome-Einstellungen</string>
+    <string name="settings_navidrome_signin_error_empty">Gib deinen Benutzernamen und dein Passwort ein</string>
+    <string name="settings_navidrome_signin_error_rejected">Der Server hat die Anmeldung abgelehnt</string>
+    <string name="settings_navidrome_signin_error_unreachable">Server nicht erreichbar. Prüfe die Adresse und versuche es erneut.</string>
+    <string name="settings_navidrome_signout_title">Von Navidrome abmelden?</string>
+    <string name="settings_navidrome_signout_message">Dieses Gerät vergisst deine Navidrome-Anmeldung. Deine Musik und Playlists bleiben auf dem Server.</string>
+    <string name="settings_navidrome_signout_confirm">Abmelden</string>
+</resources>

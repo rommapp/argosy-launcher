@@ -151,6 +151,7 @@ class GameDetailViewModel @Inject constructor(
     private val appsRepository: com.nendo.argosy.data.repository.AppsRepository,
     private val runningGames: com.nendo.argosy.data.emulator.background.RunningGames,
     val runningGameMenu: com.nendo.argosy.ui.screens.running.RunningGameMenu,
+    private val gameMusic: com.nendo.argosy.ui.screens.gamedetail.delegates.GameMusicDelegate,
     streamLaunch: com.nendo.argosy.ui.screens.stream.StreamLaunchController.Factory,
     achievementCommentsFactory: com.nendo.argosy.ui.common.achievements.AchievementCommentsController.Factory
 ) : ViewModel() {
@@ -833,7 +834,22 @@ class GameDetailViewModel @Inject constructor(
             observeGameFiles(gameId, game.platformSlug, game.localPath)
             observeGameEntity(gameId)
             observeActiveSave(gameId)
+            refreshGameMusic(gameId)
         }
+    }
+
+    private fun refreshGameMusic(gameId: Long) {
+        viewModelScope.launch {
+            val hasMusic = gameMusic.hasMusic(gameId)
+            if (currentGameId == gameId) _uiState.update { it.copy(hasGameMusic = hasMusic) }
+        }
+    }
+
+    private fun playGameMusic() {
+        toggleMoreOptions()
+        val gameId = currentGameId
+        val label = _uiState.value.game?.title
+        viewModelScope.launch { gameMusic.play(gameId, label) }
     }
 
     private fun observeGameFiles(gameId: Long, platformSlug: String, localPath: String?) {
@@ -1406,7 +1422,8 @@ class GameDetailViewModel @Inject constructor(
             hasManageableFiles = state.hasManageableFiles,
             platformSlug = state.game?.platformSlug,
             launchDisplayCount = state.launchDisplayNumbers.size,
-            offersDownload = state.stream?.leads == true
+            offersDownload = state.stream?.leads == true,
+            hasMusic = state.hasGameMusic
         )
     }
 
@@ -1488,6 +1505,7 @@ class GameDetailViewModel @Inject constructor(
                 _uiState.value.game?.platformId?.let(onNavigateToPlatformSettings)
             }
             MoreOptionAction.RatingsStatus -> showRatingsStatusMenu()
+            MoreOptionAction.PlayMusic -> playGameMusic()
             MoreOptionAction.RateGame -> showRatingPicker(RatingType.OPINION)
             MoreOptionAction.SetDifficulty -> showRatingPicker(RatingType.DIFFICULTY)
             MoreOptionAction.SetProgress -> showRatingPicker(RatingType.PROGRESS)

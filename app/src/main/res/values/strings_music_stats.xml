@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Option in the music column options that opens the listening history screen. Noun phrase. -->
+    <string name="music_stats_entry_option">Your listening</string>
+    <!-- Button in the music screen header that opens the listening history screen. Noun phrase. -->
+    <string name="music_stats_entry_header">Your listening</string>
+    <!-- Heading of the listening history screen. Noun phrase. -->
+    <string name="music_stats_title">Your listening</string>
+    <!-- Content description of the arrow that leaves the listening history screen. -->
+    <string name="music_stats_back_desc">Back</string>
+    <!-- Tab: listening during one calendar month. -->
+    <string name="music_stats_tab_month">This month</string>
+    <!-- Tab: music heard on this date or in this month in earlier years. Noun. -->
+    <string name="music_stats_tab_flashback">Flashback</string>
+    <!-- Tab: music heard while playing games, grouped by game, platform, genre and series. -->
+    <string name="music_stats_tab_games">With your games</string>
+    <!-- Small label above a row of tracks heard while playing one game. Noun. -->
+    <string name="music_stats_kicker_game">Game</string>
+    <!-- Small label above a row of tracks heard while playing games of one platform. Noun. -->
+    <string name="music_stats_kicker_platform">Platform</string>
+    <!-- Small label above a row of tracks heard while playing games of one genre. Noun. -->
+    <string name="music_stats_kicker_genre">Genre</string>
+    <!-- Small label above a row of tracks heard while playing games of one franchise. Noun. -->
+    <string name="music_stats_kicker_franchise">Series</string>
+    <!-- Option: play the tracks in order. Verb. -->
+    <string name="music_stats_options_play">Play</string>
+    <!-- Option: play the tracks in random order. Verb. -->
+    <string name="music_stats_options_shuffle">Shuffle</string>
+    <!-- Row heading: the tracks listened to most this month. -->
+    <string name="music_stats_shelf_top_tracks">Top tracks</string>
+    <!-- Row heading: the albums listened to most this month. -->
+    <string name="music_stats_shelf_top_albums">Top albums</string>
+    <!-- Row heading: the artists listened to most this month. -->
+    <string name="music_stats_shelf_top_artists">Top artists</string>
+    <!-- Row heading: tracks heard on today's date in an earlier year. %1$d is the year. -->
+    <string name="music_stats_shelf_on_this_day">On this day in %1$d</string>
+    <!-- Row heading: tracks heard during the current calendar month in an earlier year. %1$d is the year. -->
+    <string name="music_stats_shelf_month_in_year">This month in %1$d</string>
+    <!-- Counts listens that played long enough to count. -->
+    <plurals name="music_stats_count_plays">
+        <item quantity="one">%d play</item>
+        <item quantity="other">%d plays</item>
+    </plurals>
+    <!-- Counts different tracks heard. -->
+    <plurals name="music_stats_count_tracks">
+        <item quantity="one">%d track</item>
+        <item quantity="other">%d tracks</item>
+    </plurals>
+    <!-- Counts days with any listening. -->
+    <plurals name="music_stats_count_days">
+        <item quantity="one">%d day</item>
+        <item quantity="other">%d days</item>
+    </plurals>
+    <!-- Title shown when the listening history could not be read. -->
+    <string name="music_stats_error_title">Listening history could not be loaded</string>
+    <!-- Body shown when the listening history could not be read. -->
+    <string name="music_stats_error_message">Try again in a moment.</string>
+    <!-- Button that reloads the listening history. Verb phrase. -->
+    <string name="music_stats_error_retry">Try again</string>
+    <!-- Title shown for a month with no listening. -->
+    <string name="music_stats_month_empty_title">Nothing played this month</string>
+    <!-- Body shown for a month with no listening. -->
+    <string name="music_stats_empty_message">Your listening history builds as you play music.</string>
+    <!-- Title shown when no earlier year has listening on this date or in this month. -->
+    <string name="music_stats_flashback_empty_title">No flashbacks yet</string>
+    <!-- Body shown when no earlier year has listening on this date or in this month. -->
+    <string name="music_stats_flashback_empty_message">Music you play now comes back here on this date and in this month next year.</string>
+    <!-- Title shown when no music was heard while playing a game. -->
+    <string name="music_stats_games_empty_title">No music with games yet</string>
+    <!-- Body shown when no music was heard while playing a game. -->
+    <string name="music_stats_games_empty_message">Play music while you play a game and it shows up here by game, platform, genre and series.</string>
+    <!-- Footer hint: switch between the screen's tabs. Noun, plural. -->
+    <string name="music_stats_footer_views">Views</string>
+    <!-- Footer hint: play the focused row or item. Verb. -->
+    <string name="music_stats_footer_play">Play</string>
+    <!-- Footer hint: open play and shuffle options. Noun, plural. -->
+    <string name="music_stats_footer_options">Options</string>
+    <!-- Game options entry that plays music picked for this game. Noun phrase. -->
+    <string name="music_stats_game_action">Music for this game</string>
+    <!-- Monthly recap section heading for the month's listening. Noun. -->
+    <string name="music_stats_recap_heading">Listening</string>
+    <!-- Monthly recap label before the most played track. -->
+    <string name="music_stats_recap_top_track">Top track</string>
+    <!-- Monthly recap label before the most played album. -->
+    <string name="music_stats_recap_top_album">Top album</string>
+    <!-- Monthly recap label before the most played artist. -->
+    <string name="music_stats_recap_top_artist">Top artist</string>
+</resources>

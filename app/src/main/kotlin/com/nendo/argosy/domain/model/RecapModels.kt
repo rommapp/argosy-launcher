@@ -163,10 +163,23 @@ data class DigestAward(
 )
 
 /**
+ * The month's listening. [topAlbumArt] is the top album's cover when a music source still lists
+ * the album.
+ */
+data class DigestMusic(
+    val listenedMs: Long,
+    val playCount: Int,
+    val topTrack: MusicStatTrack?,
+    val topAlbum: MusicStatAlbum?,
+    val topAlbumArt: MusicArt?,
+    val topArtist: MusicStatArtist?
+)
+
+/**
  * What the monthly recap card shows for [month]. [days] holds every date of the month in order,
  * zero where nothing was played. [topGames] is every game played, most active time first.
- * [unlocks] are oldest first, one per achievement. [isEmpty] is true for a month with no sessions,
- * unlocks or awards.
+ * [unlocks] are oldest first, one per achievement. [music] is null for a month with no listening.
+ * [isEmpty] is true for a month with no sessions, unlocks, awards or listening.
  */
 data class MonthlyDigest(
     val month: YearMonth,
@@ -176,9 +189,10 @@ data class MonthlyDigest(
     val days: List<PlayDay>,
     val topGames: List<DigestGame>,
     val unlocks: List<SessionUnlock>,
-    val awards: List<DigestAward>
+    val awards: List<DigestAward>,
+    val music: DigestMusic? = null
 ) {
-    val isEmpty: Boolean get() = sessionCount == 0 && unlocks.isEmpty() && awards.isEmpty()
+    val isEmpty: Boolean get() = sessionCount == 0 && unlocks.isEmpty() && awards.isEmpty() && music == null
 
     val daysPlayed: Int get() = days.count { it.activeMs > 0L }
 

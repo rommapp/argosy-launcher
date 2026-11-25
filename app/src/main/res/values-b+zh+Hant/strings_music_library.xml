@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="music_library_title">音樂</string>
+    <string name="music_library_group_by_label">分組方式</string>
+    <string name="music_library_grouping_playlists">播放清單</string>
+    <string name="music_library_grouping_artists">藝人</string>
+    <string name="music_library_grouping_albums">專輯</string>
+    <string name="music_library_grouping_years">年份</string>
+    <string name="music_library_grouping_genres">類型</string>
+    <string name="music_library_kicker_recent">最近</string>
+    <string name="music_library_kicker_playlist">播放清單</string>
+    <string name="music_library_kicker_artist">藝人</string>
+    <string name="music_library_kicker_album">專輯</string>
+    <string name="music_library_kicker_year">年份</string>
+    <string name="music_library_kicker_genre">類型</string>
+    <string name="music_library_unknown_artist">未知藝人</string>
+    <string name="music_library_unknown_genre">未知類型</string>
+    <string name="music_library_unknown_year">未知年份</string>
+    <string name="music_library_recent_title">最近播放</string>
+    <string name="music_library_separator">" &#183; "</string>
+    <string name="music_library_source_all">所有來源</string>
+    <plurals name="music_library_count_albums">
+        <item quantity="other">%d 張專輯</item>
+    </plurals>
+    <plurals name="music_library_count_tracks">
+        <item quantity="other">%d 首曲目</item>
+    </plurals>
+    <string name="music_library_more_albums">+%1$d</string>
+    <string name="music_library_offline">離線。正在顯示已下載的音樂。</string>
+    <string name="music_library_footer_group_by">分組</string>
+    <string name="music_library_footer_flip">翻閱專輯</string>
+    <string name="music_library_footer_jump">跳轉</string>
+    <string name="music_library_footer_play">播放</string>
+    <string name="music_library_footer_filter">篩選</string>
+    <string name="music_library_footer_options">選項</string>
+    <string name="music_library_footer_play_album">播放專輯</string>
+    <string name="music_library_footer_play_all">全部播放</string>
+    <string name="music_library_footer_track_options">曲目選項</string>
+    <string name="music_library_empty_title">沒有音樂來源</string>
+    <string name="music_library_empty_message">連接 Navidrome 伺服器，即可在這裡瀏覽和播放你的音樂。</string>
+    <string name="music_library_empty_action">設定 Navidrome</string>
+    <string name="music_library_no_columns_title">沒有內容</string>
+    <string name="music_library_no_columns_message">請嘗試其他分組方式或來源。</string>
+    <string name="music_library_error_title">無法載入音樂</string>
+    <string name="music_library_error_message">請檢查與音樂伺服器的連線，然後再試一次。</string>
+    <string name="music_library_error_retry">再試一次</string>
+    <string name="music_library_contents_error">無法載入這些曲目。</string>
+    <string name="music_library_contents_empty">沒有曲目</string>
+    <string name="music_library_contents_back_desc">返回欄位</string>
+    <string name="music_library_contents_previous_album">上一張專輯</string>
+    <string name="music_library_contents_next_album">下一張專輯</string>
+    <string name="music_library_badge_playing">播放中</string>
+    <string name="music_library_filter_title">來源</string>
+    <string name="music_library_options_play">播放</string>
+    <string name="music_library_options_shuffle">隨機播放</string>
+    <string name="music_library_options_download">下載</string>
+    <string name="music_library_options_add_to_playlist">加入播放清單</string>
+    <string name="music_library_options_now_playing">正在播放</string>
+    <string name="music_library_playlists_title">加入播放清單</string>
+    <string name="music_library_playlists_empty">沒有可加入的播放清單</string>
+    <string name="music_library_playlists_loading">正在載入播放清單</string>
+    <string name="music_library_notice_added">已加入 %1$s</string>
+    <string name="music_library_notice_add_failed">無法加入播放清單</string>
+    <plurals name="music_library_notice_download_queued">
+        <item quantity="other">正在下載 %d 首曲目</item>
+    </plurals>
+    <string name="music_library_notice_download_failed">無法開始下載</string>
+    <string name="music_library_notice_play_failed">無法開始播放</string>
+    <string name="music_library_notice_nothing_to_play">這裡沒有可播放的內容</string>
+</resources>

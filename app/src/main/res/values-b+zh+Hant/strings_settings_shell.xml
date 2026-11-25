@@ -205,6 +205,11 @@
     <string name="settings_shell_modal_migrate_platform_message">要將已下載的遊戲移動到新位置嗎？檔案會先複製過去，再從舊位置移除。</string>
     <string name="settings_shell_modal_migrate_platform_confirm">遷移</string>
     <string name="settings_shell_modal_migrate_platform_skip">略過</string>
+    <string name="settings_shell_modal_folder_names_on_title">使用伺服器的資料夾名稱？</string>
+    <string name="settings_shell_modal_folder_names_off_title">使用 Argosy 的資料夾名稱？</string>
+    <string name="settings_shell_modal_folder_names_on_message">已下載的遊戲會移到與 RomM 伺服器同名的資料夾。檔案原地重新命名，不會複製。</string>
+    <string name="settings_shell_modal_folder_names_off_message">已下載的遊戲會移回 Argosy 自己的平台資料夾。檔案原地重新命名，不會複製。</string>
+    <string name="settings_shell_modal_folder_names_confirm">移動</string>
 
     <string name="settings_shell_modal_purge_platform_title">要清除%1$s嗎？</string>
     <string name="settings_shell_modal_purge_platform_fallback">平台</string>

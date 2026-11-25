@@ -200,6 +200,11 @@
     <string name="settings_shell_modal_migrate_platform_message">डाउनलोड किए गए गेम नई लोकेशन पर ले जाएँ? फ़ाइलें कॉपी होकर फिर पुरानी लोकेशन से हटा दी जाएँगी।</string>
     <string name="settings_shell_modal_migrate_platform_confirm">माइग्रेट करें</string>
     <string name="settings_shell_modal_migrate_platform_skip">छोड़ें</string>
+    <string name="settings_shell_modal_folder_names_on_title">सर्वर के फ़ोल्डर नाम इस्तेमाल करें?</string>
+    <string name="settings_shell_modal_folder_names_off_title">Argosy के फ़ोल्डर नाम इस्तेमाल करें?</string>
+    <string name="settings_shell_modal_folder_names_on_message">डाउनलोड किए गए गेम उन फ़ोल्डरों में चले जाएंगे जिनके नाम आपके RomM सर्वर जैसे हैं। फ़ाइलें अपनी जगह पर नाम बदलती हैं, कुछ भी कॉपी नहीं होता।</string>
+    <string name="settings_shell_modal_folder_names_off_message">डाउनलोड किए गए गेम वापस Argosy के अपने प्लैटफ़ॉर्म फ़ोल्डरों में चले जाएंगे। फ़ाइलें अपनी जगह पर नाम बदलती हैं, कुछ भी कॉपी नहीं होता।</string>
+    <string name="settings_shell_modal_folder_names_confirm">ले जाएं</string>
 
     <string name="settings_shell_modal_purge_platform_title">%1$s पर्ज करें?</string>
     <string name="settings_shell_modal_purge_platform_fallback">प्लेटफ़ॉर्म</string>

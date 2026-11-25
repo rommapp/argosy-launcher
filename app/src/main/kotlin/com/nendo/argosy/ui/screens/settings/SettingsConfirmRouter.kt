@@ -137,6 +137,14 @@ import com.nendo.argosy.ui.screens.settings.sections.JellyfinItem
 import com.nendo.argosy.ui.screens.settings.sections.JellyfinLayoutState
 import com.nendo.argosy.ui.screens.settings.sections.jellyfinItemAtFocusIndex
 import com.nendo.argosy.ui.screens.settings.sections.jellyfinMaxFocusIndex
+import com.nendo.argosy.ui.screens.settings.components.NAVIDROME_CONFIG_CANCEL_INDEX
+import com.nendo.argosy.ui.screens.settings.components.NAVIDROME_CONFIG_SAVE_INDEX
+import com.nendo.argosy.ui.screens.settings.components.NAVIDROME_LOGIN_CANCEL_INDEX
+import com.nendo.argosy.ui.screens.settings.components.NAVIDROME_LOGIN_SUBMIT_INDEX
+import com.nendo.argosy.ui.screens.settings.sections.NavidromeItem
+import com.nendo.argosy.ui.screens.settings.sections.NavidromeLayoutState
+import com.nendo.argosy.ui.screens.settings.sections.navidromeItemAtFocusIndex
+import com.nendo.argosy.ui.screens.settings.sections.navidromeMaxFocusIndex
 import com.nendo.argosy.ui.screens.settings.sections.RomMItem
 import com.nendo.argosy.ui.screens.settings.sections.SavesItem
 import com.nendo.argosy.ui.screens.settings.sections.SavesLayoutState
@@ -200,6 +208,7 @@ internal fun routeConfirm(vm: SettingsViewModel): InputResult {
                 MainSettingsItem.Social -> vm.navigateToSection(SettingsSection.SOCIAL)
                 MainSettingsItem.Steam -> vm.navigateToSection(SettingsSection.STEAM_SETTINGS)
                 MainSettingsItem.Jellyfin -> vm.navigateToSection(SettingsSection.JELLYFIN)
+                MainSettingsItem.Navidrome -> vm.navigateToSection(SettingsSection.NAVIDROME)
                 MainSettingsItem.NetworkBluetooth -> vm.navigateToSection(SettingsSection.NETWORK_BLUETOOTH)
                 null -> {}
             }
@@ -210,6 +219,7 @@ internal fun routeConfirm(vm: SettingsViewModel): InputResult {
         SettingsSection.SAVES -> routeSavesConfirm(vm, state)
         SettingsSection.STEAM_SETTINGS -> routeSteamConfirm(vm, state)
         SettingsSection.JELLYFIN -> routeJellyfinConfirm(vm, state)
+        SettingsSection.NAVIDROME -> routeNavidromeConfirm(vm, state)
         SettingsSection.NETWORK_BLUETOOTH -> InputResult.HANDLED
         SettingsSection.RETRO_ACHIEVEMENTS -> {
             val ra = state.retroAchievements
@@ -505,6 +515,40 @@ private fun routeJellyfinConfirm(vm: SettingsViewModel, state: SettingsUiState):
     return InputResult.HANDLED
 }
 
+private fun routeNavidromeConfirm(vm: SettingsViewModel, state: SettingsUiState): InputResult {
+    val navidrome = state.navidrome
+    if (navidrome.configuring) {
+        when (state.focusedIndex) {
+            NAVIDROME_CONFIG_SAVE_INDEX -> vm.commitNavidromeConfig()
+            NAVIDROME_CONFIG_CANCEL_INDEX -> vm.cancelNavidromeConfig()
+            else -> vm.setNavidromeConfigFocusField(state.focusedIndex)
+        }
+        return InputResult.HANDLED
+    }
+
+    if (navidrome.showLoginForm) {
+        when (state.focusedIndex) {
+            NAVIDROME_LOGIN_SUBMIT_INDEX -> vm.submitNavidromeSignIn()
+            NAVIDROME_LOGIN_CANCEL_INDEX -> vm.hideNavidromeLoginForm()
+            else -> vm.setNavidromeLoginFocusField(state.focusedIndex)
+        }
+        return InputResult.HANDLED
+    }
+
+    when (navidromeItemAtFocusIndex(state.focusedIndex, NavidromeLayoutState.from(state))) {
+        NavidromeItem.MusicServer -> vm.startNavidromeConfig()
+        NavidromeItem.Account -> if (navidrome.isSignedIn) {
+            vm.requestNavidromeSignOut()
+            return InputResult.handled(SoundType.OPEN_MODAL)
+        } else {
+            vm.showNavidromeLoginForm()
+        }
+        NavidromeItem.Connection -> vm.checkNavidromeConnection()
+        else -> {}
+    }
+    return InputResult.HANDLED
+}
+
 private fun routeSavesConfirm(vm: SettingsViewModel, state: SettingsUiState): InputResult {
     when (savesItemAtFocusIndex(state.focusedIndex, SavesLayoutState.from(state))) {
         SavesItem.SaveSync -> {
@@ -607,6 +651,10 @@ private fun routeStorageConfirm(vm: SettingsViewModel, state: SettingsUiState): 
         }
         StorageItem.FolderNameFromRom -> {
             vm.toggleFolderNameFromRom()
+            return InputResult.handled(SoundType.TOGGLE)
+        }
+        StorageItem.PlatformFoldersFromServer -> {
+            vm.togglePlatformFoldersFromServer()
             return InputResult.handled(SoundType.TOGGLE)
         }
         StorageItem.ResetLibrary -> vm.requestPurgeAll()
@@ -864,6 +912,7 @@ private fun routeThemeMusicConfirm(vm: SettingsViewModel, state: SettingsUiState
             return InputResult.toggled(newEnabled, if (newEnabled) SoundType.TOGGLE else SoundType.SILENT)
         }
         ThemeMusicItem.BgmVolume -> vm.cycleAmbientAudioVolume()
+        ThemeMusicItem.GameMusicVolume -> return InputResult.handled(SoundType.SILENT)
         ThemeMusicItem.BgmPlaylist -> vm.openBgmPlaylistManager()
         ThemeMusicItem.BrowseServerMusic -> vm.openMusicBrowserBgm()
         ThemeMusicItem.BrowseLocalMusic -> vm.openBgmAddMusicBrowser()
@@ -1357,6 +1406,8 @@ private fun routeDismissTopOverlay(vm: SettingsViewModel): Boolean {
         state.server.rommConfiguring -> { vm.cancelRommConfig(); true }
         state.jellyfin.configuring -> { vm.cancelJellyfinConfig(); true }
         state.jellyfin.showLoginForm -> { vm.hideJellyfinLoginForm(); true }
+        state.navidrome.configuring -> { vm.cancelNavidromeConfig(); true }
+        state.navidrome.showLoginForm -> { vm.hideNavidromeLoginForm(); true }
         state.retroAchievements.webApiKeyEditor != null -> { vm.closeRAWebApiKeyEditor(); true }
         state.retroAchievements.showLoginForm -> { vm.hideRALoginForm(); true }
         state.currentSection == SettingsSection.PLATFORM_DETAIL && state.platformDetail.showRemoveConfirm -> {
@@ -1466,6 +1517,11 @@ private fun computeMaxFocusIndex(
         state.jellyfin.configuring -> JELLYFIN_CONFIG_CANCEL_INDEX
         state.jellyfin.showLoginForm -> JELLYFIN_LOGIN_CANCEL_INDEX
         else -> jellyfinMaxFocusIndex(JellyfinLayoutState.from(state))
+    }
+    SettingsSection.NAVIDROME -> when {
+        state.navidrome.configuring -> NAVIDROME_CONFIG_CANCEL_INDEX
+        state.navidrome.showLoginForm -> NAVIDROME_LOGIN_CANCEL_INDEX
+        else -> navidromeMaxFocusIndex(NavidromeLayoutState.from(state))
     }
     SettingsSection.NETWORK_BLUETOOTH -> 0
     SettingsSection.RETRO_ACHIEVEMENTS -> if (state.retroAchievements.showLoginForm) {

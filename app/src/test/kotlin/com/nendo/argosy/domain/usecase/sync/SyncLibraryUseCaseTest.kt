@@ -1,5 +1,6 @@
 package com.nendo.argosy.domain.usecase.sync
 
+import com.nendo.argosy.data.music.romm.RommMusicIndex
 import com.nendo.argosy.data.preferences.AppPreferencesRepository
 import com.nendo.argosy.data.preferences.SyncPreferencesRepository
 import com.nendo.argosy.data.remote.romm.RomMRepository
@@ -36,10 +37,12 @@ class SyncLibraryUseCaseTest {
     private lateinit var librarySyncBus: LibrarySyncNotifier
     private lateinit var appPreferences: AppPreferencesRepository
     private lateinit var syncPreferences: SyncPreferencesRepository
+    private lateinit var rommMusicIndex: RommMusicIndex
     private lateinit var useCase: SyncLibraryUseCase
 
     @Before
     fun setup() {
+        rommMusicIndex = mockk(relaxed = true)
         romMRepository = mockk(relaxed = true)
         every { romMRepository.syncProgress } returns MutableStateFlow(SyncProgress())
         notificationManager = mockk(relaxed = true)
@@ -55,7 +58,8 @@ class SyncLibraryUseCaseTest {
             librarySyncBus,
             SyncNotificationCopyResources(),
             appPreferences,
-            syncPreferences
+            syncPreferences,
+            rommMusicIndex
         ).apply {
             progressDispatcher = UnconfinedTestDispatcher()
         }

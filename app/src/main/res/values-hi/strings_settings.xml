@@ -176,6 +176,8 @@
     <string name="settings_installers_variant_universal">यूनिवर्सल</string>
     <string name="settings_storage_folder_name_from_rom_title">फ़ोल्डर का नाम ROM पर रखें</string>
     <string name="settings_storage_folder_name_from_rom_subtitle">गेम के फ़ोल्डर का नाम उसकी मुख्य ROM फ़ाइल पर रखें, एक्सटेंशन सहित, ताकि दूसरे फ़्रंटएंड उसे पहचान सकें। यह नए डाउनलोड पर लागू होता है।</string>
+    <string name="settings_storage_platform_folders_from_server_title">सर्वर के फ़ोल्डर नाम इस्तेमाल करें</string>
+    <string name="settings_storage_platform_folders_from_server_subtitle">हर प्लैटफ़ॉर्म फ़ोल्डर का नाम वैसा रखें जैसा आपका RomM सर्वर रखता है, ताकि यह लाइब्रेरी सर्वर के ढांचे से मेल खाए।</string>
     <string name="settings_installers_add_error_invalid">यह GitHub रिपॉज़िटरी लिंक नहीं है</string>
     <string name="settings_installers_add_error_duplicate">यह रिपॉज़िटरी पहले से सूची में है</string>
     <string name="settings_installers_subtitle_installed">इंस्टॉल है: %1$s</string>
@@ -831,6 +833,7 @@
     <string name="settings_music_toggle_title">बैकग्राउंड संगीत</string>
     <string name="settings_music_toggle_subtitle">लॉन्चर उपयोग करते समय संगीत चलाएँ</string>
     <string name="settings_music_volume_title">वॉल्यूम</string>
+    <string name="settings_music_game_volume_title">गेम में संगीत वॉल्यूम</string>
 
     <string name="settings_music_playlist_title">संगीत प्लेलिस्ट</string>
     <string name="settings_music_playlist_empty">कोई ट्रैक नहीं</string>
@@ -2514,7 +2517,6 @@
     <!-- ===== Jellyfin settings delegate (Settings > delegates > JellyfinSettingsDelegate) ===== -->
 
     <string name="settings_jellyfin_delegate_config_error_empty">सर्वर एड्रेस डालें</string>
-    <string name="settings_jellyfin_delegate_config_error_scheme">एड्रेस http:// या https:// से शुरू होना चाहिए</string>
     <string name="settings_jellyfin_delegate_signin_error_empty">अपना यूज़रनेम और पासवर्ड डालें</string>
 
     <!-- ===== Server settings delegate (Settings > delegates > ServerSettingsDelegate) ===== -->

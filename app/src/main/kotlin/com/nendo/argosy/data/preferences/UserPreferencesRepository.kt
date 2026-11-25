@@ -152,6 +152,7 @@ class UserPreferencesRepository @Inject constructor(
             instantDownloadThresholdMb = storage.instantDownloadThresholdMb,
             stageDownloadsInternally = storage.stageDownloadsInternally,
             folderNameFromRom = storage.folderNameFromRom,
+            platformFoldersFromServer = storage.platformFoldersFromServer,
             gridDensity = display.gridDensity,
             libraryLayout = display.libraryLayout,
             libraryListStyle = display.libraryListStyle,
@@ -215,7 +216,9 @@ class UserPreferencesRepository @Inject constructor(
             ambientAudioVolume = controls.ambientAudioVolume,
             ambientAudioUri = controls.ambientAudioUri,
             ambientAudioShuffle = controls.ambientAudioShuffle,
+            ambientAudioRepeat = controls.ambientAudioRepeat,
             ambientAudioPlayInBackground = controls.ambientAudioPlayInBackground,
+            ambientAudioGameVolume = controls.ambientAudioGameVolume,
             gameDetailThemeEnabled = controls.gameDetailThemeEnabled,
             imageCachePath = sync.imageCachePath,
             screenDimmerEnabled = display.screenDimmerEnabled,
@@ -545,6 +548,7 @@ class UserPreferencesRepository @Inject constructor(
     suspend fun setAmbientAudioVolume(volume: Int) = controlsPrefs.setAmbientAudioVolume(volume)
     suspend fun setAmbientAudioUri(uri: String?) = controlsPrefs.setAmbientAudioUri(uri)
     suspend fun setAmbientAudioShuffle(shuffle: Boolean) = controlsPrefs.setAmbientAudioShuffle(shuffle)
+    suspend fun setAmbientAudioGameVolume(volume: Int) = controlsPrefs.setAmbientAudioGameVolume(volume)
     suspend fun setGameDetailThemeEnabled(enabled: Boolean) = controlsPrefs.setGameDetailThemeEnabled(enabled)
     suspend fun setMenuWrapMode(mode: MenuWrapMode) = controlsPrefs.setMenuWrapMode(mode)
     suspend fun setSelectSwapMode(mode: SelectSwapMode) = controlsPrefs.setSelectSwapMode(mode)
@@ -571,6 +575,7 @@ class UserPreferencesRepository @Inject constructor(
     suspend fun setStageDownloadsInternally(enabled: Boolean) = storagePrefs.setStageDownloadsInternally(enabled)
 
     suspend fun setFolderNameFromRom(enabled: Boolean) = storagePrefs.setFolderNameFromRom(enabled)
+    suspend fun setPlatformFoldersFromServer(enabled: Boolean) = storagePrefs.setPlatformFoldersFromServer(enabled)
     suspend fun setCustomBiosPath(path: String?) = storagePrefs.setCustomBiosPath(path)
     suspend fun setWeeklyIntegrityCheckEnabled(enabled: Boolean) = storagePrefs.setWeeklyIntegrityCheckEnabled(enabled)
     suspend fun setLastIntegrityCheckTime(timeMs: Long) = storagePrefs.setLastIntegrityCheckTime(timeMs)
@@ -965,6 +970,7 @@ data class UserPreferences(
     val instantDownloadThresholdMb: Int = 50,
     val stageDownloadsInternally: Boolean = true,
     val folderNameFromRom: Boolean = false,
+    val platformFoldersFromServer: Boolean = false,
     val gridDensity: GridDensity = GridDensity.NORMAL,
     val libraryLayout: LibraryLayout = LibraryLayout.GRID,
     val libraryListStyle: LibraryListStyle = LibraryListStyle.RELAXED,
@@ -1047,7 +1053,9 @@ data class UserPreferences(
     val ambientAudioVolume: Int = 50,
     val ambientAudioUri: String? = null,
     val ambientAudioShuffle: Boolean = false,
+    val ambientAudioRepeat: MusicRepeatMode = MusicRepeatMode.ALL,
     val ambientAudioPlayInBackground: Boolean = false,
+    val ambientAudioGameVolume: Int = ControlsPreferences.DEFAULT_AMBIENT_AUDIO_GAME_VOLUME,
     val gameDetailThemeEnabled: Boolean = false,
     val imageCachePath: String? = null,
     val screenDimmerEnabled: Boolean = true,

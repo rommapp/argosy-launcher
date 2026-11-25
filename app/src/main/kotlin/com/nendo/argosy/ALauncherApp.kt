@@ -227,6 +227,9 @@ class ArgosyApp : Application(), Configuration.Provider, ImageLoaderFactory {
     @Inject
     lateinit var accessibilityRebind: com.nendo.argosy.hardware.AccessibilityRebind
 
+    @Inject
+    lateinit var gameSessionAudioCoordinator: dagger.Lazy<com.nendo.argosy.ui.audio.GameSessionAudioCoordinator>
+
     private val lastForegroundSteamRefreshAt = AtomicLong(NEVER_REFRESHED)
 
     private val foregroundObserver = object : androidx.lifecycle.DefaultLifecycleObserver {
@@ -284,6 +287,7 @@ class ArgosyApp : Application(), Configuration.Provider, ImageLoaderFactory {
         batteryNoticePoster.get().start()
         controllerNoticePoster.get().start()
         savedPadSeatsPublisher.get().start()
+        gameSessionAudioCoordinator.get().start()
         clientCertCoordinator.start()
         siblingGroupRepository.start()
         lidSleepGuard.start()

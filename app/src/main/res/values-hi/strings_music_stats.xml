@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="music_stats_entry_option">आपकी सुनी हुई</string>
+    <string name="music_stats_entry_header">आपकी सुनी हुई</string>
+    <string name="music_stats_title">आपकी सुनी हुई</string>
+    <string name="music_stats_back_desc">वापस</string>
+    <string name="music_stats_tab_month">इस महीने</string>
+    <string name="music_stats_tab_flashback">यादें</string>
+    <string name="music_stats_tab_games">आपके गेम के साथ</string>
+    <string name="music_stats_kicker_game">गेम</string>
+    <string name="music_stats_kicker_platform">प्लेटफ़ॉर्म</string>
+    <string name="music_stats_kicker_genre">शैली</string>
+    <string name="music_stats_kicker_franchise">सीरीज़</string>
+    <string name="music_stats_options_play">चलाएँ</string>
+    <string name="music_stats_options_shuffle">शफ़ल</string>
+    <string name="music_stats_shelf_top_tracks">सबसे ज़्यादा सुने गए ट्रैक</string>
+    <string name="music_stats_shelf_top_albums">सबसे ज़्यादा सुने गए एल्बम</string>
+    <string name="music_stats_shelf_top_artists">सबसे ज़्यादा सुने गए कलाकार</string>
+    <string name="music_stats_shelf_on_this_day">%1$d में आज के दिन</string>
+    <string name="music_stats_shelf_month_in_year">%1$d में इस महीने</string>
+    <plurals name="music_stats_count_plays">
+        <item quantity="one">%d बार चलाया</item>
+        <item quantity="other">%d बार चलाया</item>
+    </plurals>
+    <plurals name="music_stats_count_tracks">
+        <item quantity="one">%d ट्रैक</item>
+        <item quantity="other">%d ट्रैक</item>
+    </plurals>
+    <plurals name="music_stats_count_days">
+        <item quantity="one">%d दिन</item>
+        <item quantity="other">%d दिन</item>
+    </plurals>
+    <string name="music_stats_error_title">सुनने का इतिहास लोड नहीं हो सका</string>
+    <string name="music_stats_error_message">थोड़ी देर में फिर से कोशिश करें।</string>
+    <string name="music_stats_error_retry">फिर से कोशिश करें</string>
+    <string name="music_stats_month_empty_title">इस महीने कुछ नहीं सुना</string>
+    <string name="music_stats_empty_message">संगीत सुनते-सुनते आपका इतिहास बनता है।</string>
+    <string name="music_stats_flashback_empty_title">अभी कोई यादें नहीं</string>
+    <string name="music_stats_flashback_empty_message">जो आप अभी सुनते हैं, वह अगले साल इसी तारीख़ और इसी महीने यहाँ लौटेगा।</string>
+    <string name="music_stats_games_empty_title">अभी गेम के साथ कोई संगीत नहीं</string>
+    <string name="music_stats_games_empty_message">गेम खेलते समय संगीत सुनें, वह यहाँ गेम, प्लेटफ़ॉर्म, शैली और सीरीज़ के अनुसार दिखेगा।</string>
+    <string name="music_stats_footer_views">दृश्य</string>
+    <string name="music_stats_footer_play">चलाएँ</string>
+    <string name="music_stats_footer_options">विकल्प</string>
+    <string name="music_stats_game_action">इस गेम के लिए संगीत</string>
+    <string name="music_stats_recap_heading">संगीत</string>
+    <string name="music_stats_recap_top_track">टॉप ट्रैक</string>
+    <string name="music_stats_recap_top_album">टॉप एल्बम</string>
+    <string name="music_stats_recap_top_artist">टॉप कलाकार</string>
+</resources>

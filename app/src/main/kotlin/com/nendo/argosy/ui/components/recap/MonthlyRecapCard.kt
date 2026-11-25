@@ -163,6 +163,10 @@ private fun DigestContent(digest: MonthlyDigest, cursor: RecapCursor, short: Boo
         SectionHeading(stringResource(R.string.ui_monthly_recap_top_games_heading))
         TopGamesBand(digest, short)
     }
+    digest.music?.let { music ->
+        SectionHeading(stringResource(R.string.music_stats_recap_heading), playTime(music.listenedMs))
+        RecapMusicSection(music, short)
+    }
     if (digest.unlocks.isNotEmpty() || digest.awards.isNotEmpty()) {
         AchievementsSection(digest, cursor, short, onCurrent)
     }

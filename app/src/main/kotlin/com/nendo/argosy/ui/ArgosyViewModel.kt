@@ -165,11 +165,13 @@ data class NavRingState(
 private fun isNavRouteAvailable(
     route: String,
     socialConnected: Boolean,
-    mediaSignedIn: Boolean
+    mediaSignedIn: Boolean,
+    hasMusicSources: Boolean
 ): Boolean =
     when (route) {
         Screen.Social.route -> socialConnected
         Screen.MediaLibrary.route -> mediaSignedIn
+        Screen.Music.route -> hasMusicSources
         else -> true
     }
 
@@ -203,6 +205,7 @@ class ArgosyViewModel @Inject constructor(
     private val performanceModeStore: com.nendo.argosy.hardware.PerformanceModeStore,
     private val displayRefreshController: DisplayRefreshController,
     private val hardwareStatsReader: com.nendo.argosy.hardware.HardwareStatsReader,
+    private val ledController: com.nendo.argosy.hardware.LEDController,
     private val radioController: com.nendo.argosy.hardware.RadioController,
     private val platformSyncQueue: com.nendo.argosy.data.sync.PlatformSyncQueue,
     private val socialRepository: SocialRepository,
@@ -225,8 +228,14 @@ class ArgosyViewModel @Inject constructor(
     private val powerActions: com.nendo.argosy.hardware.PowerActions,
     private val syncQueueManager: com.nendo.argosy.data.sync.SyncQueueManager,
     private val activityHistory: com.nendo.argosy.core.notification.ActivityHistory,
-    private val activeControllerProfiles: com.nendo.argosy.data.preferences.ActiveControllerProfiles
+    private val activeControllerProfiles: com.nendo.argosy.data.preferences.ActiveControllerProfiles,
+    musicLibrary: com.nendo.argosy.data.music.library.MusicLibrary
 ) : ViewModel() {
+
+    private val hasMusicSources: StateFlow<Boolean> = musicLibrary.configuredSources()
+        .map { it.isNotEmpty() }
+        .distinctUntilChanged()
+        .stateIn(viewModelScope, SharingStarted.Eagerly, false)
 
     val runningGamesUi: StateFlow<com.nendo.argosy.ui.common.RunningGamesUi> = runningGames.state
         .map { it.toRunningGamesUi() }
@@ -396,6 +405,7 @@ class ArgosyViewModel @Inject constructor(
         performanceStore = performanceModeStore,
         refreshController = displayRefreshController,
         hardwareStatsReader = hardwareStatsReader,
+        ledController = ledController,
         socialRepository = socialRepository,
         hapticManager = hapticManager,
         soundManager = soundManager,
@@ -468,7 +478,7 @@ class ArgosyViewModel @Inject constructor(
         get() {
             val socialConnected = socialRepository.connectionState.value is SocialConnectionState.Connected
             return allDrawerItems.filter {
-                isNavRouteAvailable(it.route, socialConnected, _isMediaSignedIn)
+                isNavRouteAvailable(it.route, socialConnected, _isMediaSignedIn, hasMusicSources.value)
             }
         }
 
@@ -478,11 +488,12 @@ class ArgosyViewModel @Inject constructor(
         socialRepository.connectionState,
         preferencesRepository.userPreferences,
         quickNavigationSource.enabled,
-        navBarVisibility.raised
-    ) { social, prefs, quickNavigation, raised ->
+        navBarVisibility.raised,
+        hasMusicSources
+    ) { social, prefs, quickNavigation, raised, musicSources ->
         val socialConnected = social is SocialConnectionState.Connected
         val pages = allDrawerItems.filter {
-            isNavRouteAvailable(it.route, socialConnected, prefs.isJellyfinSignedIn)
+            isNavRouteAvailable(it.route, socialConnected, prefs.isJellyfinSignedIn, musicSources)
         }
         val ring = if (quickNavigation) {
             NavRing.resolve(prefs.navRingRoutes).mapNotNull { token ->

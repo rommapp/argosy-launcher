@@ -153,6 +153,7 @@ class SettingsViewModel @Inject constructor(
     val syncDelegate: SyncSettingsDelegate,
     val steamDelegate: SteamSettingsDelegate,
     val jellyfinDelegate: com.nendo.argosy.ui.screens.settings.delegates.JellyfinSettingsDelegate,
+    val navidromeDelegate: com.nendo.argosy.ui.screens.settings.delegates.NavidromeSettingsDelegate,
     val raDelegate: RASettingsDelegate,
     val clientCertDelegate: ClientCertDelegate,
     val permissionsDelegate: PermissionsSettingsDelegate,
@@ -1570,8 +1571,7 @@ class SettingsViewModel @Inject constructor(
     fun setVideoWallpaperMuted(muted: Boolean) = displayDelegate.setVideoWallpaperMuted(viewModelScope, muted)
     fun setAmbientLedEnabled(enabled: Boolean) = displayDelegate.setAmbientLedEnabled(viewModelScope, enabled)
     fun setAmbientLedBrightness(brightness: Int) = displayDelegate.setAmbientLedBrightness(viewModelScope, brightness)
-    fun adjustAmbientLedBrightness(delta: Int) = displayDelegate.adjustAmbientLedBrightness(viewModelScope, delta)
-    fun cycleAmbientLedBrightness() = displayDelegate.cycleAmbientLedBrightness(viewModelScope)
+    fun stepAmbientLedBrightness(direction: Int) = displayDelegate.stepAmbientLedBrightness(viewModelScope, direction)
     fun setAmbientLedAudioBrightness(enabled: Boolean) = displayDelegate.setAmbientLedAudioBrightness(viewModelScope, enabled)
     fun setAmbientLedAudioColors(enabled: Boolean) = displayDelegate.setAmbientLedAudioColors(viewModelScope, enabled)
     fun cycleAmbientLedColorMode(direction: Int = 1) = displayDelegate.cycleAmbientLedColorMode(viewModelScope, direction)
@@ -1679,6 +1679,7 @@ class SettingsViewModel @Inject constructor(
 
     fun adjustAmbientAudioVolume(delta: Int) = routeAdjustAmbientAudioVolume(this, delta)
     fun cycleAmbientAudioVolume() = routeCycleAmbientAudioVolume(this)
+    fun adjustAmbientAudioGameVolume(delta: Int) = routeAdjustAmbientAudioGameVolume(this, delta)
 
     fun setAmbientAudioShuffle(shuffle: Boolean) = ambientAudioDelegate.setShuffle(viewModelScope, shuffle)
     fun setGameDetailThemeEnabled(enabled: Boolean) = ambientAudioDelegate.setGameDetailTheme(viewModelScope, enabled)
@@ -1991,6 +1992,9 @@ class SettingsViewModel @Inject constructor(
 
     fun toggleStageDownloadsInternally() = storageDelegate.toggleStageDownloadsInternally(viewModelScope)
     fun toggleFolderNameFromRom() = storageDelegate.toggleFolderNameFromRom(viewModelScope)
+    fun togglePlatformFoldersFromServer() = storageDelegate.togglePlatformFoldersFromServer(viewModelScope)
+    fun confirmPlatformFolderNames() = storageDelegate.confirmPlatformFolderNames(viewModelScope)
+    fun cancelPlatformFolderNames() = storageDelegate.cancelPlatformFolderNames()
 
     fun toggleScreenDimmer() = storageDelegate.toggleScreenDimmer(viewModelScope)
     fun cycleScreenDimmerTimeout() = storageDelegate.cycleScreenDimmerTimeout(viewModelScope)
@@ -2771,6 +2775,24 @@ class SettingsViewModel @Inject constructor(
     private fun resetFocusIndex() {
         _uiState.update { it.copy(focusedIndex = 0) }
     }
+
+    fun startNavidromeConfig() = navidromeDelegate.startServerConfig(::resetFocusIndex)
+    fun setNavidromeConfigUrl(url: String) = navidromeDelegate.setConfigUrl(url)
+    fun setNavidromeConfigFocusField(field: Int?) = navidromeDelegate.setConfigFocusField(field)
+    fun clearNavidromeConfigFocusField() = navidromeDelegate.clearConfigFocusField()
+    fun commitNavidromeConfig() = navidromeDelegate.commitServerConfig(viewModelScope, ::resetFocusIndex)
+    fun cancelNavidromeConfig() = navidromeDelegate.cancelServerConfig(::resetFocusIndex)
+    fun showNavidromeLoginForm() = navidromeDelegate.showLoginForm(::resetFocusIndex)
+    fun hideNavidromeLoginForm() = navidromeDelegate.hideLoginForm(::resetFocusIndex)
+    fun setNavidromeLoginUsername(username: String) = navidromeDelegate.setLoginUsername(username)
+    fun setNavidromeLoginPassword(password: String) = navidromeDelegate.setLoginPassword(password)
+    fun setNavidromeLoginFocusField(field: Int?) = navidromeDelegate.setLoginFocusField(field)
+    fun clearNavidromeLoginFocusField() = navidromeDelegate.clearLoginFocusField()
+    fun submitNavidromeSignIn() = navidromeDelegate.submitSignIn(viewModelScope, ::resetFocusIndex)
+    fun checkNavidromeConnection() = navidromeDelegate.checkConnection(viewModelScope)
+    fun requestNavidromeSignOut() = navidromeDelegate.requestSignOut()
+    fun cancelNavidromeSignOut() = navidromeDelegate.cancelSignOut()
+    fun confirmNavidromeSignOut() = navidromeDelegate.confirmSignOut(viewModelScope)
 
     /**
      * Reconnects to the stored server so the section knows what it is dealing with before the user

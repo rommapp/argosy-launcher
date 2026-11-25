@@ -184,6 +184,10 @@
     <string name="notif_review_error_server">伺服器無法儲存該評論</string>
     <string name="notif_storage_migrate_failed_title">遷移失敗</string>
     <string name="notif_storage_migrate_platform_failed_title">%1$s 遷移失敗</string>
+    <string name="notif_storage_folder_names_busy">請先完成或取消下載，再重新命名平台資料夾</string>
+    <string name="notif_storage_folder_names_done">平台資料夾已重新命名</string>
+    <string name="notif_storage_folder_names_failed_title">平台資料夾未變更</string>
+    <string name="notif_storage_folder_names_failed_subtitle">無法移動 %1$s</string>
     <string name="notif_storage_purge_failed_title">%1$s 清除失敗</string>
     <string name="notif_settings_cache_validate_failed">圖片快取檢查失敗</string>
     <string name="notif_settings_downloads_validate_failed">下載檢查失敗</string>

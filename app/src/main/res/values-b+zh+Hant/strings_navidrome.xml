@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="settings_navidrome_main_subtitle_unconfigured">尚未設定伺服器</string>
+    <string name="settings_navidrome_main_subtitle_signed_in_as">已登入為 %1$s</string>
+    <string name="settings_navidrome_main_subtitle_signed_out">尚未登入</string>
+    <string name="settings_navidrome_section_server">伺服器</string>
+    <string name="settings_navidrome_server_title">音樂伺服器</string>
+    <string name="settings_navidrome_server_unconfigured">尚未設定</string>
+    <string name="settings_navidrome_account_label">帳號</string>
+    <string name="settings_navidrome_account_sign_in">登入</string>
+    <string name="settings_navidrome_account_sign_out">登出</string>
+    <string name="settings_navidrome_account_signed_in_as">已登入為 %1$s</string>
+    <string name="settings_navidrome_account_password">使用你的 Navidrome 使用者名稱和密碼登入</string>
+    <string name="settings_navidrome_connection_title">連線</string>
+    <string name="settings_navidrome_connection_checking">正在檢查伺服器</string>
+    <string name="settings_navidrome_connection_connected">已連線</string>
+    <string name="settings_navidrome_connection_connected_version">已連線到 Navidrome %1$s</string>
+    <string name="settings_navidrome_connection_unknown">選取以檢查連線</string>
+    <string name="settings_navidrome_config_server_address_label">伺服器位址</string>
+    <string name="settings_navidrome_config_keyboard_submit">儲存</string>
+    <string name="settings_navidrome_config_save_title">儲存</string>
+    <string name="settings_navidrome_config_save_subtitle">將此位址用於你的音樂庫</string>
+    <string name="settings_navidrome_config_cancel_title">取消</string>
+    <string name="settings_navidrome_config_cancel_subtitle">返回 Navidrome 設定</string>
+    <string name="settings_navidrome_config_error_empty">請輸入伺服器位址</string>
+    <string name="settings_navidrome_signin_username_label">使用者名稱</string>
+    <string name="settings_navidrome_signin_password_label">密碼</string>
+    <string name="settings_navidrome_signin_username_keyboard_submit">完成</string>
+    <string name="settings_navidrome_signin_password_keyboard_submit">登入</string>
+    <string name="settings_navidrome_signin_submit_title">登入</string>
+    <string name="settings_navidrome_signin_submitting_title">登入中&#8230;</string>
+    <string name="settings_navidrome_signin_submit_subtitle">將此帳號用於你的音樂庫</string>
+    <string name="settings_navidrome_signin_cancel_title">取消</string>
+    <string name="settings_navidrome_signin_cancel_subtitle">返回 Navidrome 設定</string>
+    <string name="settings_navidrome_signin_error_empty">請輸入使用者名稱和密碼</string>
+    <string name="settings_navidrome_signin_error_rejected">伺服器拒絕了登入</string>
+    <string name="settings_navidrome_signin_error_unreachable">無法連線到伺服器。請檢查位址後再試一次。</string>
+    <string name="settings_navidrome_signout_title">要登出 Navidrome 嗎？</string>
+    <string name="settings_navidrome_signout_message">此裝置會忘記你的 Navidrome 登入資訊。你的音樂和播放清單仍會保留在伺服器上。</string>
+    <string name="settings_navidrome_signout_confirm">登出</string>
+</resources>

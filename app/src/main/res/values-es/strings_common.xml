@@ -639,6 +639,7 @@
     <string name="ui_quick_settings_orientation_landscape">Horizontal</string>
     <string name="ui_quick_settings_orientation_portrait">Vertical</string>
     <string name="ui_quick_settings_haptics">Vibración</string>
+    <string name="ui_quick_settings_led">LED</string>
     <string name="ui_quick_settings_ui_sounds">Sonidos de la interfaz</string>
     <string name="ui_quick_settings_swap_ab">Intercambiar A/B</string>
     <string name="ui_quick_settings_swap_xy">Intercambiar X/Y</string>
@@ -649,8 +650,7 @@
     <string name="ui_quick_settings_brightness_main">Pantalla principal</string>
     <string name="ui_quick_settings_brightness_second">Segunda pantalla</string>
     <string name="ui_quick_settings_off">Desactivado</string>
-    <string name="ui_quick_settings_percent">%1$d %%</string>
-    <string name="ui_quick_settings_page_performance">Rendimiento</string>
+    <string name="ui_quick_settings_percent">%1$d %%</string>    <string name="ui_quick_settings_page_performance">Rendimiento</string>
     <string name="ui_quick_settings_page_friends">Amigos</string>
     <string name="ui_quick_settings_page_music">Música</string>
     <string name="ui_quick_settings_group_display">Pantalla</string>
@@ -671,6 +671,9 @@
     <string name="ui_quick_settings_music_pause">Pausar</string>
     <string name="ui_quick_settings_music_next">Pista siguiente</string>
     <string name="ui_quick_settings_music_shuffle">Aleatorio</string>
+    <string name="ui_quick_settings_music_repeat_all">Repetir todo</string>
+    <string name="ui_quick_settings_music_repeat_one">Repetir una</string>
+    <string name="ui_quick_settings_music_repeat_off">Repetición desactivada</string>
     <string name="ui_quick_settings_music_play_in_background">Reproducir en segundo plano</string>
     <string name="ui_quick_settings_music_playlists">Listas de reproducción</string>
     <string name="ui_quick_settings_music_soundtracks">Bandas sonoras de juegos</string>
@@ -726,6 +729,7 @@
     <string name="ui_drawer_nav_collections">Colecciones</string>
     <string name="ui_drawer_nav_library">Biblioteca</string>
     <string name="ui_drawer_nav_media">Medios</string>
+    <string name="ui_drawer_nav_music">Música</string>
     <string name="ui_drawer_nav_downloads">Descargas</string>
     <string name="ui_drawer_nav_save_sync">Sincronización de guardado</string>
     <string name="ui_drawer_nav_apps">Aplicaciones</string>

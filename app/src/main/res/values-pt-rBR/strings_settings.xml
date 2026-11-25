@@ -1580,6 +1580,7 @@
     <string name="settings_music_toggle_subtitle">Tocar música enquanto usa o launcher</string>
     <!-- Row title. Noun: how loud that music is. -->
     <string name="settings_music_volume_title">Volume</string>
+    <string name="settings_music_game_volume_title">Volume da música nos jogos</string>
 
     <!-- Row opening the list of tracks. Noun phrase. -->
     <string name="settings_music_playlist_title">Playlist de músicas</string>
@@ -1871,6 +1872,8 @@
     <!-- Second line of that row. A game with updates or DLC is stored as a folder; some frontends
          only recognise it when the folder name matches the game file, extension included. -->
     <string name="settings_storage_folder_name_from_rom_subtitle">Nomeie a pasta do jogo pela sua ROM principal, incluindo a extensão, para que outros frontends o reconheçam. Aplica-se a novos downloads.</string>
+    <string name="settings_storage_platform_folders_from_server_title">Usar nomes de pasta do servidor</string>
+    <string name="settings_storage_platform_folders_from_server_subtitle">Nomeie cada pasta de plataforma como o seu servidor RomM faz, para que esta biblioteca siga a organização do servidor.</string>
 
     <!-- Row that empties the library records. Verb phrase. -->
     <string name="settings_storage_reset_library_title">Redefinir Biblioteca</string>
@@ -3843,7 +3846,6 @@
     <string name="settings_accounts_delegate_blocker_unknown_account">Essa conta não está mais neste dispositivo.</string>
     <string name="settings_steam_delegate_invalid_app_id">Insira um ID de aplicativo Steam válido.</string>
     <string name="settings_jellyfin_delegate_config_error_empty">Digite um endereço de servidor</string>
-    <string name="settings_jellyfin_delegate_config_error_scheme">O endereço deve começar com http:// ou https://</string>
     <string name="settings_jellyfin_delegate_signin_error_empty">Digite seu nome de usuário e senha</string>
     <string name="settings_server_delegate_signout_switch_in_progress">A troca de conta ainda está finalizando. Tente novamente em instantes.</string>
     <string name="settings_server_delegate_signout_refused">Ainda conectado: %1$s não pôde ser enviado ao seu servidor. Reconecte e sincronize, e em seguida saia.</string>

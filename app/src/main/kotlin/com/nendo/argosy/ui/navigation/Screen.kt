@@ -62,6 +62,8 @@ sealed class Screen(val route: String) {
     data object MediaDetail : Screen("media_item/{itemId}") {
         fun createRoute(itemId: String) = "media_item/$itemId"
     }
+    data object Music : Screen("music")
+    data object MusicStats : Screen("music_stats")
     /**
      * The search screen. [route] stays the bare path so routes compare by it; [ROUTE_WITH_ARGS] is
      * what the graph declares, with an optional query to open on.
@@ -84,6 +86,7 @@ sealed class Screen(val route: String) {
     data object AvatarDoodle : Screen("doodle/avatar")
     data object PostEditor : Screen("post_editor")
     data object QuayPass : Screen("quaypass")
+    data object NowPlaying : Screen("now_playing")
 
     companion object {
         const val ROUTE_HOME = "home"
@@ -102,6 +105,8 @@ sealed class Screen(val route: String) {
         const val ROUTE_RUNNING = "running"
         const val ROUTE_MEDIA_LIBRARY = "media_library"
         const val ROUTE_MEDIA_DETAIL = "media_item"
+        const val ROUTE_MUSIC = "music"
+        const val ROUTE_MUSIC_STATS = "music_stats"
         const val ROUTE_SEARCH = "search"
         const val ROUTE_MANAGE_PINS = "manage_pins"
         const val ROUTE_SOCIAL = "social"
@@ -110,5 +115,6 @@ sealed class Screen(val route: String) {
         const val ROUTE_DOODLE = "doodle"
         const val ROUTE_POST_EDITOR = "post_editor"
         const val ROUTE_QUAYPASS = "quaypass"
+        const val ROUTE_NOW_PLAYING = "now_playing"
     }
 }

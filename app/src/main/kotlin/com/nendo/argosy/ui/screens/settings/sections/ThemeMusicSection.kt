@@ -74,6 +74,8 @@ internal sealed class ThemeMusicItem(
 
     data object BgmToggle : Row("bgmToggle", "music", R.string.settings_music_toggle_title)
     data object BgmVolume : Row("bgmVolume", "music", R.string.settings_music_volume_title, { it.bgmEnabled })
+    data object GameMusicVolume :
+        Row("gameMusicVolume", "music", R.string.settings_music_game_volume_title, { it.bgmEnabled })
     data object BgmPlaylist :
         Row("bgmPlaylist", "music", R.string.settings_music_playlist_title, { it.bgmEnabled })
     data object BrowseServerMusic : Row(
@@ -101,7 +103,7 @@ internal sealed class ThemeMusicItem(
 
         val ALL: List<ThemeMusicItem>
             get() = listOf(
-                BgmToggle, BgmVolume, BgmPlaylist, BrowseServerMusic, BrowseLocalMusic, BgmShuffle, GameThemeToggle,
+                BgmToggle, BgmVolume, GameMusicVolume, BgmPlaylist, BrowseServerMusic, BrowseLocalMusic, BgmShuffle, GameThemeToggle,
                 StorageSpacer, StorageHeader, MusicLocation
             )
     }
@@ -190,6 +192,16 @@ fun ThemeMusicSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
                     onAdjust = { viewModel.adjustAmbientAudioVolume(if (it < 0) -1 else 1) }
                 )
             }
+
+            is ThemeMusicItem.GameMusicVolume -> SliderPreference(
+                title = stringResource(item.labelRes),
+                value = uiState.ambientAudio.gameVolume,
+                minValue = VolumeLevels.GAME_MUSIC.first(),
+                maxValue = VolumeLevels.GAME_MUSIC.last(),
+                isFocused = isFocused(item),
+                suffix = "%",
+                onAdjust = { viewModel.adjustAmbientAudioGameVolume(if (it < 0) -1 else 1) }
+            )
 
             is ThemeMusicItem.BgmPlaylist -> {
                 val entryCount = uiState.ambientAudio.playlistEntryCount

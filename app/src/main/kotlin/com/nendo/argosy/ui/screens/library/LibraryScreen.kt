@@ -106,6 +106,7 @@ import com.nendo.argosy.data.model.SourceFilter
 import com.nendo.argosy.data.preferences.GridDensity
 import com.nendo.argosy.data.preferences.SelectSwapMode
 import com.nendo.argosy.ui.components.GameActionEntry
+import com.nendo.argosy.ui.components.LetterJumpOverlay
 import com.nendo.argosy.ui.components.GameActionsMenu
 import com.nendo.argosy.ui.components.scrollToItemCentered
 import com.nendo.argosy.ui.components.withNavBarClearance
@@ -846,7 +847,7 @@ fun LibraryScreen(
         )
 
 
-        LetterOverlay(
+        LetterJumpOverlay(
             letter = uiState.overlaySectionLabel,
             visible = uiState.showSectionOverlay
         )
@@ -1887,31 +1888,5 @@ private fun QuickMenuOverlay(
     )
 }
 
-@Composable
-private fun LetterOverlay(
-    letter: String,
-    visible: Boolean,
-    modifier: Modifier = Modifier
-) {
-    AnimatedVisibility(
-        visible = visible,
-        enter = fadeIn(tween(Motion.durationFast)),
-        exit = fadeOut(tween(Motion.durationLinger)),
-        modifier = modifier
-    ) {
-        Box(
-            modifier = Modifier.fillMaxSize(),
-            contentAlignment = Alignment.Center
-        ) {
-            Text(
-                text = letter,
-                style = MaterialTheme.typography.displayLarge,
-                fontSize = 120.sp,
-                color = MaterialTheme.colorScheme.primary.copy(alpha = 0.7f),
-                fontWeight = FontWeight.Bold
-            )
-        }
-    }
-}
 
 

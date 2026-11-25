@@ -211,6 +211,11 @@
     <string name="settings_shell_modal_migrate_platform_message">Переместить скачанные игры в новое расположение? Файлы будут скопированы, а затем удалены из старого расположения.</string>
     <string name="settings_shell_modal_migrate_platform_confirm">Перенести</string>
     <string name="settings_shell_modal_migrate_platform_skip">Пропустить</string>
+    <string name="settings_shell_modal_folder_names_on_title">Использовать имена папок сервера?</string>
+    <string name="settings_shell_modal_folder_names_off_title">Использовать имена папок Argosy?</string>
+    <string name="settings_shell_modal_folder_names_on_message">Загруженные игры переместятся в папки с теми же именами, что на вашем сервере RomM. Файлы переименовываются на месте, ничего не копируется.</string>
+    <string name="settings_shell_modal_folder_names_off_message">Загруженные игры вернутся в собственные папки платформ Argosy. Файлы переименовываются на месте, ничего не копируется.</string>
+    <string name="settings_shell_modal_folder_names_confirm">Переместить</string>
 
     <string name="settings_shell_modal_purge_platform_title">Очистить %1$s?</string>
     <string name="settings_shell_modal_purge_platform_fallback">Платформа</string>

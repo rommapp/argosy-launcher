@@ -18,6 +18,7 @@ object NavRing {
         DrawerItem(Screen.Collections.route, R.string.ui_drawer_nav_collections),
         DrawerItem(Screen.Library.route, R.string.ui_drawer_nav_library),
         DrawerItem(Screen.MediaLibrary.route, R.string.ui_drawer_nav_media),
+        DrawerItem(Screen.Music.route, R.string.ui_drawer_nav_music),
         DrawerItem(Screen.Downloads.route, R.string.ui_drawer_nav_downloads),
         DrawerItem(Screen.SyncMonitor.route, R.string.syncmonitor_drawer_title),
         DrawerItem(Screen.SaveSync.route, R.string.ui_drawer_nav_save_sync),
@@ -32,6 +33,7 @@ object NavRing {
         Screen.Collections.route,
         Screen.Social.route,
         Screen.MediaLibrary.route,
+        Screen.Music.route,
         Screen.Downloads.route,
         Screen.Settings.route
     ).map { token(it) }

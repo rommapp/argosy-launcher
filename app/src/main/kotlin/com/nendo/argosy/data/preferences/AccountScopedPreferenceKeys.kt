@@ -151,7 +151,9 @@ object AccountScopedPreferenceKeys {
         "ambient_audio_volume",
         "ambient_audio_uri",
         "ambient_audio_shuffle",
-        "ambient_audio_play_in_background"
+        "ambient_audio_repeat",
+        "ambient_audio_play_in_background",
+        "ambient_audio_game_volume"
     )
 
     private val RECAPS = setOf(

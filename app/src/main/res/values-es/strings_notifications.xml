@@ -196,6 +196,10 @@
     <string name="notif_review_error_server">El servidor no pudo guardar la reseña</string>
     <string name="notif_storage_migrate_failed_title">Error en la migración</string>
     <string name="notif_storage_migrate_platform_failed_title">Error en la migración de %1$s</string>
+    <string name="notif_storage_folder_names_busy">Termina o cancela las descargas antes de renombrar las carpetas de plataforma</string>
+    <string name="notif_storage_folder_names_done">Carpetas de plataforma renombradas</string>
+    <string name="notif_storage_folder_names_failed_title">Carpetas de plataforma sin cambios</string>
+    <string name="notif_storage_folder_names_failed_subtitle">No se pudo mover %1$s</string>
     <string name="notif_storage_purge_failed_title">Error al purgar %1$s</string>
     <string name="notif_settings_cache_validate_failed">Error al comprobar la caché de imágenes</string>
     <string name="notif_settings_downloads_validate_failed">Error al comprobar las descargas</string>

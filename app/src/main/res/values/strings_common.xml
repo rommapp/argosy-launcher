@@ -1291,6 +1291,8 @@
     <!-- Row of that panel: whether the device buzzes on a press, and how hard. Noun,
          plural. -->
     <string name="ui_quick_settings_haptics">Haptics</string>
+    <!-- Quick menu row: switches the device's controller LEDs on or off and sets their brightness. -->
+    <string name="ui_quick_settings_led">LEDs</string>
     <!-- Row of that panel: whether the launcher makes a sound on a press. Noun phrase. -->
     <string name="ui_quick_settings_ui_sounds">UI Sounds</string>
     <!-- Row of that panel that swaps the confirm and back buttons on the controller. "A" and
@@ -1331,8 +1333,7 @@
     <!-- Value shown on a switched slider while the setting is turned off. Adjective. -->
     <string name="ui_quick_settings_off">Off</string>
     <!-- A slider value as a percentage, for example "40%". %1$d is the number. -->
-    <string name="ui_quick_settings_percent">%1$d%%</string>
-    <!-- Title of the page of that panel holding the performance and fan rows. Noun. -->
+    <string name="ui_quick_settings_percent">%1$d%%</string>    <!-- Title of the page of that panel holding the performance and fan rows. Noun. -->
     <string name="ui_quick_settings_page_performance">Performance</string>
     <!-- Title of the page of that panel holding the social rows. Noun, plural. -->
     <string name="ui_quick_settings_page_friends">Friends</string>
@@ -1542,6 +1543,12 @@
     <string name="ui_quick_settings_music_next">Next track</string>
     <!-- Music page button description: plays the list in random order. Verb. -->
     <string name="ui_quick_settings_music_shuffle">Shuffle</string>
+    <!-- Music player button state: the whole queue starts over when it ends -->
+    <string name="ui_quick_settings_music_repeat_all">Repeat all</string>
+    <!-- Music player button state: the current track plays again when it ends -->
+    <string name="ui_quick_settings_music_repeat_one">Repeat one</string>
+    <!-- Music player button state: playback stops when the queue ends -->
+    <string name="ui_quick_settings_music_repeat_off">Repeat off</string>
     <!-- Music page button description: keeps music playing while the screen is off. -->
     <string name="ui_quick_settings_music_play_in_background">Play in background</string>
     <!-- Heading of the Music page list of playlists. Noun, plural. -->
@@ -1658,6 +1665,8 @@
     <string name="ui_drawer_nav_library">Library</string>
     <!-- Drawer row leading to films and series. Noun. -->
     <string name="ui_drawer_nav_media">Media</string>
+    <!-- Drawer row leading to the music library. Noun. -->
+    <string name="ui_drawer_nav_music">Music</string>
     <!-- Drawer row leading to what is being fetched. Noun, plural. -->
     <string name="ui_drawer_nav_downloads">Downloads</string>
     <!-- Drawer row leading to the save sync screen. Noun phrase. -->

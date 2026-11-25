@@ -613,6 +613,7 @@
     <string name="ui_quick_settings_theme_dark">Escuro</string>
     <string name="ui_quick_settings_theme_system">Auto</string>
     <string name="ui_quick_settings_haptics">Vibra&#231;&#227;o</string>
+    <string name="ui_quick_settings_led">LEDs</string>
     <string name="ui_quick_settings_ui_sounds">Sons da interface</string>
     <string name="ui_quick_settings_swap_ab">Trocar A/B</string>
     <string name="ui_quick_settings_swap_xy">Trocar X/Y</string>
@@ -629,8 +630,7 @@
     <string name="ui_quick_settings_brightness_main">Tela principal</string>
     <string name="ui_quick_settings_brightness_second">Segunda tela</string>
     <string name="ui_quick_settings_off">Desligado</string>
-    <string name="ui_quick_settings_percent">%1$d%%</string>
-    <string name="ui_quick_settings_page_performance">Desempenho</string>
+    <string name="ui_quick_settings_percent">%1$d%%</string>    <string name="ui_quick_settings_page_performance">Desempenho</string>
     <string name="ui_quick_settings_page_friends">Amigos</string>
     <string name="ui_quick_settings_page_connections">Conexões</string>
     <string name="ui_quick_connections_tab_wifi">Wi-Fi</string>
@@ -714,6 +714,9 @@
     <string name="ui_quick_settings_music_pause">Pausar</string>
     <string name="ui_quick_settings_music_next">Próxima faixa</string>
     <string name="ui_quick_settings_music_shuffle">Aleatório</string>
+    <string name="ui_quick_settings_music_repeat_all">Repetir tudo</string>
+    <string name="ui_quick_settings_music_repeat_one">Repetir uma</string>
+    <string name="ui_quick_settings_music_repeat_off">Repetição desativada</string>
     <string name="ui_quick_settings_music_play_in_background">Tocar em segundo plano</string>
     <string name="ui_quick_settings_music_playlists">Playlists</string>
     <string name="ui_quick_settings_music_soundtracks">Trilhas de jogos</string>
@@ -768,6 +771,7 @@
     <string name="ui_drawer_nav_collections">Coleções</string>
     <string name="ui_drawer_nav_library">Biblioteca</string>
     <string name="ui_drawer_nav_media">Mídia</string>
+    <string name="ui_drawer_nav_music">Música</string>
     <string name="ui_drawer_nav_downloads">Downloads</string>
     <string name="ui_drawer_nav_save_sync">Sincronização de saves</string>
     <string name="ui_drawer_nav_apps">Apps</string>

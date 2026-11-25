@@ -40,6 +40,9 @@ class GetMonthlyRecapUseCaseTest {
     private val playSessionPullScheduler: PlaySessionPullScheduler = mockk {
         coEvery { pullForRecap() } returns true
     }
+    private val musicDigest: GetMonthlyMusicDigestUseCase = mockk {
+        coEvery { this@mockk.invoke(any()) } returns null
+    }
     private val useCase = GetMonthlyRecapUseCase(
         playSessionDao,
         metadataSource,
@@ -47,7 +50,8 @@ class GetMonthlyRecapUseCaseTest {
         gameDao,
         gameArtDao,
         achievementDao,
-        playSessionPullScheduler
+        playSessionPullScheduler,
+        musicDigest
     )
 
     private fun stubEmptyMonth() {

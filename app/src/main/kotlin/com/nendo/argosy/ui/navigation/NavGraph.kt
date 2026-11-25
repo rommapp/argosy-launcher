@@ -27,7 +27,11 @@ import com.nendo.argosy.ui.screens.running.RunningAppsScreen
 import com.nendo.argosy.ui.screens.library.LibraryScreen
 import com.nendo.argosy.ui.screens.media.MediaDetailScreen
 import com.nendo.argosy.ui.screens.media.MediaLibraryScreen
+import com.nendo.argosy.ui.screens.music.MUSIC_SETTINGS_SECTION
+import com.nendo.argosy.ui.screens.music.MusicScreen
 import com.nendo.argosy.ui.screens.doodle.DoodleScreen
+import com.nendo.argosy.ui.screens.musicstats.MusicStatsScreen
+import com.nendo.argosy.ui.screens.nowplaying.NowPlayingScreen
 import com.nendo.argosy.ui.screens.savetimeline.SaveTimelineScreen
 import com.nendo.argosy.ui.screens.search.SearchScreen
 import com.nendo.argosy.ui.screens.settings.ManagePinsScreen
@@ -366,6 +370,24 @@ fun NavGraph(
             )
         }
 
+        composable(Screen.Music.route) {
+            MusicScreen(
+                onBack = navigateToDefault,
+                onOpenNowPlaying = { navController.navigate(Screen.NowPlaying.route) },
+                onOpenMusicSettings = {
+                    navController.navigate(Screen.Settings.createRoute(section = MUSIC_SETTINGS_SECTION))
+                },
+                onOpenListening = { navController.navigate(Screen.MusicStats.route) }
+            )
+        }
+
+        composable(Screen.MusicStats.route) {
+            MusicStatsScreen(
+                onBack = { if (!navController.popBackStack()) navigateToDefault() },
+                onOpenNowPlaying = { navController.navigate(Screen.NowPlaying.route) }
+            )
+        }
+
         composable(
             route = Screen.Search.ROUTE_WITH_ARGS,
             arguments = listOf(
@@ -515,6 +537,12 @@ fun NavGraph(
 
         composable(Screen.QuayPass.route) {
             QuayPassCheckInScreen(onBack = navigateToDefault)
+        }
+
+        composable(Screen.NowPlaying.route) {
+            NowPlayingScreen(
+                onBack = { if (!navController.popBackStack()) navigateToDefault() }
+            )
         }
     }
     }

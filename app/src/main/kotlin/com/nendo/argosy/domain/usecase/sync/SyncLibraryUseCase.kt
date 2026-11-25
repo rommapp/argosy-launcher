@@ -1,5 +1,6 @@
 package com.nendo.argosy.domain.usecase.sync
 
+import com.nendo.argosy.data.music.romm.RommMusicIndex
 import com.nendo.argosy.data.preferences.AppPreferencesRepository
 import com.nendo.argosy.data.preferences.SyncPreferencesRepository
 import com.nendo.argosy.data.remote.romm.RomMRepository
@@ -52,7 +53,8 @@ class SyncLibraryUseCase @Inject constructor(
     private val librarySyncNotifier: LibrarySyncNotifier,
     private val copy: SyncNotificationCopy,
     private val appPreferencesRepository: AppPreferencesRepository,
-    private val syncPreferencesRepository: SyncPreferencesRepository
+    private val syncPreferencesRepository: SyncPreferencesRepository,
+    private val rommMusicIndex: RommMusicIndex
 ) {
     internal var progressDispatcher: CoroutineDispatcher = Dispatchers.IO
     /**
@@ -178,6 +180,7 @@ class SyncLibraryUseCase @Inject constructor(
                         }
 
                         librarySyncNotifier.emitSyncCompleted()
+                        rommMusicIndex.refreshInBackground()
                         SyncLibraryResult.Success(result)
                     }
                 } catch (e: Exception) {

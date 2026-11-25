@@ -645,6 +645,7 @@
     <string name="ui_quick_settings_orientation_landscape">Альбомная</string>
     <string name="ui_quick_settings_orientation_portrait">Книжная</string>
     <string name="ui_quick_settings_haptics">Вибрация</string>
+    <string name="ui_quick_settings_led">Подсветка</string>
     <string name="ui_quick_settings_ui_sounds">Звуки интерфейса</string>
     <string name="ui_quick_settings_swap_ab">Поменять A/B</string>
     <string name="ui_quick_settings_swap_xy">Поменять X/Y</string>
@@ -655,8 +656,7 @@
     <string name="ui_quick_settings_brightness_main">Основной экран</string>
     <string name="ui_quick_settings_brightness_second">Второй экран</string>
     <string name="ui_quick_settings_off">Выкл.</string>
-    <string name="ui_quick_settings_percent">%1$d%%</string>
-    <string name="ui_quick_settings_page_performance">Производительность</string>
+    <string name="ui_quick_settings_percent">%1$d%%</string>    <string name="ui_quick_settings_page_performance">Производительность</string>
     <string name="ui_quick_settings_page_friends">Друзья</string>
     <string name="ui_quick_settings_page_music">Музыка</string>
     <string name="ui_quick_settings_group_display">Экран</string>
@@ -677,6 +677,9 @@
     <string name="ui_quick_settings_music_pause">Пауза</string>
     <string name="ui_quick_settings_music_next">Следующий трек</string>
     <string name="ui_quick_settings_music_shuffle">Перемешать</string>
+    <string name="ui_quick_settings_music_repeat_all">Повтор всех</string>
+    <string name="ui_quick_settings_music_repeat_one">Повтор трека</string>
+    <string name="ui_quick_settings_music_repeat_off">Повтор выключен</string>
     <string name="ui_quick_settings_music_play_in_background">Играть в фоне</string>
     <string name="ui_quick_settings_music_playlists">Плейлисты</string>
     <string name="ui_quick_settings_music_soundtracks">Саундтреки игр</string>
@@ -731,6 +734,7 @@
     <string name="ui_drawer_nav_collections">Коллекции</string>
     <string name="ui_drawer_nav_library">Библиотека</string>
     <string name="ui_drawer_nav_media">Медиа</string>
+    <string name="ui_drawer_nav_music">Музыка</string>
     <string name="ui_drawer_nav_downloads">Загрузки</string>
     <string name="ui_drawer_nav_save_sync">Синхронизация сохранений</string>
     <string name="ui_drawer_nav_apps">Приложения</string>

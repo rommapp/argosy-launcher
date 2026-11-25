@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="music_stats_entry_option">我的聆听</string>
+    <string name="music_stats_entry_header">我的聆听</string>
+    <string name="music_stats_title">我的聆听</string>
+    <string name="music_stats_back_desc">返回</string>
+    <string name="music_stats_tab_month">本月</string>
+    <string name="music_stats_tab_flashback">回忆</string>
+    <string name="music_stats_tab_games">与游戏相伴</string>
+    <string name="music_stats_kicker_game">游戏</string>
+    <string name="music_stats_kicker_platform">平台</string>
+    <string name="music_stats_kicker_genre">类型</string>
+    <string name="music_stats_kicker_franchise">系列</string>
+    <string name="music_stats_options_play">播放</string>
+    <string name="music_stats_options_shuffle">随机播放</string>
+    <string name="music_stats_shelf_top_tracks">最常听的曲目</string>
+    <string name="music_stats_shelf_top_albums">最常听的专辑</string>
+    <string name="music_stats_shelf_top_artists">最常听的艺术家</string>
+    <string name="music_stats_shelf_on_this_day">%1$d 年的今天</string>
+    <string name="music_stats_shelf_month_in_year">%1$d 年的本月</string>
+    <plurals name="music_stats_count_plays">
+        <item quantity="other">播放 %d 次</item>
+    </plurals>
+    <plurals name="music_stats_count_tracks">
+        <item quantity="other">%d 首曲目</item>
+    </plurals>
+    <plurals name="music_stats_count_days">
+        <item quantity="other">%d 天</item>
+    </plurals>
+    <string name="music_stats_error_title">无法加载聆听记录</string>
+    <string name="music_stats_error_message">请稍后重试。</string>
+    <string name="music_stats_error_retry">重试</string>
+    <string name="music_stats_month_empty_title">本月没有播放记录</string>
+    <string name="music_stats_empty_message">播放音乐时会逐渐形成聆听记录。</string>
+    <string name="music_stats_flashback_empty_title">还没有回忆</string>
+    <string name="music_stats_flashback_empty_message">你现在听的音乐，明年的这一天和这个月会在这里重现。</string>
+    <string name="music_stats_games_empty_title">还没有与游戏相伴的音乐</string>
+    <string name="music_stats_games_empty_message">玩游戏时播放音乐，它会按游戏、平台、类型和系列显示在这里。</string>
+    <string name="music_stats_footer_views">视图</string>
+    <string name="music_stats_footer_play">播放</string>
+    <string name="music_stats_footer_options">选项</string>
+    <string name="music_stats_game_action">本游戏的音乐</string>
+    <string name="music_stats_recap_heading">聆听</string>
+    <string name="music_stats_recap_top_track">最常听曲目</string>
+    <string name="music_stats_recap_top_album">最常听专辑</string>
+    <string name="music_stats_recap_top_artist">最常听艺术家</string>
+</resources>

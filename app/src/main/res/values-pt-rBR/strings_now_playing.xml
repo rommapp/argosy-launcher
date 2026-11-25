@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="now_playing_empty_title">Nada tocando</string>
+    <string name="now_playing_empty_body">Inicie uma playlist ou uma trilha sonora pelo menu rápido.</string>
+    <string name="now_playing_source_launcher">Música do launcher</string>
+    <string name="now_playing_unknown_title">Faixa desconhecida</string>
+    <string name="now_playing_add_to_playlist">Adicionar à playlist</string>
+    <string name="now_playing_running_order">Ordem das faixas</string>
+    <string name="now_playing_current_track">Faixa atual</string>
+    <string name="now_playing_hint_previous">Anterior</string>
+    <string name="now_playing_hint_next">Próxima</string>
+    <string name="now_playing_hint_queue">Fila</string>
+    <string name="now_playing_hint_options">Opções</string>
+    <string name="now_playing_options_title">Tocando agora</string>
+    <string name="now_playing_option_style">Estilo</string>
+    <string name="now_playing_option_spin">Girar</string>
+    <string name="now_playing_option_layout">Layout</string>
+    <string name="now_playing_style_record">Vinil</string>
+    <string name="now_playing_style_cd">CD</string>
+    <string name="now_playing_style_cover">Capa</string>
+    <string name="now_playing_layout_shelf">Estante</string>
+    <string name="now_playing_layout_simple">Simples</string>
+    <string name="now_playing_quick_open">Tocando agora</string>
+</resources>

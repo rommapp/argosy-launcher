@@ -208,6 +208,18 @@ object ColorTokens {
                 val light = Color(0xFF5E35B1)
             }
         }
+        object NowPlaying {
+            val vinyl = Color(0xFF0C0C0F)
+            val vinylEdge = Color(0xFF24242C)
+            val rim = Color(0x38FFFFFF)
+            val groove = Color(0x12FFFFFF)
+            val hubRing = Color(0x8CFFFFFF)
+            val rainbowRed = Color(0xFFFF5A6E)
+            val rainbowYellow = Color(0xFFFFE15A)
+            val rainbowGreen = Color(0xFF5AFFA0)
+            val rainbowCyan = Color(0xFF5AD8FF)
+            val rainbowViolet = Color(0xFFA05AFF)
+        }
     }
 
     val accentPresets: List<AccentPreset> = listOf(

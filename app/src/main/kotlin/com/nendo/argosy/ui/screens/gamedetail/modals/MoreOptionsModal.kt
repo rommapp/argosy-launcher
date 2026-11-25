@@ -15,6 +15,7 @@ import androidx.compose.material.icons.filled.FolderSpecial
 import androidx.compose.material.icons.filled.RemoveCircleOutline
 import androidx.compose.material.icons.filled.Image
 import androidx.compose.material.icons.filled.Layers
+import androidx.compose.material.icons.filled.LibraryMusic
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Save
 import androidx.compose.material.icons.filled.Star
@@ -79,6 +80,11 @@ private fun MoreOptionAction.toMenuEntry(
     MoreOptionAction.RatingsStatus -> MoreMenuEntry.Option(
         Icons.Default.Star,
         context.getString(R.string.gamedetail_more_options_ratings_status),
+        action = this
+    )
+    MoreOptionAction.PlayMusic -> MoreMenuEntry.Option(
+        Icons.Default.LibraryMusic,
+        context.getString(R.string.music_stats_game_action),
         action = this
     )
     MoreOptionAction.ChangeSteamLauncher -> MoreMenuEntry.Option(
@@ -181,6 +187,7 @@ fun MoreOptionsModal(
     launchDisplayNumbers: List<Int> = emptyList(),
     launchDisplayIndex: Int = 0,
     offersDownload: Boolean = false,
+    hasMusic: Boolean = false,
     onAction: (MoreOptionAction) -> Unit,
     onDismiss: () -> Unit
 ) {
@@ -200,7 +207,8 @@ fun MoreOptionsModal(
             hasManageableFiles = hasManageableFiles,
             platformSlug = game.platformSlug,
             launchDisplayCount = launchDisplayNumbers.size,
-            offersDownload = offersDownload
+            offersDownload = offersDownload,
+            hasMusic = hasMusic
         )
     )
 

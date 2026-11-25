@@ -546,7 +546,11 @@ fun ArgosyApp(
             pageHandlers = mapOf(
                 QuickSettingsPage.FRIENDS to quickFriendsInputHandler,
                 QuickSettingsPage.CONNECTIONS to quickConnectionsInputHandler,
-                QuickSettingsPage.MUSIC to MusicPlayerInputHandler(musicPlayerViewModel, openRommSignIn)
+                QuickSettingsPage.MUSIC to MusicPlayerInputHandler(
+                    musicPlayerViewModel,
+                    openRommSignIn,
+                    onOpenNowPlaying = { openQuickRoute(Screen.NowPlaying.route) }
+                )
             ),
             activePage = { viewModel.quickSettings.activePage() }
         )
@@ -1483,7 +1487,11 @@ fun ArgosyApp(
                     )
                 },
                 musicPage = {
-                    QuickSettingsMusicPage(viewModel = musicPlayerViewModel, onOpenRommSignIn = openRommSignIn)
+                    QuickSettingsMusicPage(
+                        viewModel = musicPlayerViewModel,
+                        onOpenRommSignIn = openRommSignIn,
+                        onOpenNowPlaying = { openQuickRoute(Screen.NowPlaying.route) }
+                    )
                 },
                 onDismiss = closeQuickSettings,
                 footerHints = listOfNotNull(

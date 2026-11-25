@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="now_playing_empty_title">Nothing playing</string>
+    <string name="now_playing_empty_body">Start a playlist or a soundtrack from the quick menu.</string>
+    <string name="now_playing_source_launcher">Launcher music</string>
+    <string name="now_playing_unknown_title">Unknown track</string>
+    <!-- Player button that adds the playing track to one of the user's playlists -->
+    <string name="now_playing_add_to_playlist">Add to playlist</string>
+    <!-- Heading over the list of upcoming tracks, like the track list on an album sleeve -->
+    <string name="now_playing_running_order">Running order</string>
+    <string name="now_playing_current_track">Current track</string>
+    <string name="now_playing_hint_previous">Previous</string>
+    <string name="now_playing_hint_next">Next</string>
+    <!-- Noun: the list of tracks waiting to play -->
+    <string name="now_playing_hint_queue">Queue</string>
+    <string name="now_playing_hint_options">Options</string>
+    <string name="now_playing_options_title">Now Playing</string>
+    <!-- Visual look of the album art: vinyl record, CD or plain cover -->
+    <string name="now_playing_option_style">Style</string>
+    <!-- Whether the record or CD art rotates while music plays -->
+    <string name="now_playing_option_spin">Spin</string>
+    <string name="now_playing_option_layout">Layout</string>
+    <!-- A vinyl record -->
+    <string name="now_playing_style_record">Record</string>
+    <string name="now_playing_style_cd">CD</string>
+    <!-- Square album cover art -->
+    <string name="now_playing_style_cover">Cover</string>
+    <!-- Layout with the art on the left and the track list on the right -->
+    <string name="now_playing_layout_shelf">Shelf</string>
+    <string name="now_playing_layout_simple">Simple</string>
+    <string name="now_playing_quick_open">Now Playing</string>
+</resources>

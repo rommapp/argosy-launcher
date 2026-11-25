@@ -209,6 +209,11 @@
     <string name="settings_shell_modal_migrate_platform_message">Déplacer les jeux téléchargés vers le nouvel emplacement ? Les fichiers seront copiés puis supprimés de l\'ancien emplacement.</string>
     <string name="settings_shell_modal_migrate_platform_confirm">Migrer</string>
     <string name="settings_shell_modal_migrate_platform_skip">Ignorer</string>
+    <string name="settings_shell_modal_folder_names_on_title">Utiliser les noms de dossier du serveur ?</string>
+    <string name="settings_shell_modal_folder_names_off_title">Utiliser les noms de dossier d\'Argosy ?</string>
+    <string name="settings_shell_modal_folder_names_on_message">Les jeux téléchargés sont déplacés dans des dossiers nommés comme sur votre serveur RomM. Les fichiers sont renommés sur place, rien n\'est copié.</string>
+    <string name="settings_shell_modal_folder_names_off_message">Les jeux téléchargés retournent dans les dossiers de plateforme propres à Argosy. Les fichiers sont renommés sur place, rien n\'est copié.</string>
+    <string name="settings_shell_modal_folder_names_confirm">Déplacer</string>
 
     <string name="settings_shell_modal_purge_platform_title">Purger %1$s ?</string>
     <string name="settings_shell_modal_purge_platform_fallback">Plateforme</string>

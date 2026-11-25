@@ -1,0 +1,134 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Heading of the music library screen. Noun. -->
+    <string name="music_library_title">Music</string>
+    <!-- Label beside the control that picks how the music library is grouped. -->
+    <string name="music_library_group_by_label">Group by</string>
+    <!-- Grouping option: one column per playlist. Noun, plural. -->
+    <string name="music_library_grouping_playlists">Playlists</string>
+    <!-- Grouping option: one column per artist. Noun, plural. -->
+    <string name="music_library_grouping_artists">Artists</string>
+    <!-- Grouping option: one column per album. Noun, plural. -->
+    <string name="music_library_grouping_albums">Albums</string>
+    <!-- Grouping option: one column per release year. Noun, plural. -->
+    <string name="music_library_grouping_years">Years</string>
+    <!-- Grouping option: one column per genre. Noun, plural. -->
+    <string name="music_library_grouping_genres">Genres</string>
+    <!-- Small capitalised label at the top of the column of recently played music. -->
+    <string name="music_library_kicker_recent">Recent</string>
+    <!-- Small capitalised label at the top of a playlist column. Noun. -->
+    <string name="music_library_kicker_playlist">Playlist</string>
+    <!-- Small capitalised label at the top of an artist column. Noun. -->
+    <string name="music_library_kicker_artist">Artist</string>
+    <!-- Small capitalised label at the top of an album column. Noun. -->
+    <string name="music_library_kicker_album">Album</string>
+    <!-- Small capitalised label at the top of a release year column. Noun. -->
+    <string name="music_library_kicker_year">Year</string>
+    <!-- Small capitalised label at the top of a genre column. Noun. -->
+    <string name="music_library_kicker_genre">Genre</string>
+    <!-- Title of the artist column holding albums with no artist tag. -->
+    <string name="music_library_unknown_artist">Unknown Artist</string>
+    <!-- Title of the genre column holding albums with no genre tag. -->
+    <string name="music_library_unknown_genre">Unknown Genre</string>
+    <!-- Title of the release year column holding albums with no year tag. -->
+    <string name="music_library_unknown_year">Unknown Year</string>
+    <!-- Title of the column of recently played music. -->
+    <string name="music_library_recent_title">Recently played</string>
+    <!-- Joins two parts of a label, for example a column kind and its source. -->
+    <string name="music_library_separator">" &#183; "</string>
+    <!-- Music server product name. Do not translate. -->
+    <string name="music_library_source_navidrome" translatable="false">Navidrome</string>
+    <!-- Game server product name. Do not translate. -->
+    <string name="music_library_source_romm" translatable="false">RomM</string>
+    <!-- Source filter option that shows music from every connected server. -->
+    <string name="music_library_source_all">All sources</string>
+    <plurals name="music_library_count_albums">
+        <item quantity="one">%d album</item>
+        <item quantity="other">%d albums</item>
+    </plurals>
+    <plurals name="music_library_count_tracks">
+        <item quantity="one">%d track</item>
+        <item quantity="other">%d tracks</item>
+    </plurals>
+    <!-- Chip on a stack of album sleeves counting the albums not shown. -->
+    <string name="music_library_more_albums">+%1$d</string>
+    <!-- Note shown when the music server cannot be reached and only downloaded music is listed. -->
+    <string name="music_library_offline">Offline. Showing downloaded music.</string>
+    <!-- Footer hint: change how the library is grouped. -->
+    <string name="music_library_footer_group_by">Group by</string>
+    <!-- Footer hint: up/down flips which album of the focused column sits in front. -->
+    <string name="music_library_footer_flip">Flip albums</string>
+    <!-- Footer hint: the right stick jumps to the next letter or decade of columns. -->
+    <string name="music_library_footer_jump">Jump</string>
+    <!-- Footer hint: play the focused column. Verb. -->
+    <string name="music_library_footer_play">Play</string>
+    <!-- Footer hint: open the source filter. Verb. -->
+    <string name="music_library_footer_filter">Filter</string>
+    <!-- Footer hint: open the options for the focused column. Noun, plural. -->
+    <string name="music_library_footer_options">Options</string>
+    <!-- Footer hint inside a column: play the focused album. Verb phrase. -->
+    <string name="music_library_footer_play_album">Play album</string>
+    <!-- Footer hint inside a playlist: play every track from the top. Verb phrase. -->
+    <string name="music_library_footer_play_all">Play all</string>
+    <!-- Footer hint inside a column: open the options for the focused track. Noun, plural. -->
+    <string name="music_library_footer_track_options">Track options</string>
+    <!-- Title of the empty state when no music server is connected. -->
+    <string name="music_library_empty_title">No music sources</string>
+    <!-- Body of the empty state when no music server is connected. -->
+    <string name="music_library_empty_message">Connect a Navidrome server to browse and play your music here.</string>
+    <!-- Button on the empty state that opens the Navidrome settings. Verb phrase. -->
+    <string name="music_library_empty_action">Set up Navidrome</string>
+    <!-- Title shown when the chosen grouping and source have no music. -->
+    <string name="music_library_no_columns_title">Nothing to show</string>
+    <!-- Body shown when the chosen grouping and source have no music. -->
+    <string name="music_library_no_columns_message">Try another grouping or source.</string>
+    <!-- Title shown when the music library could not be loaded. -->
+    <string name="music_library_error_title">Music could not be loaded</string>
+    <!-- Body shown when the music library could not be loaded. -->
+    <string name="music_library_error_message">Check the connection to your music server and try again.</string>
+    <!-- Button that reloads the music library after a failure. Verb phrase. -->
+    <string name="music_library_error_retry">Try again</string>
+    <!-- Shown inside a column when its tracks could not be loaded. -->
+    <string name="music_library_contents_error">These tracks could not be loaded.</string>
+    <!-- Shown inside a column that has no tracks. -->
+    <string name="music_library_contents_empty">No tracks</string>
+    <!-- Content description of the arrow that leaves a column and returns to the columns. -->
+    <string name="music_library_contents_back_desc">Back to columns</string>
+    <string name="music_library_contents_position" translatable="false">%1$d / %2$d</string>
+    <string name="music_library_contents_previous_album">Previous album</string>
+    <string name="music_library_contents_next_album">Next album</string>
+    <!-- Marker on the column and track row that is currently playing music. -->
+    <string name="music_library_badge_playing">Playing</string>
+    <!-- Title of the source filter modal. Noun. -->
+    <string name="music_library_filter_title">Source</string>
+    <!-- Option: play every track in order. Verb. -->
+    <string name="music_library_options_play">Play</string>
+    <!-- Option: play every track in random order. Verb. -->
+    <string name="music_library_options_shuffle">Shuffle</string>
+    <!-- Option: keep the tracks on this device for offline play. Verb. -->
+    <string name="music_library_options_download">Download</string>
+    <!-- Option: add the tracks to one of the user's playlists. Verb phrase. -->
+    <string name="music_library_options_add_to_playlist">Add to playlist</string>
+    <!-- Option: open the screen showing what is playing. Noun phrase. -->
+    <string name="music_library_options_now_playing">Now Playing</string>
+    <!-- Title of the list of playlists the tracks can be added to. Verb phrase. -->
+    <string name="music_library_playlists_title">Add to playlist</string>
+    <!-- Shown when the user has no playlists that tracks can be added to. -->
+    <string name="music_library_playlists_empty">No playlists you can add to</string>
+    <!-- Shown while the user's playlists load. -->
+    <string name="music_library_playlists_loading">Loading playlists</string>
+    <!-- Notice after tracks were added to a playlist. %1$s is the playlist name. -->
+    <string name="music_library_notice_added">Added to %1$s</string>
+    <!-- Notice when tracks could not be added to a playlist. -->
+    <string name="music_library_notice_add_failed">Could not add to the playlist</string>
+    <plurals name="music_library_notice_download_queued">
+        <item quantity="one">Downloading %d track</item>
+        <item quantity="other">Downloading %d tracks</item>
+    </plurals>
+    <!-- Notice when tracks could not be queued for download. -->
+    <string name="music_library_notice_download_failed">Could not start the download</string>
+    <!-- Notice when playback could not start. -->
+    <string name="music_library_notice_play_failed">Could not start playback</string>
+    <!-- Notice when a column or album has no playable tracks. -->
+    <string name="music_library_notice_nothing_to_play">Nothing to play here</string>
+</resources>

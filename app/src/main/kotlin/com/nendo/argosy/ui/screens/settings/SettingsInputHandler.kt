@@ -90,6 +90,7 @@ class SettingsInputHandler(
             SettingsSection.HOME_SCREEN, SettingsSection.PRESENTATION, SettingsSection.LIBRARY_VIEW,
             SettingsSection.NAVIGATION, SettingsSection.AUDIO, SettingsSection.SYNC_SETTINGS,
             SettingsSection.ABOUT, SettingsSection.STEAM_SETTINGS, SettingsSection.JELLYFIN,
+            SettingsSection.NAVIDROME,
             SettingsSection.CORE_MANAGEMENT,
             SettingsSection.SOCIAL, SettingsSection.BUILTIN_EMULATOR,
             SettingsSection.EMULATOR_OPTIONS

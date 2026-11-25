@@ -1,0 +1,95 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Settings home row for the Navidrome music server. Product name, never translated. -->
+    <string name="settings_navidrome_main_title" translatable="false">Navidrome</string>
+    <!-- Second line of that row when no server address has been entered. -->
+    <string name="settings_navidrome_main_subtitle_unconfigured">Server not configured</string>
+    <!-- Second line of that row while an account is signed in. %1$s is the user name. -->
+    <string name="settings_navidrome_main_subtitle_signed_in_as">Signed in as %1$s</string>
+    <!-- Second line of that row when a server is set but no account is signed in. -->
+    <string name="settings_navidrome_main_subtitle_signed_out">Not signed in</string>
+
+    <!-- Screen title of the Navidrome settings page. Product name in caps, never translated. -->
+    <string name="settings_navidrome_header" translatable="false">NAVIDROME</string>
+    <!-- Breadcrumb for search results inside the Navidrome page. Product name. -->
+    <string name="settings_navidrome_search_crumb" translatable="false">Navidrome</string>
+
+    <!-- Heading over the server address and sign-in rows. Noun. Rendered in caps in English. -->
+    <string name="settings_navidrome_section_server">SERVER</string>
+
+    <!-- Row naming the music server's address. Noun phrase. -->
+    <string name="settings_navidrome_server_title">Music Server</string>
+    <!-- Second line of that row when no address has been entered. -->
+    <string name="settings_navidrome_server_unconfigured">Not configured</string>
+
+    <!-- Search label for the sign-in / sign-out row. Noun. -->
+    <string name="settings_navidrome_account_label">Account</string>
+    <!-- Row that opens the sign-in form. Verb phrase. -->
+    <string name="settings_navidrome_account_sign_in">Sign In</string>
+    <!-- Row that signs the account out. Verb phrase. -->
+    <string name="settings_navidrome_account_sign_out">Sign Out</string>
+    <!-- Second line of the account row while signed in. %1$s is the user name. -->
+    <string name="settings_navidrome_account_signed_in_as">Signed in as %1$s</string>
+    <!-- Second line of the account row while signed out. -->
+    <string name="settings_navidrome_account_password">Sign in with your Navidrome username and password</string>
+
+    <!-- Row showing whether the server answers. Noun. -->
+    <string name="settings_navidrome_connection_title">Connection</string>
+    <!-- Second line of that row while the server is being asked. -->
+    <string name="settings_navidrome_connection_checking">Checking the server</string>
+    <!-- Second line of that row when the server answered without a version. -->
+    <string name="settings_navidrome_connection_connected">Connected</string>
+    <!-- Second line of that row when the server answered. %1$s is the server version, e.g. 0.64.2. -->
+    <string name="settings_navidrome_connection_connected_version">Connected to Navidrome %1$s</string>
+    <!-- Second line of that row before the server has been asked. -->
+    <string name="settings_navidrome_connection_unknown">Select to check the connection</string>
+
+    <!-- Label of the server address field. Noun phrase. -->
+    <string name="settings_navidrome_config_server_address_label">Server Address</string>
+    <!-- Example address shown in the empty field. A URL, never translated. -->
+    <string name="settings_navidrome_config_server_address_placeholder" translatable="false">https://navidrome.example.com</string>
+    <!-- On-screen keyboard key that saves the address. Verb. -->
+    <string name="settings_navidrome_config_keyboard_submit">Save</string>
+    <!-- Row that saves the address. Verb. -->
+    <string name="settings_navidrome_config_save_title">Save</string>
+    <!-- Second line of that row. -->
+    <string name="settings_navidrome_config_save_subtitle">Use this address for your music library</string>
+    <!-- Row that leaves the address form without saving. Verb. -->
+    <string name="settings_navidrome_config_cancel_title">Cancel</string>
+    <!-- Second line of that row. -->
+    <string name="settings_navidrome_config_cancel_subtitle">Return to Navidrome settings</string>
+    <!-- Error under the address field when it is empty. -->
+    <string name="settings_navidrome_config_error_empty">Enter a server address</string>
+
+    <!-- Label of the user name field. Noun. -->
+    <string name="settings_navidrome_signin_username_label">Username</string>
+    <!-- Label of the password field. Noun. -->
+    <string name="settings_navidrome_signin_password_label">Password</string>
+    <!-- On-screen keyboard key that finishes the user name. -->
+    <string name="settings_navidrome_signin_username_keyboard_submit">Done</string>
+    <!-- On-screen keyboard key that finishes the password and signs in. Verb phrase. -->
+    <string name="settings_navidrome_signin_password_keyboard_submit">Sign in</string>
+    <!-- Row that submits the sign-in form. Verb phrase. -->
+    <string name="settings_navidrome_signin_submit_title">Sign In</string>
+    <!-- Same row while the server is answering. -->
+    <string name="settings_navidrome_signin_submitting_title">Signing In...</string>
+    <!-- Second line of the submit row. -->
+    <string name="settings_navidrome_signin_submit_subtitle">Use this account for your music library</string>
+    <!-- Row that leaves the sign-in form. Verb. -->
+    <string name="settings_navidrome_signin_cancel_title">Cancel</string>
+    <!-- Second line of that row. -->
+    <string name="settings_navidrome_signin_cancel_subtitle">Return to Navidrome settings</string>
+    <!-- Error when either field is empty. -->
+    <string name="settings_navidrome_signin_error_empty">Enter your username and password</string>
+    <!-- Error when the server refused the sign-in without saying why. -->
+    <string name="settings_navidrome_signin_error_rejected">The server refused the sign-in</string>
+    <!-- Error when the server could not be reached at all. -->
+    <string name="settings_navidrome_signin_error_unreachable">Could not reach the server. Check the address and try again.</string>
+
+    <!-- Title of the sign-out confirmation. Question. -->
+    <string name="settings_navidrome_signout_title">Sign Out of Navidrome?</string>
+    <!-- Body of the sign-out confirmation. -->
+    <string name="settings_navidrome_signout_message">This device forgets your Navidrome login. Your music and playlists stay on the server.</string>
+    <!-- Confirm button of the sign-out confirmation. Verb phrase. -->
+    <string name="settings_navidrome_signout_confirm">Sign Out</string>
+</resources>

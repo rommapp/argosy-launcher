@@ -103,6 +103,8 @@ class GameSessionService : Service() {
     private var lastMidGameCacheId: Long = -1
     private val midGameCacheMutex = Mutex()
     private var lastOverlayShownAt: Long = 0L
+    private var foregroundStarted = false
+    private var shownNotificationState = NotificationState.PLAYING
 
     private var helmIcon: ImageView? = null
     private var checkIcon: ImageView? = null
@@ -136,8 +138,18 @@ class GameSessionService : Service() {
             ACTION_STOP -> {
                 startForegroundWithNotification(currentGameTitle, NotificationState.PLAYING)
                 awaitingForeground.set(false)
+                sessionInForeground.set(false)
                 stopForeground(STOP_FOREGROUND_REMOVE)
                 stopSelf()
+                return START_NOT_STICKY
+            }
+            ACTION_UPDATE_MEDIA_PLAYBACK -> {
+                if (!foregroundStarted) {
+                    stopSelf()
+                    return START_NOT_STICKY
+                }
+                startForegroundWithNotification(currentGameTitle, shownNotificationState)
+                Logger.debug(TAG, "Media playback type updated for gameId=$currentGameId | musicPlaying=${musicPlaying.get()}")
                 return START_NOT_STICKY
             }
             ACTION_UPDATE_HARDCORE -> {
@@ -172,6 +184,7 @@ class GameSessionService : Service() {
                 cleanupPresenceKeepalive()
                 startForegroundWithNotification(gameTitle, NotificationState.PLAYING)
                 awaitingForeground.set(false)
+                sessionInForeground.set(true)
 
                 broadcastSaveStateChanged(isDirty = false)
 
@@ -193,6 +206,7 @@ class GameSessionService : Service() {
 
     override fun onDestroy() {
         Logger.debug(TAG, "Service destroyed")
+        sessionInForeground.set(false)
         stopPresenceWatch()
         stopActivityReporting()
         activityReporter.clearAsync()
@@ -557,24 +571,35 @@ class GameSessionService : Service() {
 
     private fun startForegroundWithNotification(gameTitle: String, state: NotificationState) {
         val notification = buildNotification(gameTitle, state)
+        shownNotificationState = state
         if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
             startForeground(
                 NOTIFICATION_ID,
                 notification,
-                android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE
+                withMediaPlayback(android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE)
             )
         } else if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q) {
             startForeground(
                 NOTIFICATION_ID,
                 notification,
-                android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC
+                withMediaPlayback(android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC)
             )
         } else {
             startForeground(NOTIFICATION_ID, notification)
         }
+        foregroundStarted = true
     }
 
+    @androidx.annotation.RequiresApi(android.os.Build.VERSION_CODES.Q)
+    private fun withMediaPlayback(baseType: Int): Int =
+        if (musicPlaying.get()) {
+            baseType or android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PLAYBACK
+        } else {
+            baseType
+        }
+
     private fun updateNotification(gameTitle: String, state: NotificationState) {
+        shownNotificationState = state
         val notification = buildNotification(gameTitle, state)
         val manager = getSystemService(android.app.NotificationManager::class.java)
         manager.notify(NOTIFICATION_ID, notification)
@@ -788,6 +813,9 @@ class GameSessionService : Service() {
         private const val ACTION_STOP = "com.nendo.argosy.STOP_GAME_SESSION"
         private val awaitingForeground = java.util.concurrent.atomic.AtomicBoolean(false)
         private const val ACTION_UPDATE_HARDCORE = "com.nendo.argosy.UPDATE_GAME_SESSION_HARDCORE"
+        private const val ACTION_UPDATE_MEDIA_PLAYBACK = "com.nendo.argosy.UPDATE_GAME_SESSION_MEDIA_PLAYBACK"
+        private val musicPlaying = java.util.concurrent.atomic.AtomicBoolean(false)
+        private val sessionInForeground = java.util.concurrent.atomic.AtomicBoolean(false)
         private const val EXTRA_WATCH_PATH = "watch_path"
         private const val EXTRA_GAME_TITLE = "game_title"
         private const val EXTRA_GAME_ID = "game_id"
@@ -861,6 +889,20 @@ class GameSessionService : Service() {
                 action = ACTION_UPDATE_HARDCORE
                 putExtra(EXTRA_IS_HARDCORE, isHardcore)
                 putExtra(EXTRA_CHANNEL_NAME, channelName)
+            }
+            context.startService(intent)
+        }
+
+        /**
+         * Adds the mediaPlayback foreground type to the session notification while launcher music
+         * plays through the game, and drops it once [playing] turns false. A session whose service
+         * is not in the foreground yet picks the state up when it starts.
+         */
+        fun setMusicPlaying(context: Context, playing: Boolean) {
+            if (musicPlaying.getAndSet(playing) == playing) return
+            if (!sessionInForeground.get()) return
+            val intent = Intent(context, GameSessionService::class.java).apply {
+                action = ACTION_UPDATE_MEDIA_PLAYBACK
             }
             context.startService(intent)
         }

@@ -55,6 +55,10 @@
     <!-- Title when a single platform's migration stopped on an error. %1$s is the platform
          display name; the reason follows as the subtitle. -->
     <string name="notif_storage_migrate_platform_failed_title">Falha na migração de %1$s</string>
+    <string name="notif_storage_folder_names_busy">Conclua ou cancele os downloads antes de renomear as pastas de plataforma</string>
+    <string name="notif_storage_folder_names_done">Pastas de plataforma renomeadas</string>
+    <string name="notif_storage_folder_names_failed_title">Pastas de plataforma inalteradas</string>
+    <string name="notif_storage_folder_names_failed_subtitle">Não foi possível mover %1$s</string>
 
     <!-- Persistent notification title while a platform's downloaded files and library
          entries are being deleted. %1$s is the platform display name. Present participle,

@@ -5,6 +5,7 @@ import com.nendo.argosy.data.music.MusicDirectoryManager
 import com.nendo.argosy.data.preferences.UserPreferencesRepository
 import com.nendo.argosy.domain.usecase.music.RelocateMusicLibraryUseCase
 import com.nendo.argosy.ui.audio.AmbientAudioManager
+import com.nendo.argosy.ui.audio.AmbientMusicSwitch
 import com.nendo.argosy.ui.audio.BgmPlaylistCoordinator
 import com.nendo.argosy.ui.screens.settings.AmbientAudioState
 import com.nendo.argosy.ui.screens.settings.MusicRelocationPrompt
@@ -22,6 +23,7 @@ import javax.inject.Inject
 class AmbientAudioSettingsDelegate @Inject constructor(
     private val preferencesRepository: UserPreferencesRepository,
     private val ambientAudioManager: AmbientAudioManager,
+    private val ambientMusicSwitch: AmbientMusicSwitch,
     private val playlistCoordinator: BgmPlaylistCoordinator,
     private val musicDirectoryManager: MusicDirectoryManager,
     private val relocateMusicLibrary: RelocateMusicLibraryUseCase
@@ -85,10 +87,15 @@ class AmbientAudioSettingsDelegate @Inject constructor(
         adjustInList(_state.value.volume, VolumeLevels.AMBIENT_AUDIO, delta)?.let { setVolume(scope, it) }
     }
 
+    fun adjustGameVolume(scope: CoroutineScope, delta: Int) {
+        val next = adjustInList(_state.value.gameVolume, VolumeLevels.GAME_MUSIC, delta) ?: return
+        _state.update { it.copy(gameVolume = next) }
+        scope.launch { preferencesRepository.setAmbientAudioGameVolume(next) }
+    }
+
     fun setShuffle(scope: CoroutineScope, shuffle: Boolean) {
         scope.launch {
-            preferencesRepository.setAmbientAudioShuffle(shuffle)
-            ambientAudioManager.setShuffle(shuffle)
+            ambientMusicSwitch.setShuffle(shuffle)
             _state.update { it.copy(shuffle = shuffle) }
         }
     }

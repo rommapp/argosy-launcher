@@ -9,8 +9,13 @@ import android.media.MediaPlayer
 import android.media.audiofx.LoudnessEnhancer
 import android.net.Uri
 import android.os.PowerManager
+import android.os.SystemClock
 import android.util.Log
 import com.nendo.argosy.data.music.AudioLoudnessRepository
+import com.nendo.argosy.data.music.analysis.TrackAnalysisStore
+import com.nendo.argosy.data.music.stats.MusicListenEndReason
+import com.nendo.argosy.data.preferences.MusicRepeatMode
+import com.nendo.argosy.data.music.stats.MusicListenRecorder
 import com.nendo.argosy.domain.model.MusicQueueTrack
 import com.nendo.argosy.domain.model.MusicSelection
 import com.nendo.argosy.domain.model.MusicTrackSource
@@ -37,6 +42,7 @@ private const val LAUNCHER_FOCUS_HANDOFF_MS = 300L
 private const val TARGET_LOUDNESS_DB = -14.0
 private const val GAIN_MIN_DB = -12.0
 private const val GAIN_MAX_DB = 10.0
+private const val ANALYSIS_PREFETCH_AHEAD = 2
 
 sealed interface AmbientOverrideSource {
     val displayName: String
@@ -57,19 +63,31 @@ private class PlayerSlot(
     val player: MediaPlayer,
     val autoStart: Boolean,
     var prepared: Boolean = false,
-    var startWhenPrepared: Boolean = false
+    var startWhenPrepared: Boolean = false,
+    val startPositionMs: Long = 0L
 )
 
 @Singleton
 class AmbientAudioManager @Inject constructor(
     @ApplicationContext private val context: Context,
-    private val loudnessRepository: AudioLoudnessRepository
+    private val loudnessRepository: AudioLoudnessRepository,
+    private val analysisStore: TrackAnalysisStore,
+    private val listenRecorder: MusicListenRecorder
 ) {
     companion object {
         const val AMBIENT_SOURCE_PLAYLIST = "playlist:"
     }
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
+    private val teardown = CoroutineScope(SupervisorJob() + Dispatchers.IO.limitedParallelism(1))
+
+    private fun disposePlayer(player: MediaPlayer?) {
+        player ?: return
+        player.setOnPreparedListener(null)
+        player.setOnErrorListener(null)
+        player.setOnCompletionListener(null)
+        teardown.launch { runCatching { player.release() } }
+    }
 
     private val gate = AmbientPlaybackGate()
     private val queue = PlaybackQueue()
@@ -98,6 +116,10 @@ class AmbientAudioManager @Inject constructor(
     private var loudnessEnhancer: LoudnessEnhancer? = null
     private var trackGainDb = 0f
     private var logicalVolume = 0f
+    private var analysisPrefetchedFor: String? = null
+
+    private var gameSession: GameSessionAudio? = null
+    private var heldForLaunchAtMs: Long? = null
 
     private val audioAttributes = AudioAttributes.Builder()
         .setUsage(AudioAttributes.USAGE_MEDIA)
@@ -127,7 +149,69 @@ class AmbientAudioManager @Inject constructor(
     fun setVolume(volume: Int) {
         this.targetVolume = (volume / 100f).coerceIn(0f, 1f)
         Logger.verbose(TAG) { "setVolume=$volume ($targetVolume)" }
-        slot?.let { applyPlayerVolume(it.player, targetVolume) }
+        slot?.let { applyPlayerVolume(it.player, playbackVolume()) }
+    }
+
+    private fun keepsPlayingThroughGame(): Boolean {
+        val session = gameSession ?: return false
+        return GamePlaybackPolicy.keepPlayingDuringGame(
+            sourceIsLauncher = activeSourceId == MusicSelection.LAUNCHER_ID,
+            themePreviewActive = overrideActive,
+            session = session
+        )
+    }
+
+    private fun playbackVolume(): Float {
+        val session = gameSession
+        if (session == null || !keepsPlayingThroughGame()) return targetVolume
+        return GamePlaybackPolicy.duckedVolume(targetVolume, session.musicVolumePercent)
+    }
+
+    /**
+     * Applies the running game session, or null once it has ended. Music the policy keeps playing
+     * ducks to the session's level and returns to the full music volume when the session ends; music
+     * the launcher faded on its way into this game comes back.
+     */
+    fun setGameSession(session: GameSessionAudio?) {
+        if (session == gameSession) return
+        gameSession = session
+        Log.d(TAG, "game session audio: $session")
+        if (session == null) {
+            heldForLaunchAtMs = null
+            rampToPlaybackVolume()
+            return
+        }
+        val resumes = GamePlaybackPolicy.resumesAtSessionStart(
+            keepsPlaying = keepsPlayingThroughGame(),
+            heldAtMs = heldForLaunchAtMs,
+            nowMs = SystemClock.elapsedRealtime()
+        )
+        heldForLaunchAtMs = null
+        if (resumes) {
+            gate.suspended = false
+            Log.d(TAG, "resuming music held for the game launch")
+            fadeIn()
+            return
+        }
+        rampToPlaybackVolume()
+    }
+
+    private fun rampToPlaybackVolume(durationMs: Long = 500) {
+        val current = slot ?: return
+        if (!current.prepared || fadingOut || !isPlayerPlaying(current.player)) return
+        fadeAnimator?.cancel()
+        fadeAnimator = ValueAnimator.ofFloat(logicalVolume, playbackVolume()).apply {
+            duration = durationMs
+            addUpdateListener { animator ->
+                val vol = animator.animatedValue as Float
+                slot?.let { applyPlayerVolume(it.player, vol) }
+            }
+            start()
+        }
+    }
+
+    private fun markHeldForLaunch() {
+        if (playing && !gate.userPaused) heldForLaunchAtMs = SystemClock.elapsedRealtime()
     }
 
     private fun applyPlayerVolume(player: MediaPlayer, volume: Float) {
@@ -187,6 +271,15 @@ class AmbientAudioManager @Inject constructor(
         publish()
     }
 
+    private var repeat = MusicRepeatMode.ALL
+
+    fun setRepeat(mode: MusicRepeatMode) {
+        if (repeat == mode) return
+        repeat = mode
+        Logger.verbose(TAG) { "setRepeat=$mode" }
+        publish()
+    }
+
     private var playInBackground = false
 
     fun setPlayInBackground(enabled: Boolean) {
@@ -207,7 +300,8 @@ class AmbientAudioManager @Inject constructor(
 
     /**
      * Fades the music once no launcher window holds focus, after a short wait so focus moving
-     * between the launcher's own screens never silences it.
+     * between the launcher's own screens never silences it. Music the game session policy keeps
+     * playing is left alone.
      */
     fun onLauncherWindowUnfocused(window: String) {
         focusedLauncherWindows -= window
@@ -215,7 +309,10 @@ class AmbientAudioManager @Inject constructor(
         focusLossFade?.cancel()
         focusLossFade = scope.launch {
             delay(LAUNCHER_FOCUS_HANDOFF_MS)
-            if (focusedLauncherWindows.isEmpty() && !keepsPlayingAsleep()) fadeOut()
+            if (focusedLauncherWindows.isEmpty() && !keepsPlayingAsleep() && !keepsPlayingThroughGame()) {
+                markHeldForLaunch()
+                fadeOut()
+            }
         }
     }
 
@@ -251,19 +348,37 @@ class AmbientAudioManager @Inject constructor(
     }
 
     fun playSelection(sourceId: String, sourceLabel: String?, tracks: List<MusicQueueTrack>) {
+        startQueue(sourceId, sourceLabel) { queue.load(tracks) }
+        Log.d(TAG, "playSelection: $sourceId, ${tracks.size} tracks")
+        queue.current?.let { preparePlayer(it, autoStart = true) }
+        publish()
+    }
+
+    fun playTracks(
+        sourceId: String,
+        label: String?,
+        tracks: List<MusicQueueTrack>,
+        startIndex: Int,
+        startPositionMs: Long = 0L
+    ) {
+        startQueue(sourceId, label) { queue.loadAt(tracks, startIndex) }
+        Log.d(TAG, "playTracks: $sourceId, ${tracks.size} tracks from $startIndex")
+        queue.current?.let { preparePlayer(it, autoStart = true, startPositionMs = startPositionMs) }
+        publish()
+    }
+
+    private inline fun startQueue(sourceId: String, sourceLabel: String?, load: () -> Unit) {
         generation++
         refreshJob?.cancel()
         activeSourceId = sourceId
         activeSourceLabel = sourceLabel
         gate.userPaused = false
         gate.suspended = false
+        heldForLaunchAtMs = null
         consecutiveFailures = 0
         dropOverride()
         releasePlayer()
-        queue.load(tracks)
-        Log.d(TAG, "playSelection: $sourceId, ${tracks.size} tracks")
-        queue.current?.let { preparePlayer(it, autoStart = true) }
-        publish()
+        load()
     }
 
     fun activateLauncher() {
@@ -277,6 +392,7 @@ class AmbientAudioManager @Inject constructor(
     fun play() {
         gate.userPaused = false
         gate.suspended = false
+        heldForLaunchAtMs = null
         Log.d(TAG, "user play")
         fadeIn()
         publish()
@@ -284,23 +400,27 @@ class AmbientAudioManager @Inject constructor(
 
     fun pause() {
         gate.userPaused = true
+        heldForLaunchAtMs = null
         Log.d(TAG, "user pause")
         fadeOut()
         publish()
     }
 
-    fun skipNext() {
-        if (queue.isEmpty) return
+    fun skipNext(): Boolean {
+        if (queue.isEmpty || (!overrideActive && queue.isAtLast)) return false
         gate.suspended = false
         consecutiveFailures = 0
+        endListen(MusicListenEndReason.SKIPPED)
         dropOverride()
         advanceQueue(resume = true)
+        return true
     }
 
     fun skipPrevious() {
         if (queue.isEmpty) return
         gate.suspended = false
         consecutiveFailures = 0
+        endListen(MusicListenEndReason.SKIPPED)
         if (overrideActive) {
             dropOverride()
             restartAtCurrentIndex(resume = true)
@@ -311,6 +431,7 @@ class AmbientAudioManager @Inject constructor(
                 val current = slot
                 if (current != null && current.prepared) {
                     runCatching { current.player.seekTo(0) }
+                    queue.current?.let { listenRecorder.onTrackStarted(it, activeSourceId) }
                 } else {
                     restartAtCurrentIndex(resume = true)
                 }
@@ -324,6 +445,7 @@ class AmbientAudioManager @Inject constructor(
 
     fun playAt(position: Int) {
         if (!queue.jumpTo(position)) return
+        endListen(MusicListenEndReason.SKIPPED)
         consecutiveFailures = 0
         gate.userPaused = false
         gate.suspended = false
@@ -363,7 +485,7 @@ class AmbientAudioManager @Inject constructor(
         }
     }
 
-    private fun preparePlayer(track: MusicQueueTrack, autoStart: Boolean) {
+    private fun preparePlayer(track: MusicQueueTrack, autoStart: Boolean, startPositionMs: Long = 0L) {
         val localPath = track.localPath
         if (localPath != null && !validatePath(localPath)) {
             Log.w(TAG, "Audio file not accessible: $localPath")
@@ -372,20 +494,27 @@ class AmbientAudioManager @Inject constructor(
         }
 
         val player = MediaPlayer()
-        val newSlot = PlayerSlot(player, autoStart)
+        val newSlot = PlayerSlot(player, autoStart, startPositionMs = startPositionMs)
         try {
             player.setAudioAttributes(audioAttributes)
             player.setWakeMode(context, PowerManager.PARTIAL_WAKE_LOCK)
             when (val source = track.source) {
                 is MusicTrackSource.Local -> player.setDataSource(source.path)
                 is MusicTrackSource.Remote ->
-                    player.setDataSource(context, Uri.parse(source.url), source.headers)
+                    if (source.headers.isEmpty()) {
+                        player.setDataSource(source.url)
+                    } else {
+                        player.setDataSource(context, Uri.parse(source.url), source.headers)
+                    }
             }
             player.setVolume(0f, 0f)
             player.setOnPreparedListener {
                 newSlot.prepared = true
                 if (slot !== newSlot) return@setOnPreparedListener
                 Log.d(TAG, "MediaPlayer prepared: ${track.title}")
+                if (newSlot.startPositionMs > 0) {
+                    runCatching { player.seekTo(newSlot.startPositionMs.coerceAtMost(Int.MAX_VALUE.toLong()).toInt()) }
+                }
                 if (newSlot.autoStart || newSlot.startWhenPrepared) fadeIn()
             }
             player.setOnErrorListener { _, what, extra ->
@@ -398,15 +527,25 @@ class AmbientAudioManager @Inject constructor(
             player.setOnCompletionListener {
                 if (slot !== newSlot) return@setOnCompletionListener
                 Log.d(TAG, "Track completed")
+                endListen(MusicListenEndReason.COMPLETED)
                 consecutiveFailures = 0
-                advanceQueue(resume = true)
+                if (overrideActive) {
+                    advanceQueue(resume = true)
+                    return@setOnCompletionListener
+                }
+                when (trackEndAction(repeat, queue.isAtLast)) {
+                    TrackEndAction.REPLAY -> restartAtCurrentIndex(resume = true)
+                    TrackEndAction.ADVANCE -> advanceQueue(resume = true)
+                    TrackEndAction.STOP -> stopAtQueueEnd()
+                }
             }
             slot = newSlot
+            listenRecorder.onTrackStarted(track, activeSourceId, startPositionMs)
             player.prepareAsync()
             attachLeveling(player, localPath)
         } catch (e: Exception) {
             Log.e(TAG, "Failed to prepare MediaPlayer", e)
-            runCatching { player.release() }
+            disposePlayer(player)
             if (slot === newSlot) slot = null
             onTrackFailed(resume = autoStart)
         }
@@ -437,6 +576,13 @@ class AmbientAudioManager @Inject constructor(
         }
         Log.d(TAG, "Playing next track: ${queue.current?.title}")
         restartAtCurrentIndex(resume)
+    }
+
+    private fun stopAtQueueEnd() {
+        Log.d(TAG, "Queue finished with repeat off")
+        gate.userPaused = true
+        queue.jumpTo(0)
+        restartAtCurrentIndex(resume = false)
     }
 
     private fun refreshAndRestart(resume: Boolean) {
@@ -482,12 +628,13 @@ class AmbientAudioManager @Inject constructor(
 
     private fun releasePlayer() {
         val outgoing = slot ?: return
+        endListen(MusicListenEndReason.STOPPED)
         slot = null
         fadeAnimator?.cancel()
         fadeAnimator = null
         fadingOut = false
         releaseEnhancer()
-        runCatching { outgoing.player.release() }
+        disposePlayer(outgoing.player)
         setPlaying(false)
     }
 
@@ -537,13 +684,14 @@ class AmbientAudioManager @Inject constructor(
             val outgoing = slot
             slot = null
             releaseEnhancer()
-            runCatching { outgoing?.player?.release() }
+            disposePlayer(outgoing?.player)
             resumePlaylistAfterOverride()
         }
     }
 
     private fun dropOverride() {
         if (!overrideActive) return
+        endListen(MusicListenEndReason.STOPPED)
         overrideToken++
         overrideActive = false
         overrideTitle = null
@@ -558,7 +706,7 @@ class AmbientAudioManager @Inject constructor(
         if (stashedSlot == null) {
             stashedSlot = outgoing
         } else {
-            runCatching { outgoing.player.release() }
+            disposePlayer(outgoing.player)
         }
     }
 
@@ -576,7 +724,7 @@ class AmbientAudioManager @Inject constructor(
             player.setVolume(0f, 0f)
             player.setOnPreparedListener {
                 if (token != overrideToken || !overrideActive) {
-                    runCatching { it.release() }
+                    disposePlayer(it)
                     return@setOnPreparedListener
                 }
                 slot = PlayerSlot(player, autoStart = true, prepared = true)
@@ -591,7 +739,7 @@ class AmbientAudioManager @Inject constructor(
                 if (token == overrideToken && overrideActive) {
                     clearOverride()
                 } else {
-                    runCatching { player.release() }
+                    disposePlayer(player)
                 }
                 true
             }
@@ -607,7 +755,7 @@ class AmbientAudioManager @Inject constructor(
         stashedSlot = null
         publish()
         if (!gate.enabled) {
-            runCatching { stash?.player?.release() }
+            disposePlayer(stash?.player)
             return
         }
         if (stash != null) {
@@ -621,11 +769,17 @@ class AmbientAudioManager @Inject constructor(
 
     private fun releaseStash() {
         val stash = stashedSlot ?: return
+        endListen(MusicListenEndReason.STOPPED)
         stashedSlot = null
-        runCatching { stash.player.release() }
+        disposePlayer(stash.player)
     }
 
     fun suspend() {
+        if (keepsPlayingThroughGame()) {
+            Log.d(TAG, "suspend skipped: music keeps playing through the game")
+            return
+        }
+        markHeldForLaunch()
         gate.suspended = true
         fadeOut()
         Log.d(TAG, "suspended - awaiting user input to resume")
@@ -634,9 +788,20 @@ class AmbientAudioManager @Inject constructor(
     fun resumeFromSuspend() {
         if (gate.suspended) {
             gate.suspended = false
+            heldForLaunchAtMs = null
             Logger.verbose(TAG) { "resumed from suspend" }
             fadeIn()
         }
+    }
+
+    /**
+     * Resumes from suspend on launcher input, except while a game session holds music the policy
+     * stops. A launcher surface can stay interactive beside a running game, and input there must
+     * not bring that music back.
+     */
+    fun resumeFromLauncherInput() {
+        if (!GamePlaybackPolicy.companionInputMayResume(gameSession, keepsPlayingThroughGame())) return
+        resumeFromSuspend()
     }
 
     fun holdSilence() {
@@ -709,7 +874,7 @@ class AmbientAudioManager @Inject constructor(
             }
             setPlaying(true)
 
-            fadeAnimator = ValueAnimator.ofFloat(0f, targetVolume).apply {
+            fadeAnimator = ValueAnimator.ofFloat(0f, playbackVolume()).apply {
                 duration = durationMs
                 addUpdateListener { animator ->
                     val vol = animator.animatedValue as Float
@@ -734,7 +899,7 @@ class AmbientAudioManager @Inject constructor(
         fadingOut = true
         fadeAnimator?.cancel()
 
-        fadeAnimator = ValueAnimator.ofFloat(targetVolume, 0f).apply {
+        fadeAnimator = ValueAnimator.ofFloat(logicalVolume, 0f).apply {
             duration = durationMs
             addUpdateListener { animator ->
                 val vol = animator.animatedValue as Float
@@ -769,6 +934,7 @@ class AmbientAudioManager @Inject constructor(
     }
 
     private fun stopAndRelease() {
+        endListen(MusicListenEndReason.STOPPED)
         fadeAnimator?.cancel()
         fadeAnimator = null
         fadingOut = false
@@ -781,8 +947,8 @@ class AmbientAudioManager @Inject constructor(
         val outgoing = slot
         slot = null
         try {
-            if (outgoing?.prepared == true) outgoing.player.stop()
-            outgoing?.player?.release()
+            if (outgoing?.prepared == true) outgoing.player.pause()
+            disposePlayer(outgoing?.player)
         } catch (e: Exception) {
             Log.e(TAG, "stopAndRelease error", e)
         }
@@ -792,8 +958,18 @@ class AmbientAudioManager @Inject constructor(
 
     private fun setPlaying(value: Boolean) {
         playing = value
+        val position = listenPosition()
+        listenRecorder.onAudibleChanged(value && !overrideActive, position?.positionMs, position?.durationMs)
         publish()
     }
+
+    private fun endListen(reason: MusicListenEndReason) {
+        val position = listenPosition()
+        listenRecorder.onTrackEnded(reason, position?.positionMs, position?.durationMs)
+    }
+
+    private fun listenPosition(): PlaybackPosition? =
+        if (overrideActive) null else positionSnapshot()
 
     private fun publish() {
         val track = queue.current
@@ -801,6 +977,10 @@ class AmbientAudioManager @Inject constructor(
             trackTitle = track?.title,
             gameTitle = track?.gameTitle,
             coverPath = track?.coverPath,
+            artist = track?.artist,
+            album = track?.album,
+            art = track?.art,
+            durationMs = track?.durationSec?.let { it * 1000L },
             overrideTitle = if (overrideActive) overrideTitle else null,
             index = queue.index,
             count = queue.size,
@@ -808,10 +988,20 @@ class AmbientAudioManager @Inject constructor(
             isPlaying = playing,
             userPaused = gate.userPaused,
             shuffle = queue.shuffle,
+            repeat = repeat,
             sourceId = activeSourceId,
             sourceLabel = activeSourceLabel
         )
         if (!overrideActive) _currentTrackName.value = track?.title
+        prefetchAnalysisAfter(track)
+    }
+
+    private fun prefetchAnalysisAfter(current: MusicQueueTrack?) {
+        if (current?.id == analysisPrefetchedFor) return
+        analysisPrefetchedFor = current?.id
+        val order = queue.order
+        val index = queue.index
+        analysisStore.prefetch((1..ANALYSIS_PREFETCH_AHEAD).mapNotNull { order.getOrNull(index + it) })
     }
 
     fun release() {

@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="now_playing_empty_title">Ничего не играет</string>
+    <string name="now_playing_empty_body">Включите плейлист или саундтрек из быстрого меню.</string>
+    <string name="now_playing_source_launcher">Музыка лаунчера</string>
+    <string name="now_playing_unknown_title">Неизвестный трек</string>
+    <string name="now_playing_add_to_playlist">Добавить в плейлист</string>
+    <string name="now_playing_running_order">Порядок треков</string>
+    <string name="now_playing_current_track">Текущий трек</string>
+    <string name="now_playing_hint_previous">Назад</string>
+    <string name="now_playing_hint_next">Далее</string>
+    <string name="now_playing_hint_queue">Очередь</string>
+    <string name="now_playing_hint_options">Параметры</string>
+    <string name="now_playing_options_title">Сейчас играет</string>
+    <string name="now_playing_option_style">Стиль</string>
+    <string name="now_playing_option_spin">Вращение</string>
+    <string name="now_playing_option_layout">Макет</string>
+    <string name="now_playing_style_record">Пластинка</string>
+    <string name="now_playing_style_cd">CD</string>
+    <string name="now_playing_style_cover">Обложка</string>
+    <string name="now_playing_layout_shelf">Полка</string>
+    <string name="now_playing_layout_simple">Простой</string>
+    <string name="now_playing_quick_open">Сейчас играет</string>
+</resources>

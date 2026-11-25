@@ -396,6 +396,47 @@ object ComponentDefaults {
         const val waterAmplitudeRatio = 0.025f
     }
 
+    object LetterJumpOverlay {
+        const val letterFontSizeSp = 120
+        const val letterAlpha = 0.7f
+    }
+
+    object MusicColumns {
+        const val heroBlurDp = 24
+        const val heroDimAlpha = 0.55f
+        const val heroSaturation = 0.35f
+        const val sleeveSizeRatio = 0.62f
+        const val sleeveStackOffsetRatio = 0.09f
+        const val sleeveBackDimAlpha = 0.35f
+        const val sleeveCenterBiasRatio = -0.4f
+        const val recordSlideRatio = 0.32f
+        const val recordLabelRatio = 0.5f
+        const val recordHoleRatio = 0.035f
+        const val recordGrooveCount = 5
+        const val recordGrooveAlpha = 0.07f
+        const val recordSheenAlpha = 0.12f
+        const val recordSlideMs = 450
+        const val recordSlideDelayMs = 150
+        const val trackNumberWidthDp = 32
+        const val flipDragDp = 48
+        const val flipMs = 320
+        const val contentsCoverWeightRatio = 0.42f
+        const val contentsSleeveRatio = 0.66f
+        const val contentsSleeveBiasRatio = -0.3f
+        const val skeletonColumns = 5
+        const val detailsTitleMaxLines = 1
+    }
+
+    object MusicStats {
+        const val trackTileDp = 112
+        const val albumTileDp = 128
+        const val artistTileWidthDp = 152
+        const val gameCoverWidthDp = 84
+        const val gameCoverHeightDp = 112
+        const val recapCoverDp = 56
+        const val tileTitleMaxLines = 1
+    }
+
     object BuildingLibrary {
         const val wallColumns = 6
         const val wallColumnsPresentation = 8
@@ -565,15 +606,60 @@ object ComponentDefaults {
 
     object MusicPlayer {
         const val coverSizeDp = 64
-        const val coverExpandedMaxHeightDp = 280
         const val transportButtonDp = 40
         const val playButtonDp = 48
-        const val progressHeightDp = 4
         const val rowCoverDp = 40
         const val positionPollMs = 500
         const val searchDebounceMs = 350
-        const val artBloomAlphaDark = 0.35f
-        const val artBloomAlphaLight = 0.18f
+    }
+
+    object NowPlaying {
+        const val waveHeightDp = 28
+        const val waveHeightCompactDp = 16
+        const val waveAmplitudeDp = 5
+        const val waveAmplitudeCompactDp = 3
+        const val waveWavelengthDp = 5
+        const val pinchRadiusDp = 56
+        const val pinchRadiusCompactDp = 28
+        const val playedStrokeDp = 4
+        const val playedStrokeCompactDp = 3
+        const val restStrokeDp = 2
+        const val thumbWidthDp = 4
+        const val thumbHeightDp = 20
+        const val thumbHeightCompactDp = 12
+        const val wavePhaseCycleMs = 2200
+        const val waveRelaxMs = 420
+        const val restAlpha = 0.45f
+        const val discSizeDp = 280
+        const val simpleArtDp = 88
+        const val recordRpm = 33.3f
+        const val cdRpm = 60
+        const val spinStopMs = 900
+        const val uprightMinMs = 300
+        const val uprightMaxMs = 600
+        const val grooveCount = 6
+        const val grooveInnerRatio = 0.5f
+        const val grooveOuterRatio = 0.95f
+        const val recordLabelRatio = 0.5f
+        const val recordHoleRatio = 0.035f
+        const val cdHubRatio = 0.3f
+        const val cdHoleRatio = 0.12f
+        const val cdRainbowAlpha = 0.16f
+        const val queueWidthRatio = 0.55f
+        const val transportButtonDp = 48
+        const val playButtonDp = 64
+        const val waveBarWidthDp = 2
+        const val waveBarPitchDp = 4
+        const val waveFadeInMs = 600
+        const val waveBarAlpha = 0.22f
+        const val waveLoudnessFloor = 0.35f
+        const val waveLoudnessSettleMs = 180
+        const val visualizerHeightRatio = 0.5f
+        const val visualizerBarGapDp = 8
+        const val visualizerBarAlpha = 0.14f
+        const val visualizerGlowAlpha = 0.2f
+        const val visualizerGlowDp = 28
+        const val visualizerFallRatioPerSecond = 1.6f
     }
 
     object Segmented {

@@ -190,6 +190,10 @@
     <string name="notif_review_error_server">Der Server konnte die Rezension nicht speichern</string>
     <string name="notif_storage_migrate_failed_title">Migration fehlgeschlagen</string>
     <string name="notif_storage_migrate_platform_failed_title">Migration von %1$s fehlgeschlagen</string>
+    <string name="notif_storage_folder_names_busy">Downloads abschließen oder abbrechen, bevor Plattformordner umbenannt werden</string>
+    <string name="notif_storage_folder_names_done">Plattformordner umbenannt</string>
+    <string name="notif_storage_folder_names_failed_title">Plattformordner unverändert</string>
+    <string name="notif_storage_folder_names_failed_subtitle">%1$s konnte nicht verschoben werden</string>
     <string name="notif_storage_purge_failed_title">Bereinigung von %1$s fehlgeschlagen</string>
     <string name="notif_settings_cache_validate_failed">Bildcache-Prüfung fehlgeschlagen</string>
     <string name="notif_settings_downloads_validate_failed">Download-Prüfung fehlgeschlagen</string>

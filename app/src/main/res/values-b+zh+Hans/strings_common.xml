@@ -597,6 +597,7 @@
     <string name="ui_quick_settings_orientation_landscape">横屏</string>
     <string name="ui_quick_settings_orientation_portrait">竖屏</string>
     <string name="ui_quick_settings_haptics">震动反馈</string>
+    <string name="ui_quick_settings_led">LED</string>
     <string name="ui_quick_settings_ui_sounds">界面音效</string>
     <string name="ui_quick_settings_swap_ab">交换 A/B</string>
     <string name="ui_quick_settings_swap_xy">交换 X/Y</string>
@@ -607,8 +608,7 @@
     <string name="ui_quick_settings_brightness_main">主屏幕</string>
     <string name="ui_quick_settings_brightness_second">副屏幕</string>
     <string name="ui_quick_settings_off">关</string>
-    <string name="ui_quick_settings_percent">%1$d%%</string>
-    <string name="ui_quick_settings_page_performance">性能</string>
+    <string name="ui_quick_settings_percent">%1$d%%</string>    <string name="ui_quick_settings_page_performance">性能</string>
     <string name="ui_quick_settings_page_friends">好友</string>
     <string name="ui_quick_settings_page_music">音乐</string>
     <string name="ui_quick_settings_group_display">显示</string>
@@ -629,6 +629,9 @@
     <string name="ui_quick_settings_music_pause">暂停</string>
     <string name="ui_quick_settings_music_next">下一首</string>
     <string name="ui_quick_settings_music_shuffle">随机播放</string>
+    <string name="ui_quick_settings_music_repeat_all">全部循环</string>
+    <string name="ui_quick_settings_music_repeat_one">单曲循环</string>
+    <string name="ui_quick_settings_music_repeat_off">循环已关闭</string>
     <string name="ui_quick_settings_music_play_in_background">后台播放</string>
     <string name="ui_quick_settings_music_playlists">播放列表</string>
     <string name="ui_quick_settings_music_soundtracks">游戏原声</string>
@@ -680,6 +683,7 @@
     <string name="ui_drawer_nav_collections">合集</string>
     <string name="ui_drawer_nav_library">游戏库</string>
     <string name="ui_drawer_nav_media">媒体</string>
+    <string name="ui_drawer_nav_music">音乐</string>
     <string name="ui_drawer_nav_downloads">下载</string>
     <string name="ui_drawer_nav_save_sync">存档同步</string>
     <string name="ui_drawer_nav_apps">应用</string>

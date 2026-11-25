@@ -220,6 +220,10 @@
     <string name="notif_review_error_server">सर्वर समीक्षा को सहेज नहीं सका</string>
     <string name="notif_storage_migrate_failed_title">माइग्रेशन विफल</string>
     <string name="notif_storage_migrate_platform_failed_title">%1$s का माइग्रेशन विफल</string>
+    <string name="notif_storage_folder_names_busy">प्लैटफ़ॉर्म फ़ोल्डरों का नाम बदलने से पहले डाउनलोड पूरे करें या रद्द करें</string>
+    <string name="notif_storage_folder_names_done">प्लैटफ़ॉर्म फ़ोल्डरों के नाम बदले गए</string>
+    <string name="notif_storage_folder_names_failed_title">प्लैटफ़ॉर्म फ़ोल्डर नहीं बदले</string>
+    <string name="notif_storage_folder_names_failed_subtitle">%1$s को नहीं ले जाया जा सका</string>
     <string name="notif_storage_purge_failed_title">%1$s की सफाई विफल</string>
     <string name="notif_settings_cache_validate_failed">इमेज कैश जाँच विफल</string>
     <string name="notif_settings_downloads_validate_failed">डाउनलोड जाँच विफल</string>

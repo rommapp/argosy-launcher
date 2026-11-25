@@ -186,6 +186,8 @@
     <string name="settings_installers_variant_universal">Universal</string>
     <string name="settings_storage_folder_name_from_rom_title">Ordner nach der ROM benennen</string>
     <string name="settings_storage_folder_name_from_rom_subtitle">Den Spielordner nach der Haupt-ROM-Datei benennen, Erweiterung eingeschlossen, damit andere Frontends ihn erkennen. Gilt für neue Downloads.</string>
+    <string name="settings_storage_platform_folders_from_server_title">Ordnernamen des Servers verwenden</string>
+    <string name="settings_storage_platform_folders_from_server_subtitle">Jeden Plattformordner so benennen wie dein RomM-Server, damit diese Bibliothek dem Aufbau des Servers entspricht.</string>
     <string name="settings_installers_add_error_invalid">Das ist kein GitHub-Repository-Link</string>
     <string name="settings_installers_add_error_duplicate">Dieses Repository steht bereits in der Liste</string>
     <string name="settings_installers_subtitle_installed">Installiert: %1$s</string>
@@ -841,6 +843,7 @@
     <string name="settings_music_toggle_title">Hintergrundmusik</string>
     <string name="settings_music_toggle_subtitle">Musik während der Nutzung des Launchers abspielen</string>
     <string name="settings_music_volume_title">Lautstärke</string>
+    <string name="settings_music_game_volume_title">Musiklautstärke in Spielen</string>
 
     <string name="settings_music_playlist_title">Musik-Playlist</string>
     <string name="settings_music_playlist_empty">Keine Titel</string>
@@ -2524,7 +2527,6 @@
     <!-- ===== Jellyfin settings delegate (Settings > delegates > JellyfinSettingsDelegate) ===== -->
 
     <string name="settings_jellyfin_delegate_config_error_empty">Geben Sie eine Serveradresse ein</string>
-    <string name="settings_jellyfin_delegate_config_error_scheme">Die Adresse muss mit http:// oder https:// beginnen</string>
     <string name="settings_jellyfin_delegate_signin_error_empty">Geben Sie Ihren Benutzernamen und Ihr Passwort ein</string>
 
     <!-- ===== Server settings delegate (Settings > delegates > ServerSettingsDelegate) ===== -->

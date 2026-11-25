@@ -11,6 +11,7 @@ import com.nendo.argosy.libretro.coreoptions.manifests.HandyManifest
 import com.nendo.argosy.libretro.coreoptions.manifests.MednafenLynxManifest
 import com.nendo.argosy.libretro.coreoptions.manifests.MednafenNgpManifest
 import com.nendo.argosy.libretro.coreoptions.manifests.MednafenPsxHwManifest
+import com.nendo.argosy.libretro.coreoptions.manifests.SwanStationManifest
 import com.nendo.argosy.libretro.coreoptions.manifests.MednafenSaturnManifest
 import com.nendo.argosy.libretro.coreoptions.manifests.MednafenVbManifest
 import com.nendo.argosy.libretro.coreoptions.manifests.MednafenWswanManifest
@@ -71,6 +72,7 @@ object CoreOptionManifestRegistry {
         put(VbamManifest.coreId, VbamManifest)
         put(GpspManifest.coreId, GpspManifest)
         put(MednafenPsxHwManifest.coreId, MednafenPsxHwManifest)
+        put(SwanStationManifest.coreId, SwanStationManifest)
         put(PcsxRearmedManifest.coreId, PcsxRearmedManifest)
         put(MednafenSaturnManifest.coreId, MednafenSaturnManifest)
         put(MelondsManifest.coreId, MelondsManifest)

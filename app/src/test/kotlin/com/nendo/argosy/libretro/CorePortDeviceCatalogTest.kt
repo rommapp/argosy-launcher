@@ -82,4 +82,14 @@ class CorePortDeviceCatalogTest {
         assertEquals("negcon", pcsx.first { it.id == 773 }.name)
         assertEquals("Analog Joystick", beetle.first { it.id == 773 }.name)
     }
+
+    @Test
+    fun `swanstation uses its own device ids and drops the guncon past port two`() {
+        val ports = CorePortDeviceCatalog.portDevices("swanstation", "psx")
+        assertEquals(4, ports.size)
+        assertEquals("Analog Controller (DualShock)", ports[0].first { it.id == 261 }.name)
+        assertEquals("Analog Joystick", ports[0].first { it.id == 517 }.name)
+        assertEquals("Namco GunCon", ports[1].first { it.id == 260 }.name)
+        assertEquals(null, ports[2].firstOrNull { it.id == 260 })
+    }
 }

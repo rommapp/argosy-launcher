@@ -71,6 +71,21 @@ object CorePortDeviceCatalog {
         d(subclass(MOUSE, 0), "mouse")
     )
 
+    private val SWANSTATION_PADS = listOf(
+        d(JOYPAD, "Digital Controller (Gamepad)"),
+        d(subclass(ANALOG, 0), "Analog Controller (DualShock)"),
+        d(subclass(ANALOG, 1), "Analog Joystick"),
+        d(subclass(ANALOG, 2), "NeGcon"),
+        d(subclass(ANALOG, 3), "NeGcon Rumble")
+    )
+
+    private val SWANSTATION_PORT_12 = SWANSTATION_PADS + listOf(
+        d(subclass(LIGHTGUN, 0), "Namco GunCon"),
+        d(subclass(MOUSE, 0), "PlayStation Mouse")
+    )
+
+    private val SWANSTATION_PORT_34 = SWANSTATION_PADS + d(subclass(MOUSE, 0), "PlayStation Mouse")
+
     private val BEETLE_PSX = listOf(
         d(JOYPAD, "PlayStation Controller"),
         d(subclass(ANALOG, 1), "DualShock"),
@@ -255,6 +270,7 @@ object CorePortDeviceCatalog {
         ),
         "pcsx_rearmed" to same(MAX_PORTS, PCSX_REARMED),
         "mednafen_psx_hw" to same(2, BEETLE_PSX),
+        "swanstation" to listOf(SWANSTATION_PORT_12, SWANSTATION_PORT_12, SWANSTATION_PORT_34, SWANSTATION_PORT_34),
         "mednafen_saturn" to same(2, BEETLE_SATURN),
         "flycast" to same(MAX_PORTS, FLYCAST),
         "stella" to listOf(

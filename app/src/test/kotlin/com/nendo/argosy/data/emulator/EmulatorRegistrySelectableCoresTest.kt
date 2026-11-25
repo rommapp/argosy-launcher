@@ -8,7 +8,7 @@ import org.junit.Test
 /**
  * The game-detail core picker must offer cores that the chosen emulator can actually run:
  * built-in games get [LibretroCoreRegistry] cores, external RetroArch gets the RetroArch list.
- * Regression guard for the swanstation-pinned-on-built-in bug.
+ * Regression guard for a RetroArch-only core being pinned on built-in.
  */
 class EmulatorRegistrySelectableCoresTest {
 
@@ -18,7 +18,7 @@ class EmulatorRegistrySelectableCoresTest {
 
         assertTrue("built-in psx must offer pcsx_rearmed", "pcsx_rearmed" in ids)
         assertTrue("built-in psx must offer mednafen_psx_hw", "mednafen_psx_hw" in ids)
-        assertFalse("swanstation is a RetroArch core, not a built-in one", "swanstation" in ids)
+        assertTrue("built-in psx must offer swanstation", "swanstation" in ids)
         assertFalse("mednafen_psx (sw RA core) is not a built-in core", "mednafen_psx" in ids)
     }
 
@@ -34,7 +34,7 @@ class EmulatorRegistrySelectableCoresTest {
     fun `built-in and external core lists differ for psx`() {
         val builtIn = EmulatorRegistry.getSelectableCores("psx", isBuiltIn = true).map { it.id }.toSet()
         val external = EmulatorRegistry.getSelectableCores("psx", isBuiltIn = false).map { it.id }.toSet()
-        assertTrue("swanstation only belongs to external", "swanstation" in external && "swanstation" !in builtIn)
+        assertTrue("mednafen_psx only belongs to external", "mednafen_psx" in external && "mednafen_psx" !in builtIn)
     }
 
     @Test

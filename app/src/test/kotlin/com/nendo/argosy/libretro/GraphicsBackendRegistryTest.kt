@@ -13,6 +13,7 @@ class GraphicsBackendRegistryTest {
     private val vulkanTokens = mapOf(
         "ppsspp" to ("ppsspp_backend" to "vulkan"),
         "mednafen_psx_hw" to ("beetle_psx_hw_renderer" to "hardware_vk"),
+        "swanstation" to ("swanstation_GPU_Renderer" to "Vulkan"),
         "azahar" to ("citra_graphics_api" to "Vulkan"),
         "parallel_n64" to ("parallel-n64-gfxplugin" to "parallel"),
         "mupen64plus_next_gles3" to ("mupen64plus-rdp-plugin" to "parallel"),

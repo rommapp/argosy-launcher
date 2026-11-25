@@ -222,6 +222,14 @@ object LibretroCoreRegistry {
             estimatedSizeBytes = 3_000_000L,
             requiresBios = listOf("scph5501.bin")
         ),
+        CoreInfo(
+            coreId = "swanstation",
+            fileName = "swanstation_libretro_android.so",
+            displayName = "SwanStation",
+            platforms = setOf("psx", "ps1", "playstation"),
+            estimatedSizeBytes = 4_000_000L,
+            requiresBios = listOf("scph5500.bin", "scph5501.bin", "scph5502.bin", "psxonpsp660.bin", "ps1_rom.bin")
+        ),
 
         CoreInfo(
             coreId = "armsx2",

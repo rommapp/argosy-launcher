@@ -955,7 +955,7 @@ class GameLauncherTest {
             gameId = 1L,
             packageName = EmulatorRegistry.BUILTIN_PACKAGE,
             displayName = "Built-in",
-            coreName = "swanstation"
+            coreName = "mednafen_psx"
         )
         coEvery { emulatorConfigDao.getDefaultForPlatform(14L) } returns null
         stubDetectorWith(installedEmulator(builtinDef))
@@ -966,7 +966,7 @@ class GameLauncherTest {
         runCatching { launcher.launch(1L) }
 
         verify { libretroCoreMgr.getCorePathForPlatform("psx", "mednafen_psx_hw") }
-        verify(exactly = 0) { libretroCoreMgr.getCorePathForPlatform("psx", "swanstation") }
+        verify(exactly = 0) { libretroCoreMgr.getCorePathForPlatform("psx", "mednafen_psx") }
     }
 
     @Test

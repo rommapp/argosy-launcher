@@ -48,7 +48,8 @@ void Environment::deinitialize() {
     hw_context_reset = nullptr;
     hw_context_destroy = nullptr;
 
-    retro_disk_control_callback = nullptr;
+    disk_control_callback = {};
+    has_disk_control_callback = false;
 
     savesDirectory = std::string();
     systemDirectory = std::string();
@@ -395,8 +396,13 @@ bool Environment::handle_callback_environment(unsigned cmd, void *data) {
         }
 
         case RETRO_ENVIRONMENT_SET_DISK_CONTROL_INTERFACE: {
-            LOGD("Called RETRO_ENVIRONMENT_SET_ROTATION");
-            retro_disk_control_callback = static_cast<struct retro_disk_control_callback*>(data);
+            LOGD("Called RETRO_ENVIRONMENT_SET_DISK_CONTROL_INTERFACE");
+            if (data == nullptr) {
+                has_disk_control_callback = false;
+                return false;
+            }
+            disk_control_callback = *static_cast<const struct retro_disk_control_callback*>(data);
+            has_disk_control_callback = true;
             return true;
         }
 
@@ -518,7 +524,7 @@ retro_hw_context_reset_t Environment::getHwContextDestroy() const {
 }
 
 struct retro_disk_control_callback* Environment::getRetroDiskControlCallback() const {
-    return retro_disk_control_callback;
+    return has_disk_control_callback ? &disk_control_callback : nullptr;
 }
 
 int Environment::getPixelFormat() const {

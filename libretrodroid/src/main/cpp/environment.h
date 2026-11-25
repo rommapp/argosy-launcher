@@ -142,7 +142,8 @@ private:
 private:
     retro_hw_context_reset_t hw_context_reset = nullptr;
     retro_hw_context_reset_t hw_context_destroy = nullptr;
-    struct retro_disk_control_callback *retro_disk_control_callback = nullptr;
+    mutable struct retro_disk_control_callback disk_control_callback = {};
+    bool has_disk_control_callback = false;
 
     std::string savesDirectory;
     std::string systemDirectory;

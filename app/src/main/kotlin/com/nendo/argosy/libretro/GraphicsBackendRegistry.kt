@@ -38,6 +38,7 @@ object GraphicsBackendRegistry {
     private val backends: Map<String, GraphicsBackend> = listOf(
         GraphicsBackend.CoreOption("ppsspp", "ppsspp_backend", "vulkan"),
         GraphicsBackend.CoreOption("mednafen_psx_hw", "beetle_psx_hw_renderer", "hardware_vk"),
+        GraphicsBackend.CoreOption("swanstation", "swanstation_GPU_Renderer", "Vulkan"),
         GraphicsBackend.CoreOption("azahar", "citra_graphics_api", "Vulkan"),
         GraphicsBackend.CoreOption("parallel_n64", "parallel-n64-gfxplugin", "parallel"),
         GraphicsBackend.CoreOption("mupen64plus_next_gles3", "mupen64plus-rdp-plugin", "parallel"),

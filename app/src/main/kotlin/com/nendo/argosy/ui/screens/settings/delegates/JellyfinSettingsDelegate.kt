@@ -10,6 +10,7 @@ import com.nendo.argosy.core.notification.showError
 import com.nendo.argosy.data.download.MediaDownloadManager
 import com.nendo.argosy.data.media.MediaDirectoryManager
 import com.nendo.argosy.data.remote.jellyfin.JELLYFIN_CLIENT_CERTIFICATE_REQUIRED
+import com.nendo.argosy.data.remote.jellyfin.JellyfinConnectionManager
 import com.nendo.argosy.data.remote.jellyfin.JellyfinResult
 import com.nendo.argosy.data.remote.jellyfin.JellyfinSyncProgress
 import com.nendo.argosy.data.remote.jellyfin.JellyfinSyncResult
@@ -71,9 +72,11 @@ class JellyfinSettingsDelegate @Inject constructor(
     private val mediaRepository: MediaRepository,
     private val mediaDownloadManager: MediaDownloadManager,
     private val notificationManager: NotificationManager,
+    private val connectionManager: JellyfinConnectionManager,
     @ApplicationContext private val context: Context
 ) {
     private val _state = MutableStateFlow(JellyfinState())
+    private var resolvingAddress = false
     val state: StateFlow<JellyfinState> = _state.asStateFlow()
 
     val librarySyncProgress: StateFlow<JellyfinSyncProgress> = mediaRepository.syncProgress
@@ -122,14 +125,22 @@ class JellyfinSettingsDelegate @Inject constructor(
     }
 
     fun commitServerConfig(scope: CoroutineScope, onFocusReset: () -> Unit, onSaved: () -> Unit) {
-        val url = ServerAddress.withDefaultScheme(_state.value.configUrl).trimEnd('/')
-        if (url.isBlank()) {
+        val typed = _state.value.configUrl
+        if (typed.isBlank()) {
             _state.update {
                 it.copy(configError = context.getString(R.string.settings_jellyfin_delegate_config_error_empty))
             }
             return
         }
+        if (resolvingAddress) return
+        resolvingAddress = true
         scope.launch {
+            val url = try {
+                ServerAddress.resolve(typed) { connectionManager.validateServer(it) is JellyfinResult.Success }
+                    .trimEnd('/')
+            } finally {
+                resolvingAddress = false
+            }
             preferencesRepository.setJellyfinServerUrl(url)
             _state.update {
                 it.copy(

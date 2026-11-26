@@ -1,6 +1,8 @@
 package com.nendo.argosy.util
 
+import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Test
 
 class ServerAddressTest {
@@ -35,5 +37,42 @@ class ServerAddressTest {
     @Test
     fun `blank stays blank`() {
         assertEquals("", ServerAddress.withDefaultScheme("   "))
+    }
+
+    @Test
+    fun `a bare domain tries https then http`() {
+        assertEquals(listOf("https://x.org", "http://x.org"), ServerAddress.candidates("x.org"))
+    }
+
+    @Test
+    fun `a bare ip tries http then https`() {
+        assertEquals(listOf("http://10.0.0.2:8096", "https://10.0.0.2:8096"), ServerAddress.candidates("10.0.0.2:8096"))
+    }
+
+    @Test
+    fun `a typed scheme is the only candidate`() {
+        assertEquals(listOf("http://x.org"), ServerAddress.candidates("http://x.org"))
+    }
+
+    @Test
+    fun `resolve takes https when the server answers there`() = runBlocking {
+        assertEquals("https://x.org", ServerAddress.resolve("x.org") { true })
+    }
+
+    @Test
+    fun `resolve falls back to http when https does not answer`() = runBlocking {
+        assertEquals("http://x.org", ServerAddress.resolve("x.org") { it.startsWith("http://") })
+    }
+
+    @Test
+    fun `resolve keeps the first scheme when nothing answers`() = runBlocking {
+        assertEquals("https://x.org", ServerAddress.resolve("x.org") { false })
+    }
+
+    @Test
+    fun `resolve never probes a typed scheme`() = runBlocking {
+        var probed = false
+        assertEquals("http://x.org", ServerAddress.resolve("http://x.org") { probed = true; true })
+        assertFalse(probed)
     }
 }

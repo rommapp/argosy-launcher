@@ -19,4 +19,24 @@ object ServerAddress {
         val plain = host.matches(IPV4) || host.startsWith("[") || host.equals("localhost", ignoreCase = true)
         return if (plain) "http://$hostPart" else "https://$hostPart"
     }
+
+    fun candidates(url: String): List<String> {
+        val trimmed = url.trim()
+        if (trimmed.isBlank()) return emptyList()
+        if (hasScheme(trimmed)) return listOf(trimmed)
+        val hostPart = trimmed.removePrefix("//")
+        val preferred = withDefaultScheme(hostPart)
+        val fallback = if (preferred.startsWith("http://")) "https://$hostPart" else "http://$hostPart"
+        return listOf(preferred, fallback)
+    }
+
+    /**
+     * The first of [candidates] the server [answers] on, or [withDefaultScheme]'s choice when it
+     * answers on none, so an address saved while the server is down keeps the scheme tried first.
+     */
+    suspend fun resolve(url: String, answers: suspend (String) -> Boolean): String {
+        val options = candidates(url)
+        if (options.size < 2) return options.firstOrNull().orEmpty()
+        return options.firstOrNull { answers(it) } ?: options.first()
+    }
 }

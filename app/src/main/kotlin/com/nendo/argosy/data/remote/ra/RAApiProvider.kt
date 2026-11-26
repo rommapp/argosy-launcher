@@ -8,6 +8,7 @@ import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import okhttp3.OkHttpClient
 import retrofit2.Retrofit
 import retrofit2.converter.moshi.MoshiConverterFactory
+import com.nendo.argosy.util.ServerAddress
 import java.util.concurrent.TimeUnit
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -35,9 +36,8 @@ class RAApiProvider @Inject constructor(
     }
 
     private fun normalizeProxyBaseUrl(raw: String): String? {
-        val trimmed = raw.trim()
-        if (trimmed.isEmpty()) return null
-        val withScheme = if (trimmed.startsWith("http://") || trimmed.startsWith("https://")) trimmed else "http://$trimmed"
+        val withScheme = ServerAddress.withDefaultScheme(raw)
+        if (withScheme.isEmpty()) return null
         return withScheme.toHttpUrlOrNull()?.toString()
     }
 

@@ -1026,14 +1026,7 @@ class RomMConnectionManager @Inject constructor(
         else -> null
     }
 
-    private fun buildUrlsToTry(url: String): List<String> {
-        val trimmed = url.trim()
-        if (ServerAddress.hasScheme(trimmed)) return listOf(trimmed)
-        val hostPart = trimmed.removePrefix("//")
-        val preferred = ServerAddress.withDefaultScheme(hostPart)
-        val fallback = if (preferred.startsWith("http://")) "https://$hostPart" else "http://$hostPart"
-        return listOf(preferred, fallback)
-    }
+    private fun buildUrlsToTry(url: String): List<String> = ServerAddress.candidates(url).ifEmpty { listOf(url.trim()) }
 
     fun createApi(baseUrl: String, token: String?): RomMApi = apiFactory.create(baseUrl, token)
 

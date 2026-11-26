@@ -54,6 +54,15 @@ class NavidromeApiClient @Inject constructor(
             .build()
     }
 
+    /**
+     * True when [serverUrl] answers as a Subsonic server. Signs in as nobody, so a refused sign-in
+     * still counts as an answer.
+     */
+    suspend fun answers(serverUrl: String): Boolean {
+        val outcome = call(NavidromeCredentials(serverUrl, "", ""), "ping")
+        return outcome.isSuccess || outcome.exceptionOrNull() is NavidromeApiException
+    }
+
     suspend fun ping(credentials: NavidromeCredentials): Result<NavidromeServerInfo> =
         call(credentials, "ping").map {
             NavidromeServerInfo(

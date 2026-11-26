@@ -29,6 +29,7 @@ class NavidromeSettingsDelegate @Inject constructor(
     @ApplicationContext private val context: Context
 ) {
     private val _state = MutableStateFlow(NavidromeState())
+    private var resolvingAddress = false
     val state: StateFlow<NavidromeState> = _state.asStateFlow()
 
     suspend fun hydrate() {
@@ -69,14 +70,21 @@ class NavidromeSettingsDelegate @Inject constructor(
     }
 
     fun commitServerConfig(scope: CoroutineScope, onFocusReset: () -> Unit) {
-        val url = ServerAddress.withDefaultScheme(_state.value.configUrl).trimEnd('/')
-        if (url.isBlank()) {
+        val typed = _state.value.configUrl
+        if (typed.isBlank()) {
             _state.update {
                 it.copy(configError = context.getString(R.string.settings_navidrome_config_error_empty))
             }
             return
         }
+        if (resolvingAddress) return
+        resolvingAddress = true
         scope.launch {
+            val url = try {
+                ServerAddress.resolve(typed) { api.answers(it) }.trimEnd('/')
+            } finally {
+                resolvingAddress = false
+            }
             val changed = url != _state.value.serverUrl
             preferences.setServerUrl(url)
             if (changed) preferences.clearCredentials()

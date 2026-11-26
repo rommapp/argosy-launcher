@@ -51,6 +51,9 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.CompositingStrategy
 import androidx.compose.ui.graphics.ImageBitmap
+import androidx.compose.ui.graphics.asImageBitmap
+import android.graphics.drawable.BitmapDrawable
+import androidx.compose.foundation.Image
 import androidx.compose.ui.graphics.ImageShader
 import androidx.compose.ui.graphics.Paint
 import androidx.compose.ui.graphics.Path
@@ -69,7 +72,6 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
-import coil.compose.AsyncImage
 import coil.imageLoader
 import coil.request.ImageRequest
 import coil.request.SuccessResult
@@ -506,12 +508,10 @@ fun LibraryCoverWall(tiles: List<LibraryWallTile>, columns: Int, modifier: Modif
             userScrollEnabled = false,
             modifier = Modifier.fillMaxSize()
         ) {
-            items(shown, key = { it.gameId }) { tile ->
+            items(shown, key = { it.gameId }) { loaded ->
                 WallTile(
-                    tile = tile,
-                    widthPx = tileWidthPx,
-                    heightPx = tileHeightPx,
-                    animate = !reduced && appeared.add(tile.gameId)
+                    loaded = loaded,
+                    animate = !reduced && appeared.add(loaded.gameId)
                 )
             }
             item(key = WALL_BOTTOM_ROW_KEY, span = { GridItemSpan(maxLineSpan) }) {
@@ -579,7 +579,7 @@ private fun wallScrollTarget(gridState: LazyGridState, count: Int, geometry: Wal
 }
 
 @Composable
-private fun TrimScrolledRows(gridState: LazyGridState, shown: SnapshotStateList<LibraryWallTile>, columns: Int) {
+private fun TrimScrolledRows(gridState: LazyGridState, shown: SnapshotStateList<LoadedWallTile>, columns: Int) {
     LaunchedEffect(shown.size) {
         val over = shown.size - ComponentDefaults.BuildingLibrary.wallCoverLimit
         if (over < columns) return@LaunchedEffect
@@ -592,28 +592,40 @@ private fun TrimScrolledRows(gridState: LazyGridState, shown: SnapshotStateList<
     }
 }
 
+private data class LoadedWallTile(val gameId: Long, val image: ImageBitmap)
+
 @Composable
 private fun rememberLoadedWallTiles(
     tiles: List<LibraryWallTile>,
     widthPx: Int,
     heightPx: Int
-): SnapshotStateList<LibraryWallTile> {
+): SnapshotStateList<LoadedWallTile> {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
-    val loaded = remember { mutableStateListOf<LibraryWallTile>() }
+    val loaded = remember { mutableStateListOf<LoadedWallTile>() }
     val requested = remember { HashSet<Long>() }
-    val ready = remember { Channel<LibraryWallTile>(Channel.UNLIMITED) }
+    val waiting = remember { ArrayDeque<LoadedWallTile>() }
+    val arrived = remember { Channel<Unit>(Channel.CONFLATED) }
     LaunchedEffect(tiles) {
         tiles.filter { requested.add(it.gameId) }.forEach { tile ->
             scope.launch {
                 val result = context.imageLoader.execute(wallRequest(context, tile, widthPx, heightPx))
-                if (result is SuccessResult) ready.trySend(tile)
+                val bitmap = (result as? SuccessResult)?.drawable?.let { it as? BitmapDrawable }?.bitmap
+                    ?: return@launch
+                waiting.addLast(LoadedWallTile(tile.gameId, bitmap.asImageBitmap()))
+                while (waiting.size > ComponentDefaults.BuildingLibrary.wallRevealBacklog) waiting.removeFirst()
+                arrived.trySend(Unit)
             }
         }
     }
-    LaunchedEffect(ready) {
-        for (tile in ready) {
-            loaded.add(tile)
+    LaunchedEffect(arrived) {
+        while (true) {
+            val next = waiting.removeFirstOrNull()
+            if (next == null) {
+                arrived.receive()
+                continue
+            }
+            loaded.add(next)
             delay(ComponentDefaults.BuildingLibrary.wallSpawnStepMs.toLong())
         }
     }
@@ -627,18 +639,16 @@ private fun wallRequest(context: Context, tile: LibraryWallTile, widthPx: Int, h
         .build()
 
 @Composable
-private fun WallTile(tile: LibraryWallTile, widthPx: Int, heightPx: Int, animate: Boolean) {
-    val context = LocalContext.current
-    val progress = remember(tile.gameId) { Animatable(if (animate) 0f else 1f) }
-    LaunchedEffect(tile.gameId) {
+private fun WallTile(loaded: LoadedWallTile, animate: Boolean) {
+    val progress = remember(loaded.gameId) { Animatable(if (animate) 0f else 1f) }
+    LaunchedEffect(loaded.gameId) {
         if (progress.value < 1f) {
             progress.animateTo(1f, tween(ComponentDefaults.AutoGrid.entryMs, easing = Motion.argosyEase))
         }
     }
     val startScale = ComponentDefaults.AutoGrid.entryStartScale
-    val request = remember(tile, widthPx, heightPx) { wallRequest(context, tile, widthPx, heightPx) }
-    AsyncImage(
-        model = request,
+    Image(
+        bitmap = loaded.image,
         contentDescription = null,
         contentScale = ContentScale.Crop,
         modifier = Modifier

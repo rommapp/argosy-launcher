@@ -469,6 +469,7 @@ object ComponentDefaults {
         const val wallCoverLimit = 150
         const val wallBatchMs = 250
         const val wallSpawnStepMs = 120
+        const val wallRevealBacklog = 24
         const val wallFollowPerSecond = 3
         const val coverAspectRatio = 0.75f
         const val wallFadeHeightRatio = 0.16f

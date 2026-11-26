@@ -133,7 +133,7 @@ class EmulatorConfigReaderTest {
         assertEquals(ConfigFileState.BLOCKED, snapshot.file(Armsx2ConfigSpec.PREFS).state)
         assertEquals("/data/data/com.armsx2/shared_prefs/ARMSX2.xml", snapshot.file(Armsx2ConfigSpec.PREFS).path)
         assertEquals("auto", snapshot.option("config.global", "renderer").raw)
-        assertTrue(snapshot.option("config.global", "renderer").isDefault)
+        assertFalse(snapshot.option("config.global", "renderer").isDefault)
         assertTrue(snapshot.otherKeys.none { it.section == "global" && it.key == "renderer" })
     }
 
@@ -151,7 +151,7 @@ class EmulatorConfigReaderTest {
         assertEquals(listOf("/data/data/com.armsx2/shared_prefs/ARMSX2.xml"), paths)
         assertEquals(ConfigFileState.READ, snapshot.file(Armsx2ConfigSpec.PREFS).state)
         assertEquals("vulkan", snapshot.option("config.global", "renderer").raw)
-        assertFalse(snapshot.option("config.global", "renderer").isDefault)
+        assertTrue(snapshot.option("config.global", "renderer").isDefault)
     }
 
     @Test

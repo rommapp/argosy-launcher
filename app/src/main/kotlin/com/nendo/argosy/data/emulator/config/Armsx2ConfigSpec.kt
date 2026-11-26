@@ -39,7 +39,7 @@ internal object Armsx2ConfigSpec {
         files = listOf(INI, PREFS, MIRROR),
         secrets = emptyList(),
         options = listOf(
-            option("renderer", ENUM, "auto", tokens("auto", "opengl", "vulkan", "software"), editable = true),
+            option("renderer", ENUM, "vulkan", tokens("auto", "opengl", "vulkan", "software"), editable = true),
             option("upscaleFloat", FLOAT, "1.0", editable = true, range = range(0.25, 5.0, 0.25)),
             option("customDriverId", STRING, ""),
             option(

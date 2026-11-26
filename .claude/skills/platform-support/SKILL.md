@@ -61,6 +61,38 @@ private data. Treat it as a build-time reference, not a discovery mechanism.
 - Check official GitHub/website for supported formats
 - Look for "supported formats" or "file types" documentation
 
+### Emulator config value tables (data/emulator/config/*ConfigSpec.kt)
+
+Argosy writes these tokens into the user's emulator config through root, so
+every editable ENUM table is checked against the upstream file that parses or
+writes it. Re-verify against a newer commit before adding or changing an entry.
+Last verified 2026-11-26:
+
+- Eden: git.eden-emu.dev/eden-emu/eden @ 1cd2ecd562c5679c3220129259b64d3f38b862cf,
+  src/common/settings_enums.h (ENUM ordinals) and src/common/settings.h
+  (labels, Android defaults). config.ini stores the ordinal.
+- DuckStation: github.com/stenzek/duckstation @ 2c79bd36a705b3b08ac7761257bbcff71bfc27ec,
+  src/core/settings.cpp (s_*_names tables, Load keys, ResolutionScale 0 =
+  automatic), src/core/settings.h (DEFAULT_*). settings.ini stores the name.
+- ARMSX2 Refresh (com.armsx2): github.com/ARMSX2/ARMSX2 @ 46f157520540a2538b8cb48f4695398ef2908025,
+  platforms/android/app/src/main/java/com/armsx2/config/Settings.kt (field
+  docs, defaults, toJson keys) and config/ConfigStore.kt ("config.global",
+  armsx2-settings.json mirror).
+- Dolphin: github.com/dolphin-emu/dolphin @ 44a1e006d172b426c489581ee1c362b82438438d,
+  Source/Core/VideoCommon/VideoConfig.h (AspectMode, ShaderCompilationMode,
+  TextureFilteringMode, AnisotropicFilteringMode = -1..4) and
+  Source/Core/Core/Config/GraphicsSettings.cpp (sections, keys, defaults).
+- Cemu: github.com/cemu-project/Cemu @ 2f49c079da1d50b85cea0ed99aedda58846b3523,
+  src/config/CemuConfig.h (enums), src/config/CemuConfig.cpp (XML element
+  names, load fallbacks; UpscaleFilter loads as bicubic Hermite),
+  src/Cafe/HW/Latte/Renderer/Vulkan/SwapchainInfoVk.h (VSync 0..3).
+- Vita3K: github.com/Vita3K/Vita3K @ aee471327b972380f4377e49b762f179c6a0a8e3,
+  vita3k/config/include/config/config.h (keys, defaults, overlay and
+  screenshot enums) and
+  android/app/src/main/java/org/vita3k/emulator/ui/screens/settings/SettingsSections.kt
+  (screen-filter, memory-mapping and anisotropy tokens). memory-mapping
+  options are device-gated by supportedMemoryMappingMask upstream.
+
 ---
 
 ## Verification Checklist
@@ -203,6 +235,7 @@ Known traps:
 - **Arcade ROMs stay zipped** - DO NOT EXTRACT (romset zips are the loadable unit).
 - **Local platforms**: android, steam, ios are launcher-local with fixed negative IDs via `localPlatformIdMap`; do not treat them as emulated platforms. They are not uniformly extension-free: `android` carries `setOf("apk", "xapk")`, while `steam` and `ios` are `emptySet()`. Do not "clean up" the android extensions.
 - **`vice_x64sc` has two different display names on purpose**: `RetroArchCore("vice_x64sc", "VICE x64 (Accurate)")` in the user-facing core list, and `"vice_x64sc" to "VICE x64sc"` in the map used for on-disk RetroArch folder resolution. The second is upstream-exact and must match RetroArch's own display name; renaming it to match the first breaks path resolution. This is the exception to the "fix the display name" instruction above - check which map you are editing.
+- **SwanStation** (verified 2026-11-26 against libretro-core-info `swanstation_libretro.info` @ de2472e24f25, libretro/swanstation @ 631f0fb31b80, and the arm64-v8a buildbot listing, which ships `swanstation_libretro_android.so.zip`). There is no docs.libretro.com page, it returns a 404. The info file lists five firmware files, all optional: `psxonpsp660.bin`, `scph5500.bin`, `scph5501.bin`, `scph5502.bin` and `ps1_rom.bin`. `psxonpsp660.bin` and `ps1_rom.bin` are real values of the `swanstation_BIOS_PathNTSCJ`/`NTSCU`/`PAL` options in `src/libretro/libretro_core_options.h`, so they are not stray entries copied from Beetle. Renderer tokens are `Auto`/`OpenGL`/`Vulkan`/`Software`, case-sensitive. Controller info lives in `retro_set_environment` in `src/libretro/libretro_host_interface.cpp`. Ports 0-1 offer `pads`, which include GunCon. Ports 2-3 offer `pads_mt`, which has no GunCon. The info file sets `savestate_features = "basic"` and has no netplay line, so netplay stays UNSUPPORTED. RetroAchievements lists SwanStation as a supported PlayStation core with no notes (docs.retroachievements.org/general/emulator-support-and-issues.html).
 
 ---
 

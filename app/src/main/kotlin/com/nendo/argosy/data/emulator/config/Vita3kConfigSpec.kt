@@ -43,16 +43,15 @@ internal object Vita3kConfigSpec {
             option("async-pipeline-compilation", BOOL, "true", editable = true),
             option(
                 "memory-mapping", ENUM, "double-buffer",
-                tokens("disabled", "double-buffer", "external-host", "page-table", "native-buffer"),
-                editable = true
+                tokens("disabled", "double-buffer", "external-host", "page-table", "native-buffer")
             ),
             option("high-accuracy", BOOL, "false", editable = true),
             option("cpu-backend", ENUM, "Dynarmic", tokens("Dynarmic", "Unicorn")),
             option("cpu-opt", BOOL, "true", editable = true),
             option("cpu-unsafe", BOOL, "false", editable = true),
             option("performance-overlay", BOOL, "false", editable = true),
-            option("performance-overlay-detail", ENUM, "1", ordinals("Min", "Low", "Medium", "Max"), editable = true),
-            option("performance-overlay-position", ENUM, "1", ordinals("TL", "TC", "TR", "BL", "BC", "BR"), editable = true),
+            option("performance-overlay-detail", ENUM, "0", ordinals("Min", "Low", "Medium", "Max"), editable = true),
+            option("performance-overlay-position", ENUM, "0", ordinals("TL", "TC", "TR", "BL", "BC", "BR"), editable = true),
             option("audio-volume", INT, "100", editable = true, range = range(0.0, 100.0, 5.0)),
             option("ngs-enable", BOOL, "true", editable = true),
             option("sys-lang", INT, "1", editable = true, range = range(0.0, 19.0)),

@@ -28,6 +28,8 @@ import com.nendo.argosy.data.sync.SyncOperation
 import com.nendo.argosy.data.sync.SyncQueueManager
 import com.nendo.argosy.data.sync.SyncStatus
 import com.nendo.argosy.util.Logger
+import com.nendo.argosy.data.remote.romm.RomMSave
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.flow.first
@@ -502,6 +504,7 @@ class SaveSyncOrchestrator @Inject constructor(
             return@withContext 0
         }
 
+        val serverSavesByGame = mutableMapOf<Long, List<RomMSave>?>()
         val actionable = pendingDownloads.mapNotNull { entity ->
             val game = gameDao.getById(entity.gameId) ?: return@mapNotNull null
             if (game.localPath == null) {
@@ -513,6 +516,11 @@ class SaveSyncOrchestrator @Inject constructor(
                 if (hold is ServerSaveHold.Superseded && entity.syncStatus == SaveSyncEntity.STATUS_SERVER_NEWER) {
                     saveSyncDao.upsert(entity.copy(syncStatus = SaveSyncEntity.STATUS_SYNCED))
                 }
+                return@mapNotNull null
+            }
+            val wouldConflict = localMovedSinceUpload(entity, entity.gameId, entity.emulatorId) ||
+                holdsUntrackedLocalSave(entity, game)
+            if (wouldConflict && settleWhenDiskMatchesServer(entity, game, serverSavesByGame)) {
                 return@mapNotNull null
             }
             if (localMovedSinceUpload(entity, entity.gameId, entity.emulatorId)) {
@@ -644,6 +652,53 @@ class SaveSyncOrchestrator @Inject constructor(
         }
         return saveCacheManager.get().probeLocalSave(path, entity.gameId, entity.emulatorId) !is SaveCacheManager.LocalSaveProbe.Absent
     }
+
+    private suspend fun settleWhenDiskMatchesServer(
+        entity: SaveSyncEntity,
+        game: GameEntity,
+        serverSavesByGame: MutableMap<Long, List<RomMSave>?>
+    ): Boolean {
+        val path = entity.localSavePath ?: return false
+        val rommId = game.rommId ?: return false
+        if (!fileAccessLayer.exists(path)) return false
+        val serverSaves = serverSavesByGame.getOrPut(game.id) {
+            try {
+                apiClient.get().checkSavesForGame(game.id, rommId)
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                Logger.warn(TAG, "[SaveSync] DOWNLOAD gameId=${game.id} | Server saves unavailable for the conflict check: ${e.message}")
+                null
+            }
+        } ?: return false
+        val romBaseName = game.localPath?.let { File(it).nameWithoutExtension }
+        val bucket = saveBucketOf(entity.channelName, romBaseName)
+        val newest = serverSaves
+            .filter { !SaveSyncApiClient.isStateShapedSave(it) && saveBucketOf(it.slot, romBaseName) == bucket }
+            .maxByOrNull { SaveSyncApiClient.parseTimestamp(it.updatedAt) }
+            ?: return false
+        val serverHash = newest.contentHash ?: return false
+        val liveHash = saveCacheManager.get().calculateLocalSaveHash(path, game.id, entity.emulatorId) ?: return false
+        if (liveHash != serverHash) return false
+        saveSyncDao.upsert(
+            entity.copy(
+                syncStatus = SaveSyncEntity.STATUS_SYNCED,
+                rommSaveId = newest.id,
+                serverUpdatedAt = SaveSyncApiClient.parseTimestamp(newest.updatedAt),
+                lastUploadedHash = liveHash,
+                localContentHash = liveHash
+            )
+        )
+        Logger.info(
+            TAG,
+            "[SaveSync] DOWNLOAD gameId=${game.id} channel=${entity.channelName} | Disk already holds server save ${newest.id}, marked synced without writing"
+        )
+        return true
+    }
+
+    private fun saveBucketOf(channelName: String?, romBaseName: String?): String =
+        if (SaveSyncApiClient.isLatestBucket(channelName, romBaseName)) SaveSyncApiClient.AUTOSAVE_SLOT_NAME
+        else channelName.orEmpty()
 
     private suspend fun localMovedSinceUpload(
         existing: SaveSyncEntity?,

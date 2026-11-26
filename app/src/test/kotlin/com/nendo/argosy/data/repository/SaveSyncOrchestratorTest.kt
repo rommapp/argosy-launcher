@@ -260,6 +260,56 @@ class SaveSyncOrchestratorTest {
     }
 
     @Test
+    fun `a disk already holding the server's newest save is marked synced without a write`() = runTest {
+        val entity = makeSyncEntity(id = 1L, gameId = 1L).copy(
+            localSavePath = "/saves/game.srm",
+            lastUploadedHash = "old-transfer",
+            localContentHash = "old-transfer"
+        )
+        coEvery { saveSyncDao.getPendingDownloads(any()) } returns listOf(entity)
+        every { fileAccessLayer.exists("/saves/game.srm") } returns true
+        coEvery { saveCacheManager.calculateLocalSaveHash("/saves/game.srm", 1L, "yuzu") } returns "current"
+        coEvery { mockApiClient.checkSavesForGame(1L, 200L) } returns listOf(
+            makeServerSave(10L, "game [old].srm", "2025-01-10T12:00:00Z").copy(contentHash = "old-transfer"),
+            makeServerSave(11L, "game [new].srm", "2025-01-15T12:00:00Z").copy(contentHash = "current")
+        )
+
+        val result = orchestrator.downloadPendingServerSaves()
+
+        assertEquals(0, result)
+        coVerify(exactly = 0) { mockApiClient.downloadSave(any(), any(), any(), any(), any(), any()) }
+        coVerify(exactly = 0) { saveSyncDao.upsert(match { it.syncStatus == SaveSyncEntity.STATUS_CONFLICT }) }
+        coVerify {
+            saveSyncDao.upsert(match {
+                it.id == 1L && it.syncStatus == SaveSyncEntity.STATUS_SYNCED && it.rommSaveId == 11L &&
+                    it.lastUploadedHash == "current"
+            })
+        }
+    }
+
+    @Test
+    fun `a disk matching only an older server save stays a conflict`() = runTest {
+        val entity = makeSyncEntity(id = 1L, gameId = 1L).copy(
+            localSavePath = "/saves/game.srm",
+            lastUploadedHash = "old-transfer",
+            localContentHash = "old-transfer"
+        )
+        coEvery { saveSyncDao.getPendingDownloads(any()) } returns listOf(entity)
+        every { fileAccessLayer.exists("/saves/game.srm") } returns true
+        coEvery { saveCacheManager.calculateLocalSaveHash("/saves/game.srm", 1L, "yuzu") } returns "current"
+        coEvery { mockApiClient.checkSavesForGame(1L, 200L) } returns listOf(
+            makeServerSave(10L, "game [old].srm", "2025-01-10T12:00:00Z").copy(contentHash = "current"),
+            makeServerSave(11L, "game [new].srm", "2025-01-15T12:00:00Z").copy(contentHash = "someone-else")
+        )
+
+        val result = orchestrator.downloadPendingServerSaves()
+
+        assertEquals(0, result)
+        coVerify(exactly = 0) { mockApiClient.downloadSave(any(), any(), any(), any(), any(), any()) }
+        coVerify { saveSyncDao.upsert(match { it.id == 1L && it.syncStatus == SaveSyncEntity.STATUS_CONFLICT }) }
+    }
+
+    @Test
     fun `a save on disk with no sync record is left as a conflict rather than overwritten`() = runTest {
         val untracked = makeSyncEntity(id = 1L, gameId = 1L)
         coEvery { saveSyncDao.getPendingDownloads(any()) } returns listOf(untracked)

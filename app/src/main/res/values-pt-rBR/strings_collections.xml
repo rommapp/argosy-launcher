@@ -62,13 +62,10 @@
     <string name="collections_screen_hint_hold_swap_screens">Segure para trocar telas</string>
 
     <string name="collections_detail_loading">Carregando&#8230;</string>
-    <string name="collections_detail_hint_search_open">Abrir</string>
-    <string name="collections_detail_hint_search_close">Fechar busca</string>
     <string name="collections_detail_keyboard_submit">Buscar</string>
     <string name="collections_detail_hint_navigate">Navegar</string>
     <string name="collections_detail_hint_open">Abrir</string>
     <string name="collections_detail_hint_back">Voltar</string>
-    <string name="collections_detail_hint_search">Buscar</string>
     <string name="collections_detail_hint_unpin">Desfixar</string>
     <string name="collections_detail_hint_pin">Fixar</string>
     <string name="collections_detail_hint_jump">Saltar</string>
@@ -79,9 +76,13 @@
     <string name="collections_detail_hint_hold_swap_screens">Segure para trocar telas</string>
     <string name="collections_detail_hint_refreshing">Atualizando&#8230;</string>
     <string name="collections_detail_hint_refresh">Atualizar</string>
+    <string name="collections_detail_hint_filter">Filtrar</string>
+    <string name="collections_detail_active_filters_label">Filtros:</string>
+    <string name="collections_detail_empty_filtered_title">Nenhum jogo corresponde a esses filtros</string>
+    <string name="collections_detail_empty_filtered_body">Filtrado por %1$s</string>
+    <string name="collections_detail_empty_filtered_hint">Alterar filtros</string>
     <string name="collections_detail_back_description">Voltar</string>
     <string name="collections_detail_search_placeholder">Buscar em %1$s</string>
-    <string name="collections_detail_close_search_description">Fechar busca</string>
     <string name="collections_detail_search_description">Buscar</string>
     <string name="collections_detail_empty_title">Nenhum jogo nesta coleção</string>
     <string name="collections_detail_empty_subtitle">Adicione jogos da biblioteca ou dos detalhes do jogo</string>
@@ -123,18 +124,20 @@
     </plurals>
 
     <string name="collections_category_loading">Carregando&#8230;</string>
-    <string name="collections_category_hint_search_open">Abrir</string>
-    <string name="collections_category_hint_search_close">Fechar busca</string>
     <string name="collections_category_keyboard_submit">Buscar</string>
     <string name="collections_category_hint_navigate">Navegar</string>
     <string name="collections_category_hint_open">Abrir</string>
     <string name="collections_category_hint_back">Voltar</string>
-    <string name="collections_category_hint_search">Buscar</string>
     <string name="collections_category_hint_unpin">Desfixar</string>
     <string name="collections_category_hint_pin">Fixar</string>
     <string name="collections_category_hint_jump">Saltar</string>
     <string name="collections_category_hint_refreshing">Atualizando&#8230;</string>
     <string name="collections_category_hint_refresh">Atualizar</string>
+    <string name="collections_category_hint_filter">Filtrar</string>
+    <string name="collections_category_active_filters_label">Filtros:</string>
+    <string name="collections_category_empty_filtered_title">Nenhum jogo corresponde a esses filtros</string>
+    <string name="collections_category_empty_filtered_body">Filtrado por %1$s</string>
+    <string name="collections_category_empty_filtered_hint">Alterar filtros</string>
     <string name="collections_category_hint_swap_screens">Trocar telas</string>
     <string name="collections_category_hint_open_hold_options">Abrir, segure para opções</string>
     <string name="collections_category_hint_options">Opções</string>
@@ -155,7 +158,6 @@
     </plurals>
     <string name="collections_category_back_description">Voltar</string>
     <string name="collections_category_search_placeholder">Buscar em %1$s</string>
-    <string name="collections_category_close_search_description">Fechar busca</string>
     <string name="collections_category_search_description">Buscar</string>
     <string name="collections_category_empty_title">Nenhum jogo nesta categoria</string>
     <plurals name="collections_category_header_game_count">
@@ -163,8 +165,6 @@
         <item quantity="many">%d jogos</item>
         <item quantity="other">%d jogos</item>
     </plurals>
-    <string name="collections_detail_platform_unknown">Desconhecida</string>
-    <string name="collections_category_platform_unknown">Desconhecida</string>
 
     <string name="downloads_empty_title">Nenhum download</string>
     <string name="downloads_empty_subtitle">Os downloads aparecerão aqui</string>

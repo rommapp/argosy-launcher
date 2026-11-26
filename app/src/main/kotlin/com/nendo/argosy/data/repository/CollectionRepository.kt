@@ -44,6 +44,12 @@ class CollectionRepository @Inject constructor(
     suspend fun getNamesWithGamesByType(type: CollectionType): List<String> =
         collectionDao.getNamesWithGamesByType(type)
 
+    suspend fun getNamesByTypeForGames(type: CollectionType, gameIds: Collection<Long>): List<String> =
+        gameIds.chunked(NAME_LOOKUP_CHUNK)
+            .flatMap { collectionDao.getNamesByTypeForGames(type, it) }
+            .distinct()
+            .sorted()
+
     suspend fun getGamesInCollection(collectionId: Long): List<GameEntity> {
         val ids = collectionDao.getGameIdsInCollection(collectionId)
         val byId = gameDao.getByIdsChunked(ids).associateBy { it.id }
@@ -68,3 +74,5 @@ class CollectionRepository @Inject constructor(
     suspend fun removeGameFromCollection(collectionId: Long, gameId: Long) =
         collectionDao.removeGameFromCollection(collectionId, gameId)
 }
+
+private const val NAME_LOOKUP_CHUNK = 900

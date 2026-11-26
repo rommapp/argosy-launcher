@@ -1005,9 +1005,6 @@ class GameRepository @Inject constructor(
                 .mapTo(HashSet()) { it.id }
         }
 
-    private fun splitRegions(joined: String?): List<String> =
-        joined?.split(",")?.map { it.trim() }?.filter { it.isNotEmpty() } ?: emptyList()
-
     fun observeHiddenByPlatformList(platformId: Long): Flow<List<GameListItem>> = flow {
         emitAll(gameDao.observeHiddenByPlatformList(platformId, hiddenOwnerId()))
     }
@@ -1259,6 +1256,9 @@ data class LibraryLinkSummary(
 
 private val BRACKETED_TAG = Regex("""\s*[(\[][^)\]]*[)\]]""")
 private val NON_ALPHANUMERIC = Regex("[^a-z0-9]+")
+
+fun splitRegions(joined: String?): List<String> =
+    joined?.split(",")?.map { it.trim() }?.filter { it.isNotEmpty() } ?: emptyList()
 
 internal fun titleKey(title: String): String =
     com.nendo.argosy.util.SearchNormalizer.normalize(title.replace(BRACKETED_TAG, ""))

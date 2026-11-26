@@ -58,13 +58,10 @@
     <string name="collections_screen_hint_hold_swap_screens">长按交换屏幕</string>
 
     <string name="collections_detail_loading">加载中&#8230;</string>
-    <string name="collections_detail_hint_search_open">打开</string>
-    <string name="collections_detail_hint_search_close">关闭搜索</string>
     <string name="collections_detail_keyboard_submit">搜索</string>
     <string name="collections_detail_hint_navigate">导航</string>
     <string name="collections_detail_hint_open">打开</string>
     <string name="collections_detail_hint_back">返回</string>
-    <string name="collections_detail_hint_search">搜索</string>
     <string name="collections_detail_hint_unpin">取消置顶</string>
     <string name="collections_detail_hint_pin">置顶</string>
     <string name="collections_detail_hint_jump">跳转</string>
@@ -75,9 +72,13 @@
     <string name="collections_detail_hint_hold_swap_screens">长按交换屏幕</string>
     <string name="collections_detail_hint_refreshing">正在刷新&#8230;</string>
     <string name="collections_detail_hint_refresh">刷新</string>
+    <string name="collections_detail_hint_filter">筛选</string>
+    <string name="collections_detail_active_filters_label">筛选：</string>
+    <string name="collections_detail_empty_filtered_title">没有符合筛选条件的游戏</string>
+    <string name="collections_detail_empty_filtered_body">筛选条件：%1$s</string>
+    <string name="collections_detail_empty_filtered_hint">更改筛选</string>
     <string name="collections_detail_back_description">返回</string>
     <string name="collections_detail_search_placeholder">搜索%1$s</string>
-    <string name="collections_detail_close_search_description">关闭搜索</string>
     <string name="collections_detail_search_description">搜索</string>
     <string name="collections_detail_empty_title">此合集中没有游戏</string>
     <string name="collections_detail_empty_subtitle">从游戏库或游戏详情中添加游戏</string>
@@ -113,18 +114,20 @@
     </plurals>
 
     <string name="collections_category_loading">加载中&#8230;</string>
-    <string name="collections_category_hint_search_open">打开</string>
-    <string name="collections_category_hint_search_close">关闭搜索</string>
     <string name="collections_category_keyboard_submit">搜索</string>
     <string name="collections_category_hint_navigate">导航</string>
     <string name="collections_category_hint_open">打开</string>
     <string name="collections_category_hint_back">返回</string>
-    <string name="collections_category_hint_search">搜索</string>
     <string name="collections_category_hint_unpin">取消置顶</string>
     <string name="collections_category_hint_pin">置顶</string>
     <string name="collections_category_hint_jump">跳转</string>
     <string name="collections_category_hint_refreshing">正在刷新&#8230;</string>
     <string name="collections_category_hint_refresh">刷新</string>
+    <string name="collections_category_hint_filter">筛选</string>
+    <string name="collections_category_active_filters_label">筛选：</string>
+    <string name="collections_category_empty_filtered_title">没有符合筛选条件的游戏</string>
+    <string name="collections_category_empty_filtered_body">筛选条件：%1$s</string>
+    <string name="collections_category_empty_filtered_hint">更改筛选</string>
     <string name="collections_category_hint_swap_screens">交换屏幕</string>
     <string name="collections_category_hint_open_hold_options">打开，长按查看选项</string>
     <string name="collections_category_hint_options">选项</string>
@@ -141,14 +144,11 @@
     </plurals>
     <string name="collections_category_back_description">返回</string>
     <string name="collections_category_search_placeholder">搜索%1$s</string>
-    <string name="collections_category_close_search_description">关闭搜索</string>
     <string name="collections_category_search_description">搜索</string>
     <string name="collections_category_empty_title">此分类中没有游戏</string>
     <plurals name="collections_category_header_game_count">
         <item quantity="other">%d个游戏</item>
     </plurals>
-    <string name="collections_detail_platform_unknown">未知</string>
-    <string name="collections_category_platform_unknown">未知</string>
 
 
     <string name="downloads_empty_title">暂无下载</string>

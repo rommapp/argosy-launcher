@@ -32,10 +32,8 @@ import com.nendo.argosy.data.local.entity.MediaLibraryEntity
 import com.nendo.argosy.data.local.entity.PlatformEntity
 import com.nendo.argosy.data.local.entity.getDisplayName
 import com.nendo.argosy.data.model.ActiveSort
-import com.nendo.argosy.data.model.GameSection
 import com.nendo.argosy.data.model.GameSource
 import com.nendo.argosy.data.model.SortOption
-import com.nendo.argosy.data.model.computeSections
 import com.nendo.argosy.data.preferences.BoxArtBorderStyle
 import com.nendo.argosy.data.preferences.GridDensity
 import com.nendo.argosy.data.preferences.LibraryLayout
@@ -49,7 +47,6 @@ import com.nendo.argosy.data.remote.romm.RomMRepository
 import com.nendo.argosy.data.remote.romm.RomMResult
 import com.nendo.argosy.data.model.SourceFilter
 import com.nendo.argosy.domain.model.LibraryLinkFilters
-import com.nendo.argosy.domain.model.PlayerCount
 import com.nendo.argosy.domain.model.PlayerCountBucket
 import com.nendo.argosy.ui.common.labelRes
 import com.nendo.argosy.domain.usecase.cache.RepairImageCacheUseCase
@@ -103,7 +100,6 @@ import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.Job
-import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
@@ -382,90 +378,22 @@ data class LibraryUiState(
     val focusedGame: LibraryGameUi?
         get() = games.getOrNull(focusedIndex)
 
-    val currentFilterCategory: FilterCategory
-        get() = FilterCategory.entries.getOrElse(filterCategoryIndex) { FilterCategory.SOURCE }
-
-    val filterLeadingStops: Int
-        get() = if (currentFilterCategory == FilterCategory.SEARCH) 1 else 0
-
-    val isFilterSearchFieldFocused: Boolean
-        get() = currentFilterCategory == FilterCategory.SEARCH && filterOptionIndex == 0
-
-    fun currentCategoryOptions(context: Context): List<String> =
-        when (currentFilterCategory) {
-            FilterCategory.SORT -> SortOption.entries.map { option ->
-                val directionIndicator = if (option == activeFilters.sort.option) {
-                    if (activeFilters.sort.descending) " v" else " ^"
-                } else ""
-                context.getString(option.labelRes) + directionIndicator
-            }
-            FilterCategory.SEARCH -> recentSearches
-            FilterCategory.SOURCE -> SourceFilter.entries.map { filter ->
-                val label = context.getString(filter.labelRes)
-                if (filter == SourceFilter.HIDDEN && hiddenGameCount > 0)
-                    "$label ($hiddenGameCount)"
-                else label
-            }
-            FilterCategory.PLATFORM -> filterOptions.platforms.map { it.label }
-            FilterCategory.GENRE -> filterOptions.genres
-            FilterCategory.REGION -> filterOptions.regions
-            FilterCategory.PLAYERS -> PlayerCountBucket.entries.map { context.getString(it.labelRes) }
-            FilterCategory.SERIES -> filterOptions.series
-        }
-
-    val isCurrentCategoryMultiSelect: Boolean
-        get() = currentFilterCategory !in listOf(
-            FilterCategory.SORT,
-            FilterCategory.SOURCE,
-            FilterCategory.SEARCH,
-            FilterCategory.PLAYERS
+    val filterPanel: FilterPanelState
+        get() = FilterPanelState(
+            activeFilters = activeFilters,
+            filterOptions = filterOptions,
+            categoryIndex = filterCategoryIndex,
+            optionIndex = filterOptionIndex,
+            recentSearches = recentSearches,
+            hiddenGameCount = hiddenGameCount
         )
 
-    val selectedSourceIndex: Int
-        get() = activeFilters.source.ordinal
-
-    val selectedSortIndex: Int
-        get() = activeFilters.sort.option.ordinal
-
-    val selectedPlayersIndex: Int
-        get() = activeFilters.players?.ordinal ?: -1
-
-    val selectedIndicesInCurrentCategory: Set<Int>
-        get() = when (currentFilterCategory) {
-            FilterCategory.PLATFORM -> {
-                val ids = activeFilters.platforms.map { it.id }.toSet()
-                filterOptions.platforms.indices.filter { filterOptions.platforms[it].id in ids }.toSet()
-            }
-            FilterCategory.GENRE -> indicesOf(filterOptions.genres, activeFilters.genres)
-            FilterCategory.REGION -> indicesOf(filterOptions.regions, activeFilters.regions)
-            FilterCategory.SERIES -> indicesOf(filterOptions.series, activeFilters.series)
-            FilterCategory.SORT,
-            FilterCategory.SEARCH,
-            FilterCategory.SOURCE,
-            FilterCategory.PLAYERS -> emptySet()
-        }
-
-    private fun indicesOf(options: List<String>, selected: Set<String>): Set<Int> =
-        options.indices.filter { options[it] in selected }.toSet()
-
-    val availableCategories: List<FilterCategory>
-        get() = FilterCategory.entries.filter { category ->
-            when (category) {
-                FilterCategory.SORT -> true
-                FilterCategory.SEARCH -> true
-                FilterCategory.SOURCE -> true
-                FilterCategory.PLATFORM -> filterOptions.platforms.isNotEmpty()
-                FilterCategory.GENRE -> filterOptions.genres.isNotEmpty()
-                FilterCategory.REGION -> filterOptions.regions.isNotEmpty()
-                FilterCategory.PLAYERS -> true
-                FilterCategory.SERIES -> filterOptions.series.isNotEmpty()
-            }
-        }
+    val currentFilterCategory: FilterCategory
+        get() = filterPanel.currentFilterCategory
 }
 
 private const val TAG = "LibraryVM"
 private const val MIN_SECTION_RAIL_LABELS = 3
-private const val FILTER_OPTION_PAGE = 5
 private const val COMPANION_EMPTY_FOCUS_SETTLE_MS = 150L
 
 sealed class LibraryEvent {
@@ -1205,22 +1133,10 @@ class LibraryViewModel @Inject constructor(
                 }
             }
 
-            val seriesIdsFlow = if (filters.series.isEmpty()) {
-                flowOf<Set<Long>?>(null)
-            } else {
-                collectionRepository.observeGameIdsByTypeAndNames(CollectionType.SERIES, filters.series.toList())
-                    .map<List<Long>, Set<Long>?> { it.toSet() }
-            }
-
-            val regionIdsFlow: Flow<Set<Long>?> = if (filters.regions.isEmpty()) {
-                flowOf(null)
-            } else {
-                gameRepository.observeGameIdsInRegions(filters.regions)
-            }
-
-            val source = combine(baseFlow, seriesIdsFlow, regionIdsFlow) { games, seriesIds, regionIds ->
-                Triple(games, seriesIds, regionIds)
-            }
+            val source = combine(
+                baseFlow,
+                observeLibraryFilterIds(filters, gameRepository, collectionRepository)
+            ) { games, ids -> games to ids }
                 .distinctUntilChanged()
                 .flowOn(listDispatcher)
 
@@ -1231,50 +1147,25 @@ class LibraryViewModel @Inject constructor(
                     emitAll(source)
                 }
                 .heldWhile(launchProgressTracker.launchLive)
-                .collectLatest { (games, seriesIds, regionIds) ->
+                .collectLatest { (games, ids) ->
                     val platformDisplayNames = cachedPlatformDisplayNames
-                    val (sections, gridItems) = withContext(listDispatcher) {
-                        val normalizedQuery = com.nendo.argosy.util.SearchNormalizer.normalize(filters.searchQuery)
-                        val platformIds = filters.platforms.map { it.id }.toSet()
-                        val filteredGames = games.filter { game ->
-                            val matchesSearch = filters.searchQuery.isEmpty() ||
-                                com.nendo.argosy.util.SearchNormalizer.normalize(game.title).contains(normalizedQuery)
-                            val matchesPlatform = platformIds.isEmpty() ||
-                                game.platformId in platformIds
-                            val matchesGenre = filters.genres.isEmpty() ||
-                                filters.genres.contains(game.genre)
-                            val matchesRegion = regionIds == null || game.id in regionIds
-                            val matchesPlayers = filters.players?.admits(PlayerCount.parse(game.players)) ?: true
-                            val matchesSeries = seriesIds == null || game.id in seriesIds
-                            matchesSearch && matchesPlatform && matchesGenre && matchesRegion &&
-                                matchesPlayers && matchesSeries
-                        }
-                        val sections = computeSections(filteredGames, filters.sort, sortPartition)
-                        var gameOffset = 0
-                        val gridItems = sections.flatMap { section ->
-                            val header = LibraryGridItem.Header(section.label, section.sidebarLabel)
-                            val gameItems = section.games.mapIndexed { i, game ->
-                                LibraryGridItem.Game(game.toUi(platformDisplayNames), gameIndex = gameOffset + i)
-                            }
-                            gameOffset += section.games.size
-                            listOf(header) + gameItems
-                        }
-                        sections to gridItems
+                    val listing = withContext(listDispatcher) {
+                        buildLibraryListing(games, filters, ids, sortPartition) { it.toUi(platformDisplayNames) }
                     }
-                    val sectionLabels = sections.map { it.sidebarLabel }
-                    val gamesList = gridItems.mapNotNull { (it as? LibraryGridItem.Game)?.game }
+                    val sectionLabels = listing.sectionLabels
+                    val gamesList = listing.games
 
-                    Log.d(TAG, "loadGames: ${games.size} total, ${gamesList.size} after filters, ${sections.size} sections")
+                    Log.d(TAG, "loadGames: ${games.size} total, ${gamesList.size} after filters, ${listing.sections.size} sections")
                     val siblingFocusIndex = settleSiblingFocus(gamesList.map { it.id })
                     _uiState.update { uiState ->
                         val shouldResetFocus = uiState.games.isEmpty()
                         val newFocusedIndex = siblingFocusIndex
                             ?: if (shouldResetFocus) 0 else uiState.focusedIndex.coerceAtMost((gamesList.size - 1).coerceAtLeast(0))
-                        val currentSectionLabel = computeSectionLabelForGameIndex(newFocusedIndex, sections)
+                        val currentSectionLabel = listing.sectionLabelForGameIndex(newFocusedIndex)
                         uiState.copy(
                             games = gamesList,
                             focusedIndex = newFocusedIndex,
-                            gridItems = gridItems,
+                            gridItems = listing.gridItems,
                             sectionLabels = sectionLabels,
                             currentSectionLabel = currentSectionLabel,
                             sectionRailFocusIndex = uiState.sectionRailFocusIndex
@@ -1290,15 +1181,6 @@ class LibraryViewModel @Inject constructor(
                     extractGradientsForVisibleGames(_uiState.value.focusedIndex)
                 }
         }
-    }
-
-    private fun computeSectionLabelForGameIndex(gameIndex: Int, sections: List<GameSection>): String {
-        var offset = 0
-        for (section in sections) {
-            if (gameIndex < offset + section.games.size) return section.sidebarLabel
-            offset += section.games.size
-        }
-        return sections.firstOrNull()?.sidebarLabel ?: ""
     }
 
     private fun updateCurrentSectionFromFocus() {
@@ -1842,39 +1724,18 @@ class LibraryViewModel @Inject constructor(
         }
     }
 
-    fun moveFilterCategoryFocus(delta: Int) {
+    private fun updateFilterPanel(transform: (FilterPanelState) -> FilterPanelState) {
         _uiState.update { state ->
-            val categories = state.availableCategories
-            val currentCategoryIndex = categories.indexOfFirst { it == state.currentFilterCategory }
-            val newCategoryIndex = (currentCategoryIndex + delta).coerceIn(0, categories.size - 1)
-            val newCategory = categories.getOrElse(newCategoryIndex) { FilterCategory.SOURCE }
-            val globalIndex = FilterCategory.entries.indexOf(newCategory)
-
-            state.copy(
-                filterCategoryIndex = globalIndex,
-                filterOptionIndex = 0
-            )
+            val panel = transform(state.filterPanel)
+            state.copy(filterCategoryIndex = panel.categoryIndex, filterOptionIndex = panel.optionIndex)
         }
     }
 
-    fun setFilterCategory(category: FilterCategory) {
-        val globalIndex = FilterCategory.entries.indexOf(category)
-        _uiState.update { state ->
-            state.copy(
-                filterCategoryIndex = globalIndex,
-                filterOptionIndex = 0
-            )
-        }
-    }
+    fun moveFilterCategoryFocus(delta: Int) = updateFilterPanel { it.movedCategory(delta) }
 
-    fun moveFilterOptionFocus(delta: Int) {
-        _uiState.update { state ->
-            val stopCount = state.currentCategoryOptions(context).size + state.filterLeadingStops
-            if (stopCount == 0) return@update state
-            val newIndex = (state.filterOptionIndex + delta).coerceIn(0, stopCount - 1)
-            state.copy(filterOptionIndex = newIndex)
-        }
-    }
+    fun setFilterCategory(category: FilterCategory) = updateFilterPanel { it.withCategory(category) }
+
+    fun moveFilterOptionFocus(delta: Int) = updateFilterPanel { it.movedOption(delta) }
 
     fun openFilterSearchKeyboard() {
         _uiState.update { it.copy(filterOptionIndex = 0) }
@@ -1882,84 +1743,18 @@ class LibraryViewModel @Inject constructor(
     }
 
     fun confirmFilterSelection() {
-        val state = _uiState.value
-        val category = state.currentFilterCategory
-        if (state.isFilterSearchFieldFocused) {
+        val panel = _uiState.value.filterPanel
+        if (panel.isFilterSearchFieldFocused) {
             openFilterSearchKeyboard()
             return
         }
-        val optionIndex = state.filterOptionIndex - state.filterLeadingStops
-        val options = state.currentCategoryOptions(context)
-
-        val newFilters = when (category) {
-            FilterCategory.SORT -> {
-                val selectedOption = SortOption.entries.getOrNull(optionIndex) ?: return
-                val currentSort = state.activeFilters.sort
-                val newSort = if (selectedOption == currentSort.option) {
-                    currentSort.copy(descending = !currentSort.descending)
-                } else {
-                    ActiveSort(option = selectedOption, descending = selectedOption.defaultDescending)
-                }
-                state.activeFilters.copy(sort = newSort)
-            }
-            FilterCategory.SEARCH -> {
-                val query = options.getOrNull(optionIndex) ?: return
-                state.activeFilters.copy(searchQuery = query)
-            }
-            FilterCategory.SOURCE -> {
-                val source = SourceFilter.entries.getOrElse(optionIndex) { SourceFilter.ALL }
-                state.activeFilters.copy(source = source)
-            }
-            FilterCategory.PLATFORM -> {
-                val platform = state.filterOptions.platforms.getOrNull(optionIndex) ?: return
-                val current = state.activeFilters.platforms
-                val updated = if (platform in current) current - platform else current + platform
-                state.activeFilters.copy(platforms = updated)
-            }
-            FilterCategory.GENRE -> {
-                val genre = options.getOrNull(optionIndex) ?: return
-                val currentGenres = state.activeFilters.genres
-                val newGenres = if (genre in currentGenres) currentGenres - genre else currentGenres + genre
-                state.activeFilters.copy(genres = newGenres)
-            }
-            FilterCategory.REGION -> {
-                val region = options.getOrNull(optionIndex) ?: return
-                val current = state.activeFilters.regions
-                val updated = if (region in current) current - region else current + region
-                state.activeFilters.copy(regions = updated)
-            }
-            FilterCategory.PLAYERS -> {
-                val bucket = PlayerCountBucket.entries.getOrNull(optionIndex) ?: return
-                val updated = if (bucket == state.activeFilters.players) null else bucket
-                state.activeFilters.copy(players = updated)
-            }
-            FilterCategory.SERIES -> {
-                val series = options.getOrNull(optionIndex) ?: return
-                val current = state.activeFilters.series
-                val updated = if (series in current) current - series else current + series
-                state.activeFilters.copy(series = updated)
-            }
-        }
-
+        val newFilters = panel.confirmedFilters() ?: return
         _uiState.update { it.copy(activeFilters = newFilters) }
         loadGames()
     }
 
     fun clearCurrentCategoryFilters() {
-        val state = _uiState.value
-        val category = state.currentFilterCategory
-
-        val newFilters = when (category) {
-            FilterCategory.SORT -> state.activeFilters.copy(sort = ActiveSort())
-            FilterCategory.SEARCH -> state.activeFilters.copy(searchQuery = "")
-            FilterCategory.SOURCE -> state.activeFilters.copy(source = SourceFilter.ALL)
-            FilterCategory.PLATFORM -> state.activeFilters.copy(platforms = emptySet())
-            FilterCategory.GENRE -> state.activeFilters.copy(genres = emptySet())
-            FilterCategory.REGION -> state.activeFilters.copy(regions = emptySet())
-            FilterCategory.PLAYERS -> state.activeFilters.copy(players = null)
-            FilterCategory.SERIES -> state.activeFilters.copy(series = emptySet())
-        }
-
+        val newFilters = _uiState.value.filterPanel.clearedCategoryFilters()
         _uiState.update { it.copy(activeFilters = newFilters) }
         loadGames()
     }

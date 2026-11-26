@@ -1,9 +1,13 @@
 package com.nendo.argosy.ui.screens.collections.dialogs
 
+import com.nendo.argosy.data.model.GameSource
 import com.nendo.argosy.ui.common.GameListDetails
 import com.nendo.argosy.ui.common.RunningGameUi
-import com.nendo.argosy.ui.screens.collections.CollectionGameUi
+import com.nendo.argosy.ui.screens.collections.GameSetListing
 import com.nendo.argosy.ui.screens.collections.VirtualCategoryUiState
+import com.nendo.argosy.ui.screens.library.LibraryGameUi
+import com.nendo.argosy.ui.screens.library.LibraryGridItem
+import com.nendo.argosy.ui.screens.library.LibraryListing
 import com.nendo.argosy.ui.screens.running.RunningMoveTarget
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -25,16 +29,32 @@ class CollectionOptionRowsTest {
         order = 0
     )
 
-    private fun game(id: Long, isDownloaded: Boolean) = CollectionGameUi(
+    private fun game(id: Long, isDownloaded: Boolean) = LibraryGameUi(
         id = id,
         title = "Game $id",
+        sortTitle = "game $id",
         platformId = 7,
         platformSlug = "psp",
         platformDisplayName = "PSP",
-        details = GameListDetails(),
+        coverPath = null,
+        source = GameSource.ROMM_SYNCED,
         isFavorite = false,
         isDownloaded = isDownloaded,
-        rommId = id
+        isRommGame = true,
+        isAndroidApp = false,
+        emulatorName = null,
+        listDetails = GameListDetails()
+    )
+
+    private fun categoryWith(vararg games: LibraryGameUi) = VirtualCategoryUiState(
+        listing = GameSetListing(
+            listing = LibraryListing(
+                gridItems = games.mapIndexed { index, game -> LibraryGridItem.Game(game, index) }
+            ),
+            totalCount = games.size,
+            rommGameIds = games.map { it.id }.toSet(),
+            isLoaded = true
+        )
     )
 
     @Test
@@ -79,7 +99,7 @@ class CollectionOptionRowsTest {
 
     @Test
     fun `a virtual category with everything downloaded offers close for a running game`() {
-        val state = VirtualCategoryUiState(games = listOf(game(1, isDownloaded = true)))
+        val state = categoryWith(game(1, isDownloaded = true))
 
         assertEquals(
             listOf(
@@ -92,14 +112,14 @@ class CollectionOptionRowsTest {
 
     @Test
     fun `a virtual category with everything downloaded and no running game has no rows`() {
-        val state = VirtualCategoryUiState(games = listOf(game(1, isDownloaded = true)))
+        val state = categoryWith(game(1, isDownloaded = true))
 
         assertTrue(state.optionRowsFor(null, listOf(target)).isEmpty())
     }
 
     @Test
     fun `a virtual category with a download pending offers download all only`() {
-        val state = VirtualCategoryUiState(games = listOf(game(1, isDownloaded = false)))
+        val state = categoryWith(game(1, isDownloaded = false))
 
         assertEquals(
             listOf(CollectionOptionRow.Action(CollectionOption.DOWNLOAD_ALL)),

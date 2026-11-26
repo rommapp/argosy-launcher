@@ -121,18 +121,12 @@
 
     <!-- === CollectionDetailScreen.kt === -->
     <string name="collections_detail_loading">Loading&#8230;</string>
-    <!-- Footer hint, search active. Verb: open the focused game. -->
-    <string name="collections_detail_hint_search_open">Open</string>
-    <string name="collections_detail_hint_search_close">Close Search</string>
     <!-- Enter key of the on-screen controller keyboard while searching a collection. Verb. -->
     <string name="collections_detail_keyboard_submit">Search</string>
     <string name="collections_detail_hint_navigate">Navigate</string>
-    <!-- Footer hint, search inactive. Verb: open the focused game. Distinct key from
-         collections_detail_hint_search_open (different code branch), never reused. -->
+    <!-- Footer hint. Verb: open the focused game. -->
     <string name="collections_detail_hint_open">Open</string>
     <string name="collections_detail_hint_back">Back</string>
-    <!-- Footer hint. Verb: open search. -->
-    <string name="collections_detail_hint_search">Search</string>
     <string name="collections_detail_hint_unpin">Unpin</string>
     <string name="collections_detail_hint_pin">Pin</string>
     <!-- Footer hint. Verb: jump between alphabet sections. -->
@@ -149,12 +143,20 @@
     <string name="collections_detail_hint_hold_swap_screens">Hold to Swap Screens</string>
     <string name="collections_detail_hint_refreshing">Refreshing&#8230;</string>
     <string name="collections_detail_hint_refresh">Refresh</string>
+    <!-- Footer hint. Verb: open the filter and sort panel for the collection's games. -->
+    <string name="collections_detail_hint_filter">Filter</string>
+    <!-- Label in front of the chips naming the filters in force on the collection. -->
+    <string name="collections_detail_active_filters_label">Filters:</string>
+    <!-- Empty state when the collection has games but the active filters hide all of them. -->
+    <string name="collections_detail_empty_filtered_title">No games match these filters</string>
+    <!-- %1$s is a short summary of the active filters, for example "Genre: RPG". -->
+    <string name="collections_detail_empty_filtered_body">Filtered by %1$s</string>
+    <!-- Shown beside the filter button glyph in the filtered empty state. Verb phrase. -->
+    <string name="collections_detail_empty_filtered_hint">Change filters</string>
     <!-- Icon button. Verb: go back. -->
     <string name="collections_detail_back_description">Back</string>
     <!-- Search field placeholder; %1$s is the collection's name. -->
     <string name="collections_detail_search_placeholder">Search %1$s</string>
-    <!-- Icon button. Verb: close the search field. -->
-    <string name="collections_detail_close_search_description">Close search</string>
     <!-- Icon button. Verb: open the search field. -->
     <string name="collections_detail_search_description">Search</string>
     <string name="collections_detail_empty_title">No games in this collection</string>
@@ -209,19 +211,26 @@
 
     <!-- === VirtualCategoryScreen.kt === -->
     <string name="collections_category_loading">Loading&#8230;</string>
-    <string name="collections_category_hint_search_open">Open</string>
-    <string name="collections_category_hint_search_close">Close Search</string>
     <!-- Enter key of the on-screen controller keyboard while searching a category's games. Verb. -->
     <string name="collections_category_keyboard_submit">Search</string>
     <string name="collections_category_hint_navigate">Navigate</string>
     <string name="collections_category_hint_open">Open</string>
     <string name="collections_category_hint_back">Back</string>
-    <string name="collections_category_hint_search">Search</string>
     <string name="collections_category_hint_unpin">Unpin</string>
     <string name="collections_category_hint_pin">Pin</string>
     <string name="collections_category_hint_jump">Jump</string>
     <string name="collections_category_hint_refreshing">Refreshing&#8230;</string>
     <string name="collections_category_hint_refresh">Refresh</string>
+    <!-- Footer hint. Verb: open the filter and sort panel for the category's games. -->
+    <string name="collections_category_hint_filter">Filter</string>
+    <!-- Label in front of the chips naming the filters in force on the category. -->
+    <string name="collections_category_active_filters_label">Filters:</string>
+    <!-- Empty state when the category has games but the active filters hide all of them. -->
+    <string name="collections_category_empty_filtered_title">No games match these filters</string>
+    <!-- %1$s is a short summary of the active filters, for example "Genre: RPG". -->
+    <string name="collections_category_empty_filtered_body">Filtered by %1$s</string>
+    <!-- Shown beside the filter button glyph in the filtered empty state. Verb phrase. -->
+    <string name="collections_category_empty_filtered_hint">Change filters</string>
     <!-- Footer hint on dual-screen devices, where Select swaps the two screens. Verb phrase. -->
     <string name="collections_category_hint_swap_screens">Swap Screens</string>
     <!-- Footer hint on dual-screen devices: A opens the game, and holding A opens the options menu for the category and the focused game. -->
@@ -251,7 +260,6 @@
     <string name="collections_category_back_description">Back</string>
     <!-- Search field placeholder; %1$s is the category's own name (for example "Platformer"). -->
     <string name="collections_category_search_placeholder">Search %1$s</string>
-    <string name="collections_category_close_search_description">Close search</string>
     <string name="collections_category_search_description">Search</string>
     <string name="collections_category_empty_title">No games in this category</string>
     <!-- How many games are in this category, shown under its name in the header. -->
@@ -259,13 +267,6 @@
         <item quantity="one">%d game</item>
         <item quantity="other">%d games</item>
     </plurals>
-    <!-- Fallback platform name shown on a game card when the game's platform cannot be
-         resolved. Distinct key from collections_category_platform_unknown (different
-         usage site). -->
-    <string name="collections_detail_platform_unknown">Unknown</string>
-    <!-- Fallback platform name shown on a game card when the game's platform cannot be
-         resolved. Distinct key from collections_detail_platform_unknown. -->
-    <string name="collections_category_platform_unknown">Unknown</string>
 
     <!-- === downloads/DownloadsScreen.kt === -->
     <string name="downloads_empty_title">No Downloads</string>

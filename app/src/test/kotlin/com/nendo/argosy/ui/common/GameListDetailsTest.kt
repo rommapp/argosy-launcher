@@ -2,10 +2,10 @@ package com.nendo.argosy.ui.common
 
 import com.nendo.argosy.data.local.entity.GameEntity
 import com.nendo.argosy.data.local.entity.GameListItem
+import com.nendo.argosy.data.local.entity.toListItem
 import com.nendo.argosy.data.model.GameSource
 import com.nendo.argosy.data.repository.DownloadFileStatusRepository
 import com.nendo.argosy.domain.model.CompletionProgress
-import com.nendo.argosy.ui.screens.collections.toCollectionGameUi
 import io.mockk.mockk
 import java.time.Instant
 import kotlinx.coroutines.test.runTest
@@ -119,16 +119,24 @@ class GameListDetailsTest {
 
     @Test
     fun `a collection row shows earned and total achievements`() = runTest {
-        val row = entity.toCollectionGameUi("SNES", downloadStatus)
+        val row = entity.toListItem(isHidden = false).toLibraryGameUi(downloadStatus, art = null)
 
-        assertEquals(12, row.details.earnedAchievementCount)
-        assertEquals(40, row.details.achievementCount)
+        assertEquals(12, row.listDetails.earnedAchievementCount)
+        assertEquals(40, row.listDetails.achievementCount)
     }
 
     @Test
     fun `a collection row reads downloaded state through the shared resolver`() = runTest {
         val androidApp = entity.copy(localPath = null, source = GameSource.ANDROID_APP)
 
-        assertTrue(androidApp.toCollectionGameUi("Android", downloadStatus).isDownloaded)
+        assertTrue(androidApp.toListItem(isHidden = false).toLibraryGameUi(downloadStatus, art = null).isDownloaded)
+    }
+
+    @Test
+    fun `an entity converted for a collection matches its projection`() {
+        assertEquals(
+            listItem.copy(playCount = 0, addedAt = entity.addedAt),
+            entity.toListItem(isHidden = false)
+        )
     }
 }

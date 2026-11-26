@@ -64,13 +64,10 @@
     <string name="collections_screen_hint_hold_swap_screens">Удерживайте, чтобы поменять экраны</string>
 
     <string name="collections_detail_loading">Загрузка…</string>
-    <string name="collections_detail_hint_search_open">Открыть</string>
-    <string name="collections_detail_hint_search_close">Закрыть поиск</string>
     <string name="collections_detail_keyboard_submit">Найти</string>
     <string name="collections_detail_hint_navigate">Навигация</string>
     <string name="collections_detail_hint_open">Открыть</string>
     <string name="collections_detail_hint_back">Назад</string>
-    <string name="collections_detail_hint_search">Поиск</string>
     <string name="collections_detail_hint_unpin">Открепить</string>
     <string name="collections_detail_hint_pin">Закрепить</string>
     <string name="collections_detail_hint_jump">Переход</string>
@@ -81,9 +78,13 @@
     <string name="collections_detail_hint_hold_swap_screens">Удерживайте, чтобы поменять экраны</string>
     <string name="collections_detail_hint_refreshing">Обновление…</string>
     <string name="collections_detail_hint_refresh">Обновить</string>
+    <string name="collections_detail_hint_filter">Фильтр</string>
+    <string name="collections_detail_active_filters_label">Фильтры:</string>
+    <string name="collections_detail_empty_filtered_title">Нет игр, подходящих под эти фильтры</string>
+    <string name="collections_detail_empty_filtered_body">Фильтрация: %1$s</string>
+    <string name="collections_detail_empty_filtered_hint">Изменить фильтры</string>
     <string name="collections_detail_back_description">Назад</string>
     <string name="collections_detail_search_placeholder">Поиск в %1$s</string>
-    <string name="collections_detail_close_search_description">Закрыть поиск</string>
     <string name="collections_detail_search_description">Поиск</string>
     <string name="collections_detail_empty_title">В этой коллекции нет игр</string>
     <string name="collections_detail_empty_subtitle">Добавьте игры из библиотеки или со страницы игры</string>
@@ -128,18 +129,20 @@
     </plurals>
 
     <string name="collections_category_loading">Загрузка…</string>
-    <string name="collections_category_hint_search_open">Открыть</string>
-    <string name="collections_category_hint_search_close">Закрыть поиск</string>
     <string name="collections_category_keyboard_submit">Найти</string>
     <string name="collections_category_hint_navigate">Навигация</string>
     <string name="collections_category_hint_open">Открыть</string>
     <string name="collections_category_hint_back">Назад</string>
-    <string name="collections_category_hint_search">Поиск</string>
     <string name="collections_category_hint_unpin">Открепить</string>
     <string name="collections_category_hint_pin">Закрепить</string>
     <string name="collections_category_hint_jump">Переход</string>
     <string name="collections_category_hint_refreshing">Обновление…</string>
     <string name="collections_category_hint_refresh">Обновить</string>
+    <string name="collections_category_hint_filter">Фильтр</string>
+    <string name="collections_category_active_filters_label">Фильтры:</string>
+    <string name="collections_category_empty_filtered_title">Нет игр, подходящих под эти фильтры</string>
+    <string name="collections_category_empty_filtered_body">Фильтрация: %1$s</string>
+    <string name="collections_category_empty_filtered_hint">Изменить фильтры</string>
     <string name="collections_category_hint_swap_screens">Поменять экраны</string>
     <string name="collections_category_hint_open_hold_options">Открыть, удерживайте для параметров</string>
     <string name="collections_category_hint_options">Параметры</string>
@@ -162,7 +165,6 @@
     </plurals>
     <string name="collections_category_back_description">Назад</string>
     <string name="collections_category_search_placeholder">Поиск в %1$s</string>
-    <string name="collections_category_close_search_description">Закрыть поиск</string>
     <string name="collections_category_search_description">Поиск</string>
     <string name="collections_category_empty_title">В этой категории нет игр</string>
     <plurals name="collections_category_header_game_count">
@@ -171,8 +173,6 @@
         <item quantity="many">%d игр</item>
         <item quantity="other">%d игры</item>
     </plurals>
-    <string name="collections_detail_platform_unknown">Неизвестно</string>
-    <string name="collections_category_platform_unknown">Неизвестно</string>
 
 
     <string name="downloads_empty_title">Нет загрузок</string>

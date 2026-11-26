@@ -235,6 +235,40 @@ data class GameListItem(
         get() = isServerRemovedRomm(source, rommId)
 }
 
+fun GameEntity.toListItem(isHidden: Boolean): GameListItem = GameListItem(
+    id = id,
+    platformId = platformId,
+    platformSlug = platformSlug,
+    title = title,
+    sortTitle = sortTitle,
+    localPath = localPath,
+    source = source,
+    isFavorite = isFavorite,
+    isHidden = isHidden,
+    isMultiDisc = isMultiDisc,
+    rommId = rommId,
+    steamAppId = steamAppId,
+    packageName = packageName,
+    steamLauncher = steamLauncher,
+    playCount = playCount,
+    playTimeMinutes = playTimeMinutes,
+    lastPlayed = lastPlayed,
+    genre = genre,
+    players = players,
+    rating = rating,
+    userRating = userRating,
+    userDifficulty = userDifficulty,
+    releaseYear = releaseYear,
+    addedAt = addedAt,
+    achievementCount = achievementCount,
+    earnedAchievementCount = earnedAchievementCount,
+    completion = completion,
+    status = status,
+    developer = developer,
+    igdbId = igdbId,
+    timeToBeatMainSec = timeToBeatMainSec
+)
+
 fun isServerRemovedRomm(source: GameSource, rommId: Long?): Boolean =
     (source == GameSource.ROMM_REMOTE || source == GameSource.ROMM_SYNCED) &&
         rommId != null && rommId < 0

@@ -232,6 +232,13 @@ interface CollectionDao {
         ORDER BY c.name ASC
     """)
     suspend fun getNamesWithGamesByType(type: CollectionType): List<String>
+
+    @Query("""
+        SELECT DISTINCT c.name FROM collections c
+        INNER JOIN collection_games cg ON c.id = cg.collectionId
+        WHERE c.type = :type AND cg.gameId IN (:gameIds)
+    """)
+    suspend fun getNamesByTypeForGames(type: CollectionType, gameIds: List<Long>): List<String>
 }
 
 data class CollectionStats(

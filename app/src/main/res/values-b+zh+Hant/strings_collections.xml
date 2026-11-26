@@ -58,13 +58,10 @@
     <string name="collections_screen_hint_hold_swap_screens">長按交換螢幕</string>
 
     <string name="collections_detail_loading">載入中&#8230;</string>
-    <string name="collections_detail_hint_search_open">開啟</string>
-    <string name="collections_detail_hint_search_close">關閉搜尋</string>
     <string name="collections_detail_keyboard_submit">搜尋</string>
     <string name="collections_detail_hint_navigate">移動</string>
     <string name="collections_detail_hint_open">開啟</string>
     <string name="collections_detail_hint_back">返回</string>
-    <string name="collections_detail_hint_search">搜尋</string>
     <string name="collections_detail_hint_unpin">取消釘選</string>
     <string name="collections_detail_hint_pin">釘選</string>
     <string name="collections_detail_hint_jump">跳至</string>
@@ -75,9 +72,13 @@
     <string name="collections_detail_hint_hold_swap_screens">長按交換螢幕</string>
     <string name="collections_detail_hint_refreshing">重新整理中&#8230;</string>
     <string name="collections_detail_hint_refresh">重新整理</string>
+    <string name="collections_detail_hint_filter">篩選</string>
+    <string name="collections_detail_active_filters_label">篩選：</string>
+    <string name="collections_detail_empty_filtered_title">沒有符合篩選條件的遊戲</string>
+    <string name="collections_detail_empty_filtered_body">篩選條件：%1$s</string>
+    <string name="collections_detail_empty_filtered_hint">變更篩選</string>
     <string name="collections_detail_back_description">返回</string>
     <string name="collections_detail_search_placeholder">搜尋%1$s</string>
-    <string name="collections_detail_close_search_description">關閉搜尋</string>
     <string name="collections_detail_search_description">搜尋</string>
     <string name="collections_detail_empty_title">此合輯中沒有遊戲</string>
     <string name="collections_detail_empty_subtitle">從遊戲庫或遊戲詳情頁面新增遊戲</string>
@@ -113,18 +114,20 @@
     </plurals>
 
     <string name="collections_category_loading">載入中&#8230;</string>
-    <string name="collections_category_hint_search_open">開啟</string>
-    <string name="collections_category_hint_search_close">關閉搜尋</string>
     <string name="collections_category_keyboard_submit">搜尋</string>
     <string name="collections_category_hint_navigate">移動</string>
     <string name="collections_category_hint_open">開啟</string>
     <string name="collections_category_hint_back">返回</string>
-    <string name="collections_category_hint_search">搜尋</string>
     <string name="collections_category_hint_unpin">取消釘選</string>
     <string name="collections_category_hint_pin">釘選</string>
     <string name="collections_category_hint_jump">跳至</string>
     <string name="collections_category_hint_refreshing">重新整理中&#8230;</string>
     <string name="collections_category_hint_refresh">重新整理</string>
+    <string name="collections_category_hint_filter">篩選</string>
+    <string name="collections_category_active_filters_label">篩選：</string>
+    <string name="collections_category_empty_filtered_title">沒有符合篩選條件的遊戲</string>
+    <string name="collections_category_empty_filtered_body">篩選條件：%1$s</string>
+    <string name="collections_category_empty_filtered_hint">變更篩選</string>
     <string name="collections_category_hint_swap_screens">交換螢幕</string>
     <string name="collections_category_hint_open_hold_options">開啟，長按查看選項</string>
     <string name="collections_category_hint_options">選項</string>
@@ -141,14 +144,11 @@
     </plurals>
     <string name="collections_category_back_description">返回</string>
     <string name="collections_category_search_placeholder">搜尋%1$s</string>
-    <string name="collections_category_close_search_description">關閉搜尋</string>
     <string name="collections_category_search_description">搜尋</string>
     <string name="collections_category_empty_title">此類別中沒有遊戲</string>
     <plurals name="collections_category_header_game_count">
         <item quantity="other">%d款遊戲</item>
     </plurals>
-    <string name="collections_detail_platform_unknown">未知</string>
-    <string name="collections_category_platform_unknown">未知</string>
 
 
     <string name="downloads_empty_title">沒有下載項目</string>

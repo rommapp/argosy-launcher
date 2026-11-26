@@ -1,0 +1,7 @@
+- Music: Navidrome and RomM libraries, Now Playing, playlists, offline downloads, listening stats, and music during games (fixes #653)
+- Launch a single game with any installed app (fixes #651)
+- Grid layout, filters and sort for collections (fixes #650)
+- Move the app dock to the second screen (fixes #649)
+- SwanStation built-in PS1 core with disc swapping
+- Fix built-in games freezing on launch
+- Fix save conflicts on games you haven't played

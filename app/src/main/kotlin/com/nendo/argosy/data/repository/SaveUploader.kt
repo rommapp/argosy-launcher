@@ -84,6 +84,10 @@ class SaveUploader @Inject constructor(
 
         val resolvedEmulatorId = if (emulatorId.isBlank() || emulatorId == "default") {
             client.resolveEmulatorForGame(game) ?: run {
+                if (client.launchesAdHoc(game)) {
+                    Logger.debug(TAG, "[SaveSync] UPLOAD gameId=$gameId | Launches with an ad-hoc app, no save sync")
+                    return@withContext SaveSyncResult.NotConfigured
+                }
                 Logger.warn(TAG, "[SaveSync] UPLOAD gameId=$gameId | Cannot resolve emulator from config")
                 return@withContext SaveSyncResult.Error("Cannot determine emulator")
             }
@@ -484,7 +488,11 @@ class SaveUploader @Inject constructor(
             ?: return@withContext SaveSyncResult.Error("Game not found")
 
         val resolvedEmulatorId = if (emulatorId == "default" || emulatorId.isBlank()) {
-            client.resolveEmulatorForGame(game) ?: return@withContext SaveSyncResult.Error("Cannot determine emulator")
+            client.resolveEmulatorForGame(game) ?: return@withContext if (client.launchesAdHoc(game)) {
+                SaveSyncResult.NotConfigured
+            } else {
+                SaveSyncResult.Error("Cannot determine emulator")
+            }
         } else {
             emulatorId
         }

@@ -159,6 +159,27 @@ class SaveUploaderTest {
     }
 
     @Test
+    fun `a game that launches with an ad-hoc app is not configured and never uploads`() = runTest {
+        coEvery { apiClient.resolveEmulatorForGame(any()) } returns null
+        coEvery { apiClient.launchesAdHoc(any()) } returns true
+
+        val result = uploader.uploadSave(gameId, "default", channelName = null)
+
+        assertTrue("expected NotConfigured but got $result", result is SaveSyncResult.NotConfigured)
+        coVerify(exactly = 0) { romMApi.uploadSaveWithDevice(any(), any(), any(), any(), any(), any(), any(), any<MultipartBody.Part>(), any()) }
+    }
+
+    @Test
+    fun `a game with no emulator that is not ad-hoc still reports an error`() = runTest {
+        coEvery { apiClient.resolveEmulatorForGame(any()) } returns null
+        coEvery { apiClient.launchesAdHoc(any()) } returns false
+
+        val result = uploader.uploadSave(gameId, "default", channelName = null)
+
+        assertTrue("expected Error but got $result", result is SaveSyncResult.Error)
+    }
+
+    @Test
     fun `a save whose clock ticked but whose save data did not is skipped by identity`() = runTest {
         coEvery {
             saveSyncDao.getByGameEmulatorAndChannel(gameId, emulatorId, SaveSyncApiClient.AUTOSAVE_SLOT_NAME, any())

@@ -87,6 +87,13 @@ class EmulatorResolver @Inject constructor(
         )
     }
 
+    /**
+     * True when the game launches with an app Argosy does not know. Such a game has no save
+     * locations Argosy can read, so save sync leaves it alone.
+     */
+    suspend fun launchesAdHoc(gameId: Long, platformId: Long, platformSlug: String): Boolean =
+        resolveEmulatorForGame(gameId, platformId, platformSlug)?.let(EmulatorRegistry::isAdHoc) == true
+
     suspend fun getEmulatorIdForGame(gameId: Long, platformId: Long, platformSlug: String): String? {
         return getEmulatorPackageForGame(gameId, platformId, platformSlug)?.let { resolveEmulatorId(it) }
     }

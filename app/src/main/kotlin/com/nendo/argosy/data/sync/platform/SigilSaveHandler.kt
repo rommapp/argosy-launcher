@@ -472,8 +472,11 @@ class SigilSaveHandler @Inject constructor(
     ): SigilRoute? = withContext(Dispatchers.IO) {
         val game = gameDao.getById(gameId) ?: return@withContext null
         val emulatorPackage = emulatorResolver.getEmulatorPackageForGame(game.id, game.platformId, game.platformSlug)
-        val effectiveId = emulatorId?.takeIf { it.isNotBlank() && it != "default" }
-            ?: emulatorPackage?.let { emulatorResolver.resolveEmulatorId(it) }
+        val explicitId = emulatorId?.takeIf { it.isNotBlank() && it != "default" }
+        val packageId = emulatorPackage?.let { emulatorResolver.resolveEmulatorId(it) }
+        if (explicitId == null && emulatorPackage != null && packageId == null) return@withContext null
+        val effectiveId = explicitId
+            ?: packageId
             ?: emulatorResolver.getPreferredEmulatorId(game.platformSlug)
             ?: return@withContext null
         if (effectiveId in PlatformSaveHandlerRegistry.UNIT_EMULATOR_IDS) {

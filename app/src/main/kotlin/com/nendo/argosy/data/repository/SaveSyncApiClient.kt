@@ -95,6 +95,9 @@ class SaveSyncApiClient @Inject constructor(
         emulatorId: String
     ): Boolean = saveHandlerRegistry.isSigilRoutedFor(gameId, config, platformSlug, emulatorId)
 
+    suspend fun launchesAdHoc(game: GameEntity): Boolean =
+        emulatorResolver.launchesAdHoc(game.id, game.platformId, game.platformSlug)
+
     suspend fun resolveEmulatorForGame(game: GameEntity): String? {
         val launchPackage = emulatorResolver.getEmulatorPackageForGame(game.id, game.platformId, game.platformSlug)
         if (launchPackage != null) {
@@ -103,7 +106,8 @@ class SaveSyncApiClient @Inject constructor(
                 Logger.verbose(TAG) { "[SaveSync] DISCOVER gameId=${game.id} | Resolved emulator from launch resolution | package=$launchPackage, emulatorId=$resolved" }
                 return resolved
             }
-            Logger.verbose(TAG) { "[SaveSync] DISCOVER gameId=${game.id} | Launch package is ad-hoc, falling back to preferred | package=$launchPackage" }
+            Logger.verbose(TAG) { "[SaveSync] DISCOVER gameId=${game.id} | Launch package is ad-hoc, no save sync | package=$launchPackage" }
+            return null
         }
 
         val preferred = emulatorResolver.getPreferredEmulatorId(game.platformSlug)

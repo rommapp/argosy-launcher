@@ -216,7 +216,26 @@ class SigilBuiltinRouteTest {
         assertNull(handler.localRoute(GAME_ID, RETROARCH))
     }
 
+    @Test
+    fun `a game that launches with an ad-hoc app gets no route instead of the preferred emulator's`() = runTest {
+        builtinGame("snes", "snes9x")
+        coEvery { emulatorResolver.getEmulatorPackageForGame(any(), any(), any()) } returns AD_HOC_PACKAGE
+        every { emulatorResolver.resolveEmulatorId(AD_HOC_PACKAGE) } returns null
+        coEvery { emulatorResolver.getPreferredEmulatorId("snes") } returns EmulatorRegistry.BUILTIN_ID
+
+        assertNull(handler.localRoute(GAME_ID))
+    }
+
+    @Test
+    fun `a game with no launch app still falls back to the preferred emulator's route`() = runTest {
+        builtinGame("snes", "snes9x")
+        coEvery { emulatorResolver.getPreferredEmulatorId("snes") } returns EmulatorRegistry.BUILTIN_ID
+
+        assertEquals("libretro", handler.localRoute(GAME_ID)?.layout)
+    }
+
     private companion object {
+        const val AD_HOC_PACKAGE = "com.custom.app"
         const val GAME_ID = 9L
         const val SAVES = "/data/user/0/com.nendo.argosy/files/libretro/saves"
         const val RETROARCH = "retroarch"

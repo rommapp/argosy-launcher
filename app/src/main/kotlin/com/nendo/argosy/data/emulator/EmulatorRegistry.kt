@@ -1265,6 +1265,10 @@ object EmulatorRegistry {
 
     fun isKnownPackage(packageName: String): Boolean = packageMap.containsKey(packageName)
 
+    fun isAdHoc(def: EmulatorDef): Boolean = def.id.startsWith(ADHOC_ID_PREFIX)
+
+    private const val ADHOC_ID_PREFIX = "adhoc_"
+
     /**
      * Synthesize an [EmulatorDef] for an ad-hoc app binding. The `id` is deterministic per
      * package so [EmulatorLaunchArgsEntity] overrides persist across restarts.
@@ -1274,7 +1278,7 @@ object EmulatorRegistry {
         displayName: String,
         platformSlug: String
     ): EmulatorDef = EmulatorDef(
-        id = "adhoc_$packageName",
+        id = "$ADHOC_ID_PREFIX$packageName",
         packageName = packageName,
         displayName = displayName,
         supportedPlatforms = setOf(platformSlug),

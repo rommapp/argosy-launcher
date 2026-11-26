@@ -3,6 +3,7 @@ package com.nendo.argosy.di
 import android.content.Context
 import androidx.room.Room
 import com.nendo.argosy.data.local.ALauncherDatabase
+import com.nendo.argosy.data.local.DatabaseCallbacks
 import com.nendo.argosy.data.local.migrations.MigrationRegistry
 import com.nendo.argosy.data.local.dao.AchievementDao
 import com.nendo.argosy.data.local.dao.AppCategoryDao
@@ -77,6 +78,7 @@ object DatabaseModule {
             "alauncher.db"
         )
             .addMigrations(*MigrationRegistry.ARRAY)
+            .addCallback(DatabaseCallbacks)
             .enableMultiInstanceInvalidation()
             .build()
     }
@@ -89,6 +91,10 @@ object DatabaseModule {
 
     @Provides
     fun provideGameArtDao(database: ALauncherDatabase): GameArtDao = database.gameArtDao()
+
+    @Provides
+    fun provideGameChangeDao(database: ALauncherDatabase): com.nendo.argosy.data.local.dao.GameChangeDao =
+        database.gameChangeDao()
 
     @Provides
     fun provideGameScreenshotDao(database: ALauncherDatabase): GameScreenshotDao = database.gameScreenshotDao()

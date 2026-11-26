@@ -4498,6 +4498,17 @@ object Migration_232_233 : Migration(232, 233) {
     }
 }
 
+object Migration_233_234 : Migration(233, 234) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL("ALTER TABLE `game_art` ADD COLUMN `changeSeq` INTEGER NOT NULL DEFAULT 0")
+        db.execSQL("CREATE INDEX IF NOT EXISTS `index_game_art_changeSeq` ON `game_art` (`changeSeq`)")
+        GameArtChangeTriggers.create(db)
+        db.execSQL("ALTER TABLE `games` ADD COLUMN `changeSeq` INTEGER NOT NULL DEFAULT 0")
+        db.execSQL("CREATE INDEX IF NOT EXISTS `index_games_changeSeq` ON `games` (`changeSeq`)")
+        GameChangeTriggers.create(db)
+    }
+}
+
 object Migration_203_204 : Migration(203, 204) {
     override fun migrate(db: SupportSQLiteDatabase) {
         db.execSQL(

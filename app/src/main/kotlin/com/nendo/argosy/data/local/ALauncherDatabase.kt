@@ -201,7 +201,7 @@ import com.nendo.argosy.data.local.entity.SteamLicenseEntity
         com.nendo.argosy.data.local.entity.MusicListenArtistEntity::class,
         com.nendo.argosy.data.local.entity.MusicPlaylistOrderEntity::class
     ],
-    version = 233,
+    version = 234,
     exportSchema = true
 )
 @TypeConverters(Converters::class)
@@ -270,6 +270,7 @@ abstract class ALauncherDatabase : RoomDatabase() {
     abstract fun managedInstallerDao(): com.nendo.argosy.data.local.dao.ManagedInstallerDao
     abstract fun gameGroupPickDao(): com.nendo.argosy.data.local.dao.GameGroupPickDao
     abstract fun gameArtDao(): com.nendo.argosy.data.local.dao.GameArtDao
+    abstract fun gameChangeDao(): com.nendo.argosy.data.local.dao.GameChangeDao
     abstract fun sigilSyncStateDao(): com.nendo.argosy.data.local.dao.SigilSyncStateDao
     abstract fun snapshotChannelDao(): com.nendo.argosy.data.local.dao.SnapshotChannelDao
     abstract fun gameScreenshotDao(): com.nendo.argosy.data.local.dao.GameScreenshotDao

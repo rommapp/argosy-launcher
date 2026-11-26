@@ -33,7 +33,8 @@ import java.time.Instant
         Index("franchises"),
         Index("genres"),
         Index("collections"),
-        Index("siblingGroupKey")
+        Index("siblingGroupKey"),
+        Index("changeSeq")
     ]
 )
 data class GameEntity(
@@ -160,7 +161,9 @@ data class GameEntity(
     @ColumnInfo(defaultValue = "0")
     val isTranslationVariant: Boolean = false,
     @ColumnInfo(defaultValue = "1")
-    val isGroupVisible: Boolean = true
+    val isGroupVisible: Boolean = true,
+    @ColumnInfo(defaultValue = "0")
+    val changeSeq: Long = 0
 ) {
     val effectiveRaId: Long? get() = if (raIdVerified) verifiedRaId else (verifiedRaId ?: raId)
 

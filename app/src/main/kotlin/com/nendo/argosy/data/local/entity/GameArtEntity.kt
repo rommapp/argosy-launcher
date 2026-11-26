@@ -1,7 +1,9 @@
 package com.nendo.argosy.data.local.entity
 
+import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.ForeignKey
+import androidx.room.Index
 import com.nendo.argosy.data.model.ArtSlot
 import com.nendo.argosy.data.model.ResolvedGameArt
 import com.nendo.argosy.data.model.resolveArtPath
@@ -16,7 +18,8 @@ import com.nendo.argosy.data.model.resolveArtPath
             childColumns = ["gameId"],
             onDelete = ForeignKey.CASCADE
         )
-    ]
+    ],
+    indices = [Index(value = ["changeSeq"])]
 )
 data class GameArtEntity(
     val gameId: Long,
@@ -26,7 +29,9 @@ data class GameArtEntity(
     val cachedFromUrl: String? = null,
     val overridePath: String? = null,
     val gradientColors: String? = null,
-    val coverAspectRatio: Float? = null
+    val coverAspectRatio: Float? = null,
+    @ColumnInfo(defaultValue = "0")
+    val changeSeq: Long = 0
 ) {
     val resolvedPath: String? get() = resolveArtPath(overridePath, cachedPath, sourceUrl)
 

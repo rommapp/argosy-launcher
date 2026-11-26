@@ -22,7 +22,6 @@ import com.nendo.argosy.data.local.dao.clearCached
 import com.nendo.argosy.data.local.dao.clearCachedPathsChunked
 import com.nendo.argosy.data.local.dao.clearOverride
 import com.nendo.argosy.data.local.dao.resolved
-import com.nendo.argosy.data.local.entity.toResolvedArtByGame
 import com.nendo.argosy.data.model.ArtSlot
 import com.nendo.argosy.data.model.ResolvedGameArt
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -37,9 +36,9 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.conflate
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
-import kotlinx.coroutines.flow.transform
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -164,15 +163,23 @@ class ImageCacheManager @Inject constructor(
 ) {
     private val artModelScope = SafeCoroutineScope(Dispatchers.IO, "GameArtModel")
 
-    val gameArt: StateFlow<GameArtSnapshot> = gameArtDao.observeRowCount()
-        .conflate()
-        .transform {
-            emit(gameArtDao.getAll().toResolvedArtByGame())
+    val gameArt: StateFlow<GameArtSnapshot> = flow {
+        var index: GameArtIndex? = null
+        gameArtDao.observeRowCount().conflate().collect {
+            val previous = index
+            val next = if (previous == null) GameArtIndex.of(gameArtDao.getAll()) else advanceArtIndex(previous)
+            if (next.byGame !== previous?.byGame) emit(GameArtSnapshot(next.byGame))
+            index = next
             delay(ART_MODEL_RELOAD_INTERVAL_MS)
         }
-        .distinctUntilChanged()
-        .map(::GameArtSnapshot)
-        .stateIn(artModelScope, SharingStarted.Lazily, GameArtSnapshot.EMPTY)
+    }.stateIn(artModelScope, SharingStarted.Lazily, GameArtSnapshot.EMPTY)
+
+    private suspend fun advanceArtIndex(index: GameArtIndex): GameArtIndex {
+        val changes = gameArtDao.changesSince(index.seq)
+        val merged = index.merge(changes.rows)
+        if (merged.rowCount == changes.totalRows) return merged
+        return merged.retainGames(gameArtDao.getGameIds().toSet())
+    }
 
     fun artFor(gameId: Long): ResolvedGameArt? = gameArt.value[gameId]
 
@@ -364,6 +371,7 @@ class ImageCacheManager @Inject constructor(
         scope.launch {
             Log.d(TAG, "Starting background image cache processing")
             updateProgressFromDb(isProcessing = true)
+            var countsStale = false
 
             for (request in queue) {
                 while (isHeld) {
@@ -371,6 +379,10 @@ class ImageCacheManager @Inject constructor(
                 }
                 backgroundsBusy = true
                 try {
+                    if (countsStale) {
+                        updateProgressFromDb(isProcessing = true)
+                        countsStale = false
+                    }
                     _progress.update {
                         it.copy(
                             isProcessing = true,
@@ -379,13 +391,15 @@ class ImageCacheManager @Inject constructor(
                         )
                     }
                     processRequest(request)
-                    updateProgressFromDb(isProcessing = true)
+                    _progress.update { it.copy(cachedCount = (it.cachedCount + 1).coerceAtMost(it.totalCount)) }
+                    if (queue.isEmpty) updateProgressFromDb(isProcessing = true)
                 } catch (e: Exception) {
                     Log.e(TAG, "Failed to process ${request.id}: ${e.message}")
                 }
                 yield()
 
                 if (queue.isEmpty) {
+                    countsStale = true
                     backgroundsBusy = false
                     publishIdleWhenAllDone()
                 }

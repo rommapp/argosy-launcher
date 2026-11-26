@@ -10,7 +10,6 @@ import com.nendo.argosy.data.local.entity.GameCategoryInfo
 import com.nendo.argosy.data.local.entity.GameEntity
 import com.nendo.argosy.data.local.entity.GameGroupMemberRow
 import com.nendo.argosy.data.local.entity.GameListItem
-import com.nendo.argosy.data.local.entity.GameRegionInfo
 import com.nendo.argosy.data.local.entity.GameSiblingRow
 import com.nendo.argosy.data.model.FileOrigin
 import com.nendo.argosy.data.model.GameSource
@@ -24,6 +23,45 @@ internal const val INSTALLED_SQL =
 
 internal const val ENABLED_PLATFORM_SQL =
     "EXISTS (SELECT 1 FROM platforms WHERE platforms.id = games.platformId AND $PLATFORM_ENABLED_SQL)"
+
+internal const val HIDDEN_FOR_OWNER_SQL =
+    "EXISTS (SELECT 1 FROM user_roms_hidden h WHERE h.gameId = games.id " +
+        "AND (h.ownerUserId IS NULL OR h.ownerUserId IS :ownerUserId))"
+
+internal const val NOT_HIDDEN_SQL = "NOT $HIDDEN_FOR_OWNER_SQL"
+
+internal const val PLAYABLE_SOURCE_SQL =
+    "(source = 'LOCAL_ONLY' OR source = 'ROMM_SYNCED' OR source = 'STEAM' OR source = 'ANDROID_APP') " +
+        "AND (source != 'STEAM' OR localPath IS NOT NULL OR (steamLauncher IS NOT NULL AND steamLauncher != 'native'))"
+
+internal const val GAME_LIST_COLUMNS =
+    "id, platformId, platformSlug, title, sortTitle, localPath, source, isFavorite, " +
+        "$HIDDEN_FOR_OWNER_SQL AS isHidden, " +
+        "isMultiDisc, rommId, steamAppId, packageName, steamLauncher, playCount, playTimeMinutes, " +
+        "lastPlayed, genre, players, rating, userRating, userDifficulty, releaseYear, addedAt, " +
+        "achievementCount, earnedAchievementCount, completion, status, developer, igdbId, timeToBeatMainSec"
+
+internal const val ALL_LIST_SCOPE_SQL = "isGroupVisible = 1 AND $NOT_HIDDEN_SQL AND $ENABLED_PLATFORM_SQL"
+
+internal const val PLAYABLE_LIST_SCOPE_SQL =
+    "isGroupVisible = 1 AND $NOT_HIDDEN_SQL AND $PLAYABLE_SOURCE_SQL AND $ENABLED_PLATFORM_SQL"
+
+internal const val FAVORITES_LIST_SCOPE_SQL = "isFavorite = 1 AND $NOT_HIDDEN_SQL AND $ENABLED_PLATFORM_SQL"
+
+internal const val PLATFORM_LIST_SCOPE_SQL = "platformId = :platformId AND isGroupVisible = 1 AND $NOT_HIDDEN_SQL"
+
+internal const val PLATFORM_PLAYABLE_LIST_SCOPE_SQL =
+    "platformId = :platformId AND isGroupVisible = 1 AND $NOT_HIDDEN_SQL AND $PLAYABLE_SOURCE_SQL"
+
+internal const val PLATFORM_FAVORITES_LIST_SCOPE_SQL = "platformId = :platformId AND isFavorite = 1 AND $NOT_HIDDEN_SQL"
+
+internal const val CATEGORY_SCOPE_SQL = "$NOT_HIDDEN_SQL AND $ENABLED_PLATFORM_SQL"
+
+internal const val REGION_SCOPE_SQL = "regions IS NOT NULL AND regions != ''"
+
+internal const val TITLE_ORDER_SQL = "ORDER BY sortTitle ASC"
+
+internal const val FAVORITES_ORDER_SQL = "ORDER BY (source = 'ROMM_REMOTE') ASC, sortTitle ASC"
 
 data class PlatformGameCount(
     val platformId: Long,
@@ -181,32 +219,10 @@ interface GameDao {
     """)
     fun observeFavorites(ownerUserId: Long?): Flow<List<GameEntity>>
 
-    @Query("""
-        SELECT id, platformId, platformSlug, title, sortTitle, localPath, source, isFavorite,
-               EXISTS(SELECT 1 FROM user_roms_hidden h WHERE h.gameId = games.id AND (h.ownerUserId IS NULL OR h.ownerUserId IS :ownerUserId)) AS isHidden,
-               isMultiDisc, rommId, steamAppId, packageName, steamLauncher, playCount, playTimeMinutes,
-               lastPlayed, genre, players, rating, userRating, userDifficulty, releaseYear, addedAt,
-               achievementCount, earnedAchievementCount, completion, status, developer, igdbId, timeToBeatMainSec
-        FROM games
-        WHERE isGroupVisible = 1
-        AND NOT EXISTS (SELECT 1 FROM user_roms_hidden h WHERE h.gameId = games.id AND (h.ownerUserId IS NULL OR h.ownerUserId IS :ownerUserId))
-        AND $ENABLED_PLATFORM_SQL
-        ORDER BY sortTitle ASC
-    """)
+    @Query("SELECT $GAME_LIST_COLUMNS FROM games WHERE $ALL_LIST_SCOPE_SQL $TITLE_ORDER_SQL")
     fun observeAllList(ownerUserId: Long?): Flow<List<GameListItem>>
 
-    @Query("""
-        SELECT id, platformId, platformSlug, title, sortTitle, localPath, source, isFavorite,
-               EXISTS(SELECT 1 FROM user_roms_hidden h WHERE h.gameId = games.id AND (h.ownerUserId IS NULL OR h.ownerUserId IS :ownerUserId)) AS isHidden,
-               isMultiDisc, rommId, steamAppId, packageName, steamLauncher, playCount, playTimeMinutes,
-               lastPlayed, genre, players, rating, userRating, userDifficulty, releaseYear, addedAt,
-               achievementCount, earnedAchievementCount, completion, status, developer, igdbId, timeToBeatMainSec
-        FROM games
-        WHERE platformId = :platformId
-        AND isGroupVisible = 1
-        AND NOT EXISTS (SELECT 1 FROM user_roms_hidden h WHERE h.gameId = games.id AND (h.ownerUserId IS NULL OR h.ownerUserId IS :ownerUserId))
-        ORDER BY sortTitle ASC
-    """)
+    @Query("SELECT $GAME_LIST_COLUMNS FROM games WHERE $PLATFORM_LIST_SCOPE_SQL $TITLE_ORDER_SQL")
     fun observeByPlatformList(platformId: Long, ownerUserId: Long?): Flow<List<GameListItem>>
 
     @Query("""
@@ -222,34 +238,10 @@ interface GameDao {
     """)
     fun observeBySourceList(source: GameSource, ownerUserId: Long?): Flow<List<GameListItem>>
 
-    @Query("""
-        SELECT id, platformId, platformSlug, title, sortTitle, localPath, source, isFavorite,
-               EXISTS(SELECT 1 FROM user_roms_hidden h WHERE h.gameId = games.id AND (h.ownerUserId IS NULL OR h.ownerUserId IS :ownerUserId)) AS isHidden,
-               isMultiDisc, rommId, steamAppId, packageName, steamLauncher, playCount, playTimeMinutes,
-               lastPlayed, genre, players, rating, userRating, userDifficulty, releaseYear, addedAt,
-               achievementCount, earnedAchievementCount, completion, status, developer, igdbId, timeToBeatMainSec
-        FROM games
-        WHERE isGroupVisible = 1
-        AND NOT EXISTS (SELECT 1 FROM user_roms_hidden h WHERE h.gameId = games.id AND (h.ownerUserId IS NULL OR h.ownerUserId IS :ownerUserId))
-        AND (source = 'LOCAL_ONLY' OR source = 'ROMM_SYNCED' OR source = 'STEAM' OR source = 'ANDROID_APP')
-        AND (source != 'STEAM' OR localPath IS NOT NULL OR (steamLauncher IS NOT NULL AND steamLauncher != 'native'))
-        AND $ENABLED_PLATFORM_SQL
-        ORDER BY sortTitle ASC
-    """)
+    @Query("SELECT $GAME_LIST_COLUMNS FROM games WHERE $PLAYABLE_LIST_SCOPE_SQL $TITLE_ORDER_SQL")
     fun observePlayableList(ownerUserId: Long?): Flow<List<GameListItem>>
 
-    @Query("""
-        SELECT id, platformId, platformSlug, title, sortTitle, localPath, source, isFavorite,
-               EXISTS(SELECT 1 FROM user_roms_hidden h WHERE h.gameId = games.id AND (h.ownerUserId IS NULL OR h.ownerUserId IS :ownerUserId)) AS isHidden,
-               isMultiDisc, rommId, steamAppId, packageName, steamLauncher, playCount, playTimeMinutes,
-               lastPlayed, genre, players, rating, userRating, userDifficulty, releaseYear, addedAt,
-               achievementCount, earnedAchievementCount, completion, status, developer, igdbId, timeToBeatMainSec
-        FROM games
-        WHERE isFavorite = 1
-        AND NOT EXISTS (SELECT 1 FROM user_roms_hidden h WHERE h.gameId = games.id AND (h.ownerUserId IS NULL OR h.ownerUserId IS :ownerUserId))
-        AND $ENABLED_PLATFORM_SQL
-        ORDER BY (source = 'ROMM_REMOTE') ASC, sortTitle ASC
-    """)
+    @Query("SELECT $GAME_LIST_COLUMNS FROM games WHERE $FAVORITES_LIST_SCOPE_SQL $FAVORITES_ORDER_SQL")
     fun observeFavoritesList(ownerUserId: Long?): Flow<List<GameListItem>>
 
     @Query("""
@@ -295,20 +287,6 @@ interface GameDao {
         AND NOT EXISTS (SELECT 1 FROM user_roms_hidden h WHERE h.gameId = g.id AND (h.ownerUserId IS NULL OR h.ownerUserId IS :ownerUserId))
     """)
     suspend fun getSyncEnabledGamesForCategories(ownerUserId: Long?): List<GameCategoryInfo>
-
-    @Query("""
-        SELECT id, genre, gameModes FROM games
-        WHERE NOT EXISTS (SELECT 1 FROM user_roms_hidden h WHERE h.gameId = games.id AND (h.ownerUserId IS NULL OR h.ownerUserId IS :ownerUserId))
-        AND $ENABLED_PLATFORM_SQL
-    """)
-    fun observeAllCategoryInfo(ownerUserId: Long?): Flow<List<GameCategoryInfo>>
-
-    @Query("""
-        SELECT id, genre, gameModes FROM games
-        WHERE NOT EXISTS (SELECT 1 FROM user_roms_hidden h WHERE h.gameId = games.id AND (h.ownerUserId IS NULL OR h.ownerUserId IS :ownerUserId))
-        AND $ENABLED_PLATFORM_SQL
-    """)
-    suspend fun getAllCategoryInfo(ownerUserId: Long?): List<GameCategoryInfo>
 
     @Query("SELECT id, platformId, platformSlug, source, fileOrigin, localPath FROM games WHERE localPath IS NOT NULL")
     suspend fun getGamesWithLocalPathInfo(): List<GameLocalPathInfo>
@@ -369,33 +347,10 @@ interface GameDao {
     """)
     fun observeHiddenByPlatformList(platformId: Long, ownerUserId: Long?): Flow<List<GameListItem>>
 
-    @Query("""
-        SELECT id, platformId, platformSlug, title, sortTitle, localPath, source, isFavorite,
-               EXISTS(SELECT 1 FROM user_roms_hidden h WHERE h.gameId = games.id AND (h.ownerUserId IS NULL OR h.ownerUserId IS :ownerUserId)) AS isHidden,
-               isMultiDisc, rommId, steamAppId, packageName, steamLauncher, playCount, playTimeMinutes,
-               lastPlayed, genre, players, rating, userRating, userDifficulty, releaseYear, addedAt,
-               achievementCount, earnedAchievementCount, completion, status, developer, igdbId, timeToBeatMainSec
-        FROM games
-        WHERE platformId = :platformId AND isFavorite = 1
-        AND NOT EXISTS (SELECT 1 FROM user_roms_hidden h WHERE h.gameId = games.id AND (h.ownerUserId IS NULL OR h.ownerUserId IS :ownerUserId))
-        ORDER BY (source = 'ROMM_REMOTE') ASC, sortTitle ASC
-    """)
+    @Query("SELECT $GAME_LIST_COLUMNS FROM games WHERE $PLATFORM_FAVORITES_LIST_SCOPE_SQL $FAVORITES_ORDER_SQL")
     fun observeFavoritesByPlatformList(platformId: Long, ownerUserId: Long?): Flow<List<GameListItem>>
 
-    @Query("""
-        SELECT id, platformId, platformSlug, title, sortTitle, localPath, source, isFavorite,
-               EXISTS(SELECT 1 FROM user_roms_hidden h WHERE h.gameId = games.id AND (h.ownerUserId IS NULL OR h.ownerUserId IS :ownerUserId)) AS isHidden,
-               isMultiDisc, rommId, steamAppId, packageName, steamLauncher, playCount, playTimeMinutes,
-               lastPlayed, genre, players, rating, userRating, userDifficulty, releaseYear, addedAt,
-               achievementCount, earnedAchievementCount, completion, status, developer, igdbId, timeToBeatMainSec
-        FROM games
-        WHERE platformId = :platformId
-        AND isGroupVisible = 1
-        AND NOT EXISTS (SELECT 1 FROM user_roms_hidden h WHERE h.gameId = games.id AND (h.ownerUserId IS NULL OR h.ownerUserId IS :ownerUserId))
-        AND (source = 'LOCAL_ONLY' OR source = 'ROMM_SYNCED' OR source = 'STEAM' OR source = 'ANDROID_APP')
-        AND (source != 'STEAM' OR localPath IS NOT NULL OR (steamLauncher IS NOT NULL AND steamLauncher != 'native'))
-        ORDER BY sortTitle ASC
-    """)
+    @Query("SELECT $GAME_LIST_COLUMNS FROM games WHERE $PLATFORM_PLAYABLE_LIST_SCOPE_SQL $TITLE_ORDER_SQL")
     fun observePlayableByPlatformList(platformId: Long, ownerUserId: Long?): Flow<List<GameListItem>>
 
     @Query("""
@@ -1025,9 +980,6 @@ interface GameDao {
         AND NOT EXISTS (SELECT 1 FROM user_roms_hidden h WHERE h.gameId = games.id AND (h.ownerUserId IS NULL OR h.ownerUserId IS :ownerUserId))
     """)
     suspend fun getDistinctRegions(ownerUserId: Long?): List<String>
-
-    @Query("SELECT id, regions FROM games WHERE regions IS NOT NULL AND regions != ''")
-    fun observeRegionInfo(): Flow<List<GameRegionInfo>>
 
     @Query("""
         SELECT DISTINCT genre FROM games

@@ -22,6 +22,7 @@ object DatabaseFactory {
             "alauncher.db"
         )
             .addMigrations(*MigrationRegistry.ARRAY)
+            .addCallback(DatabaseCallbacks)
             .enableMultiInstanceInvalidation()
             .build()
     }

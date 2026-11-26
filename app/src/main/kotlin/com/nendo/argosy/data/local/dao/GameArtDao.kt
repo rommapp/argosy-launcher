@@ -40,6 +40,11 @@ data class AppIconTarget(
     val packageName: String
 )
 
+data class GameArtChanges(
+    val rows: List<GameArtEntity>,
+    val totalRows: Int
+)
+
 data class GameArtLocalPaths(
     val gameId: Long,
     val slot: String,
@@ -55,6 +60,21 @@ interface GameArtDao {
 
     @Query("SELECT * FROM game_art")
     suspend fun getAll(): List<GameArtEntity>
+
+    @Query("SELECT COUNT(*) FROM game_art")
+    suspend fun countRows(): Int
+
+    @Query("SELECT DISTINCT gameId FROM game_art")
+    suspend fun getGameIds(): List<Long>
+
+    @Query(
+        "SELECT * FROM game_art WHERE gameId IN " +
+            "(SELECT DISTINCT gameId FROM game_art WHERE changeSeq > :seq)"
+    )
+    suspend fun changedSince(seq: Long): List<GameArtEntity>
+
+    @Transaction
+    suspend fun changesSince(seq: Long): GameArtChanges = GameArtChanges(changedSince(seq), countRows())
 
     @Query("SELECT * FROM game_art WHERE gameId = :gameId")
     suspend fun getForGame(gameId: Long): List<GameArtEntity>

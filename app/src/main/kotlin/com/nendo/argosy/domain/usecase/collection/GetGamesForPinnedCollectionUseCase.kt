@@ -6,6 +6,7 @@ import com.nendo.argosy.data.local.dao.getByIdsChunked
 import com.nendo.argosy.data.local.entity.CollectionType
 import com.nendo.argosy.data.local.entity.GameEntity
 import com.nendo.argosy.data.preferences.SyncPreferencesRepository
+import com.nendo.argosy.data.repository.GameCategoryIndex
 import com.nendo.argosy.domain.model.PinnedCollection
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.emitAll
@@ -16,7 +17,8 @@ import javax.inject.Inject
 class GetGamesForPinnedCollectionUseCase @Inject constructor(
     private val collectionDao: CollectionDao,
     private val gameDao: GameDao,
-    private val syncPreferencesRepository: SyncPreferencesRepository
+    private val syncPreferencesRepository: SyncPreferencesRepository,
+    private val gameCategoryIndex: GameCategoryIndex
 ) {
     /**
      * The collection's games in its own order. A [limit] stops a regular collection from loading
@@ -44,17 +46,10 @@ class GetGamesForPinnedCollectionUseCase @Inject constructor(
                     flow {
                         val owner = syncPreferencesRepository.getRommUserId()
                         emitAll(
-                            gameDao.observeAllCategoryInfo(owner).map { items ->
-                                val matchingIds = items.filter { info ->
-                                    val field = when (pinned.type) {
-                                        CategoryType.GENRE -> info.genre
-                                        CategoryType.GAME_MODE -> info.gameModes
-                                        CategoryType.SERIES -> null
-                                    }
-                                    field?.split(",")?.any {
-                                        it.trim().equals(pinned.categoryName, ignoreCase = true)
-                                    } == true
-                                }.map { it.id }
+                            gameCategoryIndex.observeEachChange(owner).map { rows ->
+                                val matchingIds = rows
+                                    .filter { it.matches(pinned.type, pinned.categoryName) }
+                                    .map { it.id }
                                 gameDao.getByIdsChunked(matchingIds).sortedBy { it.sortTitle }
                             }
                         )

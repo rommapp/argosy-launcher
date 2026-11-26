@@ -12,6 +12,7 @@ import com.nendo.argosy.data.emulator.M3uManager
 import com.nendo.argosy.util.DiscSheets
 import com.nendo.argosy.util.FileNames
 import com.nendo.argosy.data.local.dao.GameArtDao
+import com.nendo.argosy.data.local.dao.GameChangeDao
 import com.nendo.argosy.data.local.dao.GameDao
 import com.nendo.argosy.data.local.dao.GameDiscDao
 import com.nendo.argosy.data.local.dao.GameFileDao
@@ -47,6 +48,7 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.emitAll
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flatMapLatest
@@ -89,7 +91,8 @@ class GameRepository @Inject constructor(
     private val attributionRepository: StorageAttributionRepository,
     private val gameArtDao: GameArtDao,
     private val gameScreenshotDao: GameScreenshotDao,
-    private val platformFolderResolver: PlatformFolderResolver
+    private val platformFolderResolver: PlatformFolderResolver,
+    private val gameChangeDao: GameChangeDao
 ) {
     private val legacyDownloadDir: File get() = platformFolderResolver.legacyAppDownloadsDir
 
@@ -999,11 +1002,9 @@ class GameRepository @Inject constructor(
      * Ids of the games tagged with at least one of [regions]. A game whose stored region list is
      * empty or absent never matches.
      */
-    fun observeGameIdsInRegions(regions: Set<String>): Flow<Set<Long>> =
-        gameDao.observeRegionInfo().map { rows ->
-            rows.filter { row -> splitRegions(row.regions).any { it in regions } }
-                .mapTo(HashSet()) { it.id }
-        }
+    fun observeGameIdsInRegions(regions: Set<String>): Flow<Set<Long>> = flow {
+        emitAll(GameScopeCursor(GameRegionScopeSource(gameChangeDao), gameChangeDao).observe())
+    }.map { rows -> rows.idsInRegions(regions) }.distinctUntilChanged()
 
     fun observeHiddenByPlatformList(platformId: Long): Flow<List<GameListItem>> = flow {
         emitAll(gameDao.observeHiddenByPlatformList(platformId, hiddenOwnerId()))
@@ -1013,28 +1014,24 @@ class GameRepository @Inject constructor(
         emitAll(gameDao.observeHiddenList(hiddenOwnerId()))
     }
 
-    fun observePlayableByPlatformList(platformId: Long): Flow<List<GameListItem>> = flow {
-        emitAll(gameDao.observePlayableByPlatformList(platformId, hiddenOwnerId()))
-    }
+    fun observePlayableByPlatformList(platformId: Long): Flow<List<GameListItem>> =
+        observeListScope(GameListScope.PlatformPlayable(platformId))
 
-    fun observeFavoritesByPlatformList(platformId: Long): Flow<List<GameListItem>> = flow {
-        emitAll(gameDao.observeFavoritesByPlatformList(platformId, hiddenOwnerId()))
-    }
+    fun observeFavoritesByPlatformList(platformId: Long): Flow<List<GameListItem>> =
+        observeListScope(GameListScope.PlatformFavorites(platformId))
 
-    fun observeByPlatformList(platformId: Long): Flow<List<GameListItem>> = flow {
-        emitAll(gameDao.observeByPlatformList(platformId, hiddenOwnerId()))
-    }
+    fun observeByPlatformList(platformId: Long): Flow<List<GameListItem>> =
+        observeListScope(GameListScope.Platform(platformId))
 
-    fun observeAllList(): Flow<List<GameListItem>> = flow {
-        emitAll(gameDao.observeAllList(hiddenOwnerId()))
-    }
+    fun observeAllList(): Flow<List<GameListItem>> = observeListScope(GameListScope.All)
 
-    fun observePlayableList(): Flow<List<GameListItem>> = flow {
-        emitAll(gameDao.observePlayableList(hiddenOwnerId()))
-    }
+    fun observePlayableList(): Flow<List<GameListItem>> = observeListScope(GameListScope.Playable)
 
-    fun observeFavoritesList(): Flow<List<GameListItem>> = flow {
-        emitAll(gameDao.observeFavoritesList(hiddenOwnerId()))
+    fun observeFavoritesList(): Flow<List<GameListItem>> = observeListScope(GameListScope.Favorites)
+
+    private fun observeListScope(scope: GameListScope): Flow<List<GameListItem>> = flow {
+        val source = GameListScopeSource(scope, hiddenOwnerId(), gameDao, gameChangeDao)
+        emitAll(GameScopeCursor(source, gameChangeDao).observe())
     }
 
     suspend fun getNewlyAdded(

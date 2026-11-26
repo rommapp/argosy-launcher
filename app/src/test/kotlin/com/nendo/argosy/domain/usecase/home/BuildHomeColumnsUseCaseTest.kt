@@ -311,6 +311,43 @@ class BuildHomeColumnsUseCaseTest {
     }
 
     @Test
+    fun `listings of one game appear once in friends playing`() {
+        val japanese = HomeFriendsPlayingGame(game(1).copy(igdbId = 77), playingNow = true, lastPlayedAt = at(500))
+        val english = HomeFriendsPlayingGame(game(2).copy(igdbId = 77, localPath = "/roms/a.gba"), playingNow = true, lastPlayedAt = at(500))
+        val revision = HomeFriendsPlayingGame(game(3).copy(igdbId = 77), playingNow = true, lastPlayedAt = at(500))
+        val other = HomeFriendsPlayingGame(game(4).copy(igdbId = 88), playingNow = false, lastPlayedAt = at(100))
+
+        val column = build(HomeColumnSources(friendsPlaying = listOf(japanese, english, revision, other))).single()
+
+        assertEquals(listOf(2L, 4L), column.games.map { it.id })
+    }
+
+    @Test
+    fun `the listing kept is the visible downloaded one the user played last`() {
+        val hidden = HomeFriendsPlayingGame(
+            game(1).copy(igdbId = 77, localPath = "/roms/a", isGroupVisible = false),
+            playingNow = true,
+            lastPlayedAt = null
+        )
+        val older = HomeFriendsPlayingGame(game(2, lastPlayed = at(10)).copy(igdbId = 77, localPath = "/roms/b"), playingNow = true, lastPlayedAt = null)
+        val newer = HomeFriendsPlayingGame(game(3, lastPlayed = at(20)).copy(igdbId = 77, localPath = "/roms/c"), playingNow = true, lastPlayedAt = null)
+
+        val column = build(HomeColumnSources(friendsPlaying = listOf(hidden, older, newer))).single()
+
+        assertEquals(listOf(3L), column.games.map { it.id })
+    }
+
+    @Test
+    fun `games with no igdb id are never merged`() {
+        val first = HomeFriendsPlayingGame(game(1), playingNow = true, lastPlayedAt = null)
+        val second = HomeFriendsPlayingGame(game(2), playingNow = true, lastPlayedAt = null)
+
+        val column = build(HomeColumnSources(friendsPlaying = listOf(first, second))).single()
+
+        assertEquals(setOf(1L, 2L), column.games.map { it.id }.toSet())
+    }
+
+    @Test
     fun `the most played genre sums play across a comma list`() {
         val sources = HomeColumnSources(
             genrePlay = listOf(

@@ -120,7 +120,12 @@ class BuildHomeColumnsUseCase @Inject constructor() {
     }
 
     private fun friendsOrder(entries: List<HomeFriendsPlayingGame>): List<GameEntity> =
-        entries.sortedWith(
+        entries.groupBy { it.game.igdbId ?: -it.game.id }.values.map { listings ->
+            listings.maxWith(
+                compareBy<HomeFriendsPlayingGame>({ it.game.isGroupVisible }, { it.game.localPath != null }, { it.game.lastPlayed })
+                    .thenByDescending { it.game.id }
+            )
+        }.sortedWith(
             compareByDescending<HomeFriendsPlayingGame> { it.playingNow }
                 .thenByDescending { it.lastPlayedAt }
         ).map { it.game }

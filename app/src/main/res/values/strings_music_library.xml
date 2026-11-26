@@ -27,11 +27,11 @@
     <!-- Small capitalised label at the top of a genre column. Noun. -->
     <string name="music_library_kicker_genre">Genre</string>
     <!-- Title of the artist column holding albums with no artist tag. -->
-    <string name="music_library_unknown_artist">Unknown Artist</string>
+    <string name="music_library_unknown_artist">Unknown artist</string>
     <!-- Title of the genre column holding albums with no genre tag. -->
-    <string name="music_library_unknown_genre">Unknown Genre</string>
+    <string name="music_library_unknown_genre">Unknown genre</string>
     <!-- Title of the release year column holding albums with no year tag. -->
-    <string name="music_library_unknown_year">Unknown Year</string>
+    <string name="music_library_unknown_year">Unknown year</string>
     <!-- Title of the column of recently played music. -->
     <string name="music_library_recent_title">Recently played</string>
     <!-- Joins two parts of a label, for example a column kind and its source. -->
@@ -201,10 +201,6 @@
     <string name="music_library_permission_not_now">Not now</string>
     <!-- Footer hint inside an artist, album, year or genre column: play every track of the column. Verb phrase. -->
     <string name="music_library_footer_play_column">Play all</string>
-    <!-- Footer hint while reordering a playlist: up/down moves the lifted track. Verb. -->
-    <string name="music_library_footer_move">Move</string>
-    <!-- Footer hint while reordering a playlist: finish reordering. Adjective/verb, "finished". -->
-    <string name="music_library_footer_move_done">Done</string>
     <!-- Button at the top of an artist, album, year or genre column that plays every track. Verb phrase. -->
     <string name="music_library_contents_play_all">Play all</string>
     <!-- Content description of the arrow that moves the lifted track one place up. -->

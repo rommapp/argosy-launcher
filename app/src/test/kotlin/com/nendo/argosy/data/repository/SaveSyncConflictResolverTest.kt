@@ -248,6 +248,33 @@ class SaveSyncConflictResolverTest {
         io.mockk.coVerify(exactly = 0) { saveArchiver.copyFileToPath(any(), any()) }
     }
 
+    @Test
+    fun `downgrading a GameCube hardcore save places it for the package the game launches with`() = runTest {
+        val launchPackage = "org.dolphinemu.mmjr"
+        val cardBase = "/storage/emulated/0/mmjr/GC"
+        coEvery { gameDao.getById(2L) } returns testGame.copy(id = 2L, platformSlug = "ngc", localPath = "/roms/zelda.iso")
+        coEvery { emulatorResolver.getEmulatorPackageForGame(2L, testGame.platformId, "ngc") } returns launchPackage
+        coEvery { savePathResolver.gciBaseOverride(any(), 2L, "ngc", launchPackage) } returns cardBase
+        coEvery { mockCacheManager.protectBeforeOverwrite(any(), any(), any()) } returns true
+        val context = io.mockk.slot<com.nendo.argosy.data.sync.platform.SaveContext>()
+        coEvery { gciSaveHandler.extractDownload(any(), capture(context)) } returns
+            com.nendo.argosy.data.sync.platform.ExtractResult(success = true, targetPath = "$cardBase/USA/Card A/01-GZLE-DATA.gci")
+        val held = File.createTempFile("held", ".gci").apply { writeBytes(byteArrayOf(1)) }
+
+        val result = resolver.resolveHardcoreConflict(
+            SaveSyncResult.NeedsHardcoreResolution(
+                tempFilePath = held.absolutePath, gameId = 2L, gameName = "Zelda", emulatorId = "dolphin",
+                targetPath = "/GC/USA/Card A/old.gci", isFolderBased = false, channelName = null
+            ),
+            HardcoreResolutionChoice.DOWNGRADE_TO_CASUAL
+        )
+
+        assertTrue("Expected success, got $result", result is SaveSyncResult.Success)
+        assertEquals(launchPackage, context.captured.emulatorPackage)
+        assertEquals(cardBase, context.captured.basePathOverride)
+        io.mockk.coVerify(exactly = 0) { savePathResolver.gciBaseOverride(any(), any(), any(), null) }
+    }
+
     private fun makeServerSave(
         id: Long = 1L,
         fileName: String = "argosy-latest.srm",

@@ -90,18 +90,19 @@ class SaveSyncConflictResolver @Inject constructor(
                             return@withContext SaveSyncResult.Error("Failed to place save: $reason")
                         }
                     } else if (game != null && gciConfig != null) {
+                        val emulatorPackage = emulatorResolver.getEmulatorPackageForGame(game.id, game.platformId, game.platformSlug)
                         val placed = gciSaveHandler.extractDownload(
                             tempFile,
                             SaveContext(
                                 config = gciConfig,
                                 romPath = game.localPath,
                                 saveId = game.saveId ?: game.titleId,
-                                emulatorPackage = null,
+                                emulatorPackage = emulatorPackage,
                                 gameId = game.id,
                                 gameTitle = game.title,
                                 platformSlug = game.platformSlug,
                                 emulatorId = resolution.emulatorId,
-                                basePathOverride = savePathResolver.gciBaseOverride(gciConfig, game.id, game.platformSlug, null)
+                                basePathOverride = savePathResolver.gciBaseOverride(gciConfig, game.id, game.platformSlug, emulatorPackage)
                             )
                         )
                         placedPath = placed.targetPath?.takeIf { placed.success }

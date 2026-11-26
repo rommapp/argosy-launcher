@@ -402,16 +402,11 @@ private fun musicFooterHints(
     val playAll = stringResource(R.string.music_library_footer_play_all)
     val playColumn = stringResource(R.string.music_library_footer_play_column)
     val trackOptions = stringResource(R.string.music_library_footer_track_options)
-    val move = stringResource(R.string.music_library_footer_move)
-    val moveDone = stringResource(R.string.music_library_footer_move_done)
     val swapScreens = stringResource(R.string.music_library_footer_swap_screens)
     val contents = uiState.contents
     return buildList {
         when {
-            contents != null && contents.isMoving -> {
-                add(InputButton.DPAD_VERTICAL to move)
-                add(InputButton.A to moveDone)
-            }
+            contents != null && contents.isMoving -> Unit
             contents != null -> {
                 if (contents.canPlayColumn) add(InputButton.X to playColumn)
                 if (contents.tracks.isNotEmpty()) {

@@ -102,8 +102,6 @@
     <string name="music_library_permission_open_settings">開啟 RomM 設定</string>
     <string name="music_library_permission_not_now">稍後再說</string>
     <string name="music_library_footer_play_column">全部播放</string>
-    <string name="music_library_footer_move">移動</string>
-    <string name="music_library_footer_move_done">完成</string>
     <string name="music_library_contents_play_all">全部播放</string>
     <string name="music_library_contents_move_up">上移</string>
     <string name="music_library_contents_move_down">下移</string>

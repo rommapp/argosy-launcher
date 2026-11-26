@@ -108,8 +108,6 @@
     <string name="music_library_permission_open_settings">Abrir ajustes de RomM</string>
     <string name="music_library_permission_not_now">Ahora no</string>
     <string name="music_library_footer_play_column">Reproducir todo</string>
-    <string name="music_library_footer_move">Mover</string>
-    <string name="music_library_footer_move_done">Listo</string>
     <string name="music_library_contents_play_all">Reproducir todo</string>
     <string name="music_library_contents_move_up">Subir</string>
     <string name="music_library_contents_move_down">Bajar</string>

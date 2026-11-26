@@ -88,12 +88,14 @@ fun FilePickerModal(
     val theme = LocalArgosyTheme.current
     val listState = rememberLazyListState()
 
-    val pendingAdds = if (manageMode) {
-        allRows.count { !it.isFolder && !it.isLocked && !it.isDownloaded && it.countsAsSelected(selectedIds) }
-    } else 0
-    val pendingRemoves = if (manageMode) {
-        allRows.count { !it.isFolder && !it.isLocked && it.isDownloaded && !it.countsAsSelected(selectedIds) }
-    } else 0
+    val (pendingAdds, pendingRemoves) = remember(allRows, selectedIds, manageMode) {
+        if (manageMode) {
+            allRows.count { !it.isFolder && !it.isLocked && !it.isDownloaded && it.countsAsSelected(selectedIds) } to
+                allRows.count { !it.isFolder && !it.isLocked && it.isDownloaded && !it.countsAsSelected(selectedIds) }
+        } else {
+            0 to 0
+        }
+    }
     val confirmLabel = when {
         !manageMode -> stringResource(R.string.gamedetail_file_picker_confirm_download)
         pendingAdds > 0 && pendingRemoves == 0 ->
@@ -106,9 +108,9 @@ fun FilePickerModal(
     }
     val confirmEnabled = !manageMode || pendingAdds + pendingRemoves > 0
     val confirmTint = if (manageMode && pendingRemoves > 0) theme.destructive else theme.focusAccent
-    val everythingSelected = allRows.allSelectableSelected(selectedIds)
+    val everythingSelected = remember(allRows, selectedIds) { allRows.allSelectableSelected(selectedIds) }
     val checkStates = remember(allRows, selectedIds) { allRows.folderCheckStates(selectedIds) }
-    val hasFolders = allRows.any { it.isFolder }
+    val hasFolders = remember(allRows) { allRows.any { it.isFolder } }
     val screenHeight = LocalConfiguration.current.screenHeightDp.dp
 
     Box(

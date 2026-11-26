@@ -33,6 +33,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -44,7 +45,6 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.nendo.argosy.R
-import com.nendo.argosy.domain.model.MusicArt
 import com.nendo.argosy.domain.model.MusicColumn
 import com.nendo.argosy.domain.model.MusicColumnKind
 import com.nendo.argosy.domain.model.MusicTrack
@@ -286,15 +286,15 @@ private fun CoverPane(
 ) {
     val albums = contents.albums
     val index = contents.albumIndex
-    val sleeves: List<MusicArt>
-    val titles: List<String>
-    if (contents.isFlat) {
-        sleeves = contents.column.sleeves
-        titles = contents.column.sleeveTitles
-    } else {
-        val stack = albums.drop(index).take(STACK_DEPTH)
-        sleeves = stack.mapNotNull { it.art }
-        titles = stack.filter { it.art != null }.map { it.title }
+    val column = contents.column
+    val isFlat = contents.isFlat
+    val (sleeves, titles) = remember(isFlat, column, albums, index) {
+        if (isFlat) {
+            column.sleeves to column.sleeveTitles
+        } else {
+            val stack = albums.drop(index).take(STACK_DEPTH)
+            stack.mapNotNull { it.art } to stack.filter { it.art != null }.map { it.title }
+        }
     }
     Column(modifier, horizontalAlignment = Alignment.CenterHorizontally) {
         Box(

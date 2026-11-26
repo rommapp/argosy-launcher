@@ -108,8 +108,6 @@
     <string name="music_library_permission_open_settings">Abrir configurações do RomM</string>
     <string name="music_library_permission_not_now">Agora não</string>
     <string name="music_library_footer_play_column">Tocar tudo</string>
-    <string name="music_library_footer_move">Mover</string>
-    <string name="music_library_footer_move_done">Concluir</string>
     <string name="music_library_contents_play_all">Tocar tudo</string>
     <string name="music_library_contents_move_up">Mover para cima</string>
     <string name="music_library_contents_move_down">Mover para baixo</string>

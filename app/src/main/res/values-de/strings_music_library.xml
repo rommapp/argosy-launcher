@@ -105,8 +105,6 @@
     <string name="music_library_permission_open_settings">RomM-Einstellungen öffnen</string>
     <string name="music_library_permission_not_now">Später</string>
     <string name="music_library_footer_play_column">Alle abspielen</string>
-    <string name="music_library_footer_move">Verschieben</string>
-    <string name="music_library_footer_move_done">Fertig</string>
     <string name="music_library_contents_play_all">Alle abspielen</string>
     <string name="music_library_contents_move_up">Nach oben</string>
     <string name="music_library_contents_move_down">Nach unten</string>

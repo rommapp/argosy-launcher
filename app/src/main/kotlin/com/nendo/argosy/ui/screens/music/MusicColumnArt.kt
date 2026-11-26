@@ -97,9 +97,12 @@ internal fun BoxScope.MusicFocusedColumnArt(column: MusicColumn, stack: MusicSta
         )
         return
     }
-    val shownAlbums = stack?.albums?.drop(stack.index)?.take(MAX_SLEEVES)?.filter { it.art != null }
-    val sleeves = shownAlbums?.mapNotNull { it.art } ?: column.sleeves.take(MAX_SLEEVES)
-    val titles = shownAlbums?.map { it.title } ?: column.sleeveTitles
+    val (sleeves, titles) = remember(column, stack) {
+        val shownAlbums = stack?.albums?.drop(stack.index)?.take(MAX_SLEEVES)?.filter { it.art != null }
+        val sleeves = shownAlbums?.mapNotNull { it.art } ?: column.sleeves.take(MAX_SLEEVES)
+        val titles = shownAlbums?.map { it.title } ?: column.sleeveTitles
+        sleeves to titles
+    }
     val hero = stack?.front?.art ?: column.heroArt ?: column.sleeves.firstOrNull()
     if (hero == null) {
         MusicNoArtGround(column = column, large = true)

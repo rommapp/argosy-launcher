@@ -954,6 +954,26 @@ private fun GameDetailContent(
     }
 }
 
+private data class FilePickerTally(
+    val adds: List<com.nendo.argosy.data.model.FilePickerRow>,
+    val removes: List<com.nendo.argosy.data.model.FilePickerRow>,
+    val selected: List<com.nendo.argosy.data.model.FilePickerRow>,
+    val fileCount: Int
+)
+
+private fun filePickerTally(
+    fileRows: List<com.nendo.argosy.data.model.FilePickerRow>,
+    selectedIds: Set<Long>
+): FilePickerTally {
+    val isSelected = { row: com.nendo.argosy.data.model.FilePickerRow -> row.rommFileId in selectedIds }
+    return FilePickerTally(
+        adds = fileRows.filter { !it.isFolder && !it.isLocked && !it.isDownloaded && isSelected(it) },
+        removes = fileRows.filter { !it.isFolder && !it.isLocked && it.isDownloaded && !isSelected(it) },
+        selected = fileRows.filter { !it.isFolder && isSelected(it) },
+        fileCount = fileRows.count { !it.isFolder }
+    )
+}
+
 @Composable
 private fun GameDetailModals(
     onNavigateToPlatformSettings: (Long) -> Unit,
@@ -1080,12 +1100,11 @@ private fun GameDetailModals(
         exit = fadeOut()
     ) {
         val fileRows = pickerState.filePickerRows
-        val isSelected = { row: com.nendo.argosy.data.model.FilePickerRow ->
-            row.rommFileId in pickerState.filePickerSelected
-        }
-        val adds = fileRows.filter { !it.isFolder && !it.isLocked && !it.isDownloaded && isSelected(it) }
-        val removes = fileRows.filter { !it.isFolder && !it.isLocked && it.isDownloaded && !isSelected(it) }
-        val selected = fileRows.filter { !it.isFolder && isSelected(it) }
+        val selectedIds = pickerState.filePickerSelected
+        val tally = remember(fileRows, selectedIds) { filePickerTally(fileRows, selectedIds) }
+        val adds = tally.adds
+        val removes = tally.removes
+        val selected = tally.selected
         val noChangesSummary = stringResource(R.string.gamedetail_file_picker_summary_no_changes)
         val addedSummary = stringResource(
             R.string.gamedetail_file_picker_summary_added,
@@ -1100,7 +1119,7 @@ private fun GameDetailModals(
         val selectionSummary = stringResource(
             R.string.gamedetail_file_picker_summary_selection,
             selected.size,
-            fileRows.count { !it.isFolder },
+            tally.fileCount,
             com.nendo.argosy.util.formatBytes(selected.sumOf { it.sizeBytes })
         )
         val summary = if (pickerState.filePickerManageMode) {

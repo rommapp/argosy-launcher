@@ -34,6 +34,7 @@ import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.flow.updateAndGet
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import javax.inject.Inject
@@ -311,9 +312,10 @@ class MusicViewModel @Inject constructor(
     }
 
     fun cycleGrouping(delta: Int) {
-        val current = selection.value ?: return
         val entries = MusicGrouping.entries
-        val next = entries[(current.grouping.ordinal + delta).mod(entries.size)]
+        val next = selection.updateAndGet { current ->
+            current?.copy(grouping = entries[(current.grouping.ordinal + delta).mod(entries.size)])
+        }?.grouping ?: return
         _uiState.update {
             it.copy(
                 grouping = next,
@@ -325,16 +327,20 @@ class MusicViewModel @Inject constructor(
                 loadFailed = false
             )
         }
-        selection.value = current.copy(grouping = next)
         viewModelScope.launch { preferences.setGrouping(next) }
     }
 
     fun confirmFilter() {
         val chosen = actions.dismissFilterWithChoice() ?: return
-        val current = selection.value ?: return
-        if (current.filter == chosen) return
+        var changed = false
+        selection.update { current ->
+            changed = false
+            if (current == null || current.filter == chosen) return@update current
+            changed = true
+            current.copy(filter = chosen)
+        }
+        if (!changed) return
         _uiState.update { it.copy(filter = chosen) }
-        selection.value = current.copy(filter = chosen)
         viewModelScope.launch { preferences.setSourceFilter(chosen) }
     }
 

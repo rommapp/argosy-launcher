@@ -111,8 +111,6 @@
     <string name="music_library_permission_open_settings">Открыть настройки RomM</string>
     <string name="music_library_permission_not_now">Не сейчас</string>
     <string name="music_library_footer_play_column">Играть всё</string>
-    <string name="music_library_footer_move">Переместить</string>
-    <string name="music_library_footer_move_done">Готово</string>
     <string name="music_library_contents_play_all">Играть всё</string>
     <string name="music_library_contents_move_up">Выше</string>
     <string name="music_library_contents_move_down">Ниже</string>

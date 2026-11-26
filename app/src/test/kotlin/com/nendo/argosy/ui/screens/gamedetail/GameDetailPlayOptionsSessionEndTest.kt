@@ -1,18 +1,26 @@
 package com.nendo.argosy.ui.screens.gamedetail
 
+import androidx.lifecycle.ViewModelStore
+import com.nendo.argosy.DualScreenManager
+import com.nendo.argosy.DualScreenManagerHolder
 import com.nendo.argosy.data.preferences.UserPreferences
+import com.nendo.argosy.hardware.DisplayBadgeSize
 import com.nendo.argosy.libretro.LaunchMode
+import com.nendo.argosy.ui.screens.gamedetail.delegates.MoreOptionsState
 import com.nendo.argosy.ui.screens.gamedetail.modals.PlayOptionAction
+import com.nendo.argosy.util.AttachedScreen
 import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
+import io.mockk.verifyOrder
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.StandardTestDispatcher
+import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
@@ -57,6 +65,9 @@ class GameDetailPlayOptionsSessionEndTest {
         mockk<com.nendo.argosy.ui.screens.common.GradientExtractionDelegate>(relaxed = true)
     private val appsRepository = mockk<com.nendo.argosy.data.repository.AppsRepository>(relaxed = true)
     private val siblingChoice = mockk<com.nendo.argosy.ui.screens.common.SiblingChoiceDelegate>(relaxed = true)
+    private val moreOptionsState = MutableStateFlow(MoreOptionsState())
+    private val dualScreenManager = mockk<DualScreenManager>(relaxed = true)
+    private val viewModels = ViewModelStore()
 
     @Before
     fun setUp() {
@@ -93,9 +104,7 @@ class GameDetailPlayOptionsSessionEndTest {
         every { playOptionsDelegate.state } returns MutableStateFlow(
             com.nendo.argosy.ui.screens.gamedetail.delegates.PlayOptionsState()
         )
-        every { moreOptionsDelegate.state } returns MutableStateFlow(
-            com.nendo.argosy.ui.screens.gamedetail.delegates.MoreOptionsState()
-        )
+        every { moreOptionsDelegate.state } returns moreOptionsState
         every { perGameSettingsDelegate.state } returns MutableStateFlow(
             com.nendo.argosy.ui.screens.gamedetail.delegates.PerGameSettingsState()
         )
@@ -114,7 +123,68 @@ class GameDetailPlayOptionsSessionEndTest {
     }
 
     @After
-    fun tearDown() = Dispatchers.resetMain()
+    fun tearDown() {
+        viewModels.clear()
+        DualScreenManagerHolder.instance = null
+        Dispatchers.resetMain()
+    }
+
+    @Test
+    fun `screen number badges follow the more options menu open then closed`() = runTest(dispatcher) {
+        attachTwoScreens()
+        val viewModel = viewModel()
+        advanceUntilIdle()
+
+        openMoreOptions(viewModel)
+        moreOptionsState.value = MoreOptionsState(showMoreOptions = false)
+        advanceUntilIdle()
+
+        verifyOrder {
+            dualScreenManager.showScreenNumbers(DisplayBadgeSize.SMALL, any())
+            dualScreenManager.hideScreenNumbers()
+        }
+    }
+
+    @Test
+    fun `clearing the view model with more options open hides the screen number badges`() =
+        runTest(dispatcher) {
+            attachTwoScreens()
+            val viewModel = viewModel()
+            advanceUntilIdle()
+            openMoreOptions(viewModel)
+            verify(exactly = 0) { dualScreenManager.hideScreenNumbers() }
+
+            viewModels.put("detail", viewModel)
+            viewModels.clear()
+
+            verify(exactly = 1) { dualScreenManager.hideScreenNumbers() }
+        }
+
+    @Test
+    fun `initial closed more options state shows and hides no screen number badges`() =
+        runTest(dispatcher) {
+            attachTwoScreens()
+            viewModel()
+            advanceUntilIdle()
+
+            verify(exactly = 0) { dualScreenManager.showScreenNumbers(any(), any()) }
+            verify(exactly = 0) { dualScreenManager.hideScreenNumbers() }
+        }
+
+    private fun attachTwoScreens() {
+        every { dualScreenManager.focusableDisplays() } returns listOf(
+            AttachedScreen("builtin", 0, 1, 1920, 1080, true),
+            AttachedScreen("external", 2, 2, 1920, 1080, false)
+        )
+        DualScreenManagerHolder.instance = dualScreenManager
+    }
+
+    private fun TestScope.openMoreOptions(viewModel: GameDetailViewModel) {
+        viewModel.toggleMoreOptions()
+        moreOptionsState.value = MoreOptionsState(showMoreOptions = true)
+        advanceUntilIdle()
+        verify(exactly = 1) { dualScreenManager.showScreenNumbers(DisplayBadgeSize.SMALL, any()) }
+    }
 
     @Test
     fun `play options stay closed while a session end runs`() = runTest(dispatcher) {

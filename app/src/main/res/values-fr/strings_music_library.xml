@@ -108,8 +108,6 @@
     <string name="music_library_permission_open_settings">Ouvrir les paramètres RomM</string>
     <string name="music_library_permission_not_now">Plus tard</string>
     <string name="music_library_footer_play_column">Tout lire</string>
-    <string name="music_library_footer_move">Déplacer</string>
-    <string name="music_library_footer_move_done">Terminé</string>
     <string name="music_library_contents_play_all">Tout lire</string>
     <string name="music_library_contents_move_up">Monter</string>
     <string name="music_library_contents_move_down">Descendre</string>

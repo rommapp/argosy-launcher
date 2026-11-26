@@ -40,10 +40,10 @@ class SwitchPlatformFolderNamesUseCase @Inject constructor(
     private val preferencesRepository: UserPreferencesRepository,
     private val attributionRepository: StorageAttributionRepository
 ) {
-    suspend fun pendingMoves(useFsSlug: Boolean): Int {
-        val base = platformFolderResolver.storageBase() ?: return 0
+    suspend fun pendingMoves(useFsSlug: Boolean): Int = withContext(Dispatchers.IO) {
+        val base = platformFolderResolver.storageBase() ?: return@withContext 0
         val platforms = platformDao.getAllPlatforms()
-        return platforms.filter { it.customRomPath == null }.sumOf { platform ->
+        platforms.filter { it.customRomPath == null }.sumOf { platform ->
             val (from, to) = folders(platform, platforms, base, useFsSlug)
             if (from == to) 0 else gamesUnder(platform, from).size
         }

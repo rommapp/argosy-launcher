@@ -18,6 +18,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.pluralStringResource
@@ -150,50 +151,58 @@ private val MusicShowcaseState.backdrop: MusicArt?
         is MusicShowcaseState.Item -> art
     }
 
+private data class ShowcaseSleeves(
+    val sleeves: List<MusicArt>,
+    val titles: List<String>,
+    val hiddenCount: Int,
+    val sizeRatio: Float
+)
+
+private fun showcaseSleeves(state: MusicShowcaseState): ShowcaseSleeves = when (state) {
+    is MusicShowcaseState.Column -> {
+        val stack = state.stack
+        val shown = stack?.albums?.drop(stack.index)?.take(SHOWCASE_SLEEVES)?.filter { it.art != null }
+        ShowcaseSleeves(
+            sleeves = shown?.mapNotNull { it.art }
+                ?: state.column.sleeves.take(SHOWCASE_SLEEVES).ifEmpty { listOfNotNull(state.column.photo ?: state.column.heroArt) },
+            titles = shown?.map { it.title } ?: state.column.sleeveTitles,
+            hiddenCount = if (stack == null) state.column.hiddenAlbumCount else 0,
+            sizeRatio = ComponentDefaults.MusicColumns.sleeveSizeRatio
+        )
+    }
+    is MusicShowcaseState.Contents -> {
+        val shown = if (state.isFlat) null else state.front.filter { it.art != null }
+        ShowcaseSleeves(
+            sleeves = shown?.mapNotNull { it.art } ?: state.column.sleeves.take(SHOWCASE_SLEEVES),
+            titles = shown?.map { it.title } ?: state.column.sleeveTitles,
+            hiddenCount = 0,
+            sizeRatio = ComponentDefaults.MusicColumns.contentsSleeveRatio
+        )
+    }
+    is MusicShowcaseState.Item -> ShowcaseSleeves(
+        sleeves = listOfNotNull(state.art),
+        titles = listOf(state.title),
+        hiddenCount = 0,
+        sizeRatio = ComponentDefaults.MusicColumns.sleeveSizeRatio
+    )
+}
+
 @Composable
 private fun BoxScope.ShowcaseArt(state: MusicShowcaseState) {
-    val sleeves: List<MusicArt>
-    val titles: List<String>
-    var hiddenCount = 0
-    var sizeRatio = ComponentDefaults.MusicColumns.sleeveSizeRatio
-    when (state) {
-        is MusicShowcaseState.Column -> {
-            val stack = state.stack
-            val shown = stack?.albums?.drop(stack.index)?.take(SHOWCASE_SLEEVES)?.filter { it.art != null }
-            sleeves = shown?.mapNotNull { it.art }
-                ?: state.column.sleeves.take(SHOWCASE_SLEEVES).ifEmpty { listOfNotNull(state.column.photo ?: state.column.heroArt) }
-            titles = shown?.map { it.title } ?: state.column.sleeveTitles
-            if (stack == null) hiddenCount = state.column.hiddenAlbumCount
-        }
-        is MusicShowcaseState.Contents -> {
-            sizeRatio = ComponentDefaults.MusicColumns.contentsSleeveRatio
-            if (state.isFlat) {
-                sleeves = state.column.sleeves.take(SHOWCASE_SLEEVES)
-                titles = state.column.sleeveTitles
-            } else {
-                val shown = state.front.filter { it.art != null }
-                sleeves = shown.mapNotNull { it.art }
-                titles = shown.map { it.title }
-            }
-        }
-        is MusicShowcaseState.Item -> {
-            sleeves = listOfNotNull(state.art)
-            titles = listOf(state.title)
-        }
-    }
-    if (sleeves.isNotEmpty()) {
+    val shown = remember(state) { showcaseSleeves(state) }
+    if (shown.sleeves.isNotEmpty()) {
         MusicSleeveStack(
-            sleeves = sleeves,
-            titles = titles,
-            hiddenCount = hiddenCount,
-            sizeRatio = sizeRatio,
+            sleeves = shown.sleeves,
+            titles = shown.titles,
+            hiddenCount = shown.hiddenCount,
+            sizeRatio = shown.sizeRatio,
             centerBias = 0f
         )
     } else if (state is MusicShowcaseState.Column) {
         Box(
             modifier = Modifier
                 .align(Alignment.Center)
-                .fillMaxHeight(sizeRatio)
+                .fillMaxHeight(shown.sizeRatio)
                 .aspectRatio(1f)
         ) {
             MusicNoArtGround(column = state.column, large = true)

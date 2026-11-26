@@ -1999,6 +1999,9 @@ private fun SettingsFooter(
     val networkGroupHint = stringResource(R.string.settings_shell_footer_network_group)
     val emulatorOptionsFilesHint = stringResource(R.string.settings_emulator_options_footer_files)
     val launchTargetRows = remember(uiState.launchTargets) { launchTargetsLayout(uiState.launchTargets) }
+    val emulatorOptionsSectionCount = remember(uiState.emulatorOptions) {
+        emulatorOptionsSections(uiState.emulatorOptions).size
+    }
 
     val hints = buildList {
         if (uiState.currentSection != SettingsSection.BOX_ART &&
@@ -2046,7 +2049,7 @@ private fun SettingsFooter(
             add(InputButton.Y to removeFrameHint)
         }
         if (uiState.currentSection == SettingsSection.EMULATOR_OPTIONS &&
-            emulatorOptionsSections(uiState.emulatorOptions).size >= 2
+            emulatorOptionsSectionCount >= 2
         ) {
             add(InputButton.LB_RB to emulatorOptionsFilesHint)
         }

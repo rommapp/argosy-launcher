@@ -19,14 +19,18 @@ object GameChangeTriggers {
             "WHERE `id` = NEW.`id`; END",
         "CREATE TRIGGER IF NOT EXISTS `games_change_seq_update` AFTER UPDATE ON `games` " +
             "WHEN NEW.`changeSeq` <= OLD.`changeSeq` " +
-            "BEGIN UPDATE `games` SET `changeSeq` = $NEXT_SEQ " +
+            "BEGIN UPDATE `games` SET `changeSeq` = MAX(OLD.`changeSeq`, $CURRENT_MAX) + 1 " +
             "WHERE `id` = NEW.`id`; END",
         "CREATE TRIGGER IF NOT EXISTS `games_change_seq_delete` AFTER DELETE ON `games` " +
             "BEGIN UPDATE `games` SET `changeSeq` = MAX(OLD.`changeSeq`, $CURRENT_MAX) + 1 " +
             "WHERE `id` = (SELECT `id` FROM `games` ORDER BY `changeSeq` DESC LIMIT 1); END"
     )
 
+    val dropStatements: List<String> =
+        listOf("games_change_seq_insert", "games_change_seq_update", "games_change_seq_delete")
+            .map { "DROP TRIGGER IF EXISTS `$it`" }
+
     fun create(db: SupportSQLiteDatabase) {
-        statements.forEach(db::execSQL)
+        (dropStatements + statements).forEach(db::execSQL)
     }
 }

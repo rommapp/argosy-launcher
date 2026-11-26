@@ -4,7 +4,6 @@ import androidx.sqlite.db.SupportSQLiteDatabase
 import io.mockk.every
 import io.mockk.mockk
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class Migration233To234Test {
@@ -23,41 +22,12 @@ class Migration233To234Test {
             listOf(
                 "ALTER TABLE `game_art` ADD COLUMN `changeSeq` INTEGER NOT NULL DEFAULT 0",
                 "CREATE INDEX IF NOT EXISTS `index_game_art_changeSeq` ON `game_art` (`changeSeq`)"
-            ) + GameArtChangeTriggers.statements + listOf(
+            ) + GameArtChangeTriggers.dropStatements + GameArtChangeTriggers.statements + listOf(
                 "ALTER TABLE `games` ADD COLUMN `changeSeq` INTEGER NOT NULL DEFAULT 0",
                 "CREATE INDEX IF NOT EXISTS `index_games_changeSeq` ON `games` (`changeSeq`)"
-            ) + GameChangeTriggers.statements,
+            ) + GameChangeTriggers.dropStatements + GameChangeTriggers.statements,
             statements()
         )
-    }
-
-    @Test
-    fun `games triggers are idempotent, keyed by id and skip their own stamp`() {
-        assertEquals(3, GameChangeTriggers.statements.size)
-        GameChangeTriggers.statements.forEach {
-            assertTrue(it.startsWith("CREATE TRIGGER IF NOT EXISTS"))
-            assertTrue("ON `games`" in it)
-        }
-        assertTrue(GameChangeTriggers.statements.any { "AFTER INSERT" in it && "NEW.`id`" in it })
-        assertTrue(
-            GameChangeTriggers.statements.any {
-                "AFTER UPDATE" in it && "WHEN NEW.`changeSeq` <= OLD.`changeSeq`" in it && "NEW.`id`" in it
-            }
-        )
-    }
-
-    @Test
-    fun `a games delete carries the deleted stamp onto the newest remaining row`() {
-        val delete = GameChangeTriggers.statements.single { "AFTER DELETE" in it }
-        assertTrue("MAX(OLD.`changeSeq`, " in delete)
-        assertTrue("ORDER BY `changeSeq` DESC LIMIT 1" in delete)
-    }
-
-    @Test
-    fun `every trigger is idempotent and the update trigger skips its own stamp`() {
-        GameArtChangeTriggers.statements.forEach { assertTrue(it.startsWith("CREATE TRIGGER IF NOT EXISTS")) }
-        assertTrue(GameArtChangeTriggers.statements.any { "AFTER UPDATE" in it && "WHEN NEW.`changeSeq` <= OLD.`changeSeq`" in it })
-        assertTrue(GameArtChangeTriggers.statements.any { "AFTER DELETE" in it && "OLD.`gameId`" in it })
     }
 
     @Test

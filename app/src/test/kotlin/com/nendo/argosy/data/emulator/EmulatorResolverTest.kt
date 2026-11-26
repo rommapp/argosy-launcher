@@ -12,6 +12,7 @@ import io.mockk.mockk
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotEquals
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
@@ -345,6 +346,36 @@ class EmulatorResolverTest {
         val expected = SessionEmulator(duckstation.packageName, "duckstation")
         assertEquals(expected, resolver.resolveSessionEmulator(1L, 10L, "psx", ""))
         assertEquals(expected, resolver.resolveSessionEmulator(1L, 10L, "psx", "com.unknown.app"))
+    }
+
+    @Test
+    fun `a game overridden to an installed ad-hoc app launches ad-hoc`() = runTest {
+        val adHocPackage = "com.custom.emulator"
+        coEvery { emulatorConfigDao.getByGameId(1L) } returns createConfig(gameId = 1L, packageName = adHocPackage)
+        stubDetectorWith()
+        every { installedAppResolver.isAppInstalled(adHocPackage) } returns true
+
+        assertTrue(resolver.launchesAdHoc(1L, 10L, "psx"))
+    }
+
+    @Test
+    fun `a game overridden to a registry emulator does not launch ad-hoc`() = runTest {
+        coEvery { emulatorConfigDao.getByGameId(1L) } returns createConfig(gameId = 1L, packageName = duckstation.packageName)
+        stubDetectorWith(installedEmulator(duckstation))
+
+        assertFalse(resolver.launchesAdHoc(1L, 10L, "psx"))
+    }
+
+    @Test
+    fun `only a synthesized def counts as ad-hoc`() {
+        val synthesized = EmulatorRegistry.synthesizeAdHocEmulatorDef(
+            packageName = "com.custom.emulator",
+            displayName = "Custom Emu",
+            platformSlug = "psx"
+        )
+
+        assertTrue(EmulatorRegistry.isAdHoc(synthesized))
+        assertFalse(EmulatorRegistry.isAdHoc(duckstation))
     }
 
     @Test

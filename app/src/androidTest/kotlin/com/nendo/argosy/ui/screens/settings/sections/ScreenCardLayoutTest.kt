@@ -43,7 +43,7 @@ class ScreenCardLayoutTest {
         compose.setContent {
             MaterialTheme(colorScheme = if (dark.value) darkColorScheme() else lightColorScheme()) {
                 Box(Modifier.testTag("card")) {
-                    ScreenCard(phone.copy(role = role.value), 0.1.dp, focused.value) {}
+                    ScreenCard(phone.copy(role = role.value), 0.1.dp, focused.value, onClick = {})
                 }
             }
         }
@@ -75,7 +75,7 @@ class ScreenCardLayoutTest {
         val screen = mutableStateOf(phone)
         compose.setContent {
             MaterialTheme {
-                ScreenCard(screen.value, 0.1.dp, false) {}
+                ScreenCard(screen.value, 0.1.dp, false, onClick = {})
             }
         }
         compose.onNodeWithText("1").assertIsDisplayed()

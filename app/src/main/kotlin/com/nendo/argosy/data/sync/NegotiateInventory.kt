@@ -24,7 +24,8 @@ class NegotiateInventory @Inject constructor(
     private val activeSaveRepository: ActiveSaveRepository,
     private val syncPreferencesRepository: SyncPreferencesRepository,
     private val savePathResolver: SavePathResolver,
-    private val fal: FileAccessLayer
+    private val fal: FileAccessLayer,
+    private val liveSavePath: LiveSavePath
 ) {
     suspend fun build(secureSaves: Boolean, gameId: Long? = null): List<LocalSaveState> {
         val ownerUserId = syncPreferencesRepository.getRommUserId()
@@ -32,12 +33,14 @@ class NegotiateInventory @Inject constructor(
             .filter { gameId == null || it.gameId == gameId }
         var fromCache = 0
         var fromDisk = 0
+        val livePaths = liveSavePath.perGame()
         val result = rows.mapNotNull { row ->
-            val path = row.localSavePath ?: return@mapNotNull null
+            if (row.localSavePath == null) return@mapNotNull null
             val channel = row.channelName
             if (channel != null && STATE_SLOT.containsMatchIn(channel)) return@mapNotNull null
             val game = gameDao.getById(row.gameId) ?: return@mapNotNull null
             val romPath = game.localPath ?: return@mapNotNull null
+            val path = livePaths.currentLocalSavePath(row, game) ?: return@mapNotNull null
             val slot = SaveSyncApiClient.syncKeyOf(channel)
             val fileName = SaveSyncApiClient.computeUploadFileName(
                 localSavePath = path,

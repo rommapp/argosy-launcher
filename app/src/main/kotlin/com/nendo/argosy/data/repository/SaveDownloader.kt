@@ -13,6 +13,7 @@ import com.nendo.argosy.data.preferences.SyncPreferencesRepository
 import com.nendo.argosy.data.remote.romm.RomMDeviceIdRequest
 import com.nendo.argosy.data.remote.romm.originDeviceName
 import com.nendo.argosy.data.storage.FileAccessLayer
+import com.nendo.argosy.data.sync.LiveSavePath
 import com.nendo.argosy.data.sync.SaveArchiver
 import com.nendo.argosy.data.sync.SavePathResolver
 import com.nendo.argosy.data.sync.SaveUnitResolver
@@ -201,6 +202,7 @@ class SaveDownloader @Inject constructor(
         }
 
         val emulatorPackage = emulatorResolver.getEmulatorPackageForGame(gameId, game.platformId, game.platformSlug)
+        val cachedLocalPath = LiveSavePath.forPackage(syncEntity, emulatorPackage)
         val preferredCore = client.resolveCoreForGame(game, resolvedEmulatorId)
 
         val saveInfoResponse = try {
@@ -251,7 +253,7 @@ class SaveDownloader @Inject constructor(
             } else {
                 val folderHandler = client.getHandler(config, game.platformSlug, resolvedEmulatorId)
                 val folderSaveId = game.saveId ?: game.titleId
-                val cached = syncEntity.localSavePath
+                val cached = cachedLocalPath
                     ?.takeIf { fal.exists(it) }
                     ?.takeIf { folderSaveId == null || folderHandler.isCanonicalFolderPath(it, folderSaveId) }
                     ?.takeUnless {
@@ -280,14 +282,14 @@ class SaveDownloader @Inject constructor(
                 }
             }
         } else {
-            val strandedCard = syncEntity.localSavePath?.takeIf {
+            val strandedCard = cachedLocalPath?.takeIf {
                 game.platformSlug == "psx" &&
                     resolvedEmulatorId != DUCKSTATION_EMULATOR_ID &&
                     it.endsWith(DUCKSTATION_CARD_SUFFIX) &&
                     fal.exists(it)
             }
             strandedCardToMigrate = strandedCard
-            val cachedFilePath = syncEntity.localSavePath
+            val cachedFilePath = cachedLocalPath
                 ?.takeIf { strandedCard == null }
                 ?.takeIf { fal.exists(it) }
             if (strandedCard != null) {
@@ -605,7 +607,7 @@ class SaveDownloader @Inject constructor(
                         coreName = preferredCore,
                         basePathOverride = savePathResolver.gciBaseOverride(config, gameId, game.platformSlug, emulatorPackage)
                     )
-                    val existingMember = syncEntity.localSavePath
+                    val existingMember = cachedLocalPath
                         ?.takeIf { it.endsWith(".gci", ignoreCase = true) && fal.exists(it) }
                         ?: savePathResolver.discoverSavePath(
                             emulatorId = resolvedEmulatorId,

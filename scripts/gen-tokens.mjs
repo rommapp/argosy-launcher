@@ -392,7 +392,7 @@ function emitComponentDefaults(components, enums) {
   function isFloatField(field) {
     const f = field.toLowerCase();
     return f.includes("alpha") || f.includes("scale") || f.includes("saturation")
-        || f.includes("ratio") || f.includes("percent");
+        || f.includes("ratio") || f.includes("percent") || f.includes("rpm");
   }
 
   function renderValue(field, value) {

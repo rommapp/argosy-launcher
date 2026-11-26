@@ -9,6 +9,7 @@ import com.nendo.argosy.data.local.entity.SaveSyncEntity
 import com.nendo.argosy.data.preferences.SyncPreferencesRepository
 import com.nendo.argosy.data.preferences.UserPreferencesRepository
 import com.nendo.argosy.data.sync.ConflictInfo
+import com.nendo.argosy.data.sync.LiveSavePath
 import com.nendo.argosy.data.sync.SaveArchiver
 import com.nendo.argosy.data.sync.SavePathResolver
 import com.nendo.argosy.data.sync.platform.SaveContext
@@ -188,15 +189,14 @@ class SaveSyncConflictResolver @Inject constructor(
             gameId, resolvedEmulatorId, SaveSyncApiClient.syncKeyOf(channelName), ownerUserId
         )
 
-        val cachedPath = syncEntity?.localSavePath?.takeIf { path ->
-            saveHandlerRegistry.isValidCachedSavePath(game.platformSlug, path) && fal.exists(path)
-        }
+        val emulatorPackage = emulatorResolver.getEmulatorPackageForGame(gameId, game.platformId, game.platformSlug)
+        val cachedPath = LiveSavePath.forPackage(syncEntity, emulatorPackage)
+            ?.takeIf { path -> saveHandlerRegistry.isValidCachedSavePath(game.platformSlug, path) && fal.exists(path) }
         if (cachedPath != null) return cachedPath
         if (syncEntity?.localSavePath != null) {
             Logger.debug(TAG, "[SaveSync] findLocalSavePath gameId=$gameId | Cached path stale on disk, re-discovering")
         }
 
-        val emulatorPackage = emulatorResolver.getEmulatorPackageForGame(gameId, game.platformId, game.platformSlug)
         val coreName = apiClient.get().resolveCoreForGame(game, resolvedEmulatorId)
 
         return savePathResolver.discoverSavePath(

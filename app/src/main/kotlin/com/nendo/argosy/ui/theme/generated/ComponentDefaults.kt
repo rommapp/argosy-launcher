@@ -658,7 +658,7 @@ object ComponentDefaults {
         const val simpleArtDp = 88
         const val stageDiscDp = 144
         const val recordRpm = 33.3f
-        const val cdRpm = 60
+        const val cdRpm = 60f
         const val spinStopMs = 900
         const val uprightMinMs = 300
         const val uprightMaxMs = 600
@@ -677,7 +677,7 @@ object ComponentDefaults {
         const val waveBarPitchDp = 4
         const val waveFadeInMs = 600
         const val waveBarAlpha = 0.22f
-        const val waveLoudnessFloor = 0.35f
+        const val waveLoudnessFloorRatio = 0.35f
         const val waveLoudnessSettleMs = 180
         const val visualizerHeightRatio = 0.5f
         const val visualizerBarGapDp = 8

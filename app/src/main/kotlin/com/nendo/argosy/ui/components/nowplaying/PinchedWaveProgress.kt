@@ -106,7 +106,7 @@ fun PinchedWaveProgress(
         label = "pinchedWaveAmplitude"
     )
     val loudness by animateFloatAsState(
-        targetValue = loudnessAt(envelope, clamped, Defaults.waveLoudnessFloor),
+        targetValue = loudnessAt(envelope, clamped, Defaults.waveLoudnessFloorRatio),
         animationSpec = if (reduced) snap() else tween(Defaults.waveLoudnessSettleMs, easing = Motion.argosyEase),
         label = "pinchedWaveLoudness"
     )

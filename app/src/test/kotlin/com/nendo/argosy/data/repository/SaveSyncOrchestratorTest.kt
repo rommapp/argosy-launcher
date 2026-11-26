@@ -115,7 +115,8 @@ class SaveSyncOrchestratorTest {
             accountSwitchMarkerStore = mockk(relaxed = true),
             fileAccessLayer = fileAccessLayer,
             gameArtDao = mockk(relaxed = true),
-            diskJudge = ActiveSaveDiskJudge(saveCacheDao, saveSyncDao, saveOwnershipTracker)
+            diskJudge = ActiveSaveDiskJudge(saveCacheDao, saveSyncDao, saveOwnershipTracker),
+            liveSavePath = com.nendo.argosy.data.sync.LiveSavePath(emulatorResolver, gameDao)
         )
     }
 
@@ -260,6 +261,30 @@ class SaveSyncOrchestratorTest {
     }
 
     @Test
+    fun `a save cached under Eden stable is judged from the nightly folder the game launches with`() = runTest {
+        val stablePath = "/storage/emulated/0/Android/data/dev.eden.eden_emulator/files/nand/user/save"
+        val nightlyPath = "/storage/emulated/0/Android/data/dev.eden.eden_emulator.nightly/files/nand/user/save"
+        val entity = makeSyncEntity(id = 1L, gameId = 1L).copy(
+            localSavePath = stablePath,
+            lastUploadedHash = "server-form",
+            localContentHash = "local-form"
+        )
+        coEvery { saveSyncDao.getPendingDownloads(any()) } returns listOf(entity)
+        coEvery { emulatorResolver.getEmulatorPackageForGame(1L, 2L, "switch") } returns "dev.eden.eden_emulator.nightly"
+        every { fileAccessLayer.exists(stablePath) } returns false
+        every { fileAccessLayer.exists(nightlyPath) } returns true
+        coEvery { saveCacheManager.calculateLocalSaveHash(nightlyPath, 1L, "yuzu") } returns "new-progress"
+        coEvery { mockApiClient.downloadSave(any(), any(), any(), any(), any(), any()) } returns SaveSyncResult.Success()
+
+        val result = orchestrator.downloadPendingServerSaves()
+
+        assertEquals(0, result)
+        coVerify(exactly = 0) { mockApiClient.downloadSave(any(), any(), any(), any(), any(), any()) }
+        coVerify(exactly = 0) { saveCacheManager.calculateLocalSaveHash(stablePath, any(), any()) }
+        coVerify { saveSyncDao.upsert(match { it.id == 1L && it.syncStatus == SaveSyncEntity.STATUS_CONFLICT }) }
+    }
+
+    @Test
     fun `a disk already holding the server's newest save is marked synced without a write`() = runTest {
         val entity = makeSyncEntity(id = 1L, gameId = 1L).copy(
             localSavePath = "/saves/game.srm",
@@ -306,6 +331,48 @@ class SaveSyncOrchestratorTest {
 
         assertEquals(0, result)
         coVerify(exactly = 0) { mockApiClient.downloadSave(any(), any(), any(), any(), any(), any()) }
+        coVerify { saveSyncDao.upsert(match { it.id == 1L && it.syncStatus == SaveSyncEntity.STATUS_CONFLICT }) }
+    }
+
+    @Test
+    fun `a newest state-shaped server save matching the disk never settles the save`() = runTest {
+        val entity = makeSyncEntity(id = 1L, gameId = 1L).copy(
+            localSavePath = "/saves/game.srm",
+            lastUploadedHash = "old-transfer",
+            localContentHash = "old-transfer"
+        )
+        coEvery { saveSyncDao.getPendingDownloads(any()) } returns listOf(entity)
+        every { fileAccessLayer.exists("/saves/game.srm") } returns true
+        coEvery { saveCacheManager.calculateLocalSaveHash("/saves/game.srm", 1L, "yuzu") } returns "current"
+        coEvery { mockApiClient.checkSavesForGame(1L, 200L) } returns listOf(
+            makeServerSave(10L, "game.srm", "2025-01-10T12:00:00Z").copy(contentHash = "someone-else"),
+            makeServerSave(11L, "game.state1", "2025-01-15T12:00:00Z").copy(contentHash = "current")
+        )
+
+        assertEquals(0, orchestrator.downloadPendingServerSaves())
+        coVerify(exactly = 0) { mockApiClient.downloadSave(any(), any(), any(), any(), any(), any()) }
+        coVerify(exactly = 0) { saveSyncDao.upsert(match { it.syncStatus == SaveSyncEntity.STATUS_SYNCED }) }
+        coVerify { saveSyncDao.upsert(match { it.id == 1L && it.syncStatus == SaveSyncEntity.STATUS_CONFLICT }) }
+    }
+
+    @Test
+    fun `a named channel never settles from a matching autosave-bucket save`() = runTest {
+        val entity = makeSyncEntity(id = 1L, gameId = 1L, channelName = "slot1").copy(
+            localSavePath = "/saves/game.srm",
+            lastUploadedHash = "old-transfer",
+            localContentHash = "old-transfer"
+        )
+        coEvery { saveSyncDao.getPendingDownloads(any()) } returns listOf(entity)
+        every { fileAccessLayer.exists("/saves/game.srm") } returns true
+        coEvery { saveCacheManager.calculateLocalSaveHash("/saves/game.srm", 1L, "yuzu") } returns "current"
+        coEvery { mockApiClient.checkSavesForGame(1L, 200L) } returns listOf(
+            makeServerSave(10L, "game.srm", "2025-01-15T12:00:00Z").copy(contentHash = "current"),
+            makeServerSave(11L, "game [slot1].srm", "2025-01-10T12:00:00Z").copy(slot = "slot1", contentHash = "someone-else")
+        )
+
+        assertEquals(0, orchestrator.downloadPendingServerSaves())
+        coVerify(exactly = 0) { mockApiClient.downloadSave(any(), any(), any(), any(), any(), any()) }
+        coVerify(exactly = 0) { saveSyncDao.upsert(match { it.syncStatus == SaveSyncEntity.STATUS_SYNCED }) }
         coVerify { saveSyncDao.upsert(match { it.id == 1L && it.syncStatus == SaveSyncEntity.STATUS_CONFLICT }) }
     }
 

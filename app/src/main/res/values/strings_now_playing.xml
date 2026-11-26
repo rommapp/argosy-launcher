@@ -14,6 +14,7 @@
     <!-- Noun: the list of tracks waiting to play -->
     <string name="now_playing_hint_queue">Queue</string>
     <string name="now_playing_hint_options">Options</string>
+    <!-- Title of the options panel for the music player screen; "playing" means music playback, not a game -->
     <string name="now_playing_options_title">Now Playing</string>
     <!-- Visual look of the album art: vinyl record, CD or plain cover -->
     <string name="now_playing_option_style">Style</string>
@@ -28,6 +29,7 @@
     <!-- Layout with the art on the left and the track list on the right -->
     <string name="now_playing_layout_shelf">Shelf</string>
     <string name="now_playing_layout_simple">Simple</string>
+    <!-- Quick menu entry that opens the music player screen; "playing" means music playback, not a game -->
     <string name="now_playing_quick_open">Now Playing</string>
     <!-- Footer hint: the shoulder buttons jump ten seconds back or forward in the track -->
     <string name="now_playing_hint_skip">Skip 10s</string>

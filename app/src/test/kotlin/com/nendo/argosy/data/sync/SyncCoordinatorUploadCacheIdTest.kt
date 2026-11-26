@@ -90,7 +90,8 @@ class SyncCoordinatorUploadCacheIdTest {
             saveCacheManager = Lazy { saveCacheManager },
             payloadCodec = payloadCodec,
             syncPreferencesRepository = syncPreferencesRepository,
-            serverSaveGate = noHoldGate()
+            serverSaveGate = noHoldGate(),
+            liveSavePath = com.nendo.argosy.data.sync.fixtures.cachedPathAsStored()
         )
         coordinator = SyncCoordinator(
             pendingSyncQueueDao = pendingSyncQueueDao,
@@ -118,6 +119,7 @@ class SyncCoordinatorUploadCacheIdTest {
             negotiateInventory = mockk(relaxed = true),
             gameArtDao = mockk(relaxed = true),
             snapshotRouter = snapshotRouter,
+            liveSavePath = com.nendo.argosy.data.sync.fixtures.cachedPathAsStored(),
         )
     }
 

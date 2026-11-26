@@ -32,6 +32,7 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.getAndUpdate
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.flow.updateAndGet
@@ -332,14 +333,10 @@ class MusicViewModel @Inject constructor(
 
     fun confirmFilter() {
         val chosen = actions.dismissFilterWithChoice() ?: return
-        var changed = false
-        selection.update { current ->
-            changed = false
-            if (current == null || current.filter == chosen) return@update current
-            changed = true
-            current.copy(filter = chosen)
+        val previous = selection.getAndUpdate { current ->
+            if (current == null || current.filter == chosen) current else current.copy(filter = chosen)
         }
-        if (!changed) return
+        if (previous == null || previous.filter == chosen) return
         _uiState.update { it.copy(filter = chosen) }
         viewModelScope.launch { preferences.setSourceFilter(chosen) }
     }

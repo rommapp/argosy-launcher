@@ -10,6 +10,7 @@ import com.nendo.argosy.data.remote.romm.RomMCapabilities
 import com.nendo.argosy.data.remote.romm.RomMSave
 import com.nendo.argosy.data.sync.ConflictInfo
 import com.nendo.argosy.data.sync.ConflictResolution
+import com.nendo.argosy.data.sync.LiveSavePath
 import com.nendo.argosy.data.sync.NegotiateInventory
 import com.nendo.argosy.data.sync.SyncQueueManager
 import com.nendo.argosy.data.sync.strategy.NegotiatorSaveSyncStrategy
@@ -125,7 +126,8 @@ class SaveSyncRepository @Inject constructor(
     private val strategySelector: SaveSyncStrategySelector,
     private val negotiateInventory: NegotiateInventory,
     private val saveRecoveryGate: com.nendo.argosy.data.sync.SaveRecoveryGate,
-    private val snapshotRouter: dagger.Lazy<com.nendo.argosy.data.sync.snapshot.SnapshotSyncRouter>
+    private val snapshotRouter: dagger.Lazy<com.nendo.argosy.data.sync.snapshot.SnapshotSyncRouter>,
+    private val liveSavePath: LiveSavePath
 ) {
     private val PRE_LAUNCH_TAG = "SaveSyncRepository"
     val syncQueueState: StateFlow<SyncQueueState> = entityManager.syncQueueState
@@ -395,15 +397,15 @@ class SaveSyncRepository @Inject constructor(
             effectiveChannel,
             ownerUserId
         )
+        val livePath = liveSavePath.currentLocalSavePath(existing)
         if (disk is SaveSyncOrchestrator.DiskCheck.Failed) {
-            val localPath = existing?.localSavePath
-            if (localPath == null) {
+            if (existing == null || livePath == null) {
                 Logger.warn(PRE_LAUNCH_TAG, "[SaveSync] PRE_LAUNCH gameId=$gameId | active save could not be restored and no local path is known | decision=LocalIsNewer")
                 return@withContext PreLaunchSyncResult.LocalIsNewer
             }
             Logger.warn(PRE_LAUNCH_TAG, "[SaveSync] PRE_LAUNCH gameId=$gameId | active save could not be restored; asking how to launch | decision=LocalModified(restoreFailed)")
             return@withContext PreLaunchSyncResult.LocalModified(
-                localSavePath = localPath,
+                localSavePath = livePath,
                 serverTimestamp = Instant.now(),
                 channelName = effectiveChannel,
                 serverSaveId = existing.rommSaveId,
@@ -424,7 +426,7 @@ class SaveSyncRepository @Inject constructor(
 
         val negotiator = strategySelector.current() as? NegotiatorSaveSyncStrategy
         if (negotiator != null) {
-            return@withContext negotiatePreLaunch(negotiator, gameId, rommId, emulatorId, effectiveChannel, secureSaves, existing)
+            return@withContext negotiatePreLaunch(negotiator, gameId, rommId, emulatorId, effectiveChannel, secureSaves, existing, livePath)
         }
 
         val serverSaves = try {
@@ -462,7 +464,7 @@ class SaveSyncRepository @Inject constructor(
                 serverSaveId = active.id
             )
             else -> PreLaunchSyncResult.LocalModified(
-                localSavePath = existing?.localSavePath ?: "",
+                localSavePath = livePath ?: "",
                 serverTimestamp = SaveSyncApiClient.parseTimestamp(active.updatedAt),
                 channelName = effectiveChannel,
                 serverSaveId = active.id
@@ -480,7 +482,8 @@ class SaveSyncRepository @Inject constructor(
         emulatorId: String,
         slot: String,
         secureSaves: Boolean,
-        existing: SaveSyncEntity?
+        existing: SaveSyncEntity?,
+        livePath: String?
     ): PreLaunchSyncResult {
         val inventory = negotiateInventory.build(secureSaves, gameId)
         val plan = negotiator.planForGame(inventory, rommId) ?: run {
@@ -493,7 +496,7 @@ class SaveSyncRepository @Inject constructor(
         val decision = when (op?.action) {
             ReconcileAction.DOWNLOAD -> if (flaggedConflict) {
                 PreLaunchSyncResult.LocalModified(
-                    localSavePath = existing?.localSavePath.orEmpty(),
+                    localSavePath = livePath.orEmpty(),
                     serverTimestamp = serverTimestamp,
                     channelName = slot,
                     serverSaveId = op.saveId
@@ -502,13 +505,13 @@ class SaveSyncRepository @Inject constructor(
                 PreLaunchSyncResult.ServerIsNewer(serverTimestamp, slot, op.saveId)
             }
             ReconcileAction.CONFLICT -> PreLaunchSyncResult.LocalModified(
-                localSavePath = existing?.localSavePath.orEmpty(),
+                localSavePath = livePath.orEmpty(),
                 serverTimestamp = serverTimestamp,
                 channelName = slot,
                 serverSaveId = op.saveId
             )
             ReconcileAction.UPLOAD -> {
-                existing?.localSavePath?.let { orchestrator.queueUpload(gameId, emulatorId, it, slot) }
+                livePath?.let { orchestrator.queueUpload(gameId, emulatorId, it, slot) }
                 PreLaunchSyncResult.LocalIsNewer
             }
             ReconcileAction.NO_OP, null -> PreLaunchSyncResult.LocalIsNewer

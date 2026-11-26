@@ -10,24 +10,30 @@ object GameArtChangeTriggers {
 
     private const val SEQ_PAST_OLD = "(MAX(OLD.`changeSeq`, $CURRENT_MAX) + 1)"
 
-    val statements: List<String> = listOf(
-        "CREATE TRIGGER IF NOT EXISTS `game_art_change_seq_insert` AFTER INSERT ON `game_art` " +
+    private const val INSERT = "game_art_change_seq_insert"
+
+    private const val UPDATE = "game_art_change_seq_update"
+
+    private const val DELETE = "game_art_change_seq_delete"
+
+    val createStatements: Map<String, String> = linkedMapOf(
+        INSERT to "CREATE TRIGGER IF NOT EXISTS `$INSERT` AFTER INSERT ON `game_art` " +
             "BEGIN UPDATE `game_art` SET `changeSeq` = $NEXT_SEQ " +
             "WHERE `gameId` = NEW.`gameId` AND `slot` = NEW.`slot`; END",
-        "CREATE TRIGGER IF NOT EXISTS `game_art_change_seq_update` AFTER UPDATE ON `game_art` " +
+        UPDATE to "CREATE TRIGGER IF NOT EXISTS `$UPDATE` AFTER UPDATE ON `game_art` " +
             "WHEN NEW.`changeSeq` <= OLD.`changeSeq` " +
             "BEGIN UPDATE `game_art` SET `changeSeq` = $SEQ_PAST_OLD " +
             "WHERE `gameId` = NEW.`gameId` AND `slot` = NEW.`slot`; END",
-        "CREATE TRIGGER IF NOT EXISTS `game_art_change_seq_delete` AFTER DELETE ON `game_art` " +
+        DELETE to "CREATE TRIGGER IF NOT EXISTS `$DELETE` AFTER DELETE ON `game_art` " +
             "BEGIN UPDATE `game_art` SET `changeSeq` = $SEQ_PAST_OLD " +
             "WHERE `gameId` = OLD.`gameId`; " +
             "UPDATE `game_art` SET `changeSeq` = $SEQ_PAST_OLD " +
             "WHERE `rowid` = (SELECT `rowid` FROM `game_art` ORDER BY `changeSeq` DESC LIMIT 1); END"
     )
 
-    val dropStatements: List<String> =
-        listOf("game_art_change_seq_insert", "game_art_change_seq_update", "game_art_change_seq_delete")
-            .map { "DROP TRIGGER IF EXISTS `$it`" }
+    val statements: List<String> = createStatements.values.toList()
+
+    val dropStatements: List<String> = createStatements.keys.map(ChangeStampTriggers::dropStatement)
 
     fun create(db: SupportSQLiteDatabase) {
         (dropStatements + statements).forEach(db::execSQL)

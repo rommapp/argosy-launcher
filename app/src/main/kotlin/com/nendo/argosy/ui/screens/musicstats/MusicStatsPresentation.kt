@@ -1,11 +1,14 @@
 package com.nendo.argosy.ui.screens.musicstats
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import com.nendo.argosy.R
 import com.nendo.argosy.domain.music.MusicStatsCalendar
+import com.nendo.argosy.ui.components.recap.RecapPlayTime
 import com.nendo.argosy.ui.dualscreen.BreakdownRow
 import com.nendo.argosy.ui.dualscreen.PresentOnCompanionLive
 import com.nendo.argosy.ui.dualscreen.PresentationSlot
@@ -47,15 +50,18 @@ private fun monthBreakdown(uiState: MusicStatsUiState): PresentationSlot.Breakdo
         ).joinToString(separator)
     }
     val artists = uiState.month.shelves.firstOrNull { it.kind == MusicStatsShelfKind.ARTISTS }?.artists.orEmpty()
-    val top = artists.maxOfOrNull { it.listenedMs }?.takeIf { it > 0 } ?: 1L
     val accent: Color = LocalArgosyTheme.current.focusAccent
-    val rows = artists.map { artist ->
-        BreakdownRow(
-            label = artist.name,
-            value = musicStatsListened(artist.listenedMs),
-            fraction = artist.listenedMs.toFloat() / top,
-            color = accent
-        )
+    val context = LocalContext.current
+    val rows = remember(artists, accent, context) {
+        val top = artists.maxOfOrNull { it.listenedMs }?.takeIf { it > 0 } ?: 1L
+        artists.map { artist ->
+            BreakdownRow(
+                label = artist.name,
+                value = RecapPlayTime.of(context, artist.listenedMs),
+                fraction = artist.listenedMs.toFloat() / top,
+                color = accent
+            )
+        }
     }
     return PresentationSlot.Breakdown(
         title = formatMonthYear(MusicStatsCalendar.toYearMonth(uiState.yearMonth)),

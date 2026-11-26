@@ -282,8 +282,8 @@
     <string name="settings_shell_modal_migrate_platform_message">Move downloaded games to the new location? Files will be copied and then removed from the old location.</string>
     <string name="settings_shell_modal_migrate_platform_confirm">Migrate</string>
     <string name="settings_shell_modal_migrate_platform_skip">Skip</string>
-    <string name="settings_shell_modal_folder_names_on_title">Use Server Folder Names?</string>
-    <string name="settings_shell_modal_folder_names_off_title">Use Argosy Folder Names?</string>
+    <string name="settings_shell_modal_folder_names_on_title">Use server folder names?</string>
+    <string name="settings_shell_modal_folder_names_off_title">Use Argosy folder names?</string>
     <string name="settings_shell_modal_folder_names_on_message">Downloaded games move into folders named the way your RomM server names them. Files are renamed in place, nothing is copied.</string>
     <string name="settings_shell_modal_folder_names_off_message">Downloaded games move back into Argosy\'s own platform folders. Files are renamed in place, nothing is copied.</string>
     <string name="settings_shell_modal_folder_names_confirm">Move</string>

@@ -4,6 +4,7 @@ import com.nendo.argosy.data.local.dao.GameDao
 import com.nendo.argosy.data.local.dao.PendingSyncQueueDao
 import com.nendo.argosy.data.local.dao.SaveCacheDao
 import com.nendo.argosy.data.local.dao.resolved
+import com.nendo.argosy.data.local.entity.GameEntity
 import com.nendo.argosy.data.local.entity.PendingSyncQueueEntity
 import com.nendo.argosy.data.local.entity.SaveCacheEntity
 import com.nendo.argosy.data.local.entity.SaveSyncEntity
@@ -66,7 +67,8 @@ class SyncCoordinator @Inject constructor(
         Lazy<com.nendo.argosy.domain.usecase.state.SyncStatesOnSessionEndUseCase>,
     private val negotiateInventory: NegotiateInventory,
     private val gameArtDao: com.nendo.argosy.data.local.dao.GameArtDao,
-    private val snapshotRouter: Lazy<com.nendo.argosy.data.sync.snapshot.SnapshotSyncRouter>
+    private val snapshotRouter: Lazy<com.nendo.argosy.data.sync.snapshot.SnapshotSyncRouter>,
+    private val liveSavePath: LiveSavePath
 ) {
     companion object {
         private const val TAG = "SyncCoordinator"
@@ -200,7 +202,7 @@ class SyncCoordinator @Inject constructor(
     }
 
     private suspend fun resolveConflictLocalTime(
-        gameId: Long,
+        game: GameEntity,
         emulatorId: String?,
         slot: String?,
         fallback: Instant?
@@ -208,17 +210,18 @@ class SyncCoordinator @Inject constructor(
         val emu = emulatorId ?: return fallback
         val ownerUserId = syncPreferencesRepository.getRommUserId()
         val existing = saveSyncDao.getByGameEmulatorAndChannel(
-            gameId, emu, SaveSyncApiClient.syncKeyOf(slot), ownerUserId
+            game.id, emu, SaveSyncApiClient.syncKeyOf(slot), ownerUserId
         )
-        return resolveLocalTimeFromEntity(existing, fallback)
+        return resolveLocalTimeFromEntity(existing, liveSavePath.currentLocalSavePath(existing, game), fallback)
     }
 
     private fun resolveLocalTimeFromEntity(
         existing: SaveSyncEntity?,
+        livePath: String?,
         fallback: Instant?
     ): Instant? {
         if (existing == null) return fallback
-        val fileMtime = existing.localSavePath?.let { path ->
+        val fileMtime = livePath?.let { path ->
             val f = File(path)
             if (f.exists()) Instant.ofEpochMilli(f.lastModified()) else null
         }
@@ -512,7 +515,7 @@ class SyncCoordinator @Inject constructor(
             is SaveSyncResult.Error -> syncQueueManager.completeOperation(item.gameId, result.message)
             is SaveSyncResult.Conflict -> {
                 val localTime = resolveConflictLocalTime(
-                    item.gameId, payload.emulatorId, payload.channelName, result.localTimestamp
+                    game, payload.emulatorId, payload.channelName, result.localTimestamp
                 )
                 pendingConflictDao.record(
                     result.toPendingConflict(

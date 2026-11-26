@@ -2669,6 +2669,7 @@
     </plurals>
     <!-- Accessibility description of the dot in the status bar that marks new activity. -->
     <string name="ui_status_bar_activity_unseen_desc">New activity</string>
+    <!-- Accessibility description of the status bar icon shown while music plays; "playing" means music playback, not a game. -->
     <string name="ui_status_bar_now_playing_desc">Now playing</string>
     <string name="ui_status_bar_now_playing_label" translatable="false">%1$s &#183; %2$s</string>
     <string name="ui_folder_default_name">Folder</string>

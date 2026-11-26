@@ -34,7 +34,8 @@ class NegotiateInventoryTest {
         activeSaveRepository = activeSaveRepository,
         syncPreferencesRepository = mockk(relaxed = true),
         savePathResolver = mockk(relaxed = true),
-        fal = mockk(relaxed = true) { every { exists(any()) } returns true }
+        fal = mockk(relaxed = true) { every { exists(any()) } returns true },
+        liveSavePath = com.nendo.argosy.data.sync.fixtures.cachedPathAsStored()
     )
 
     private val row = SaveSyncEntity(
@@ -114,6 +115,38 @@ class NegotiateInventoryTest {
         coEvery { saveCacheDao.getMostRecentInChannel(gameId, any(), "main-save") } returns null
 
         assertEquals(emptyList<Any>(), inventory.build(secureSaves = true))
+    }
+
+    @Test
+    fun `a disk save cached under Eden stable is reported from the nightly folder the game launches with`() = runTest {
+        val stablePath = "/storage/emulated/0/Android/data/dev.eden.eden_emulator/files/nand/user/save"
+        val nightlyPath = "/storage/emulated/0/Android/data/dev.eden.eden_emulator.nightly/files/nand/user/save"
+        val nightlyModified = Instant.parse("2026-10-05T08:00:00Z")
+        coEvery { saveSyncDao.getAllWithLocalPath(any()) } returns listOf(row.copy(localSavePath = stablePath))
+        coEvery { activeSaveRepository.getActiveRow(gameId) } returns null
+        coEvery { activeSaveRepository.getActiveChannel(gameId) } returns "autosave"
+        coEvery { saveCacheDao.getMostRecentInChannel(gameId, any(), "autosave") } returns null
+        val fal = mockk<com.nendo.argosy.data.storage.FileAccessLayer>(relaxed = true) {
+            every { exists(stablePath) } returns false
+            every { exists(nightlyPath) } returns true
+            every { lastModified(nightlyPath) } returns nightlyModified.toEpochMilli()
+            every { length(nightlyPath) } returns 4096L
+        }
+        val nightlyInventory = NegotiateInventory(
+            saveSyncDao = saveSyncDao,
+            saveCacheDao = saveCacheDao,
+            gameDao = gameDao,
+            activeSaveRepository = activeSaveRepository,
+            syncPreferencesRepository = mockk(relaxed = true),
+            savePathResolver = mockk(relaxed = true),
+            fal = fal,
+            liveSavePath = com.nendo.argosy.data.sync.fixtures.launchingPackage("dev.eden.eden_emulator.nightly")
+        )
+
+        val state = nightlyInventory.build(secureSaves = true).single()
+
+        assertEquals(nightlyModified.toString(), state.updatedAt)
+        assertEquals(4096L, state.fileSizeBytes)
     }
 
     @Test

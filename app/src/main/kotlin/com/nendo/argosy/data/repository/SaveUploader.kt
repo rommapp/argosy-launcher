@@ -15,6 +15,7 @@ import com.nendo.argosy.data.remote.romm.AccountApi
 import com.nendo.argosy.data.remote.romm.RomMSave
 import com.nendo.argosy.data.remote.romm.originDeviceName
 import com.nendo.argosy.data.storage.FileAccessLayer
+import com.nendo.argosy.data.sync.LiveSavePath
 import com.nendo.argosy.data.sync.SaveArchiver
 import com.nendo.argosy.data.sync.SavePathResolver
 import com.nendo.argosy.data.sync.platform.SaveContext
@@ -107,7 +108,7 @@ class SaveUploader @Inject constructor(
         val preferredCore = client.resolveCoreForGame(game, resolvedEmulatorId)
         val serverEmulator = EmulatorRegistry.toServerEmulator(resolvedEmulatorId, preferredCore)
 
-        val cachedPath = syncEntity?.localSavePath?.takeIf { path ->
+        val cachedPath = LiveSavePath.forPackage(syncEntity, emulatorPackage)?.takeIf { path ->
             saveHandlerRegistry.isValidCachedSavePath(game.platformSlug, path) && fal.exists(path) &&
                 !savePathResolver.isOffLegacyPcsx2Cards(resolvedEmulatorId, game.platformSlug, emulatorPackage, gameId, path)
         }

@@ -45,7 +45,8 @@ class ReconcileEffectApplier @Inject constructor(
     private val saveCacheManager: Lazy<com.nendo.argosy.data.repository.SaveCacheManager>,
     private val payloadCodec: SyncPayloadCodec,
     private val syncPreferencesRepository: SyncPreferencesRepository,
-    private val serverSaveGate: com.nendo.argosy.data.repository.ServerSaveGate
+    private val serverSaveGate: com.nendo.argosy.data.repository.ServerSaveGate,
+    private val liveSavePath: LiveSavePath
 ) {
 
     suspend fun apply(op: ReconcileOperation, sessionId: Long?): ReconcileEffectOutcome {
@@ -71,10 +72,13 @@ class ReconcileEffectApplier @Inject constructor(
                 gid, op.emulator ?: "", SaveSyncApiClient.syncKeyOf(op.slot), ownerUserId
             )
         }
-        val clientHash = existing?.localSavePath?.let {
-            saveCacheManager.get().calculateLocalSaveHash(it, existing.gameId, existing.emulatorId)
+        val livePath = game?.let { liveSavePath.currentLocalSavePath(existing, it) }
+        val clientHash = if (existing != null && livePath != null) {
+            saveCacheManager.get().calculateLocalSaveHash(livePath, existing.gameId, existing.emulatorId)
+        } else {
+            null
         }
-        val localTime = resolveLocalTimeFromEntity(existing, fallback = null)
+        val localTime = resolveLocalTimeFromEntity(existing, livePath, fallback = null)
 
         return when (val res = conflictAutoResolver.classify(op, clientHash)) {
             is ConflictAutoResolver.Resolution.AsIs -> persistConflict(op, game, clientHash, localTime)
@@ -225,9 +229,9 @@ class ReconcileEffectApplier @Inject constructor(
         return true
     }
 
-    private fun resolveLocalTimeFromEntity(existing: SaveSyncEntity?, fallback: Instant?): Instant? {
+    private fun resolveLocalTimeFromEntity(existing: SaveSyncEntity?, livePath: String?, fallback: Instant?): Instant? {
         if (existing == null) return fallback
-        val fileMtime = existing.localSavePath?.let { path ->
+        val fileMtime = livePath?.let { path ->
             val f = File(path)
             if (f.exists()) Instant.ofEpochMilli(f.lastModified()) else null
         }

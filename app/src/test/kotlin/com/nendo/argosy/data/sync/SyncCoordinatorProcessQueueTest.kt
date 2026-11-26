@@ -100,7 +100,8 @@ class SyncCoordinatorProcessQueueTest {
             saveCacheManager = Lazy { saveCacheManager },
             payloadCodec = payloadCodec,
             syncPreferencesRepository = syncPreferencesRepository,
-            serverSaveGate = noHoldGate()
+            serverSaveGate = noHoldGate(),
+            liveSavePath = com.nendo.argosy.data.sync.fixtures.cachedPathAsStored()
         )
         val screenshotUploads = ScreenshotUploadQueue(
             context = mockk(relaxed = true) { every { filesDir } returns tempFilesDir },
@@ -136,6 +137,7 @@ class SyncCoordinatorProcessQueueTest {
             negotiateInventory = mockk(relaxed = true),
             gameArtDao = mockk(relaxed = true),
             snapshotRouter = com.nendo.argosy.data.sync.fixtures.legacySnapshotRouter(),
+            liveSavePath = com.nendo.argosy.data.sync.fixtures.cachedPathAsStored(),
         )
     }
 

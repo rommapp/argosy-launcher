@@ -15,6 +15,7 @@ import com.nendo.argosy.data.local.entity.SyncPriority
 import com.nendo.argosy.data.local.entity.SyncType
 import com.nendo.argosy.data.preferences.SyncPreferencesRepository
 import com.nendo.argosy.data.preferences.UserPreferencesRepository
+import com.nendo.argosy.data.sync.LiveSavePath
 import com.nendo.argosy.data.sync.SaveAccessNotices
 import com.nendo.argosy.data.sync.SaveClaim
 import com.nendo.argosy.data.sync.SaveFilePayload
@@ -61,7 +62,8 @@ class SaveSyncOrchestrator @Inject constructor(
     private val accountSwitchMarkerStore: com.nendo.argosy.data.preferences.AccountSwitchMarkerStore,
     private val fileAccessLayer: com.nendo.argosy.data.storage.FileAccessLayer,
     private val gameArtDao: com.nendo.argosy.data.local.dao.GameArtDao,
-    private val diskJudge: ActiveSaveDiskJudge
+    private val diskJudge: ActiveSaveDiskJudge,
+    private val liveSavePath: LiveSavePath
 ) {
     sealed interface RefreshOutcome {
         data object Dirtied : RefreshOutcome
@@ -505,6 +507,7 @@ class SaveSyncOrchestrator @Inject constructor(
         }
 
         val serverSavesByGame = mutableMapOf<Long, List<RomMSave>?>()
+        val livePaths = liveSavePath.perGame()
         val actionable = pendingDownloads.mapNotNull { entity ->
             val game = gameDao.getById(entity.gameId) ?: return@mapNotNull null
             if (game.localPath == null) {
@@ -518,12 +521,13 @@ class SaveSyncOrchestrator @Inject constructor(
                 }
                 return@mapNotNull null
             }
-            val wouldConflict = localMovedSinceUpload(entity, entity.gameId, entity.emulatorId) ||
-                holdsUntrackedLocalSave(entity, game)
-            if (wouldConflict && settleWhenDiskMatchesServer(entity, game, serverSavesByGame)) {
+            val livePath = livePaths.currentLocalSavePath(entity, game)
+            val movedSinceUpload = localMovedSinceUpload(entity, livePath, entity.gameId, entity.emulatorId)
+            val untrackedLocalSave = !movedSinceUpload && holdsUntrackedLocalSave(entity, game)
+            if ((movedSinceUpload || untrackedLocalSave) && settleWhenDiskMatchesServer(entity, livePath, game, serverSavesByGame)) {
                 return@mapNotNull null
             }
-            if (localMovedSinceUpload(entity, entity.gameId, entity.emulatorId)) {
+            if (movedSinceUpload) {
                 if (entity.syncStatus != SaveSyncEntity.STATUS_CONFLICT) {
                     saveSyncDao.upsert(entity.copy(syncStatus = SaveSyncEntity.STATUS_CONFLICT))
                 }
@@ -533,7 +537,7 @@ class SaveSyncOrchestrator @Inject constructor(
                 )
                 return@mapNotNull null
             }
-            if (holdsUntrackedLocalSave(entity, game)) {
+            if (untrackedLocalSave) {
                 if (entity.syncStatus != SaveSyncEntity.STATUS_CONFLICT) {
                     saveSyncDao.upsert(entity.copy(syncStatus = SaveSyncEntity.STATUS_CONFLICT))
                 }
@@ -655,10 +659,11 @@ class SaveSyncOrchestrator @Inject constructor(
 
     private suspend fun settleWhenDiskMatchesServer(
         entity: SaveSyncEntity,
+        livePath: String?,
         game: GameEntity,
         serverSavesByGame: MutableMap<Long, List<RomMSave>?>
     ): Boolean {
-        val path = entity.localSavePath ?: return false
+        val path = livePath ?: return false
         val rommId = game.rommId ?: return false
         if (!fileAccessLayer.exists(path)) return false
         val serverSaves = serverSavesByGame.getOrPut(game.id) {
@@ -702,10 +707,12 @@ class SaveSyncOrchestrator @Inject constructor(
 
     private suspend fun localMovedSinceUpload(
         existing: SaveSyncEntity?,
+        livePath: String?,
         gameId: Long,
         emulatorId: String
     ): Boolean {
-        val path = existing?.localSavePath ?: return false
+        if (existing == null) return false
+        val path = livePath ?: return false
         val transferredForms = setOfNotNull(existing.lastUploadedHash, existing.localContentHash)
         if (transferredForms.isEmpty() || !fileAccessLayer.exists(path)) return false
         val liveHash = saveCacheManager.get().calculateLocalSaveHash(path, gameId, emulatorId) ?: return false
@@ -722,6 +729,7 @@ class SaveSyncOrchestrator @Inject constructor(
         val downloadedGames = gameDao.getByIdsChunked(downloadedIds)
         var inspected = 0
         var queued = 0
+        val livePaths = liveSavePath.perGame()
 
         for (game in downloadedGames) {
             val rommId = game.rommId ?: continue
@@ -753,7 +761,8 @@ class SaveSyncOrchestrator @Inject constructor(
                 val syncKey = SaveSyncApiClient.syncKeyOf(channelName)
                 val existing = saveSyncDao.getByGameEmulatorAndChannel(game.id, emulatorId, syncKey, ownerUserId)
                 val serverTime = SaveSyncApiClient.parseTimestamp(latest.updatedAt)
-                val localPresent = existing?.localSavePath?.let { File(it).exists() } == true
+                val livePath = livePaths.currentLocalSavePath(existing, game)
+                val localPresent = livePath?.let { File(it).exists() } == true
                 if (existing != null && localPresent) {
                     val heldHash = heldHashByRow[existing.id]
                     val hashKnown = heldHash != null && latest.contentHash != null
@@ -768,7 +777,7 @@ class SaveSyncOrchestrator @Inject constructor(
                     channelName.equals(SaveSyncApiClient.AUTOSAVE_SLOT_NAME, ignoreCase = true) ||
                     channelName.equals(SaveSyncApiClient.DEFAULT_SAVE_NAME, ignoreCase = true)
                 val wouldDownload = firstTimeForGame || isActiveChannel
-                val localMoved = wouldDownload && localMovedSinceUpload(existing, game.id, emulatorId)
+                val localMoved = wouldDownload && localMovedSinceUpload(existing, livePath, game.id, emulatorId)
                 val status = when {
                     localMoved -> SaveSyncEntity.STATUS_CONFLICT
                     wouldDownload -> SaveSyncEntity.STATUS_SERVER_NEWER

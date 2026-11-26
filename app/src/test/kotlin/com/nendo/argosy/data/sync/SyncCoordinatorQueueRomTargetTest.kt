@@ -269,7 +269,8 @@ class SyncCoordinatorQueueRomTargetTest {
         syncStatesOnSessionEndUseCase = mockk(relaxed = true),
         negotiateInventory = mockk(relaxed = true),
         gameArtDao = mockk(relaxed = true),
-        snapshotRouter = com.nendo.argosy.data.sync.fixtures.legacySnapshotRouter()
+        snapshotRouter = com.nendo.argosy.data.sync.fixtures.legacySnapshotRouter(),
+        liveSavePath = com.nendo.argosy.data.sync.fixtures.cachedPathAsStored()
     )
 
     private companion object {

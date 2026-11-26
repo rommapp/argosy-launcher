@@ -13,22 +13,28 @@ object GameChangeTriggers {
 
     private const val NEXT_SEQ = "($CURRENT_MAX + 1)"
 
-    val statements: List<String> = listOf(
-        "CREATE TRIGGER IF NOT EXISTS `games_change_seq_insert` AFTER INSERT ON `games` " +
+    private const val INSERT = "games_change_seq_insert"
+
+    private const val UPDATE = "games_change_seq_update"
+
+    private const val DELETE = "games_change_seq_delete"
+
+    val createStatements: Map<String, String> = linkedMapOf(
+        INSERT to "CREATE TRIGGER IF NOT EXISTS `$INSERT` AFTER INSERT ON `games` " +
             "BEGIN UPDATE `games` SET `changeSeq` = $NEXT_SEQ " +
             "WHERE `id` = NEW.`id`; END",
-        "CREATE TRIGGER IF NOT EXISTS `games_change_seq_update` AFTER UPDATE ON `games` " +
+        UPDATE to "CREATE TRIGGER IF NOT EXISTS `$UPDATE` AFTER UPDATE ON `games` " +
             "WHEN NEW.`changeSeq` <= OLD.`changeSeq` " +
             "BEGIN UPDATE `games` SET `changeSeq` = MAX(OLD.`changeSeq`, $CURRENT_MAX) + 1 " +
             "WHERE `id` = NEW.`id`; END",
-        "CREATE TRIGGER IF NOT EXISTS `games_change_seq_delete` AFTER DELETE ON `games` " +
+        DELETE to "CREATE TRIGGER IF NOT EXISTS `$DELETE` AFTER DELETE ON `games` " +
             "BEGIN UPDATE `games` SET `changeSeq` = MAX(OLD.`changeSeq`, $CURRENT_MAX) + 1 " +
             "WHERE `id` = (SELECT `id` FROM `games` ORDER BY `changeSeq` DESC LIMIT 1); END"
     )
 
-    val dropStatements: List<String> =
-        listOf("games_change_seq_insert", "games_change_seq_update", "games_change_seq_delete")
-            .map { "DROP TRIGGER IF EXISTS `$it`" }
+    val statements: List<String> = createStatements.values.toList()
+
+    val dropStatements: List<String> = createStatements.keys.map(ChangeStampTriggers::dropStatement)
 
     fun create(db: SupportSQLiteDatabase) {
         (dropStatements + statements).forEach(db::execSQL)

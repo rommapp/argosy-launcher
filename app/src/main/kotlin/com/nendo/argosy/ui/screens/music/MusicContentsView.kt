@@ -346,7 +346,7 @@ private fun ContentsHeading(contents: MusicContentsUiState) {
     val album = contents.focusedAlbum
     val title = album?.title ?: musicColumnTitle(contents.column)
     val trackCount = contents.tracks.size
-    val durationSec = contents.tracks.sumOf { it.durationSec ?: 0 }
+    val durationSec = remember(contents.tracks) { contents.tracks.sumOf { it.durationSec ?: 0 } }
     val facts = buildList {
         album?.artist?.let(::add)
         album?.year?.let { add(it.toString()) }

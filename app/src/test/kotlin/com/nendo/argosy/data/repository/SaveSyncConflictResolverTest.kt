@@ -275,6 +275,26 @@ class SaveSyncConflictResolverTest {
         io.mockk.coVerify(exactly = 0) { savePathResolver.gciBaseOverride(any(), any(), any(), null) }
     }
 
+    @Test
+    fun `a cached save path in the other Eden build's folder is read from the launch build's folder`() = runTest {
+        val stable = "dev.eden.eden_emulator"
+        val nightly = "dev.eden.eden_emulator.nightly"
+        val root = java.nio.file.Files.createTempDirectory("eden-builds").toFile().apply { deleteOnExit() }
+        fun saves(pkg: String) = File(root, "Android/data/$pkg/files/nand/user/save").apply { mkdirs() }
+        val stableSaves = saves(stable)
+        val nightlySaves = saves(nightly)
+        coEvery { gameDao.getById(1L) } returns testGame.copy(platformSlug = "switch")
+        coEvery { emulatorResolver.getEmulatorPackageForGame(1L, testGame.platformId, "switch") } returns nightly
+        coEvery { saveSyncDao.getByGameEmulatorAndChannel(any(), any(), any(), any()) } returns
+            makeSyncEntity(localSavePath = stableSaves.absolutePath).copy(emulatorId = "eden")
+        coEvery { mockApiClient.checkSavesForGame(1L, 100L) } returns emptyList()
+
+        val result = resolver.analyzeChannel(1L, "eden", null)
+
+        assertEquals(SyncAnalysis.LocalNewer(nightlySaves.absolutePath, null), result)
+        root.deleteRecursively()
+    }
+
     private fun makeServerSave(
         id: Long = 1L,
         fileName: String = "argosy-latest.srm",

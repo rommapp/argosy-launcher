@@ -36,6 +36,7 @@ class SaveSyncRepositoryUploadMutexTest {
             stateCacheManager, syncQueueManager, saveSyncDao, saveCacheDao,
             mockk(relaxed = true), mockk(relaxed = true), mockk(relaxed = true), mockk(relaxed = true),
             com.nendo.argosy.data.sync.fixtures.legacySnapshotRouter(),
+            com.nendo.argosy.data.sync.fixtures.cachedPathAsStored(),
         )
     }
 

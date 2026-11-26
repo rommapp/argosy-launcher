@@ -78,7 +78,7 @@ fun DiscArt(
     var turning by remember { mutableStateOf(false) }
     val rpm = when (style) {
         NowPlayingStyle.RECORD -> Defaults.recordRpm
-        NowPlayingStyle.CD -> Defaults.cdRpm.toFloat()
+        NowPlayingStyle.CD -> Defaults.cdRpm
         NowPlayingStyle.COVER -> 0f
     }
     val spinOn = spinning && style.spins && !reduced

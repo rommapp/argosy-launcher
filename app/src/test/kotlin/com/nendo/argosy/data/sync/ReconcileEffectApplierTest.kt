@@ -67,7 +67,8 @@ class ReconcileEffectApplierTest {
             saveCacheManager = dagger.Lazy { saveCacheManager },
             payloadCodec = SyncPayloadCodec(com.squareup.moshi.Moshi.Builder().build()),
             syncPreferencesRepository = mockk(relaxed = true),
-            serverSaveGate = noHoldGate()
+            serverSaveGate = noHoldGate(),
+            liveSavePath = LiveSavePath(mockk(relaxed = true), gameDao)
         )
     }
 
@@ -108,7 +109,8 @@ class ReconcileEffectApplierTest {
         saveCacheManager = dagger.Lazy { saveCacheManager },
         payloadCodec = SyncPayloadCodec(com.squareup.moshi.Moshi.Builder().build()),
         syncPreferencesRepository = mockk(relaxed = true),
-        serverSaveGate = gate
+        serverSaveGate = gate,
+        liveSavePath = LiveSavePath(mockk(relaxed = true), gameDao)
     )
 
     @Test

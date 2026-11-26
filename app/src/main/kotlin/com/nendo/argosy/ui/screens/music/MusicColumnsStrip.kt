@@ -22,6 +22,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.foundation.gestures.detectVerticalDragGestures
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.composed
 import androidx.compose.ui.input.pointer.pointerInput
@@ -80,8 +81,11 @@ fun MusicColumnsStrip(
             label = "music-columns"
         )
         val reach = slots / 2 + 1
-        val range = (floor(animated).toInt() - reach)..(ceil(animated).toInt() + reach)
-        val visible = if (state.wraps) range.toList() else range.filter { it in columns.indices }
+        val lo = floor(animated).toInt() - reach
+        val hi = ceil(animated).toInt() + reach
+        val visible = remember(lo, hi, state.wraps, columns.size) {
+            if (state.wraps) (lo..hi).toList() else (lo..hi).filter { it in columns.indices }
+        }
         visible.forEach { slot ->
             key(slot) {
                 val column = columns[slot.mod(columns.size)]

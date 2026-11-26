@@ -58,7 +58,8 @@ class SaveSyncOrchestratorDiskCheckTest {
         accountSwitchMarkerStore = mockk(relaxed = true),
         fileAccessLayer = mockk(relaxed = true),
         gameArtDao = mockk(relaxed = true),
-        diskJudge = ActiveSaveDiskJudge(saveCacheDao, saveSyncDao, ownership)
+        diskJudge = ActiveSaveDiskJudge(saveCacheDao, saveSyncDao, ownership),
+        liveSavePath = com.nendo.argosy.data.sync.fixtures.cachedPathAsStored()
     )
 
     private val active = SaveCacheEntity(

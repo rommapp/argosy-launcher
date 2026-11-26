@@ -2,6 +2,7 @@ package com.nendo.argosy.data.repository
 
 import com.nendo.argosy.data.emulator.EmulatorRegistry
 import com.nendo.argosy.data.emulator.SavePathConfig
+import com.nendo.argosy.data.emulator.SavePathRegistry
 import com.nendo.argosy.data.local.dao.EmulatorSaveConfigDao
 import com.nendo.argosy.data.local.entity.EmulatorSaveConfigEntity
 import java.io.File
@@ -29,7 +30,7 @@ class EmulatorSaveConfigRepository @Inject constructor(
         if (emulatorSaveConfigDao.getByEmulator(config.emulatorId)?.savesBesideRom == true) return true
         return config.savesBesideRom &&
             (config.emulatorId == EmulatorRegistry.BUILTIN_ID ||
-                resolveUserSavePath(config.emulatorId, platformSlug) == null)
+                storedUserSavePath(config.emulatorId, platformSlug) == null)
     }
 
     /**
@@ -56,7 +57,10 @@ class EmulatorSaveConfigRepository @Inject constructor(
      * became the Wii save base (#380). Siblings are other builds of the same emulator, never other
      * platforms of the same build.
      */
-    suspend fun resolveUserSavePath(emulatorId: String, platformSlug: String?): String? {
+    suspend fun resolveUserSavePath(emulatorId: String, platformSlug: String?, emulatorPackage: String?): String? =
+        storedUserSavePath(emulatorId, platformSlug)?.let { SavePathRegistry.pathForPackage(it, emulatorPackage) }
+
+    private suspend fun storedUserSavePath(emulatorId: String, platformSlug: String?): String? {
         emulatorSaveConfigDao.getByEmulator(emulatorId)
             ?.takeIf { it.isUserOverride }
             ?.savePathPattern
@@ -85,18 +89,21 @@ class EmulatorSaveConfigRepository @Inject constructor(
      * once by [setEvaluatedSavePath] and cleared only by [resetSavePath], so the answer holds
      * across sessions instead of following whichever folder happens to be readable today.
      */
-    suspend fun resolveEvaluatedSavePath(emulatorId: String): String? =
+    suspend fun resolveEvaluatedSavePath(emulatorId: String, emulatorPackage: String?): String? =
         emulatorSaveConfigDao.getByEmulator(emulatorId)
             ?.takeIf { it.isAutoDetected && !it.isUserOverride }
             ?.savePathPattern
             ?.takeIf { it.isNotBlank() }
+            ?.let { SavePathRegistry.pathForPackage(it, emulatorPackage) }
 
     /**
      * The base folder every save-path consumer should use: the user's choice first, then the
-     * evaluated default. Null means the packaged candidates still decide.
+     * evaluated default, each moved to [emulatorPackage]'s own data folder when it names another
+     * build of the same emulator. Null means the packaged candidates still decide.
      */
-    suspend fun resolveEffectiveSavePath(emulatorId: String, platformSlug: String?): String? =
-        resolveUserSavePath(emulatorId, platformSlug) ?: resolveEvaluatedSavePath(emulatorId)
+    suspend fun resolveEffectiveSavePath(emulatorId: String, platformSlug: String?, emulatorPackage: String?): String? =
+        resolveUserSavePath(emulatorId, platformSlug, emulatorPackage)
+            ?: resolveEvaluatedSavePath(emulatorId, emulatorPackage)
 
     suspend fun setEvaluatedSavePath(emulatorId: String, path: String) {
         val existing = emulatorSaveConfigDao.getByEmulator(emulatorId)

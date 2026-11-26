@@ -76,9 +76,9 @@ class SigilPpssppRootTest {
     }
 
     private fun stored(user: String?, evaluated: String?) {
-        coEvery { saveConfigRepo.resolveUserSavePath("ppsspp", "psp") } returns user
-        coEvery { saveConfigRepo.resolveEvaluatedSavePath("ppsspp") } returns evaluated
-        coEvery { saveConfigRepo.resolveEffectiveSavePath("ppsspp", "psp") } returns (user ?: evaluated)
+        coEvery { saveConfigRepo.resolveUserSavePath("ppsspp", "psp", any()) } returns user
+        coEvery { saveConfigRepo.resolveEvaluatedSavePath("ppsspp", any()) } returns evaluated
+        coEvery { saveConfigRepo.resolveEffectiveSavePath("ppsspp", "psp", any()) } returns (user ?: evaluated)
     }
 
     private fun liveConfigOnSd() {

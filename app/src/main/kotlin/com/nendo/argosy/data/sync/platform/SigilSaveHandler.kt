@@ -183,7 +183,7 @@ class SigilSaveHandler @Inject constructor(
         )
 
         private val BUILTIN_LIBRETRO_LAYOUTS: Map<String, Set<String>> = mapOf(
-            "psx" to setOf("mednafen_psx_hw", "pcsx_rearmed"),
+            "psx" to setOf("mednafen_psx_hw", "pcsx_rearmed", "swanstation"),
             "3ds" to setOf("azahar"),
             "gc" to setOf("dolphin"),
             "ps2" to setOf("pcsx2")

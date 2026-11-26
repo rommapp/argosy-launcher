@@ -94,6 +94,7 @@ class SavePathValidator @Inject constructor(
             ?.takeIf { it.isUserOverride || it.isAutoDetected }
             ?.savePathPattern
             ?.takeIf { it.isNotBlank() }
+            ?.let { SavePathRegistry.pathForPackage(it, emulatorPackage) }
         return if (basePath != null) {
             val effectivePath = platformSlug?.let { slug ->
                 saveHandlerRegistry.getFolderHandler(slug)?.resolveBasePath(config, basePath)

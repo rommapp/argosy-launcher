@@ -28,7 +28,7 @@ internal class Pcsx2LegacyCards(
         val layout = SigilSaveHandler.layoutFor(config.emulatorId, platformSlug)
             ?.takeIf { it == SigilSaveHandler.PCSX2_STANDALONE_LAYOUT }
             ?: return null
-        val chosen = emulatorSaveConfigRepository.resolveUserSavePath(config.emulatorId, platformSlug)
+        val chosen = emulatorSaveConfigRepository.resolveUserSavePath(config.emulatorId, platformSlug, emulatorPackage)
             ?.takeIf { it.isNotBlank() }
             ?.trimEnd('/')
         if (chosen != null) {

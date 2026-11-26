@@ -170,7 +170,7 @@ class SaveUploader @Inject constructor(
             localSavePath = localPath,
             coreName = preferredCore,
             basePathOverride = config?.emulatorId?.let {
-                emulatorSaveConfigRepository.resolveEffectiveSavePath(it, game.platformSlug)
+                emulatorSaveConfigRepository.resolveEffectiveSavePath(it, game.platformSlug, emulatorPackage)
             }?.takeIf { it.isNotBlank() }
         )
 

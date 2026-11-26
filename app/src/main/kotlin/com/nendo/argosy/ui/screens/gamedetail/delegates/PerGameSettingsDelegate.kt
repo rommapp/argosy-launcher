@@ -407,8 +407,9 @@ class PerGameSettingsDelegate @Inject constructor(
                     RetroArchPathResolver.DisplayPath.Unknown -> null
                 }
             }
-            userSaveConfig?.isUserOverride == true -> userSaveConfig.savePathPattern
-            else -> emulatorSaveConfigRepository.resolveEvaluatedSavePath(saveConfig.emulatorId)
+            userSaveConfig?.isUserOverride == true ->
+                SavePathRegistry.pathForPackage(userSaveConfig.savePathPattern, effectivePackage)
+            else -> emulatorSaveConfigRepository.resolveEvaluatedSavePath(saveConfig.emulatorId, effectivePackage)
                 ?: SavePathRegistry.resolvePathWithPackage(saveConfig, effectivePackage, context.filesDir.absolutePath).firstOrNull()
         }
 
@@ -417,7 +418,7 @@ class PerGameSettingsDelegate @Inject constructor(
             null
         } else {
             emulatorContext.memcardCardsDir
-                ?: emulatorSaveConfigRepository.resolveEffectiveSavePath(saveConfig.emulatorId, game.platformSlug)
+                ?: emulatorSaveConfigRepository.resolveEffectiveSavePath(saveConfig.emulatorId, game.platformSlug, effectivePackage)
                 ?: SavePathRegistry.resolvePathWithPackage(saveConfig, effectivePackage, context.filesDir.absolutePath).firstOrNull()
         }
         val saveBasePathIsInherited = saveBasePath != null &&

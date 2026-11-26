@@ -180,7 +180,7 @@ class SavePathResolver @Inject constructor(
             perGameSaveDir(gameId, config, platformSlug)?.let { add(it) }
             besideRomDir(config, romPath, platformSlug)?.let { add(it) }
             pcsx2Cards.baseFor(config, platformSlug, emulatorPackage)?.let { add(it.cardsDir) }
-            userBaseOverride(effectiveEmulatorId, platformSlug)?.let { add(it) }
+            userBaseOverride(effectiveEmulatorId, platformSlug, emulatorPackage)?.let { add(it) }
             gameId?.let { emulatorConfigDao.getSelectedMemcardForGame(it) }?.let { add(it) }
             userConfig?.selectedMemcardPath?.let { add(it) }
             if (isRetroArch) {
@@ -310,7 +310,7 @@ class SavePathResolver @Inject constructor(
         }
         val overrideBaseDir = besideRomBaseDir
             ?: pcsx2Base?.cardsDir
-            ?: userBaseOverride(effectiveEmulatorId, platformSlug)
+            ?: userBaseOverride(effectiveEmulatorId, platformSlug, emulatorPackage)
         val savePathOverrideForLog = overrideBaseDir
         val effectiveMemcard =
             (gameId?.let { emulatorConfigDao.getSelectedMemcardForGame(it) } ?: userConfig?.selectedMemcardPath)
@@ -374,7 +374,7 @@ class SavePathResolver @Inject constructor(
         }
 
         if (config.usesGciFormat && romPath != null) {
-            val gciSave = discoverGciSavePath(config, romPath, gciBaseOverride(config, gameId, platformSlug))
+            val gciSave = discoverGciSavePath(config, romPath, gciBaseOverride(config, gameId, platformSlug, emulatorPackage))
             if (gciSave != null) {
                 Logger.debug(TAG, "discoverSavePath: GCI save found at $gciSave")
                 onDecision("gci", selectedMemcardForLog, savePathOverrideForLog)
@@ -643,13 +643,14 @@ class SavePathResolver @Inject constructor(
         config: SavePathConfig,
         romPath: String,
         gameId: Long?,
-        platformSlug: String
+        platformSlug: String,
+        emulatorPackage: String?
     ): String? {
         val romInfo = gciSaveHandler.parseRomHeader(romPath) ?: run {
             Logger.debug(TAG, "constructSavePath: FAILED - unreadable GameCube disc header | romPath=$romPath")
             return null
         }
-        val basePaths = gciBaseOverride(config, gameId, platformSlug)?.let { listOf(it) }
+        val basePaths = gciBaseOverride(config, gameId, platformSlug, emulatorPackage)?.let { listOf(it) }
             ?: SavePathRegistry.resolvePath(config, platformSlug, context.filesDir.absolutePath)
         val baseDir = basePaths.firstOrNull { directoryExists(it) } ?: basePaths.firstOrNull() ?: return null
         val target = com.nendo.argosy.data.emulator.GameCubeHeaderParser.buildGciPath(baseDir, romInfo.region, "${romInfo.makerCode}-${romInfo.gameId}.gci")
@@ -819,9 +820,9 @@ class SavePathResolver @Inject constructor(
      * reads, and `resolveSavePaths` resolves it through [LibretroSavePathResolver] instead, so an
      * `emulator_save_config` row keyed `builtin` is never a base here.
      */
-    private suspend fun userBaseOverride(configId: String, platformSlug: String?): String? {
+    private suspend fun userBaseOverride(configId: String, platformSlug: String?, emulatorPackage: String?): String? {
         if (configId == BUILTIN_ID) return null
-        return emulatorSaveConfigRepository.resolveEffectiveSavePath(configId, platformSlug)
+        return emulatorSaveConfigRepository.resolveEffectiveSavePath(configId, platformSlug, emulatorPackage)
     }
 
     private suspend fun builtinUnitRoot(config: SavePathConfig, unitLayout: String?, gameId: Long?): String? {
@@ -841,9 +842,14 @@ class SavePathResolver @Inject constructor(
      * folder, or the folder the user pointed an external emulator at; null for the emulator's
      * packaged defaults.
      */
-    suspend fun gciBaseOverride(config: SavePathConfig, gameId: Long?, platformSlug: String? = null): String? =
+    suspend fun gciBaseOverride(
+        config: SavePathConfig,
+        gameId: Long?,
+        platformSlug: String?,
+        emulatorPackage: String?
+    ): String? =
         builtinSavesDir(config, gameId)?.let { "$it/$BUILTIN_GC_SUBDIR" }
-            ?: platformSlug?.let { userBaseOverride(config.emulatorId, it) }?.takeIf { it.isNotBlank() }
+            ?: platformSlug?.let { userBaseOverride(config.emulatorId, it, emulatorPackage) }?.takeIf { it.isNotBlank() }
 
     private suspend fun resolveFolderBasePaths(
         config: SavePathConfig,
@@ -978,7 +984,7 @@ class SavePathResolver @Inject constructor(
         val saveIdNames = saveIdFileNames(config, platformSlug, romPath, cachedSaveId, null, gameId)
 
         if (config.usesGciFormat && romPath != null) {
-            return constructGciSavePath(config, romPath, gameId, platformSlug)
+            return constructGciSavePath(config, romPath, gameId, platformSlug, emulatorPackage)
         }
 
         val perGameDir = perGameSaveDir(gameId, config, platformSlug)
@@ -1004,7 +1010,7 @@ class SavePathResolver @Inject constructor(
             return pcsx2Cards.targetCard(pcsx2Base, selected, cachedSaveId, saveHandlerRegistry.getFolderHandler(platformSlug))
                 ?.also { saveArchiver.getFileForPath(it).mkdirs() }
         }
-        val overridePath = besideRomDir ?: userBaseOverride(config.emulatorId, platformSlug)
+        val overridePath = besideRomDir ?: userBaseOverride(config.emulatorId, platformSlug, emulatorPackage)
         val baseDir = if (overridePath != null) {
             if (directoryExists(overridePath) || saveArchiver.getFileForPath(overridePath).mkdirs()) {
                 overridePath
@@ -1132,7 +1138,7 @@ class SavePathResolver @Inject constructor(
         if (!config.usesFolderBasedSaves) return null
 
         val userConfig = emulatorSaveConfigDao.getByEmulator(config.emulatorId)
-        val basePathOverride = userBaseOverride(config.emulatorId, platformSlug)
+        val basePathOverride = userBaseOverride(config.emulatorId, platformSlug, emulatorPackage)
         val selectedMemcard =
             (emulatorConfigDao.getSelectedMemcardForGame(gameId) ?: userConfig?.selectedMemcardPath)
                 ?.takeIf { directoryExists(it) }
@@ -1214,7 +1220,7 @@ class SavePathResolver @Inject constructor(
         config: SavePathConfig,
         emulatorPackage: String?
     ): String? {
-        val basePathOverride = emulatorSaveConfigRepository.resolveEffectiveSavePath(config.emulatorId, "switch")
+        val basePathOverride = emulatorSaveConfigRepository.resolveEffectiveSavePath(config.emulatorId, "switch", emulatorPackage)
         return switchSaveHandler.resolveSaveTargetPath(zipFile, config, emulatorPackage, basePathOverride)
     }
 

@@ -171,7 +171,7 @@ open class SavePathAuthority @Inject constructor(
         }
 
         val override = configId?.let {
-            emulatorSaveConfigRepository.resolveUserSavePath(it, request.platformSlug)
+            emulatorSaveConfigRepository.resolveUserSavePath(it, request.platformSlug, request.emulatorPackage)
         }?.takeIf { it.isNotBlank() }
         if (override != null) {
             return resolution(config, configId, override, SavePathSource.USER_OVERRIDE, request)
@@ -180,7 +180,7 @@ open class SavePathAuthority @Inject constructor(
         val candidates = candidatePaths(config, request.emulatorPackage)
         val preferred = PpssppMemoryStick.liveSaveData(config, candidates, fal) ?: candidates.firstOrNull()
         val evaluated = configId
-            ?.let { emulatorSaveConfigRepository.resolveEvaluatedSavePath(it) }
+            ?.let { emulatorSaveConfigRepository.resolveEvaluatedSavePath(it, request.emulatorPackage) }
             ?.let { followLiveStick(config, it, candidates) }
         if (evaluated != null) {
             val preferredReadable = preferred == null || preferred == evaluated || isReadable(preferred)
@@ -201,9 +201,9 @@ open class SavePathAuthority @Inject constructor(
         val config = configFor(request) ?: return null
         if (!config.usesFolderBasedSaves || config.usesInternalStorage || isRetroArchManaged(config)) return null
         val configId = config.emulatorId
-        if (emulatorSaveConfigRepository.resolveUserSavePath(configId, request.platformSlug) != null) return null
+        if (emulatorSaveConfigRepository.resolveUserSavePath(configId, request.platformSlug, request.emulatorPackage) != null) return null
         val candidates = candidatePaths(config, request.emulatorPackage)
-        emulatorSaveConfigRepository.resolveEvaluatedSavePath(configId)
+        emulatorSaveConfigRepository.resolveEvaluatedSavePath(configId, request.emulatorPackage)
             ?.let { return followLiveStick(config, it, candidates) }
 
         val chosen = PpssppMemoryStick.liveSaveData(config, candidates, fal)

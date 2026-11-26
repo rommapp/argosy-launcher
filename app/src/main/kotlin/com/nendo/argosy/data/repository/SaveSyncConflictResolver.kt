@@ -101,7 +101,7 @@ class SaveSyncConflictResolver @Inject constructor(
                                 gameTitle = game.title,
                                 platformSlug = game.platformSlug,
                                 emulatorId = resolution.emulatorId,
-                                basePathOverride = savePathResolver.gciBaseOverride(gciConfig, game.id, game.platformSlug)
+                                basePathOverride = savePathResolver.gciBaseOverride(gciConfig, game.id, game.platformSlug, null)
                             )
                         )
                         placedPath = placed.targetPath?.takeIf { placed.success }

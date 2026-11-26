@@ -34,11 +34,11 @@ class EmulatorSaveRoots(
             config, emulatorPackage, context.filesDir.absolutePath, volumes
         )
         val registered = if (pcsx2Family) Pcsx2DataFolder.acrossVolumes(packaged, volumes) else packaged
-        val chosen = emulatorSaveConfigRepository.resolveUserSavePath(config.emulatorId, platformSlug)
+        val chosen = emulatorSaveConfigRepository.resolveUserSavePath(config.emulatorId, platformSlug, emulatorPackage)
             ?.takeIf { it.isNotBlank() }
             ?: PpssppMemoryStick.liveSaveData(config, registered, fal)
             ?: (if (pcsx2Family) Pcsx2DataFolder.liveCardsDir(registered, fal) else null)
-            ?: emulatorSaveConfigRepository.resolveEvaluatedSavePath(config.emulatorId)
+            ?: emulatorSaveConfigRepository.resolveEvaluatedSavePath(config.emulatorId, emulatorPackage)
         val candidates = listOfNotNull(chosen) + registered
         val roots = candidates.mapNotNull {
             if (layout == SigilSaveHandler.FLYCAST_STANDALONE_LAYOUT) {

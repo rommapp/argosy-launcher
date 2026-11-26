@@ -992,6 +992,23 @@ object SavePathRegistry {
             ?: packagePrefixToConfigId.entries.firstOrNull { packageName.startsWith(it.key) }?.value
     }
 
+    /**
+     * [path] as seen by the build [emulatorPackage]: a path inside the `Android/data` folder of a
+     * build sharing [emulatorPackage]'s save layout, such as Eden stable for Eden nightly, moved to
+     * [emulatorPackage]'s folder. Any other path, or a null package, comes back unchanged.
+     */
+    fun pathForPackage(path: String, emulatorPackage: String?): String {
+        val target = emulatorPackage?.takeIf { it.isNotBlank() } ?: return path
+        val packageGroup = ANDROID_DATA_PACKAGE.find(path)?.groups?.get(1) ?: return path
+        val stored = packageGroup.value
+        if (stored == target) return path
+        val configId = resolveConfigIdForPackage(stored) ?: return path
+        if (configId != resolveConfigIdForPackage(target)) return path
+        return path.replaceRange(packageGroup.range, target)
+    }
+
+    private val ANDROID_DATA_PACKAGE = Regex("/Android/data/([^/]+)")
+
     fun getConfigIncludingUnsupported(emulatorId: String): SavePathConfig? =
         configs[emulatorId] ?: familyFallbackConfig(emulatorId)
 

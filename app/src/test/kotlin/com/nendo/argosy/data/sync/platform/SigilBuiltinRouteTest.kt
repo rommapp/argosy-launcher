@@ -72,6 +72,7 @@ class SigilBuiltinRouteTest {
         assertEquals("ppsspp", SigilSaveHandler.libretroLayoutFor("psp", "ppsspp", retroArch = false))
         assertEquals("mednafen_psx_hw", SigilSaveHandler.libretroLayoutFor("psx", "mednafen_psx_hw", retroArch = false))
         assertEquals("pcsx_rearmed", SigilSaveHandler.libretroLayoutFor("psx", "pcsx_rearmed", retroArch = false))
+        assertEquals("swanstation", SigilSaveHandler.libretroLayoutFor("psx", "swanstation", retroArch = false))
         assertEquals("azahar", SigilSaveHandler.libretroLayoutFor("3ds", "azahar", retroArch = false))
         assertEquals("azahar", SigilSaveHandler.libretroLayoutFor("n3ds", "azahar", retroArch = false))
         assertEquals("dolphin", SigilSaveHandler.libretroLayoutFor("gc", "dolphin", retroArch = false))

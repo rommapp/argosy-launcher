@@ -43,26 +43,26 @@ class EmulatorSaveConfigRepositoryTest {
     @Test
     fun `an evaluated row answers only when it is not a user choice`() = runTest {
         coEvery { dao.getByEmulator("ppsspp") } returns evaluatedRow()
-        assertEquals(SHARED, repo.resolveEvaluatedSavePath("ppsspp"))
+        assertEquals(SHARED, repo.resolveEvaluatedSavePath("ppsspp", null))
 
         coEvery { dao.getByEmulator("ppsspp") } returns userRow()
-        assertNull(repo.resolveEvaluatedSavePath("ppsspp"))
+        assertNull(repo.resolveEvaluatedSavePath("ppsspp", null))
 
         coEvery { dao.getByEmulator("ppsspp") } returns evaluatedRow(path = "")
-        assertNull(repo.resolveEvaluatedSavePath("ppsspp"))
+        assertNull(repo.resolveEvaluatedSavePath("ppsspp", null))
     }
 
     @Test
     fun `the effective path is the user choice first and the evaluated folder second`() = runTest {
         coEvery { dao.getByEmulator("ppsspp") } returns userRow()
-        assertEquals(CHOSEN, repo.resolveEffectiveSavePath("ppsspp", "psp"))
+        assertEquals(CHOSEN, repo.resolveEffectiveSavePath("ppsspp", "psp", null))
 
         coEvery { dao.getByEmulator("ppsspp") } returns evaluatedRow()
-        assertEquals(SHARED, repo.resolveEffectiveSavePath("ppsspp", "psp"))
+        assertEquals(SHARED, repo.resolveEffectiveSavePath("ppsspp", "psp", null))
 
         coEvery { dao.getByEmulator("ppsspp") } returns null
         coEvery { dao.getAll() } returns emptyList()
-        assertNull(repo.resolveEffectiveSavePath("ppsspp", "psp"))
+        assertNull(repo.resolveEffectiveSavePath("ppsspp", "psp", null))
     }
 
     @Test
@@ -165,6 +165,35 @@ class EmulatorSaveConfigRepositoryTest {
             )
         )
 
-        assertNull(repo.resolveUserSavePath("eden", "switch"))
+        assertNull(repo.resolveUserSavePath("eden", "switch", null))
+    }
+
+    private fun edenRow(path: String, userChoice: Boolean) = EmulatorSaveConfigEntity(
+        emulatorId = "eden", savePathPattern = path, isAutoDetected = !userChoice, isUserOverride = userChoice
+    )
+
+    @Test
+    fun `a folder chosen while on Eden stable is read in Eden nightly's own folder`() = runTest {
+        coEvery { dao.getByEmulator("eden") } returns edenRow(EDEN_STABLE_SAVES, userChoice = true)
+
+        assertEquals(EDEN_NIGHTLY_SAVES, repo.resolveUserSavePath("eden", "switch", EDEN_NIGHTLY))
+        assertEquals(EDEN_NIGHTLY_SAVES, repo.resolveEffectiveSavePath("eden", "switch", EDEN_NIGHTLY))
+        assertEquals(EDEN_STABLE_SAVES, repo.resolveEffectiveSavePath("eden", "switch", EDEN_STABLE))
+    }
+
+    @Test
+    fun `an evaluated Eden folder follows the build switched to, in both directions`() = runTest {
+        coEvery { dao.getByEmulator("eden") } returns edenRow(EDEN_NIGHTLY_SAVES, userChoice = false)
+
+        assertEquals(EDEN_STABLE_SAVES, repo.resolveEvaluatedSavePath("eden", EDEN_STABLE))
+        assertEquals(EDEN_STABLE_SAVES, repo.resolveEffectiveSavePath("eden", "switch", EDEN_STABLE))
+        assertEquals(EDEN_NIGHTLY_SAVES, repo.resolveEffectiveSavePath("eden", "switch", EDEN_NIGHTLY))
+    }
+
+    private companion object {
+        const val EDEN_STABLE = "dev.eden.eden_emulator"
+        const val EDEN_NIGHTLY = "dev.eden.eden_emulator.nightly"
+        const val EDEN_STABLE_SAVES = "/storage/emulated/0/Android/data/$EDEN_STABLE/files/nand/user/save"
+        const val EDEN_NIGHTLY_SAVES = "/storage/emulated/0/Android/data/$EDEN_NIGHTLY/files/nand/user/save"
     }
 }

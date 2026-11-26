@@ -100,7 +100,7 @@ class SaveDownloader @Inject constructor(
             emulatorId = emulatorId,
             localSavePath = targetPath,
             coreName = coreName,
-            basePathOverride = overrideBaseFor(config, game.platformSlug)
+            basePathOverride = overrideBaseFor(config, game.platformSlug, emulatorPackage)
         )
         return unitSaveHandler.extractBundle(tempFile, saveContext)
     }
@@ -111,9 +111,9 @@ class SaveDownloader @Inject constructor(
      * build their own destination; without it a restore lands in the packaged default while
      * discovery keeps reading the override.
      */
-    private suspend fun overrideBaseFor(config: SavePathConfig?, platformSlug: String): String? =
+    private suspend fun overrideBaseFor(config: SavePathConfig?, platformSlug: String, emulatorPackage: String?): String? =
         config?.emulatorId?.let {
-            emulatorSaveConfigRepository.resolveEffectiveSavePath(it, platformSlug)
+            emulatorSaveConfigRepository.resolveEffectiveSavePath(it, platformSlug, emulatorPackage)
         }?.takeIf { it.isNotBlank() }
 
     private val downloadMutexes = java.util.concurrent.ConcurrentHashMap<Long, kotlinx.coroutines.sync.Mutex>()
@@ -527,7 +527,7 @@ class SaveDownloader @Inject constructor(
                     emulatorId = resolvedEmulatorId,
                     localSavePath = targetPath,
                     coreName = preferredCore,
-                    basePathOverride = overrideBaseFor(config, game.platformSlug)
+                    basePathOverride = overrideBaseFor(config, game.platformSlug, emulatorPackage)
                 )
                 val handler = if (sigilRoot != null) sigilSaveHandler else client.getHandler(config, game.platformSlug, resolvedEmulatorId)
                 fal.prepareSaveAccess(targetPath)
@@ -603,7 +603,7 @@ class SaveDownloader @Inject constructor(
                         platformSlug = game.platformSlug,
                         emulatorId = resolvedEmulatorId,
                         coreName = preferredCore,
-                        basePathOverride = savePathResolver.gciBaseOverride(config, gameId, game.platformSlug)
+                        basePathOverride = savePathResolver.gciBaseOverride(config, gameId, game.platformSlug, emulatorPackage)
                     )
                     val existingMember = syncEntity.localSavePath
                         ?.takeIf { it.endsWith(".gci", ignoreCase = true) && fal.exists(it) }

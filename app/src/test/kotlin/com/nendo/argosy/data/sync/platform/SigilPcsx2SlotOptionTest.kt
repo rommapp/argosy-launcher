@@ -50,7 +50,7 @@ class SigilPcsx2SlotOptionTest {
         every { context.filesDir } returns File(tempDir, "files")
         coEvery { gameDao.getById(GAME_ID) } returns GAME
         coEvery { emulatorResolver.getEmulatorPackageForGame(any(), any(), any()) } returns null
-        coEvery { emulatorSaveConfigRepository.resolveUserSavePath(any(), any()) } returns "${dataRoot.absolutePath}/memcards"
+        coEvery { emulatorSaveConfigRepository.resolveUserSavePath(any(), any(), any()) } returns "${dataRoot.absolutePath}/memcards"
         coEvery { emulatorConfigDao.getSelectedMemcardForGame(any()) } returns null
         coEvery { emulatorSaveConfigRepository.getByEmulator(any()) } returns null
 

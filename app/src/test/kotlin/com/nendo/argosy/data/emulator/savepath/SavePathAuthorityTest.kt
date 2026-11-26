@@ -45,8 +45,8 @@ class SavePathAuthorityTest {
     private val pspCandidates = listOf(PPSSPP_OWN, PPSSPP_SHARED)
 
     private fun nothingStored() {
-        coEvery { saveConfigRepo.resolveUserSavePath(any(), any()) } returns null
-        coEvery { saveConfigRepo.resolveEvaluatedSavePath(any()) } returns null
+        coEvery { saveConfigRepo.resolveUserSavePath(any(), any(), any()) } returns null
+        coEvery { saveConfigRepo.resolveEvaluatedSavePath(any(), any()) } returns null
     }
 
     private fun dirs(path: String, vararg names: String) {
@@ -243,8 +243,8 @@ class SavePathAuthorityTest {
     @Test
     fun `resolve reports whether the preferred folder could be read`() = runTest {
         val auth = authority(pspCandidates)
-        coEvery { saveConfigRepo.resolveUserSavePath(any(), any()) } returns null
-        coEvery { saveConfigRepo.resolveEvaluatedSavePath("ppsspp") } returns PPSSPP_SHARED
+        coEvery { saveConfigRepo.resolveUserSavePath(any(), any(), any()) } returns null
+        coEvery { saveConfigRepo.resolveEvaluatedSavePath("ppsspp", any()) } returns PPSSPP_SHARED
 
         assertFalse(auth.resolve(psp).preferredReadable)
 
@@ -304,8 +304,8 @@ class SavePathAuthorityTest {
     @Test
     fun `a stale evaluated ppsspp folder moves to the live stick`() = runTest {
         val auth = authority(listOf(PPSSPP_SHARED, SD_STICK, PPSSPP_OWN))
-        coEvery { saveConfigRepo.resolveUserSavePath(any(), any()) } returns null
-        coEvery { saveConfigRepo.resolveEvaluatedSavePath("ppsspp") } returns PPSSPP_SHARED
+        coEvery { saveConfigRepo.resolveUserSavePath(any(), any(), any()) } returns null
+        coEvery { saveConfigRepo.resolveEvaluatedSavePath("ppsspp", any()) } returns PPSSPP_SHARED
         dirs(PPSSPP_SHARED, "ULUS10064DATA00")
         ini(SD_STICK_INI, 100L)
 
@@ -319,8 +319,8 @@ class SavePathAuthorityTest {
     @Test
     fun `session start moves a stale evaluated ppsspp folder to the live stick`() = runTest {
         val auth = authority(listOf(PPSSPP_SHARED, SD_STICK, PPSSPP_OWN))
-        coEvery { saveConfigRepo.resolveUserSavePath(any(), any()) } returns null
-        coEvery { saveConfigRepo.resolveEvaluatedSavePath("ppsspp") } returns PPSSPP_SHARED
+        coEvery { saveConfigRepo.resolveUserSavePath(any(), any(), any()) } returns null
+        coEvery { saveConfigRepo.resolveEvaluatedSavePath("ppsspp", any()) } returns PPSSPP_SHARED
         dirs(PPSSPP_SHARED, "ULUS10064DATA00")
         ini(SD_STICK_INI, 100L)
 
@@ -331,8 +331,8 @@ class SavePathAuthorityTest {
     @Test
     fun `an evaluated folder that is the live stick is not rewritten`() = runTest {
         val auth = authority(listOf(PPSSPP_SHARED, SD_STICK))
-        coEvery { saveConfigRepo.resolveUserSavePath(any(), any()) } returns null
-        coEvery { saveConfigRepo.resolveEvaluatedSavePath("ppsspp") } returns SD_STICK
+        coEvery { saveConfigRepo.resolveUserSavePath(any(), any(), any()) } returns null
+        coEvery { saveConfigRepo.resolveEvaluatedSavePath("ppsspp", any()) } returns SD_STICK
         ini(SD_STICK_INI, 100L)
 
         assertEquals(SD_STICK, auth.resolve(psp).basePath)
@@ -342,7 +342,7 @@ class SavePathAuthorityTest {
     @Test
     fun `a user ppsspp folder is never moved to the live stick`() = runTest {
         val auth = authority(listOf(PPSSPP_SHARED, SD_STICK))
-        coEvery { saveConfigRepo.resolveUserSavePath("ppsspp", "psp") } returns PPSSPP_SHARED
+        coEvery { saveConfigRepo.resolveUserSavePath("ppsspp", "psp", any()) } returns PPSSPP_SHARED
         ini(SD_STICK_INI, 100L)
 
         val resolution = auth.resolve(psp)
@@ -379,8 +379,8 @@ class SavePathAuthorityTest {
     @Test
     fun `an evaluated folder holds even when the preferred one becomes readable`() = runTest {
         val auth = authority(pspCandidates)
-        coEvery { saveConfigRepo.resolveUserSavePath(any(), any()) } returns null
-        coEvery { saveConfigRepo.resolveEvaluatedSavePath("ppsspp") } returns PPSSPP_SHARED
+        coEvery { saveConfigRepo.resolveUserSavePath(any(), any(), any()) } returns null
+        coEvery { saveConfigRepo.resolveEvaluatedSavePath("ppsspp", any()) } returns PPSSPP_SHARED
         dirs(PPSSPP_ROOT, "files")
         dirs(PPSSPP_OWN, "ULUS10064DATA00")
 
@@ -397,8 +397,8 @@ class SavePathAuthorityTest {
     @Test
     fun `an evaluated folder that is the preferred one is not a fallback`() = runTest {
         val auth = authority(pspCandidates)
-        coEvery { saveConfigRepo.resolveUserSavePath(any(), any()) } returns null
-        coEvery { saveConfigRepo.resolveEvaluatedSavePath("ppsspp") } returns PPSSPP_OWN
+        coEvery { saveConfigRepo.resolveUserSavePath(any(), any(), any()) } returns null
+        coEvery { saveConfigRepo.resolveEvaluatedSavePath("ppsspp", any()) } returns PPSSPP_OWN
 
         val resolution = auth.resolve(psp)
         assertEquals(SavePathSource.EVALUATED_DEFAULT, resolution.source)
@@ -426,7 +426,7 @@ class SavePathAuthorityTest {
 
         assertEquals("/sd/argosy-saves/PSP/SAVEDATA", resolution.basePath)
         assertEquals(SavePathSource.USER_OVERRIDE, resolution.source)
-        coVerify(exactly = 0) { saveConfigRepo.resolveUserSavePath(any(), any()) }
+        coVerify(exactly = 0) { saveConfigRepo.resolveUserSavePath(any(), any(), any()) }
     }
 
     @Test
@@ -476,7 +476,7 @@ class SavePathAuthorityTest {
     @Test
     fun `a user override outranks evaluation and is never overwritten by it`() = runTest {
         val auth = authority(pspCandidates)
-        coEvery { saveConfigRepo.resolveUserSavePath("ppsspp", "psp") } returns "/sd/psp-saves"
+        coEvery { saveConfigRepo.resolveUserSavePath("ppsspp", "psp", any()) } returns "/sd/psp-saves"
         dirs(PPSSPP_ROOT, "files")
         dirs(PPSSPP_OWN, "ULUS10064DATA00")
 

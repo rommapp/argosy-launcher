@@ -183,6 +183,50 @@ class HomeOverflowScrollInputTest {
     }
 
     @Test
+    fun `with the dock on the second screen, down never focuses the dock`() {
+        val fixture = Fixture(
+            HomeUiState(platforms = listOf(mockk(), mockk()), currentRow = HomeRow.Platform(1)),
+            dockOnPresentation = true
+        )
+
+        assertEquals(InputResult.handled(SoundType.SECTION_CHANGE), fixture.handler().onDown())
+        assertFalse(fixture.state.value.appBarFocused)
+        assertEquals(2, fixture.row)
+    }
+
+    @Test
+    fun `with the dock on the second screen, triggers keep moving tabs and bumpers do not`() {
+        val fixture = Fixture(
+            HomeUiState(platforms = listOf(mockk(), mockk()), currentRow = HomeRow.Platform(1)),
+            dockOnPresentation = true
+        )
+        val navigation = HomeNavigationDelegate(mockk(), mockk())
+        every { fixture.actions.quickNavigation() } returns false
+        every { fixture.actions.nextRow() } answers {
+            val next = requireNotNull(navigation.nextRow(fixture.state.value))
+            fixture.state.update { it.copy(currentRow = next.first, focusedGameIndex = next.second) }
+        }
+        val handler = fixture.handler()
+
+        assertFalse(handler.onNextSection().handled)
+        assertEquals(HomeRow.Platform(1), fixture.state.value.currentRow)
+        assertEquals(InputResult.handled(SoundType.SECTION_CHANGE), handler.onNextTrigger())
+        assertEquals(HomeRow.Platform(0), fixture.state.value.currentRow)
+        assertFalse(fixture.state.value.appBarFocused)
+    }
+
+    @Test
+    fun `with the dock on the second screen, auto grid boundaries change tabs`() {
+        val fixture = Fixture(HomeUiState(layoutKind = HomeLayoutKind.AUTO_GRID), dockOnPresentation = true)
+        every { fixture.actions.moveGridFocus(GridDirection.DOWN) } returns AutoGridMove.NextSection
+        val handler = fixture.handler()
+
+        assertEquals(InputResult.handled(SoundType.SECTION_CHANGE), handler.onDown())
+        assertFalse(fixture.state.value.appBarFocused)
+        assertEquals(2, fixture.row)
+    }
+
+    @Test
     fun `focused dock retains its boundary and release behavior`() {
         val fixture = Fixture(HomeUiState(appBarFocused = true))
         val handler = fixture.handler { error("Dock input reached carousel scrolling") }
@@ -258,7 +302,11 @@ class HomeOverflowScrollInputTest {
         assertEquals(1, fixture.row)
     }
 
-    private class Fixture(initialState: HomeUiState = HomeUiState(), dockAvailable: Boolean = false) {
+    private class Fixture(
+        initialState: HomeUiState = HomeUiState(),
+        dockAvailable: Boolean = false,
+        dockOnPresentation: Boolean = false
+    ) {
         val state = MutableStateFlow(initialState)
         val actions = mockk<HomeInputActions>(relaxed = true)
         var row = 1
@@ -266,6 +314,7 @@ class HomeOverflowScrollInputTest {
         init {
             every { actions.uiState } returns state
             every { actions.appBarIsDrawn() } returns dockAvailable
+            every { actions.rowsFollowTriggers() } returns (dockAvailable || dockOnPresentation)
             every { actions.previousRow() } answers { row -= 1 }
             every { actions.nextRow() } answers { row += 1 }
             every { actions.focusAppBar() } answers {

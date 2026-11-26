@@ -59,10 +59,12 @@ sealed interface HomeTileTargetRef {
     /**
      * [focusGameId] turns the tile into a queue: the game being played now, launched directly, with
      * the collection behind it as the list to advance through. Null is a plain collection tile.
+     * [coverSource] is a chosen picture drawn in place of the tile's own art.
      */
     data class Collection(
         val collectionId: Long,
-        val focusGameId: Long? = null
+        val focusGameId: Long? = null,
+        val coverSource: TileImageSource? = null
     ) : HomeTileTargetRef
     data class VirtualCollection(val type: String, val name: String) : HomeTileTargetRef
     data class App(val packageName: String) : HomeTileTargetRef
@@ -90,12 +92,15 @@ sealed interface HomeTileTargetRef {
      * A tile that performs an action. Each kind reads the one field it owns: [filters] on
      * [FeatureTileKind.RANDOM_GAME], [libraryLink] on [FeatureTileKind.LIBRARY_LINK], and
      * [pickedGameId] on [FeatureTileKind.RA_SUMMARY], null there meaning the account overview.
+     * [coverSource] is read on [FeatureTileKind.LIBRARY_LINK] only: a chosen picture drawn in place
+     * of the cover of the first matching game.
      */
     data class Feature(
         val kind: FeatureTileKind,
         val filters: RandomTileFilters = RandomTileFilters(),
         val pickedGameId: Long? = null,
-        val libraryLink: LibraryLinkFilters? = null
+        val libraryLink: LibraryLinkFilters? = null,
+        val coverSource: TileImageSource? = null
     ) : HomeTileTargetRef
 
     /**
@@ -239,6 +244,33 @@ data class FolderAppearance(
  */
 val HomeTileTargetRef.isDecor: Boolean
     get() = this is HomeTileTargetRef.Image || this is HomeTileTargetRef.Sticker
+
+/**
+ * Whether a tile of this target can be given a chosen cover picture: a collection or a library link.
+ */
+val HomeTileTargetRef.acceptsCustomCover: Boolean
+    get() = this is HomeTileTargetRef.Collection ||
+        (this is HomeTileTargetRef.Feature && kind == FeatureTileKind.LIBRARY_LINK)
+
+/**
+ * The chosen cover picture this target draws in place of its own art, or null for its own art.
+ */
+val HomeTileTargetRef.customCover: TileImageSource?
+    get() = when (this) {
+        is HomeTileTargetRef.Collection -> coverSource
+        is HomeTileTargetRef.Feature -> coverSource.takeIf { kind == FeatureTileKind.LIBRARY_LINK }
+        else -> null
+    }
+
+/**
+ * This target with [source] as its chosen cover picture, null clearing it. Answers null for a target
+ * that does not [acceptsCustomCover].
+ */
+fun HomeTileTargetRef.withCustomCover(source: TileImageSource?): HomeTileTargetRef? = when {
+    this is HomeTileTargetRef.Collection -> copy(coverSource = source)
+    this is HomeTileTargetRef.Feature && kind == FeatureTileKind.LIBRARY_LINK -> copy(coverSource = source)
+    else -> null
+}
 
 enum class FeatureTileKind {
     RANDOM_GAME,

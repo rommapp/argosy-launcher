@@ -39,6 +39,7 @@ import com.nendo.argosy.domain.model.FeatureTileContent
 import com.nendo.argosy.domain.model.FeatureTileKind
 import com.nendo.argosy.domain.model.HomeLayoutKind
 import com.nendo.argosy.domain.model.HomeTileTargetRef
+import com.nendo.argosy.domain.model.customCover
 import com.nendo.argosy.domain.model.MediaTilePlayback
 import com.nendo.argosy.ui.components.AutoGridMove
 import com.nendo.argosy.ui.components.autoGridMove
@@ -962,7 +963,12 @@ class HomeViewModel @Inject constructor(
     private fun appBarSlotCount(): Int =
         _uiState.value.homeApps.size + 1
 
-    override fun appBarIsDrawn(): Boolean =
+    override fun appBarIsDrawn(): Boolean {
+        val manager = DualScreenManagerHolder.instance ?: return false
+        return manager.presentationShowsHints.value && !manager.dockOnPresentation.value
+    }
+
+    override fun rowsFollowTriggers(): Boolean =
         DualScreenManagerHolder.instance?.presentationShowsHints?.value == true
 
     override fun focusAppBar(): Boolean {
@@ -1409,7 +1415,7 @@ class HomeViewModel @Inject constructor(
             is HomeTileTargetRef.Image -> listOf(target.source)
             is HomeTileTargetRef.Sticker -> listOf(target.source)
             is HomeTileTargetRef.Folder -> target.appearance.pictureSources
-            else -> return emptyList()
+            else -> listOfNotNull(target.customCover)
         }
         return sources.mapNotNull { (it as? com.nendo.argosy.domain.model.TileImageSource.GameArt)?.gameId }
     }

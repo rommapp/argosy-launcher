@@ -157,6 +157,8 @@
     <string name="custom_tile_menu_action_move_to_folder">Mover para pasta</string>
     <string name="custom_tile_menu_action_rename_folder">Renomear pasta</string>
     <string name="custom_tile_menu_action_folder_appearance">Aparência</string>
+    <string name="custom_tile_menu_action_cover_picture">Imagem de capa</string>
+    <string name="custom_tile_menu_action_default_cover">Usar capa padrão</string>
     <string name="custom_tile_menu_action_sticker_outline_on">Adicionar contorno</string>
     <string name="custom_tile_menu_action_sticker_outline_off">Remover contorno</string>
     <string name="custom_tile_menu_action_sticker_outline_width">Mudar espessura do contorno</string>

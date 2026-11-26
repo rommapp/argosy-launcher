@@ -704,7 +704,7 @@ internal fun routeLoadSettings(vm: SettingsViewModel) {
             showStatusNetwork = prefs.showStatusNetwork
         ))
         routeRefreshLaunchTargets(vm)
-        routeRefreshNavigationMenu(vm)
+        routeRefreshScreenPins(vm)
 
         val detectionResult = vm.controlsDelegate.detectActiveController()
         val detectedLayoutName = when (detectionResult.layout) {

@@ -196,6 +196,8 @@
     <string name="custom_tile_menu_action_move_to_folder">Переместить в папку</string>
     <string name="custom_tile_menu_action_rename_folder">Переименовать папку</string>
     <string name="custom_tile_menu_action_folder_appearance">Оформление</string>
+    <string name="custom_tile_menu_action_cover_picture">Изображение обложки</string>
+    <string name="custom_tile_menu_action_default_cover">Использовать обложку по умолчанию</string>
     <string name="custom_tile_menu_action_sticker_outline_on">Добавить контур</string>
     <string name="custom_tile_menu_action_sticker_outline_off">Убрать контур</string>
     <string name="custom_tile_menu_action_sticker_outline_width">Изменить толщину контура</string>

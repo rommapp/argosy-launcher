@@ -128,6 +128,12 @@ private fun PresentationSlotBody(
     var measuredHintsHeight by remember { mutableStateOf(0.dp) }
     val drawsHints = showControlHints && hints.isNotEmpty() && slot !is PresentationSlot.NowPlayingStage
     val hintsHeight = if (drawsHints) measuredHintsHeight else 0.dp
+    val dockPinnedHere = manager?.dockOnPresentation?.collectAsState()?.value == true
+    val primaryOnHome = manager?.primaryOnHome?.collectAsState()?.value == true
+    val drawsDock = dockPinnedHere && primaryOnHome &&
+        slot !is PresentationSlot.InGame && slot !is PresentationSlot.NavigationMenu
+    var measuredDockHeight by remember { mutableStateOf(0.dp) }
+    val sceneInset = hintsHeight + (if (drawsDock) measuredDockHeight else 0.dp)
     val recapBlur = maxOf(
         com.nendo.argosy.ui.components.launchRecapBackdropBlur(),
         com.nendo.argosy.ui.components.recap.monthlyRecapBackdropBlur()
@@ -143,7 +149,7 @@ private fun PresentationSlotBody(
     Box(modifier = Modifier.fillMaxSize()) {
         PresentationSlotScene(
             slot = slot,
-            hintsHeight = hintsHeight,
+            hintsHeight = sceneInset,
             onVideoPlayingChange = { videoPlaying = it },
             modifier = Modifier
                 .fillMaxSize()
@@ -166,6 +172,14 @@ private fun PresentationSlotBody(
                     PresentationControlHints(hints)
                 }
             }
+        }
+        if (drawsDock) {
+            HomeDockOverlay(
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .padding(bottom = hintsHeight),
+                onHeightChanged = { if (it != measuredDockHeight) measuredDockHeight = it }
+            )
         }
         com.nendo.argosy.ui.components.LaunchVeilMirror(
             gameDisplayId = gameDisplayId,
@@ -290,7 +304,7 @@ private fun PresentationSlotScene(
                     sessionTimer = manager.swappedSessionTimer,
                     reader = manager.dashboardReader,
                     actions = actions,
-                    appBar = { modifier -> if (bar != null) InGameAppBar(bar, modifier) }
+                    appBar = { modifier -> if (bar != null) PresentationDock(bar, modifier) }
                 )
             }
         }
@@ -317,33 +331,52 @@ private fun dashboardActions(manager: com.nendo.argosy.DualScreenManager) =
         onNextDisc = { manager.streamDashboardActions?.nextDisc() }
     )
 
-private data class InGameAppBarState(
+private data class PresentationDockState(
     val manager: com.nendo.argosy.DualScreenManager,
     val apps: List<String>,
     val displays: List<com.nendo.argosy.ui.components.DisplayFocusTarget>,
     val pickerOpen: Boolean,
     val pickerIndex: Int,
     val canSwapRoles: Boolean
-)
+) {
+    val hasContent: Boolean
+        get() = apps.isNotEmpty() || displays.size > 1 || canSwapRoles
+}
 
 @Composable
-private fun rememberInGameAppBarState(): InGameAppBarState? {
+private fun rememberPresentationDockState(canSwapRoles: Boolean): PresentationDockState? {
     val manager = com.nendo.argosy.DualScreenManagerHolder.instance ?: return null
     val apps by manager.homeAppsFlow.collectAsState(initial = manager.homeAppsList)
     val pickerOpen by manager.focusPickerOpen.collectAsState()
     val pickerIndex by manager.focusPickerIndex.collectAsState()
-    val canSwapRoles by manager.liveSwapAvailable.collectAsState()
     val displays = remember(pickerOpen) {
         manager.focusableDisplays().map { screen ->
             com.nendo.argosy.ui.components.DisplayFocusTarget(screen.displayId, screen.number)
         }
     }
-    if (apps.isEmpty() && displays.size <= 1 && !canSwapRoles) return null
-    return InGameAppBarState(manager, apps, displays, pickerOpen, pickerIndex, canSwapRoles)
+    return PresentationDockState(manager, apps, displays, pickerOpen, pickerIndex, canSwapRoles)
 }
 
 @Composable
-private fun InGameAppBar(state: InGameAppBarState, modifier: Modifier = Modifier) {
+private fun rememberInGameAppBarState(): PresentationDockState? {
+    val liveSwap = com.nendo.argosy.DualScreenManagerHolder.instance
+        ?.liveSwapAvailable?.collectAsState()?.value == true
+    return rememberPresentationDockState(canSwapRoles = liveSwap)?.takeIf { it.hasContent }
+}
+
+@Composable
+private fun HomeDockOverlay(modifier: Modifier = Modifier, onHeightChanged: (Dp) -> Unit) {
+    val canSwapRoles = selectSwapModeState() != null
+    val state = rememberPresentationDockState(canSwapRoles) ?: return
+    PresentationDock(state, modifier, onHeightChanged)
+}
+
+@Composable
+private fun PresentationDock(
+    state: PresentationDockState,
+    modifier: Modifier = Modifier,
+    onHeightChanged: (Dp) -> Unit = {}
+) {
     val manager = state.manager
     val reorder by manager.dockReorder.collectAsState()
     var menuPackage by remember { mutableStateOf<String?>(null) }
@@ -361,45 +394,25 @@ private fun InGameAppBar(state: InGameAppBarState, modifier: Modifier = Modifier
         }
     }
 
-    com.nendo.argosy.ui.components.CompanionAppBar(
+    com.nendo.argosy.ui.components.LauncherDock(
         apps = state.apps,
-        onAppClick = { manager.launchCompanionApp(it) },
         reorder = reorder,
-        onReorderStart = { manager.beginDockReorder(it, false) },
-        onReorderTarget = manager::targetDockReorder,
-        onReorderSave = manager::saveDockReorder,
-        onReorderCancel = manager::cancelDockReorder,
+        onAppClick = { manager.launchCompanionApp(it) },
         onAppHold = { packageName -> if (state.displays.size > 1) menuPackage = packageName },
-        focusedIndex = com.nendo.argosy.ui.components.APP_BAR_NOTHING_FOCUSED,
         onOpenDrawer = { drawerOpen = true },
         focusDisplays = state.displays,
         focusPickerOpen = state.pickerOpen,
         focusPickerIndex = state.pickerIndex,
-        onFocusPickerToggle = {
-            if (state.pickerOpen) manager.closeFocusPicker() else manager.openFocusPicker()
-        },
-        onFocusPickerMove = manager::moveFocusPicker,
-        onFocusDisplay = { displayId ->
-            manager.focusDisplay(displayId)
-            manager.closeFocusPicker()
-        },
-        onSwapRoles = if (state.canSwapRoles) {
-            { manager.swapRoles() }
-        } else {
-            null
-        },
+        canSwapRoles = state.canSwapRoles,
         toolsOpen = toolsOpen,
         toolIndex = toolIndex,
         onToolsToggle = { toolsOpen = !toolsOpen; toolIndex = 1 },
         onToolFocus = { toolIndex = it },
         onToolsDismiss = { toolsOpen = false },
+        topPadding = Dimens.spacingMd,
         controllerInputEnabled = false,
-        modifier = modifier.padding(
-            start = Dimens.spacingMd,
-            top = Dimens.spacingMd,
-            end = Dimens.spacingMd,
-            bottom = ComponentDefaults.Carousel.headerEdgePaddingDp.dp
-        )
+        onHeightChanged = onHeightChanged,
+        modifier = modifier
     )
 
     if (drawerOpen) {

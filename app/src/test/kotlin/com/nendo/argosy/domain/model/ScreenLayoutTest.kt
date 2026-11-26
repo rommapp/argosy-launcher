@@ -280,6 +280,44 @@ class ScreenLayoutTest {
     }
 
     @Test
+    fun `the dock pin survives a json round trip beside every menu pin`() {
+        DockPin.entries.forEach { dock ->
+            listOf(NavigationMenuPin.Control, NavigationMenuPin.Panel(SECOND)).forEach { menu ->
+                val layout = ScreenLayout(
+                    roles = mapOf(BUILT_IN to ScreenRole.PRIMARY, SECOND to ScreenRole.PRESENTATION),
+                    navigationMenuPin = menu,
+                    dockPin = dock
+                )
+                assertEquals(layout, ScreenLayout.fromJson(layout.toJson()))
+            }
+        }
+    }
+
+    @Test
+    fun `a stored layout without a dock pin reads as the control dock`() {
+        val layout = ScreenLayout.fromJson(
+            """{"roles":{"$BUILT_IN":"PRIMARY","$SECOND":"PRESENTATION"},"navigationMenu":"presentation"}"""
+        )
+        assertEquals(DockPin.CONTROL, layout.dockPin)
+        assertEquals(NavigationMenuPin.Presentation, layout.navigationMenuPin)
+    }
+
+    @Test
+    fun `a flat layout written before the pins reads as the control dock`() {
+        val layout = ScreenLayout.fromJson("""{"$BUILT_IN":"PRIMARY","$SECOND":"PRESENTATION"}""")
+        assertEquals(DockPin.CONTROL, layout.dockPin)
+    }
+
+    @Test
+    fun `a role change keeps the dock pin`() {
+        val layout = ScreenLayout(
+            roles = mapOf(BUILT_IN to ScreenRole.PRIMARY, SECOND to ScreenRole.PRESENTATION),
+            dockPin = DockPin.PRESENTATION
+        )
+        assertEquals(DockPin.PRESENTATION, layout.withRole(SECOND, ScreenRole.PRIMARY).dockPin)
+    }
+
+    @Test
     fun `an unreadable payload falls back to an empty layout`() {
         assertEquals(emptyMap<String, ScreenRole>(), ScreenLayout.fromJson("not json").roles)
         assertEquals(emptyMap<String, ScreenRole>(), ScreenLayout.fromJson(null).roles)
@@ -369,5 +407,23 @@ class ScreenLayoutsTest {
         val restored = ScreenLayouts.fromJson(stored.toJson())
         assertEquals(NavigationMenuPin.Presentation, restored.layoutFor(pair)?.navigationMenuPin)
         assertEquals(NavigationMenuPin.Panel(THIRD), restored.layoutFor(trio)?.navigationMenuPin)
+    }
+
+    @Test
+    fun `each profile keeps its own dock pin through a json round trip`() {
+        val pair = ScreenLayouts.setKeyOf(listOf(BUILT_IN, SECOND))
+        val single = ScreenLayouts.setKeyOf(listOf(BUILT_IN))
+        val stored = ScreenLayouts()
+            .with(
+                pair,
+                ScreenLayout(
+                    roles = mapOf(BUILT_IN to ScreenRole.PRIMARY, SECOND to ScreenRole.PRESENTATION),
+                    dockPin = DockPin.PRESENTATION
+                )
+            )
+            .with(single, ScreenLayout(mapOf(BUILT_IN to ScreenRole.PRIMARY)))
+        val restored = ScreenLayouts.fromJson(stored.toJson())
+        assertEquals(DockPin.PRESENTATION, restored.layoutFor(pair)?.dockPin)
+        assertEquals(DockPin.CONTROL, restored.layoutFor(single)?.dockPin)
     }
 }

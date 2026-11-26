@@ -204,7 +204,9 @@ private fun FolderMemberCell(
             contentAlignment = Alignment.Center
         ) {
             val game = content?.game
-            val coverPath = game?.let { rememberResolvedCoverPath(it.id, it.coverPath) }
+            val gameCover = game?.let { rememberResolvedCoverPath(it.id, it.coverPath) }
+            val coverPath = content?.customCoverPath
+                ?: gameCover
                 ?: content?.coverPath
                 ?: content?.decor?.path
             val appIcon = content?.packageName?.let { com.nendo.argosy.ui.coil.AppIconData(it) }

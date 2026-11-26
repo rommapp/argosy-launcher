@@ -8,6 +8,8 @@ import com.nendo.argosy.domain.model.FeatureTileKind
 import com.nendo.argosy.domain.model.HomeGridKind
 import com.nendo.argosy.domain.model.HomeScrollAxis
 import com.nendo.argosy.domain.model.HomeTileTargetRef
+import com.nendo.argosy.domain.model.TileArtSlot
+import com.nendo.argosy.domain.model.TileImageSource
 import com.nendo.argosy.domain.model.TileRect
 import io.mockk.coEvery
 import io.mockk.coVerify
@@ -20,12 +22,15 @@ import kotlinx.coroutines.test.runTest
 import org.json.JSONObject
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
 private const val OWNER = 1L
 private const val TILE_ID = 7L
 private const val KEY_PICKED_GAME_ID = "pickedGameId"
+private const val KEY_COVER_SOURCE = "coverSource"
+private const val KEY_PLATFORM_IDS = "platformIds"
 private const val PAGED = "PAGED"
 private const val SCROLL = "SCROLL"
 
@@ -35,7 +40,7 @@ class HomeTileRepositoryTest {
     private val repository = HomeTileRepository(dao)
 
     private suspend fun roundTrip(
-        target: HomeTileTargetRef.Feature
+        target: HomeTileTargetRef
     ): Pair<HomeTileEntity, HomeTileTargetRef> {
         val written = slot<HomeTileEntity>()
         coEvery { dao.insert(capture(written)) } returns TILE_ID
@@ -100,6 +105,92 @@ class HomeTileRepositoryTest {
 
         assertEquals(FeatureTileKind.LIBRARY_LINK.name, row.featureKind)
         assertEquals(target, read)
+    }
+
+    @Test
+    fun `a collection keeps its cover picture beside its typed columns across a write and a read`() = runTest {
+        val target = HomeTileTargetRef.Collection(
+            collectionId = 4L,
+            focusGameId = 9L,
+            coverSource = TileImageSource.GameArt(12L, TileArtSlot.BACKGROUND)
+        )
+
+        val (row, read) = roundTrip(target)
+
+        assertEquals(4L, row.collectionId)
+        assertEquals(9L, row.gameId)
+        assertTrue(JSONObject(row.featureConfig.orEmpty()).has(KEY_COVER_SOURCE))
+        assertEquals(target, read)
+    }
+
+    @Test
+    fun `a collection with no cover picture leaves the feature config empty`() = runTest {
+        val target = HomeTileTargetRef.Collection(collectionId = 4L)
+
+        val (row, read) = roundTrip(target)
+
+        assertNull(row.featureConfig)
+        assertEquals(target, read)
+    }
+
+    @Test
+    fun `a library link keeps its cover picture alongside its filters across a write and a read`() = runTest {
+        val target = HomeTileTargetRef.Feature(
+            kind = FeatureTileKind.LIBRARY_LINK,
+            libraryLink = com.nendo.argosy.domain.model.LibraryLinkFilters(
+                platformIds = setOf(3L),
+                genres = setOf("Platform")
+            ),
+            coverSource = TileImageSource.File("/sdcard/Pictures/link.png")
+        )
+
+        val (row, read) = roundTrip(target)
+
+        val config = JSONObject(row.featureConfig.orEmpty())
+        assertTrue(config.has(KEY_COVER_SOURCE))
+        assertTrue(config.has(KEY_PLATFORM_IDS))
+        assertEquals(target, read)
+    }
+
+    @Test
+    fun `a library link with no cover picture stores no cover key`() = runTest {
+        val target = HomeTileTargetRef.Feature(
+            kind = FeatureTileKind.LIBRARY_LINK,
+            libraryLink = com.nendo.argosy.domain.model.LibraryLinkFilters()
+        )
+
+        val (row, read) = roundTrip(target)
+
+        assertFalse(JSONObject(row.featureConfig.orEmpty()).has(KEY_COVER_SOURCE))
+        assertEquals(target, read)
+    }
+
+    @Test
+    fun `retargeting a collection with a cover picture keeps its collection and focus game`() = runTest {
+        val stored = HomeTileEntity(
+            id = TILE_ID,
+            ownerUserId = OWNER,
+            pageIndex = 0,
+            columnIndex = 0,
+            rowIndex = 0,
+            targetType = "COLLECTION",
+            collectionId = 4L,
+            gameId = 9L
+        )
+        val written = slot<HomeTileEntity>()
+        coEvery { dao.getById(TILE_ID) } returns stored
+        coEvery { dao.update(capture(written)) } returns Unit
+
+        repository.retarget(
+            TILE_ID,
+            HomeTileTargetRef.Collection(4L, focusGameId = 9L, coverSource = TileImageSource.File("/p.png")),
+            emptyList()
+        )
+
+        val row = written.captured
+        assertEquals(4L, row.collectionId)
+        assertEquals(9L, row.gameId)
+        assertTrue(JSONObject(row.featureConfig.orEmpty()).has(KEY_COVER_SOURCE))
     }
 
     @Test

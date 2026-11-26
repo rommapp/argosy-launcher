@@ -5,6 +5,7 @@ import com.nendo.argosy.domain.model.GridCell
 import com.nendo.argosy.domain.model.HomeTile
 import com.nendo.argosy.domain.model.HomeTileTargetRef
 import com.nendo.argosy.domain.model.TileCoverScale
+import com.nendo.argosy.domain.model.TileImageSource
 import com.nendo.argosy.domain.model.TileRect
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
@@ -150,6 +151,61 @@ class CustomTileMenuOrderTest {
 
         assertEquals(CustomTileMenuAction.ADVANCE_FOCUS_GAME, actions.first())
         assertEquals(CustomTileMenuAction.SET_FOCUS_GAME, actions[1])
+    }
+
+    @Test
+    fun `a collection and a library link offer a cover picture but no default cover until one is set`() {
+        val targets = listOf(
+            HomeTileTargetRef.Collection(collectionId = 3L),
+            HomeTileTargetRef.Feature(FeatureTileKind.LIBRARY_LINK)
+        )
+
+        targets.forEach { target ->
+            val actions = stateWith(target).menuActions
+            assertTrue(CustomTileMenuAction.COVER_PICTURE in actions)
+            assertTrue(CustomTileMenuAction.DEFAULT_COVER !in actions)
+        }
+    }
+
+    @Test
+    fun `a tile with a cover picture offers to return to the default right after choosing another`() {
+        val picture = TileImageSource.File("/p.png")
+        val targets = listOf(
+            HomeTileTargetRef.Collection(collectionId = 3L, coverSource = picture),
+            HomeTileTargetRef.Feature(FeatureTileKind.LIBRARY_LINK, coverSource = picture)
+        )
+
+        targets.forEach { target ->
+            val actions = stateWith(target).menuActions
+            assertEquals(
+                actions.indexOf(CustomTileMenuAction.COVER_PICTURE) + 1,
+                actions.indexOf(CustomTileMenuAction.DEFAULT_COVER)
+            )
+        }
+    }
+
+    @Test
+    fun `a collection with a cover picture can choose how it sits in the cell`() {
+        val target = HomeTileTargetRef.Collection(collectionId = 3L, coverSource = TileImageSource.File("/p.png"))
+
+        assertTrue(CustomTileMenuAction.FIT_COVER in stateWith(target).menuActions)
+        assertTrue(CustomTileMenuAction.FIT_COVER !in stateWith(HomeTileTargetRef.Collection(3L)).menuActions)
+    }
+
+    @Test
+    fun `no other tile offers a cover picture`() {
+        val others = listOf(
+            game,
+            HomeTileTargetRef.Feature(FeatureTileKind.RANDOM_GAME),
+            HomeTileTargetRef.Feature(FeatureTileKind.RA_SUMMARY, coverSource = TileImageSource.File("/p.png")),
+            HomeTileTargetRef.Folder(name = "RPGs")
+        )
+
+        others.forEach { target ->
+            val actions = stateWith(target).menuActions
+            assertTrue(CustomTileMenuAction.COVER_PICTURE !in actions)
+            assertTrue(CustomTileMenuAction.DEFAULT_COVER !in actions)
+        }
     }
 
     @Test

@@ -60,6 +60,7 @@ internal class DisplaysSectionInput(
             DisplaysItem.DimLevel -> { viewModel.adjustScreenDimmerLevel(direction); return InputResult.HANDLED }
             DisplaysItem.DisplayRoles -> { viewModel.cycleDisplayRoleOverride(direction); return InputResult.HANDLED }
             DisplaysItem.NavigationMenu -> { viewModel.cycleNavigationMenu(direction); return InputResult.HANDLED }
+            DisplaysItem.Dock -> { viewModel.cycleDockPin(direction); return InputResult.HANDLED }
             DisplaysItem.GamesTarget -> { viewModel.cycleGamesLaunchTarget(direction); return InputResult.HANDLED }
             DisplaysItem.AppsTarget -> { viewModel.cycleAppsLaunchTarget(direction); return InputResult.HANDLED }
             DisplaysItem.DualScreenEnabled ->

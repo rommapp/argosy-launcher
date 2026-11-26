@@ -146,6 +146,10 @@ class DisplaySettingsDelegate @Inject constructor(
         _state.update { it.copy(navigationMenu = choices) }
     }
 
+    fun setDockPin(pin: com.nendo.argosy.domain.model.DockPin) {
+        _state.update { it.copy(dockPin = pin) }
+    }
+
     fun setThemeMode(scope: CoroutineScope, mode: ThemeMode) {
         scope.launch {
             preferencesRepository.setThemeMode(mode)

@@ -666,6 +666,16 @@
     <!-- Value of that row: one physical screen. %1$d is the number drawn on that screen. -->
     <string name="settings_displays_navigation_menu_screen">Screen %1$d</string>
 
+    <!-- Row title. Noun phrase: the bar of pinned Android apps along the bottom of Home. -->
+    <string name="settings_displays_dock_title">App Dock</string>
+    <!-- Second line of that row. -->
+    <string name="settings_displays_dock_subtitle">On the presentation screen the dock responds to touch only.</string>
+    <!-- Value of that row: the dock stays under Home on the screen the controller drives. -->
+    <string name="settings_displays_dock_control">Control screen</string>
+    <!-- Value of that row: the dock moves to the other screen, the one showing what you are
+         looking at. -->
+    <string name="settings_displays_dock_presentation">Presentation screen</string>
+
     <!-- Row opening the screen-by-screen role editor. -->
     <string name="settings_displays_screens_title">Screen Layout</string>
     <!-- Second line of that row. -->

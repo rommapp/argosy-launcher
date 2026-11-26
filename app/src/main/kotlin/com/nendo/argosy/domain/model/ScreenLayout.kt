@@ -27,6 +27,26 @@ private const val PIN_PRESENTATION_TOKEN = "presentation"
 private const val PIN_PANEL_TOKEN_PREFIX = "screen:"
 private const val ROLES_FIELD = "roles"
 private const val NAVIGATION_MENU_FIELD = "navigationMenu"
+private const val DOCK_FIELD = "dock"
+
+/**
+ * The screen a screen set draws the Home app dock on. Anything unreadable is [CONTROL].
+ */
+enum class DockPin(val token: String) {
+    CONTROL(PIN_CONTROL_TOKEN),
+    PRESENTATION(PIN_PRESENTATION_TOKEN);
+
+    /**
+     * Whether the dock draws on the presentation screen, given whether the presentation surface is
+     * up and the stable key of the screen holding PRESENTATION right now, or null when none does.
+     */
+    fun drawsOnPresentation(presentationUp: Boolean, presentationScreenKey: String?): Boolean =
+        this == PRESENTATION && presentationUp && presentationScreenKey != null
+
+    companion object {
+        fun fromToken(token: String?): DockPin = entries.find { it.token == token } ?: CONTROL
+    }
+}
 
 /**
  * The screen a screen set draws the navigation menu on. [Panel] names a physical screen by its
@@ -69,7 +89,8 @@ sealed interface NavigationMenuPin {
 
 data class ScreenLayout(
     val roles: Map<String, ScreenRole> = emptyMap(),
-    val navigationMenuPin: NavigationMenuPin = NavigationMenuPin.Control
+    val navigationMenuPin: NavigationMenuPin = NavigationMenuPin.Control,
+    val dockPin: DockPin = DockPin.CONTROL
 ) {
 
     fun roleFor(screenKey: String): ScreenRole? = roles[screenKey]
@@ -99,12 +120,13 @@ data class ScreenLayout(
     fun toJson(): String = JSONObject().apply {
         put(ROLES_FIELD, JSONObject().apply { roles.forEach { (key, role) -> put(key, role.name) } })
         if (navigationMenuPin != NavigationMenuPin.Control) put(NAVIGATION_MENU_FIELD, navigationMenuPin.token)
+        if (dockPin != DockPin.CONTROL) put(DOCK_FIELD, dockPin.token)
     }.toString()
 
     companion object {
         /**
-         * Reads both the current shape, roles under [ROLES_FIELD] beside the menu pin, and the
-         * earlier flat map of screen key to role, which carries no pin.
+         * Reads both the current shape, roles under [ROLES_FIELD] beside the menu and dock pins,
+         * and the earlier flat map of screen key to role, which carries no pin.
          */
         fun fromJson(json: String?): ScreenLayout {
             if (json.isNullOrBlank()) return ScreenLayout()
@@ -120,7 +142,12 @@ data class ScreenLayout(
                 } else {
                     NavigationMenuPin.Control
                 }
-                ScreenLayout(roles, pin)
+                val dock = if (nested != null && obj.has(DOCK_FIELD)) {
+                    DockPin.fromToken(obj.optString(DOCK_FIELD))
+                } else {
+                    DockPin.CONTROL
+                }
+                ScreenLayout(roles = roles, navigationMenuPin = pin, dockPin = dock)
             } catch (_: Exception) {
                 ScreenLayout()
             }

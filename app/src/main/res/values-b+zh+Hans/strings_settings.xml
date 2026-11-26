@@ -291,6 +291,10 @@
     <string name="settings_displays_navigation_menu_control">操作屏幕</string>
     <string name="settings_displays_navigation_menu_presentation">展示屏幕</string>
     <string name="settings_displays_navigation_menu_screen">屏幕 %1$d</string>
+    <string name="settings_displays_dock_title">应用停靠栏</string>
+    <string name="settings_displays_dock_subtitle">在展示屏幕上，停靠栏仅支持触控。</string>
+    <string name="settings_displays_dock_control">操作屏幕</string>
+    <string name="settings_displays_dock_presentation">展示屏幕</string>
 
     <string name="settings_displays_screens_title">屏幕布局</string>
     <string name="settings_displays_screens_subtitle">为每块已连接的屏幕分配用途</string>

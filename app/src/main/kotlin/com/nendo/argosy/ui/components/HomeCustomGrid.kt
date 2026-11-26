@@ -183,6 +183,10 @@ data class CustomGridTileContent(
     val isMissing: Boolean = false,
     val packageName: String? = null,
     val coverPath: String? = null,
+    /**
+     * A picture the owner chose for this tile, drawn in place of [game]'s cover and [coverPath].
+     */
+    val customCoverPath: String? = null,
     val posterUrl: String? = null,
     val subtitle: String? = null,
     val stats: List<TileStat> = emptyList(),
@@ -705,16 +709,34 @@ private fun CustomGridCellBox(
         return
     }
 
+    val customCover = content?.customCoverPath
+    if (content != null && customCover != null && content.game == null) {
+        CustomCoverTileBox(
+            placement = placement,
+            content = content,
+            picturePath = customCover,
+            coverScale = coverScale,
+            isFocused = isFocused,
+            isOverlapped = isOverlapped,
+            focusScale = focusScaleForSpan(rect),
+            editModeLabel = editModeLabel,
+            onClick = onClick,
+            onLongClick = onLongClick
+        )
+        return
+    }
+
     val game = content?.game
     if (game != null) {
         val boxArtStyle = com.nendo.argosy.ui.theme.LocalBoxArtStyle.current
         val tileRatio = width / height
         val keepsWholeCover = boxArtStyle.nativeAspectRatio || coverScale == TileCoverScale.FIT
+        val drawsBoxArt = useBoxArt && customCover == null
         val artRatio = if (keepsWholeCover) {
             com.nendo.argosy.ui.common.rememberGameArtAspectRatio(
                 game = game,
-                useBoxArt = useBoxArt,
-                coverPath = game.coverPath,
+                useBoxArt = drawsBoxArt,
+                coverPath = customCover ?: game.coverPath,
                 fallback = boxArtStyle.aspectRatio
             )
         } else {
@@ -745,9 +767,10 @@ private fun CustomGridCellBox(
                     downloadIndicator = indicator,
                     saturationOverride = if (isOverlapped) OVERLAPPED_SATURATION else null,
                     alphaOverride = if (isOverlapped) OVERLAPPED_ALPHA else null,
-                    onCoverLoadFailed = onCoverLoadFailed,
-                    onCoverLoaded = onCoverLoaded,
-                    useBoxArt = useBoxArt,
+                    coverPathOverride = customCover,
+                    onCoverLoadFailed = onCoverLoadFailed.takeIf { customCover == null },
+                    onCoverLoaded = onCoverLoaded.takeIf { customCover == null },
+                    useBoxArt = drawsBoxArt,
                     modifier = Modifier
                         .fillMaxSize()
                         .then(
@@ -1069,6 +1092,73 @@ private fun TileKindBadge(
     }
 }
 
+@Composable
+private fun CustomCoverTileBox(
+    placement: Modifier,
+    content: CustomGridTileContent,
+    picturePath: String,
+    coverScale: TileCoverScale,
+    isFocused: Boolean,
+    isOverlapped: Boolean,
+    focusScale: Float,
+    editModeLabel: String?,
+    onClick: () -> Unit,
+    onLongClick: (() -> Unit)?
+) {
+    val theme = LocalArgosyTheme.current
+    Box(modifier = placement) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .boxArtFrame(
+                    isFocused = isFocused,
+                    focusScale = focusScale,
+                    alphaOverride = if (isOverlapped) OVERLAPPED_ALPHA else null,
+                    background = SolidColor(theme.surfaceRaised)
+                )
+                .then(
+                    if (onLongClick == null) {
+                        Modifier.clickableNoFocus(onClick = onClick)
+                    } else {
+                        Modifier.clickableNoFocus(onClick = onClick, onLongClick = onLongClick)
+                    }
+                )
+        ) {
+            coil.compose.AsyncImage(
+                model = com.nendo.argosy.ui.common.rememberFileImageModel(picturePath),
+                contentDescription = null,
+                contentScale = if (coverScale == TileCoverScale.FIT) {
+                    androidx.compose.ui.layout.ContentScale.Fit
+                } else {
+                    androidx.compose.ui.layout.ContentScale.Crop
+                },
+                modifier = Modifier.fillMaxSize()
+            )
+            if (content.isLibraryLink) {
+                TileKindBadge(
+                    icon = Icons.Filled.FilterAlt,
+                    modifier = Modifier.align(Alignment.TopStart)
+                )
+            }
+            Text(
+                text = content.label,
+                style = MaterialTheme.typography.labelMedium,
+                color = theme.textPrimary,
+                maxLines = 1,
+                overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
+                modifier = Modifier
+                    .align(Alignment.BottomStart)
+                    .fillMaxWidth()
+                    .background(theme.surfaceBase.copy(alpha = ComponentDefaults.FrostedSurface.fillAlpha))
+                    .padding(Dimens.spacingXs)
+            )
+        }
+        if (editModeLabel != null && isFocused) {
+            TileModeTab(label = editModeLabel, modifier = Modifier.align(Alignment.TopEnd))
+        }
+    }
+}
+
 private data class RerollAnimation(val rotation: Float, val scale: Float)
 
 /**
@@ -1213,7 +1303,8 @@ private fun WideTileBox(
             val gameCover = content.game?.let {
                 com.nendo.argosy.ui.common.rememberResolvedCoverPath(it.id, it.coverPath)
             }
-            val coverPath = gameCover ?: content.coverPath
+            val customCover = content.customCoverPath
+            val coverPath = customCover ?: gameCover ?: content.coverPath
             val cover = com.nendo.argosy.ui.common.rememberFileImageModel(coverPath)
             val appIcon = content.packageName?.let { com.nendo.argosy.ui.coil.AppIconData(it) }
             val poster = content.posterUrl?.takeIf { it.isNotBlank() }
@@ -1245,6 +1336,7 @@ private fun WideTileBox(
                         },
                         modifier = Modifier.fillMaxSize(),
                         onSuccess = { state ->
+                            if (customCover != null) return@AsyncImage
                             val gameId = content.game?.id ?: return@AsyncImage
                             val bitmap = (state.result.drawable as? android.graphics.drawable.BitmapDrawable)?.bitmap
                             if (bitmap != null) onCoverLoaded?.invoke(gameId, bitmap)

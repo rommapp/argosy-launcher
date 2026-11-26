@@ -1644,6 +1644,10 @@ class SettingsViewModel @Inject constructor(
 
     fun selectNavigationMenu(index: Int) = routeSelectNavigationMenu(this, index)
 
+    fun cycleDockPin(direction: Int = 1) = routeCycleDockPin(this, direction)
+
+    fun selectDockPin(index: Int) = routeSelectDockPin(this, index)
+
     fun navigateToLaunchTargets() = routeNavigateToLaunchTargets(this)
 
     fun reloadLaunchTargetEntries() = routeLoadLaunchTargetEntries(this)

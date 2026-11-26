@@ -218,6 +218,11 @@ fun HomeScreen(
         com.nendo.argosy.DualScreenManagerHolder.instance?.presentationShowsHints
             ?: remember { kotlinx.coroutines.flow.MutableStateFlow(false) }
         ).collectAsState()
+    val dockOnPresentation by (
+        com.nendo.argosy.DualScreenManagerHolder.instance?.dockOnPresentation
+            ?: remember { kotlinx.coroutines.flow.MutableStateFlow(false) }
+        ).collectAsState()
+    val dockOnControl = presentationShowsHints && !dockOnPresentation
     var navigationPillWidth by remember { mutableStateOf(0.dp) }
     val downloadIndicators = viewModel.downloadIndicators.collectAsState()
     val streamFirst by viewModel.streamLauncher.streamFirst.collectAsState()
@@ -234,15 +239,15 @@ fun HomeScreen(
     val dockReorderInputHandler = remember(viewModel, dockIsRtl) {
         viewModel.createDockReorderInputHandler(dockIsRtl)
     }
-    LaunchedEffect(presentationShowsHints) {
-        if (!presentationShowsHints) viewModel.releaseAppBar()
+    LaunchedEffect(dockOnControl) {
+        if (!dockOnControl) viewModel.releaseAppBar()
     }
     com.nendo.argosy.ui.input.ModalInputEffect(
-        active = presentationShowsHints && dockReorder?.controller == true && uiState.appBarFocused,
+        active = dockOnControl && dockReorder?.controller == true && uiState.appBarFocused,
         handler = dockReorderInputHandler,
         onInputLost = viewModel::cancelAppBarReorder
     )
-    if (presentationShowsHints && dockReorder?.controller == true) com.nendo.argosy.ui.input.ModalPresenceEffect()
+    if (dockOnControl && dockReorder?.controller == true) com.nendo.argosy.ui.input.ModalPresenceEffect()
     val rowButtons = if (presentationShowsHints || quickNavigation) InputButton.LT_RT else InputButton.LB_RB
     val scope = rememberCoroutineScope()
     val overflowScrollState = rememberScrollState()
@@ -825,7 +830,7 @@ fun HomeScreen(
             val showTitle = !presentationShowsHints && !isAutoGrid && !isCustomGrid && !isColumns &&
                 !uiState.isMediaRow
             val footerHeight = if (presentationShowsHints) {
-                dockHeight + chromeVerticalPadding
+                (if (dockOnControl) dockHeight else 0.dp) + chromeVerticalPadding
             } else {
                 withNavBarClearance(Dimens.footerHeight)
             }
@@ -1548,56 +1553,34 @@ fun HomeScreen(
             }.orEmpty()
         }
         val canSwapRoles = com.nendo.argosy.ui.dualscreen.selectSwapModeState() != null
-        if (presentationShowsHints) {
-            com.nendo.argosy.ui.components.CompanionAppBar(
+        if (dockOnControl) {
+            com.nendo.argosy.ui.components.LauncherDock(
                 apps = uiState.homeApps,
-                onAppClick = { viewModel.launchTileApp(it) },
                 reorder = dockReorder,
-                onReorderStart = { com.nendo.argosy.DualScreenManagerHolder.instance?.beginDockReorder(it, false) },
-                onReorderTarget = { token, target -> com.nendo.argosy.DualScreenManagerHolder.instance?.targetDockReorder(token, target) },
-                onReorderSave = { com.nendo.argosy.DualScreenManagerHolder.instance?.saveDockReorder(it) },
-                onReorderCancel = { com.nendo.argosy.DualScreenManagerHolder.instance?.cancelDockReorder(it) },
+                onAppClick = { viewModel.launchTileApp(it) },
                 onAppHold = { viewModel.openDockAppMenuFor(it) },
-                focusedIndex = if (uiState.appBarFocused) {
-                    uiState.appBarIndex
-                } else {
-                    com.nendo.argosy.ui.components.APP_BAR_NOTHING_FOCUSED
-                },
                 onOpenDrawer = { viewModel.openAppsScreen() },
-                onKeyboardToggle = {
-                    com.nendo.argosy.DualScreenManagerHolder.instance?.toggleUpperKeyboard()
-                },
                 focusDisplays = focusDisplays,
                 focusPickerOpen = focusPickerOpen,
                 focusPickerIndex = focusPickerIndex,
-                onFocusPickerToggle = dsmForFocus?.let {
-                    { if (focusPickerOpen) it.closeFocusPicker() else it.openFocusPicker() }
-                },
-                onFocusPickerMove = { dsmForFocus?.moveFocusPicker(it) },
-                onFocusDisplay = { displayId ->
-                    dsmForFocus?.focusDisplay(displayId)
-                    dsmForFocus?.closeFocusPicker()
-                },
-                onSwapRoles = dsmForFocus
-                    ?.takeIf { canSwapRoles }
-                    ?.let { { it.swapRoles() } },
+                canSwapRoles = canSwapRoles,
                 toolsOpen = uiState.appBarToolsOpen,
                 toolIndex = uiState.appBarToolIndex,
                 onToolsToggle = viewModel::toggleAppBarTools,
                 onToolFocus = viewModel::focusAppBarTool,
                 onToolsDismiss = viewModel::dismissAppBarTools,
+                topPadding = chromeVerticalPadding,
+                focusedIndex = if (uiState.appBarFocused) {
+                    uiState.appBarIndex
+                } else {
+                    com.nendo.argosy.ui.components.APP_BAR_NOTHING_FOCUSED
+                },
+                onKeyboardToggle = {
+                    com.nendo.argosy.DualScreenManagerHolder.instance?.toggleUpperKeyboard()
+                },
                 maximumWidth = navigationPillWidth.takeIf { it > 0.dp } ?: Dimens.breadcrumbMaxWidth,
+                onHeightChanged = { if (it != dockHeight) dockHeight = it },
                 modifier = Modifier.align(Alignment.BottomCenter)
-                    .padding(
-                        start = Dimens.spacingMd,
-                        top = chromeVerticalPadding,
-                        end = Dimens.spacingMd,
-                        bottom = ComponentDefaults.Carousel.headerEdgePaddingDp.dp
-                    )
-                    .onSizeChanged { size ->
-                        val measured = with(localDensity) { size.height.toDp() }
-                        if (measured != dockHeight) dockHeight = measured
-                    }
             )
         }
 

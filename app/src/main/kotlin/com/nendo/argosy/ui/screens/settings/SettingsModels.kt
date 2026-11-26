@@ -368,6 +368,7 @@ data class DisplayState(
     val launchTargetScreens: LaunchTargetScreens = LaunchTargetScreens(),
     val launchTargetSetCount: Int = 0,
     val navigationMenu: NavigationMenuChoices = NavigationMenuChoices(),
+    val dockPin: com.nendo.argosy.domain.model.DockPin = com.nendo.argosy.domain.model.DockPin.CONTROL,
     val screens: List<ScreenAssignment> = emptyList(),
     val screenRoleModalOpen: Boolean = false,
     val screenRoleModalFocus: Int = 0,

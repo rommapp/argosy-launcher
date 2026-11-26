@@ -187,6 +187,8 @@
     <string name="custom_tile_menu_action_move_to_folder">移到文件夹</string>
     <string name="custom_tile_menu_action_rename_folder">重命名文件夹</string>
     <string name="custom_tile_menu_action_folder_appearance">外观</string>
+    <string name="custom_tile_menu_action_cover_picture">封面图片</string>
+    <string name="custom_tile_menu_action_default_cover">使用默认封面</string>
     <string name="custom_tile_menu_action_sticker_outline_on">添加描边</string>
     <string name="custom_tile_menu_action_sticker_outline_off">移除描边</string>
     <string name="custom_tile_menu_action_sticker_outline_width">更改描边粗细</string>

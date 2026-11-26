@@ -31,6 +31,7 @@ import com.nendo.argosy.ui.components.SwitchPreference
 import com.nendo.argosy.ui.screens.settings.DisplayState
 import com.nendo.argosy.ui.screens.settings.LaunchTargetScreens
 import com.nendo.argosy.ui.screens.settings.NavigationMenuChoices
+import com.nendo.argosy.domain.model.DockPin
 import com.nendo.argosy.domain.model.NavigationMenuPin
 import com.nendo.argosy.ui.screens.settings.SettingsUiState
 import com.nendo.argosy.ui.screens.settings.SettingsViewModel
@@ -103,6 +104,12 @@ internal sealed class DisplaysItem(
         labelRes = R.string.settings_displays_navigation_menu_title,
         visibleWhen = { it.dualScreenEnabled && !it.display.secondaryDisplayUnsupported }
     )
+    data object Dock : Row(
+        key = "dock",
+        section = "displays",
+        labelRes = R.string.settings_displays_dock_title,
+        visibleWhen = { it.dualScreenEnabled && !it.display.secondaryDisplayUnsupported }
+    )
     data object DualScreenMatchSize : Row(
         key = "dualScreenMatchSize",
         section = "displays",
@@ -164,7 +171,7 @@ internal sealed class DisplaysItem(
                 ScreenSafetyHeader,
                 ScreenDimmer, DimAfter, DimLevel, LidSleep,
                 DisplaysSpacer, DisplaysHeader,
-                DualScreenEnabled, DisplayRoles, NavigationMenu, DualScreenMatchSize, ScreenLayout,
+                DualScreenEnabled, DisplayRoles, NavigationMenu, Dock, DualScreenMatchSize, ScreenLayout,
                 AmbientLedSettings,
                 DisplayTargetsSpacer, DisplayTargetsHeader,
                 GamesTarget, AppsTarget, ByPlatformAndApp
@@ -193,6 +200,11 @@ private fun displayRoleLabelRes(mode: DisplayRoleOverride): Int = when (mode) {
     DisplayRoleOverride.AUTO -> R.string.settings_displays_display_roles_auto
     DisplayRoleOverride.STANDARD -> R.string.settings_displays_display_roles_standard
     DisplayRoleOverride.SWAPPED -> R.string.settings_displays_display_roles_swapped
+}
+
+private fun dockPinLabelRes(pin: DockPin): Int = when (pin) {
+    DockPin.CONTROL -> R.string.settings_displays_dock_control
+    DockPin.PRESENTATION -> R.string.settings_displays_dock_presentation
 }
 
 private fun launchTargetLabel(context: Context, target: EmulatorDisplayTarget, screens: LaunchTargetScreens): String {
@@ -427,6 +439,20 @@ fun DisplaysSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
                 isFocused = isFocused(item),
                 onCycle = { viewModel.cycleNavigationMenu(it) },
                 onSelect = { viewModel.selectNavigationMenu(it) },
+                pickerRequestToken = pickerToken(item)
+            )
+
+            is DisplaysItem.Dock -> CyclePreference(
+                title = stringResource(item.labelRes),
+                subtitle = stringResource(R.string.settings_displays_dock_subtitle),
+                value = stringResource(dockPinLabelRes(display.dockPin)),
+                isFocused = isFocused(item),
+                onClick = { viewModel.cycleDockPin() },
+                onPrev = { viewModel.cycleDockPin(-1) },
+                options = remember(context) {
+                    DockPin.entries.map { context.getString(dockPinLabelRes(it)) }
+                },
+                onSelect = { viewModel.selectDockPin(it) },
                 pickerRequestToken = pickerToken(item)
             )
 

@@ -13,6 +13,7 @@ import com.nendo.argosy.data.platform.PlatformDefinitions
 import com.nendo.argosy.data.preferences.HomeBackgroundMode
 import com.nendo.argosy.domain.model.HomeSectionKind
 import com.nendo.argosy.domain.model.PinnedCollection
+import com.nendo.argosy.domain.model.customCover
 import com.nendo.argosy.domain.usecase.collection.CategoryType
 import com.nendo.argosy.ui.screens.common.DiscPickerState
 import com.nendo.argosy.ui.screens.common.SyncOverlayState
@@ -792,6 +793,7 @@ data class HomeUiState(
                     coverPath = if (focus == null) collection?.coverPath else null,
                     subtitle = collection?.name?.takeIf { focus != null }
                         ?: context.getString(R.string.home_grid_tile_collection_subtitle),
+                    customCoverPath = target.coverSource?.let(::pictureFor),
                     isCollectionQueue = focus != null,
                     stats = collection?.let {
                         listOf(
@@ -845,7 +847,7 @@ data class HomeUiState(
                     context = context,
                     strings = HOME_FEATURE_TILE_STRINGS,
                     libraryLink = tileLibraryLinks[tile.id]
-                )
+                ).copy(customCoverPath = target.customCover?.let(::pictureFor))
             is com.nendo.argosy.domain.model.HomeTileTargetRef.Folder -> {
                 val folder = tileFolders[tile.id]
                 val count = folder?.memberCount ?: 0

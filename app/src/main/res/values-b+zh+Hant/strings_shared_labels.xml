@@ -200,6 +200,8 @@
     <string name="custom_tile_menu_action_move_to_folder">移到資料夾</string>
     <string name="custom_tile_menu_action_rename_folder">重新命名資料夾</string>
     <string name="custom_tile_menu_action_folder_appearance">外觀</string>
+    <string name="custom_tile_menu_action_cover_picture">封面圖片</string>
+    <string name="custom_tile_menu_action_default_cover">使用預設封面</string>
     <string name="custom_tile_menu_action_sticker_outline_on">加上外框</string>
     <string name="custom_tile_menu_action_sticker_outline_off">移除外框</string>
     <string name="custom_tile_menu_action_sticker_outline_width">變更外框粗細</string>

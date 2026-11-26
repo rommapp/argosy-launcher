@@ -1687,24 +1687,46 @@ class DualScreenManager(
             _isDualScreenDevice,
             _swappedIsGameActive
         ) { layouts, swapped, presentationUp, dualScreen, gameActive ->
-            dualScreen && presentationUp && !gameActive && navigationMenuDrawsOnPresentation(layouts, swapped)
+            if (!dualScreen || !presentationUp || gameActive) return@combine false
+            val placement = presentationPlacement(layouts, swapped) ?: return@combine false
+            val pin = placement.layout?.navigationMenuPin
+                ?: com.nendo.argosy.domain.model.NavigationMenuPin.Control
+            pin.drawsOnPresentation(placement.presentationScreenKey)
         }
             .distinctUntilChanged()
             .stateIn(activityIndependentScope, kotlinx.coroutines.flow.SharingStarted.Eagerly, false)
 
-    private fun navigationMenuDrawsOnPresentation(
+    val dockOnPresentation: StateFlow<Boolean> =
+        kotlinx.coroutines.flow.combine(
+            preferencesRepository.userPreferences.map { it.screenLayouts }.distinctUntilChanged(),
+            kotlinx.coroutines.flow.combine(_isRolesSwapped, appliedLayoutTick) { swapped, _ -> swapped },
+            presentationShowsHints,
+            _isDualScreenDevice
+        ) { layouts, swapped, presentationUp, dualScreen ->
+            val placement = presentationPlacement(layouts, swapped)
+            val pin = placement?.layout?.dockPin ?: com.nendo.argosy.domain.model.DockPin.CONTROL
+            pin.drawsOnPresentation(dualScreen && presentationUp, placement?.presentationScreenKey)
+        }
+            .distinctUntilChanged()
+            .stateIn(activityIndependentScope, kotlinx.coroutines.flow.SharingStarted.Eagerly, false)
+
+    private class PresentationPlacement(
+        val layout: com.nendo.argosy.domain.model.ScreenLayout?,
+        val presentationScreenKey: String
+    )
+
+    private fun presentationPlacement(
         layouts: com.nendo.argosy.domain.model.ScreenLayouts,
         swapped: Boolean
-    ): Boolean {
-        if (!displayAffinityHelper.hasSecondaryDisplay) return false
+    ): PresentationPlacement? {
+        if (!displayAffinityHelper.hasSecondaryDisplay) return null
         val (primaryDisplayId, presentationDisplayId) =
-            displayAffinityHelper.getRoleDisplayIds(swapped) ?: return false
-        if (primaryDisplayId == presentationDisplayId) return false
+            displayAffinityHelper.getRoleDisplayIds(swapped) ?: return null
+        if (primaryDisplayId == presentationDisplayId) return null
         val attached = attachedScreens()
+        val presentationKey = attached.find { it.displayId == presentationDisplayId }?.key ?: return null
         val setKey = com.nendo.argosy.domain.model.ScreenLayouts.setKeyOf(attached.map { it.key })
-        val pin = layouts.layoutFor(setKey)?.navigationMenuPin
-            ?: com.nendo.argosy.domain.model.NavigationMenuPin.Control
-        return pin.drawsOnPresentation(attached.find { it.displayId == presentationDisplayId }?.key)
+        return PresentationPlacement(layouts.layoutFor(setKey), presentationKey)
     }
 
     /**

@@ -190,6 +190,8 @@
     <string name="custom_tile_menu_action_move_to_folder">In Ordner verschieben</string>
     <string name="custom_tile_menu_action_rename_folder">Ordner umbenennen</string>
     <string name="custom_tile_menu_action_folder_appearance">Darstellung</string>
+    <string name="custom_tile_menu_action_cover_picture">Coverbild</string>
+    <string name="custom_tile_menu_action_default_cover">Standardcover verwenden</string>
     <string name="custom_tile_menu_action_sticker_outline_on">Umriss hinzufügen</string>
     <string name="custom_tile_menu_action_sticker_outline_off">Umriss entfernen</string>
     <string name="custom_tile_menu_action_sticker_outline_width">Umrissbreite ändern</string>

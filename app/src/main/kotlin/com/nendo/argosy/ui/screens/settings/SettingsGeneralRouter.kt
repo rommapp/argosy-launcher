@@ -119,7 +119,7 @@ private fun routeApplySectionExit(vm: SettingsViewModel, section: SettingsSectio
         SettingsSection.DRIVERS -> routeRefreshBuiltinGraphics(vm)
         SettingsSection.SCREENS -> {
             routeRefreshLaunchTargets(vm)
-            routeRefreshNavigationMenu(vm)
+            routeRefreshScreenPins(vm)
         }
         SettingsSection.LAUNCH_TARGETS -> routeLeaveLaunchTargets(vm)
         SettingsSection.EMULATOR_OPTIONS -> vm.emulatorOptionsDelegate.close()
@@ -175,7 +175,7 @@ private fun routeApplySectionEntry(vm: SettingsViewModel, section: SettingsSecti
         SettingsSection.SCREENS -> routeRefreshScreens(vm)
         SettingsSection.DISPLAYS -> {
             routeRefreshLaunchTargets(vm)
-            routeRefreshNavigationMenu(vm)
+            routeRefreshScreenPins(vm)
         }
         SettingsSection.LAUNCH_TARGETS -> routeEnterLaunchTargets(vm)
         SettingsSection.MANAGED_INSTALLERS -> vm.openManagedInstallers()

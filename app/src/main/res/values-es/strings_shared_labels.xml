@@ -193,6 +193,8 @@
     <string name="custom_tile_menu_action_move_to_folder">Mover a carpeta</string>
     <string name="custom_tile_menu_action_rename_folder">Cambiar nombre de la carpeta</string>
     <string name="custom_tile_menu_action_folder_appearance">Apariencia</string>
+    <string name="custom_tile_menu_action_cover_picture">Imagen de carátula</string>
+    <string name="custom_tile_menu_action_default_cover">Usar carátula predeterminada</string>
     <string name="custom_tile_menu_action_sticker_outline_on">Añadir contorno</string>
     <string name="custom_tile_menu_action_sticker_outline_off">Quitar contorno</string>
     <string name="custom_tile_menu_action_sticker_outline_width">Cambiar grosor del contorno</string>

@@ -117,12 +117,14 @@ LAW: inside `ArgosyApp` and anything it hosts, reach DSM through the Holder, nev
 | `GameHero` | `GameDetailViewModel` via `presentSlot` |
 | `LibraryWall` | `BuildingLibraryScreen` via `PresentOnCompanion`, while `presentationShowsHints`; the control screen then shows only the sync info |
 | `NavigationMenu` | `ArgosyApp` via `MainDrawerOnPresentation` (`PresentOnCompanion`) while the drawer is open and `navigationMenuOnPresentation` holds; outranks `MediaPlayback` |
+| `NowPlayingStage` | the Now Playing screen (`NowPlayingUiState.stageSlot`) and the Resume player card; the presentation draws no control hints over it |
+| `MusicShowcase` | the Music browser (`ui/screens/music/MusicShowcase.kt`) and Music stats (`MusicStatsPresentation`) |
+| `InGame` | DSM while a session is live; hosts its own touch-only app dock |
 
 A focused game's `Detail` and a set of games' mosaic are built by `ui/common/PresentationShowcaseSource`
 (`gameDetail`, `collectionShowcase`), so they look identical from every screen. A new list screen
 that should drive the presentation screen holds a `ui/common/PresentationFocus`, calls `show()` from a
 focus observer, `startDescribing()` on composition and ON_RESUME, and `stopDescribing()` on dispose.
-| `InGame` | DSM while a session is live |
 
 Three publishing mechanisms, deliberately:
 - `PresentOnCompanion(SlotOwner("id"), slot)` - a composable publishes while on screen and
@@ -155,6 +157,18 @@ resolves to the screen holding PRESENTATION now (`NavigationMenuPin.drawsOnPrese
 presentation surface is up and no session is live. Then `ArgosyApp` skips its local `MainDrawer` and
 publishes `NavigationMenu`; the shared `MainDrawer` draws there, the pad stays on the drawer handler,
 and taps come back through `tapPresentation` as drawer focus indices (`drawerRouteAt`) or a dismissal.
+
+Dock pin: each `ScreenLayout` also stores a `DockPin` (CONTROL or PRESENTATION; missing reads as
+CONTROL), set from the App Dock row in Displays settings. `DualScreenManager.dockOnPresentation` is
+the one reader: true only when the pin is PRESENTATION, a screen holds PRESENTATION now, the
+presentation surface is up and the device is dual-screen (`DockPin.drawsOnPresentation`); anything
+else keeps the dock on the control screen. The dock MOVES, never doubles. While it holds, Home skips
+its dock and `HomeViewModel.appBarIsDrawn()` is false, so no pad path focuses the bar; the triggers
+keep moving rows through `rowsFollowTriggers()`. `PresentationSlotContent` draws the dock as a
+bottom-centred overlay while `primaryOnHome` holds, over any slot except `InGame` (which hosts its
+own) and `NavigationMenu`. On the presentation screen the dock is touch-only
+(`controllerInputEnabled = false`) and launches through `launchCompanionApp`. Every dock is the shared
+`ui/components/LauncherDock`; never call `CompanionAppBar` directly.
 
 GOTCHA: `presentationSlot` is declared AFTER the flows it combines. Kotlin initialises properties
 in declaration order, so a combine placed above its inputs reads nulls at construction and throws.

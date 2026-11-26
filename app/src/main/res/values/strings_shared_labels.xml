@@ -218,6 +218,10 @@
     <string name="custom_tile_menu_action_rename_folder">Rename folder</string>
     <!-- Opens the settings for how a folder looks: cover, backdrop, colors. -->
     <string name="custom_tile_menu_action_folder_appearance">Appearance</string>
+    <!-- Opens the picture chooser for a collection or library link tile on the home grid; the chosen picture replaces the tile's game cover. -->
+    <string name="custom_tile_menu_action_cover_picture">Cover picture</string>
+    <!-- Removes the chosen picture from a collection or library link tile so it shows its game cover again. -->
+    <string name="custom_tile_menu_action_default_cover">Use default cover</string>
     <!-- A sticker is a cut-out picture placed on the home grid; the outline is traced around its shape. -->
     <string name="custom_tile_menu_action_sticker_outline_on">Add outline</string>
     <string name="custom_tile_menu_action_sticker_outline_off">Remove outline</string>

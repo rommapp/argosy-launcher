@@ -307,7 +307,8 @@ class HomeTileRepository @Inject constructor(
             is HomeTileTargetRef.Game -> base.copy(gameId = target.gameId)
             is HomeTileTargetRef.Collection -> base.copy(
                 collectionId = target.collectionId,
-                gameId = target.focusGameId
+                gameId = target.focusGameId,
+                featureConfig = target.coverSource?.let(::encodeCoverConfig)
             )
             is HomeTileTargetRef.VirtualCollection ->
                 base.copy(virtualType = target.type, virtualName = target.name)
@@ -512,9 +513,23 @@ private fun decodeSticker(config: String?): HomeTileTargetRef.Sticker? {
     return HomeTileTargetRef.Sticker(source = source, outline = decodeOutline(json.optJSONObject(KEY_OUTLINE)))
 }
 
+private fun encodeCoverSource(source: TileImageSource): JSONObject =
+    JSONObject().also { encodeImageSource(source, it) }
+
+private fun encodeCoverConfig(source: TileImageSource): String =
+    JSONObject().apply { put(KEY_COVER_SOURCE, encodeCoverSource(source)) }.toString()
+
+private fun decodeCoverConfig(config: String?): TileImageSource? =
+    config?.let { runCatching { JSONObject(it) }.getOrNull() }?.let(::decodeCoverSource)
+
+private fun decodeCoverSource(json: JSONObject): TileImageSource? =
+    json.optJSONObject(KEY_COVER_SOURCE)?.let(::decodeImageSource)
+
 private fun encodeFeatureConfig(target: HomeTileTargetRef.Feature): String =
     if (target.kind == FeatureTileKind.LIBRARY_LINK) {
-        encodeLibraryLink(target.libraryLink ?: LibraryLinkFilters())
+        val link = JSONObject(encodeLibraryLink(target.libraryLink ?: LibraryLinkFilters()))
+        target.coverSource?.let { link.put(KEY_COVER_SOURCE, encodeCoverSource(it)) }
+        link.toString()
     } else {
         JSONObject().apply {
             put(KEY_DOWNLOADED_ONLY, target.filters.downloadedOnly)
@@ -583,7 +598,11 @@ private fun decodeFeature(kind: FeatureTileKind, config: String?): HomeTileTarge
             libraryLink = LibraryLinkFilters().takeIf { kind == FeatureTileKind.LIBRARY_LINK }
         )
     if (kind == FeatureTileKind.LIBRARY_LINK) {
-        return HomeTileTargetRef.Feature(kind, libraryLink = decodeLibraryLink(json))
+        return HomeTileTargetRef.Feature(
+            kind,
+            libraryLink = decodeLibraryLink(json),
+            coverSource = decodeCoverSource(json)
+        )
     }
     val platformIds = json.optJSONArray(KEY_PLATFORM_IDS)
         ?.let { array -> (0 until array.length()).map { array.getLong(it) } }
@@ -646,7 +665,7 @@ private fun HomeTileEntity.resolveTarget(): HomeTileTargetRef =
     when (runCatching { HomeTileTarget.valueOf(targetType) }.getOrNull()) {
         HomeTileTarget.GAME -> gameId?.let { HomeTileTargetRef.Game(it) }
         HomeTileTarget.COLLECTION -> collectionId?.let {
-            HomeTileTargetRef.Collection(it, focusGameId = gameId)
+            HomeTileTargetRef.Collection(it, focusGameId = gameId, coverSource = decodeCoverConfig(featureConfig))
         }
         HomeTileTarget.VIRTUAL_COLLECTION -> virtualType?.let { type ->
             HomeTileTargetRef.VirtualCollection(type, virtualName.orEmpty())

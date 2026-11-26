@@ -21,8 +21,10 @@ import com.nendo.argosy.ui.components.DecorKind
 import com.nendo.argosy.ui.components.FeatureFilterOptions
 import com.nendo.argosy.domain.model.HomeTileTargetRef
 import com.nendo.argosy.domain.model.TileRect
+import com.nendo.argosy.domain.model.customCover
 import com.nendo.argosy.domain.model.customGridStep
 import com.nendo.argosy.domain.model.settleAfterEdit
+import com.nendo.argosy.domain.model.withCustomCover
 import com.nendo.argosy.data.local.entity.PageAudioKind
 import com.nendo.argosy.data.local.entity.PageBackgroundKind
 import com.nendo.argosy.ui.components.AppMenuRow
@@ -106,7 +108,8 @@ class CustomGridCoordinator(
             closePicker()
         },
         onEdit = { tileId, target ->
-            retargetTile(tileId, target, emptyList())
+            val kept = read().tiles.firstOrNull { it.id == tileId }?.target?.customCover
+            retargetTile(tileId, target.withCustomCover(kept) ?: target, emptyList())
             closePicker()
         },
         onTrackGame = { openRaGamePicker() },
@@ -433,6 +436,8 @@ class CustomGridCoordinator(
             CustomTileMenuAction.RECURATE -> recurateFocusedTile()
             CustomTileMenuAction.FIT_COVER -> setFocusedCoverScale(TileCoverScale.FIT)
             CustomTileMenuAction.CROP_COVER -> setFocusedCoverScale(TileCoverScale.CROP)
+            CustomTileMenuAction.COVER_PICTURE -> current.focusedTile?.let { choosePicture(PicturePurpose.TileCover(it.id)) }
+            CustomTileMenuAction.DEFAULT_COVER -> current.focusedTile?.let { setTileCover(it.id, null) }
             CustomTileMenuAction.EDIT_FILTERS -> editFocusedFeature()
             CustomTileMenuAction.EDIT_TILE -> editFocusedFeature()
             CustomTileMenuAction.BROWSE_ACHIEVEMENTS -> browseFocusedRaTile()
@@ -1229,7 +1234,17 @@ class CustomGridCoordinator(
             )
             is PicturePurpose.FolderCover -> appearanceController.setCoverSource(purpose.folderId, source)
             is PicturePurpose.FolderBackdrop -> appearanceController.setBackdropSource(purpose.folderId, source)
+            is PicturePurpose.TileCover -> setTileCover(purpose.tileId, source)
         }
+    }
+
+    private fun setTileCover(tileId: Long, source: TileImageSource?) {
+        val tile = read().tiles.firstOrNull { it.id == tileId } ?: return
+        val retargeted = tile.target.withCustomCover(source) ?: return
+        write { state ->
+            state.copy(tiles = state.tiles.map { if (it.id == tileId) it.copy(target = retargeted) else it })
+        }
+        retargetTile(tileId, retargeted, tile.playlist)
     }
 
     fun closePageChooser() = write { it.copy(pageChooser = null, pendingPicture = null) }

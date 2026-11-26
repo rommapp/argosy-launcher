@@ -307,6 +307,10 @@
     <string name="settings_displays_navigation_menu_control">Pantalla de control</string>
     <string name="settings_displays_navigation_menu_presentation">Pantalla de presentación</string>
     <string name="settings_displays_navigation_menu_screen">Pantalla %1$d</string>
+    <string name="settings_displays_dock_title">Dock de apps</string>
+    <string name="settings_displays_dock_subtitle">En la pantalla de presentación, el dock solo responde al tacto.</string>
+    <string name="settings_displays_dock_control">Pantalla de control</string>
+    <string name="settings_displays_dock_presentation">Pantalla de presentación</string>
 
     <string name="settings_displays_screens_title">Disposición de pantallas</string>
     <string name="settings_displays_screens_subtitle">Asigna una función a cada pantalla conectada</string>

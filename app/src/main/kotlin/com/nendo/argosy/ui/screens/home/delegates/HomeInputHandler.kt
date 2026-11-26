@@ -28,6 +28,12 @@ interface HomeInputActions {
     fun previousRow()
     fun nextRow()
     fun appBarIsDrawn(): Boolean
+
+    /**
+     * Whether the triggers move between rows and the bumpers stay inside the open view, as they do
+     * while the presentation screen carries the control hints.
+     */
+    fun rowsFollowTriggers(): Boolean
     fun focusAppBar(): Boolean
     fun openDockAppMenu(): Boolean
     fun moveAppBarAppMenu(delta: Int)
@@ -1028,7 +1034,7 @@ class HomeInputHandler(
 
     private fun trigger(delta: Int): InputResult {
         if (restoredTakeover()) return InputResult.HANDLED
-        val movesRows = isColumns(actions.uiState.value) || actions.appBarIsDrawn() || actions.quickNavigation()
+        val movesRows = isColumns(actions.uiState.value) || actions.rowsFollowTriggers() || actions.quickNavigation()
         return shiftRowOrPage(delta, movesRows = movesRows) {
             actions.jumpTilePickerLetter(delta > 0)
         }
@@ -1037,7 +1043,7 @@ class HomeInputHandler(
     private fun bumper(delta: Int): InputResult =
         if (restoredTakeover()) {
             InputResult.HANDLED
-        } else if (isColumns(actions.uiState.value) || actions.appBarIsDrawn() || actions.quickNavigation()) {
+        } else if (isColumns(actions.uiState.value) || actions.rowsFollowTriggers() || actions.quickNavigation()) {
             bumperInModal(delta)
         } else {
             shiftRowOrPage(delta, movesRows = true) { actions.cycleTilePickerCategory(delta) }

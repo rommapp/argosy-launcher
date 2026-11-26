@@ -1,6 +1,7 @@
 package com.nendo.argosy.ui.screens.settings
 
 import androidx.lifecycle.viewModelScope
+import com.nendo.argosy.domain.model.DockPin
 import com.nendo.argosy.domain.model.NavigationMenuPin
 import com.nendo.argosy.domain.model.ScreenLayout
 import com.nendo.argosy.domain.model.ScreenLayouts
@@ -62,8 +63,12 @@ internal suspend fun storeScreenLayout(
 ) {
     val stored = preferencesRepository.userPreferences.first().screenLayouts
     val setKey = ScreenLayouts.setKeyOf(screens.map { it.key })
-    val pin = stored.layoutFor(setKey)?.navigationMenuPin ?: layout.navigationMenuPin
-    preferencesRepository.setScreenLayouts(stored.with(setKey, layout.copy(navigationMenuPin = pin)))
+    val known = stored.layoutFor(setKey)
+    val pin = known?.navigationMenuPin ?: layout.navigationMenuPin
+    val dockPin = known?.dockPin ?: layout.dockPin
+    preferencesRepository.setScreenLayouts(
+        stored.with(setKey, layout.copy(navigationMenuPin = pin, dockPin = dockPin))
+    )
     com.nendo.argosy.DualScreenManagerHolder.instance?.applyStoredScreenLayout()
 }
 
@@ -76,7 +81,16 @@ private suspend fun storeNavigationMenuPin(
     preferencesRepository.setScreenLayouts(resolved.stored.with(resolved.setKey, next))
 }
 
-internal fun routeRefreshNavigationMenu(vm: SettingsViewModel) {
+private suspend fun storeDockPin(
+    preferencesRepository: com.nendo.argosy.data.preferences.UserPreferencesRepository,
+    pin: DockPin
+) {
+    val resolved = com.nendo.argosy.DualScreenManagerHolder.instance?.resolveScreenLayout() ?: return
+    val next = resolved.layout.copy(dockPin = pin)
+    preferencesRepository.setScreenLayouts(resolved.stored.with(resolved.setKey, next))
+}
+
+internal fun routeRefreshScreenPins(vm: SettingsViewModel) {
     vm.viewModelScope.launch {
         val resolved = com.nendo.argosy.DualScreenManagerHolder.instance?.resolveScreenLayout() ?: return@launch
         vm.displayDelegate.setNavigationMenu(
@@ -87,7 +101,21 @@ internal fun routeRefreshNavigationMenu(vm: SettingsViewModel) {
                     .map { NavigationMenuScreen(key = it.key, number = it.number) }
             )
         )
+        vm.displayDelegate.setDockPin(resolved.layout.dockPin)
     }
+}
+
+internal fun routeCycleDockPin(vm: SettingsViewModel, direction: Int) {
+    val options = DockPin.entries
+    val current = options.indexOf(vm._uiState.value.display.dockPin)
+    routeSelectDockPin(vm, if (current < 0) 0 else (current + direction).mod(options.size))
+}
+
+internal fun routeSelectDockPin(vm: SettingsViewModel, index: Int) {
+    val pin = DockPin.entries.getOrNull(index) ?: return
+    if (pin == vm._uiState.value.display.dockPin) return
+    vm.displayDelegate.setDockPin(pin)
+    vm.viewModelScope.launch { storeDockPin(vm.preferencesRepository, pin) }
 }
 
 internal fun routeCycleNavigationMenu(vm: SettingsViewModel, direction: Int) {

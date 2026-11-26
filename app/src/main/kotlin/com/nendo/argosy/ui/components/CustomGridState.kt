@@ -22,6 +22,8 @@ import com.nendo.argosy.domain.model.SCROLL_AXIS_BOUND
 import com.nendo.argosy.domain.model.TileCoverScale
 import com.nendo.argosy.domain.model.TilePlacement
 import com.nendo.argosy.domain.model.TileRect
+import com.nendo.argosy.domain.model.acceptsCustomCover
+import com.nendo.argosy.domain.model.customCover
 import com.nendo.argosy.domain.model.folderMembers
 import com.nendo.argosy.domain.model.gridKindFor
 import com.nendo.argosy.domain.model.isDecor
@@ -37,6 +39,7 @@ private fun HomeTileTargetRef.showsGameCover(): Boolean = when (this) {
     is HomeTileTargetRef.Game -> true
     is HomeTileTargetRef.Feature -> kind != FeatureTileKind.RA_SUMMARY
     is HomeTileTargetRef.Folder -> true
+    is HomeTileTargetRef.Collection -> coverSource != null
     else -> false
 }
 
@@ -45,6 +48,8 @@ enum class CustomTileMenuAction {
     RECURATE,
     FIT_COVER,
     CROP_COVER,
+    COVER_PICTURE,
+    DEFAULT_COVER,
     EDIT_FILTERS,
     EDIT_TILE,
     BROWSE_ACHIEVEMENTS,
@@ -73,6 +78,8 @@ enum class CustomTileMenuAction {
             RECURATE -> R.string.custom_tile_menu_action_recurate
             FIT_COVER -> R.string.custom_tile_menu_action_fit_cover
             CROP_COVER -> R.string.custom_tile_menu_action_crop_cover
+            COVER_PICTURE -> R.string.custom_tile_menu_action_cover_picture
+            DEFAULT_COVER -> R.string.custom_tile_menu_action_default_cover
             EDIT_FILTERS -> R.string.custom_tile_menu_action_edit_filters
             EDIT_TILE -> R.string.custom_tile_menu_action_edit_tile
             BROWSE_ACHIEVEMENTS -> R.string.custom_tile_menu_action_browse_achievements
@@ -131,12 +138,13 @@ enum class DecorKind { IMAGE, STICKER }
 
 /**
  * Where a picture chosen through the decoration chooser lands: a new image or sticker tile on the
- * cursor's cell, or one of a folder's two pictures.
+ * cursor's cell, one of a folder's two pictures, or the cover of a collection or library link tile.
  */
 sealed interface PicturePurpose {
     data class Decor(val kind: DecorKind) : PicturePurpose
     data class FolderCover(val folderId: Long) : PicturePurpose
     data class FolderBackdrop(val folderId: Long) : PicturePurpose
+    data class TileCover(val tileId: Long) : PicturePurpose
 }
 
 enum class FolderAppearanceRow {
@@ -817,6 +825,10 @@ data class CustomGridState(
                 }
                 if (feature?.kind == FeatureTileKind.RA_SUMMARY && supportsRaTileSetup) {
                     add(CustomTileMenuAction.EDIT_TILE)
+                }
+                if (focused.target.acceptsCustomCover) {
+                    add(CustomTileMenuAction.COVER_PICTURE)
+                    if (focused.target.customCover != null) add(CustomTileMenuAction.DEFAULT_COVER)
                 }
                 if (focused.target.showsGameCover()) {
                     add(

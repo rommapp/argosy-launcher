@@ -304,6 +304,10 @@
     <string name="settings_displays_navigation_menu_control">Steuerbildschirm</string>
     <string name="settings_displays_navigation_menu_presentation">Präsentationsbildschirm</string>
     <string name="settings_displays_navigation_menu_screen">Bildschirm %1$d</string>
+    <string name="settings_displays_dock_title">App-Dock</string>
+    <string name="settings_displays_dock_subtitle">Auf dem Präsentationsbildschirm reagiert das Dock nur auf Berührung.</string>
+    <string name="settings_displays_dock_control">Steuerbildschirm</string>
+    <string name="settings_displays_dock_presentation">Präsentationsbildschirm</string>
 
     <string name="settings_displays_screens_title">Bildschirmanordnung</string>
     <string name="settings_displays_screens_subtitle">Jedem angeschlossenen Bildschirm eine Aufgabe geben</string>

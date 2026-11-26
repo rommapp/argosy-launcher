@@ -190,6 +190,8 @@
     <string name="custom_tile_menu_action_move_to_folder">फ़ोल्डर में ले जाएँ</string>
     <string name="custom_tile_menu_action_rename_folder">फ़ोल्डर का नाम बदलें</string>
     <string name="custom_tile_menu_action_folder_appearance">रूप</string>
+    <string name="custom_tile_menu_action_cover_picture">कवर चित्र</string>
+    <string name="custom_tile_menu_action_default_cover">डिफ़ॉल्ट कवर उपयोग करें</string>
     <string name="custom_tile_menu_action_sticker_outline_on">आउटलाइन जोड़ें</string>
     <string name="custom_tile_menu_action_sticker_outline_off">आउटलाइन हटाएँ</string>
     <string name="custom_tile_menu_action_sticker_outline_width">आउटलाइन की मोटाई बदलें</string>

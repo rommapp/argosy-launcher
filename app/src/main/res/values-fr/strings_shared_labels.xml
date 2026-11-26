@@ -195,6 +195,8 @@
     <string name="custom_tile_menu_action_move_to_folder">Déplacer dans un dossier</string>
     <string name="custom_tile_menu_action_rename_folder">Renommer le dossier</string>
     <string name="custom_tile_menu_action_folder_appearance">Apparence</string>
+    <string name="custom_tile_menu_action_cover_picture">Image de jaquette</string>
+    <string name="custom_tile_menu_action_default_cover">Utiliser la jaquette par défaut</string>
     <string name="custom_tile_menu_action_sticker_outline_on">Ajouter un contour</string>
     <string name="custom_tile_menu_action_sticker_outline_off">Retirer le contour</string>
     <string name="custom_tile_menu_action_sticker_outline_width">Changer l\'épaisseur du contour</string>

@@ -611,6 +611,10 @@
     <string name="settings_displays_navigation_menu_control">Tela de controle</string>
     <string name="settings_displays_navigation_menu_presentation">Tela de apresentação</string>
     <string name="settings_displays_navigation_menu_screen">Tela %1$d</string>
+    <string name="settings_displays_dock_title">Dock de apps</string>
+    <string name="settings_displays_dock_subtitle">Na tela de apresentação, o dock responde só ao toque.</string>
+    <string name="settings_displays_dock_control">Tela de controle</string>
+    <string name="settings_displays_dock_presentation">Tela de apresentação</string>
 
     <!-- Row opening the screen-by-screen role editor. -->
     <string name="settings_displays_screens_title">Layout de Telas</string>

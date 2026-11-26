@@ -641,6 +641,9 @@ open class LibretroActivity : ComponentActivity() {
         val globalSettings = kotlinx.coroutines.runBlocking {
             preferencesRepository.getBuiltinEmulatorSettings().first()
         }
+        val settings = kotlinx.coroutines.runBlocking {
+            effectiveLibretroSettingsResolver.getEffectiveSettings(platformId, platformSlug, globalSettings)
+        }
         touchSettingsState = globalSettings
         var lastLockOrientation = globalSettings.touchControlsLockOrientation
         var lastShow = globalSettings.showTouchControlsWhenNoGamepad
@@ -677,10 +680,6 @@ open class LibretroActivity : ComponentActivity() {
                     applyOrientationLock(touchSettingsState.touchControlsLockOrientation)
                 }
         }
-        val settings = kotlinx.coroutines.runBlocking {
-            effectiveLibretroSettingsResolver.getEffectiveSettings(platformId, platformSlug)
-        }
-
         autoSaveEnabled = settings.autoSaveState && !isGuestJoinedSession
         hwCoreSaveStatesEnabled = settings.hwCoreSaveStatesEnabled
         initializeInputHandlers()
@@ -3235,7 +3234,7 @@ open class LibretroActivity : ComponentActivity() {
         )
 
         val settings = kotlinx.coroutines.runBlocking {
-            effectiveLibretroSettingsResolver.getEffectiveSettings(platformId, platformSlug)
+            effectiveLibretroSettingsResolver.getEffectiveSettings(platformId, platformSlug, touchSettingsState)
         }
         manager.loadChain(settings.shaderChainJson)
         inGameShaderChainManager = manager

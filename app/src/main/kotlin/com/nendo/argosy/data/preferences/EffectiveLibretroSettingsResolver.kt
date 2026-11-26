@@ -17,8 +17,18 @@ class EffectiveLibretroSettingsResolver @Inject constructor(
     suspend fun getEffectiveSettings(
         platformId: Long,
         platformSlug: String
+    ): BuiltinEmulatorSettings =
+        getEffectiveSettings(platformId, platformSlug, preferencesRepository.getBuiltinEmulatorSettings().first())
+
+    /**
+     * The effective settings over an already-read [global], so a caller holding the global
+     * settings resolves the per-platform overrides without reading the settings store again.
+     */
+    suspend fun getEffectiveSettings(
+        platformId: Long,
+        platformSlug: String,
+        global: BuiltinEmulatorSettings
     ): BuiltinEmulatorSettings {
-        val global = preferencesRepository.getBuiltinEmulatorSettings().first()
         val perPlatform = platformLibretroSettingsDao.getByPlatformId(platformId)
 
         val isHeavyPlatform = PlatformWeightRegistry.getWeight(platformSlug) == PlatformWeightRegistry.Weight.HEAVY

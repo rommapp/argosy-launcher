@@ -40,6 +40,7 @@ sealed interface LaunchStep {
     data object Starting : LaunchStep
     data object PreparingSystemFiles : LaunchStep
     data object PreparingUi : LaunchStep
+    data object FinishingEmulatorSettings : LaunchStep
     data object Launching : LaunchStep
 }
 
@@ -47,7 +48,7 @@ sealed interface LaunchStep {
  * The stretch of a launch a step belongs to. One clock runs for a phase across its steps;
  * QUESTION steps wait for an answer and LAUNCHING ends the launch.
  */
-enum class LaunchPhase { PREVIOUS, RECAP_LOADING, SAVE, CORE, PREPARE, LAUNCHING, QUESTION }
+enum class LaunchPhase { PREVIOUS, RECAP_LOADING, SAVE, CORE, PREPARE, EMULATOR_SETTINGS, LAUNCHING, QUESTION }
 
 /**
  * A fault the launch survives: the game still opens, with the save already on the device.
@@ -66,6 +67,7 @@ val LaunchStep.phase: LaunchPhase
         LaunchStep.Starting -> LaunchPhase.PREPARE
         LaunchStep.PreparingSystemFiles -> LaunchPhase.PREPARE
         LaunchStep.PreparingUi -> LaunchPhase.PREPARE
+        LaunchStep.FinishingEmulatorSettings -> LaunchPhase.EMULATOR_SETTINGS
         LaunchStep.Launching -> LaunchPhase.LAUNCHING
     }
 

@@ -969,6 +969,9 @@ class GameLauncher @Inject constructor(
 
         val built = buildEffectiveCommand(emulator, romFile, game, forResume) ?: return null
         val command = built.pinnedPastPathPattern(romFile.extension) { path -> resolveViewActivity(built, path) }
+        if (emulatorEditLocks.isEditing(command.packageName)) {
+            launchProgressTracker.report(LaunchStep.FinishingEmulatorSettings)
+        }
         if (!emulatorEditLocks.awaitEdits(command.packageName)) {
             Logger.warn(TAG, "config edit still running, launching anyway | pkg=${command.packageName}")
         }

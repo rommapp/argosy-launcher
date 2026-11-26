@@ -1731,6 +1731,7 @@
     <string name="ui_launch_overlay_wait_core_sized">Still downloading the emulator core &#183; %1$s</string>
     <!-- Line under the game title when the emulator setup runs long. -->
     <string name="ui_launch_overlay_wait_prepare">Still preparing the emulator</string>
+    <string name="ui_launch_overlay_wait_emulator_settings">Finishing emulator settings</string>
     <!-- Shown when the RomM server did not answer; the game still starts. "RomM" is a product name; leave it untranslated. -->
     <string name="ui_launch_overlay_failed_connect">RomM didn\'t answer. Starting with the save on this device.</string>
     <!-- Shown when the RomM server is reachable but did not answer within the pre-launch budget; the game still starts. "RomM" is a product name; leave it untranslated. -->

@@ -24,6 +24,8 @@ class EmulatorEditLocks @Inject constructor() {
      * Waits until no edit of [packageName] is in flight. False when one was still running after
      * [timeoutMs].
      */
+    fun isEditing(packageName: String): Boolean = locks[packageName]?.isLocked == true
+
     suspend fun awaitEdits(packageName: String, timeoutMs: Long = LAUNCH_WAIT_MS): Boolean =
         withTimeoutOrNull(timeoutMs) { lockFor(packageName).withLock { } } != null
 

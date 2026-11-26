@@ -744,6 +744,7 @@
     <string name="ui_launch_overlay_wait_core">एमुलेटर कोर अभी भी डाउनलोड हो रहा है</string>
     <string name="ui_launch_overlay_wait_core_sized">एमुलेटर कोर अभी भी डाउनलोड हो रहा है &#183; %1$s</string>
     <string name="ui_launch_overlay_wait_prepare">एमुलेटर अभी भी तैयार हो रहा है</string>
+    <string name="ui_launch_overlay_wait_emulator_settings">एमुलेटर की सेटिंग्स पूरी हो रही हैं</string>
     <string name="ui_launch_overlay_failed_connect">RomM ने जवाब नहीं दिया। इस डिवाइस की सेव के साथ शुरू हो रहा है।</string>
     <string name="ui_launch_overlay_failed_timeout">RomM ने जवाब देने में बहुत देर लगाई। इस डिवाइस की सेव के साथ शुरू हो रहा है।</string>
     <string name="ui_launch_overlay_failed_download">आपकी सेव डाउनलोड नहीं हो सकी। इस डिवाइस की सेव के साथ शुरू हो रहा है।</string>

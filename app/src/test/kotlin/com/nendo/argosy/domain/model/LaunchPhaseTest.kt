@@ -1,5 +1,7 @@
 package com.nendo.argosy.domain.model
 
+import com.nendo.argosy.R
+import com.nendo.argosy.ui.common.waitLabelRes
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Test
@@ -119,6 +121,15 @@ class LaunchPhaseTest {
     fun `preparing system files and the UI share the prepare phase`() {
         assertEquals(LaunchPhase.PREPARE, LaunchStep.PreparingSystemFiles.phase)
         assertEquals(LaunchPhase.PREPARE, LaunchStep.PreparingUi.phase)
+    }
+
+    @Test
+    fun `waiting on an emulator settings edit has its own phase and wait message`() {
+        assertEquals(LaunchPhase.EMULATOR_SETTINGS, LaunchStep.FinishingEmulatorSettings.phase)
+        assertEquals(
+            R.string.ui_launch_overlay_wait_emulator_settings,
+            LaunchPhase.EMULATOR_SETTINGS.waitLabelRes
+        )
     }
 
     @Test

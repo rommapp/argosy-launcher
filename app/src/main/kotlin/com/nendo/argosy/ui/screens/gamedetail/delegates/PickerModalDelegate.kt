@@ -22,6 +22,10 @@ import com.nendo.argosy.ui.screens.gamedetail.ArtCandidate
 import com.nendo.argosy.ui.screens.gamedetail.artGridStep
 import com.nendo.argosy.ui.screens.gamedetail.pickerConfig
 import dagger.hilt.android.qualifiers.ApplicationContext
+import com.nendo.argosy.data.platform.InstalledAppResolver
+import com.nendo.argosy.data.platform.LaunchableApp
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -72,11 +76,17 @@ data class PickerModalState(
     val artPickerQuery: String = "",
     val artPickerSearchFocused: Boolean = false,
     val artPickerKeyboardOpen: Boolean = false,
-    val showArtFileBrowser: Boolean = false
+    val showArtFileBrowser: Boolean = false,
+
+    val showAppPicker: Boolean = false,
+    val appPickerApps: List<LaunchableApp> = emptyList(),
+    val appPickerFocusIndex: Int = 0
 ) {
     val hasAnyPickerOpen: Boolean
         get() = showEmulatorPicker || showCorePicker || showSteamLauncherPicker ||
-                showDiscPicker || showVariantPicker || showFilePicker || showArtPicker
+                showDiscPicker || showVariantPicker || showFilePicker || showArtPicker || showAppPicker
+
+    val otherAppRowIndex: Int get() = availableEmulators.size + 1
 
     val visibleFilePickerRows: List<com.nendo.argosy.data.model.FilePickerRow>
         get() = filePickerRows.visibleWithCollapsed(filePickerCollapsed)
@@ -84,6 +94,7 @@ data class PickerModalState(
 
 sealed class PickerSelection {
     data class Emulator(val emulator: InstalledEmulator?) : PickerSelection()
+    data class OtherApp(val app: LaunchableApp) : PickerSelection()
     data class Core(val coreId: String?) : PickerSelection()
     data class SteamLauncher(val launcher: com.nendo.argosy.data.launcher.SteamLauncher?) : PickerSelection()
     data class Disc(val discPath: String) : PickerSelection()
@@ -94,7 +105,8 @@ class PickerModalDelegate @Inject constructor(
     @ApplicationContext private val context: Context,
     private val emulatorDetector: EmulatorDetector,
     private val soundManager: SoundFeedbackManager,
-    private val builtinCoreSummaryLoader: BuiltinCoreSummaryLoader
+    private val builtinCoreSummaryLoader: BuiltinCoreSummaryLoader,
+    private val installedAppResolver: InstalledAppResolver
 ) {
     private val _state = MutableStateFlow(PickerModalState())
     val state: StateFlow<PickerModalState> = _state.asStateFlow()
@@ -254,15 +266,18 @@ class PickerModalDelegate @Inject constructor(
 
     fun moveEmulatorPickerFocus(delta: Int) {
         _state.update { state ->
-            val maxIndex = state.availableEmulators.size
-            val newIndex = computeWrappedIndex(state.emulatorPickerFocusIndex, delta, maxIndex, menuWrapMode)
+            val newIndex = computeWrappedIndex(state.emulatorPickerFocusIndex, delta, state.otherAppRowIndex, menuWrapMode)
             state.copy(emulatorPickerFocusIndex = newIndex)
         }
     }
 
-    fun confirmEmulatorSelection() {
+    suspend fun confirmEmulatorSelection() {
         val state = _state.value
         val index = state.emulatorPickerFocusIndex
+        if (index == state.otherAppRowIndex) {
+            showAppPicker()
+            return
+        }
         val emulator = if (index == 0) null else state.availableEmulators.getOrNull(index - 1)
         selectEmulator(emulator)
     }
@@ -270,6 +285,45 @@ class PickerModalDelegate @Inject constructor(
     fun selectEmulator(emulator: InstalledEmulator?) {
         _selection.value = PickerSelection.Emulator(emulator)
         _state.update { it.copy(showEmulatorPicker = false) }
+    }
+
+    suspend fun showAppPicker() {
+        val apps = withContext(Dispatchers.IO) { installedAppResolver.getLaunchableApps() }
+        _state.update {
+            it.copy(
+                showEmulatorPicker = false,
+                showAppPicker = true,
+                appPickerApps = apps,
+                appPickerFocusIndex = 0
+            )
+        }
+        soundManager.play(SoundType.OPEN_MODAL)
+    }
+
+    fun moveAppPickerFocus(delta: Int) {
+        _state.update { state ->
+            if (state.appPickerApps.isEmpty()) return@update state
+            val newIndex = computeWrappedIndex(state.appPickerFocusIndex, delta, state.appPickerApps.size - 1, menuWrapMode)
+            state.copy(appPickerFocusIndex = newIndex)
+        }
+    }
+
+    fun focusAppPickerRow(index: Int) {
+        _state.update { state ->
+            if (index !in state.appPickerApps.indices) state else state.copy(appPickerFocusIndex = index)
+        }
+    }
+
+    fun confirmAppPickerSelection() {
+        val state = _state.value
+        val app = state.appPickerApps.getOrNull(state.appPickerFocusIndex) ?: return
+        _selection.value = PickerSelection.OtherApp(app)
+        _state.update { it.copy(showAppPicker = false) }
+    }
+
+    fun dismissAppPicker() {
+        _state.update { it.copy(showAppPicker = false, showEmulatorPicker = true) }
+        soundManager.play(SoundType.CLOSE_MODAL)
     }
 
     // endregion

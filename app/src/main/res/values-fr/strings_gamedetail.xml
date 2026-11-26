@@ -338,6 +338,10 @@
 
     <string name="gamedetail_emulator_picker_title">SÉLECTIONNER UN ÉMULATEUR</string>
     <string name="gamedetail_emulator_picker_platform_default">Utiliser la valeur par défaut de la plateforme</string>
+    <string name="gamedetail_emulator_picker_other_app">Autre app...</string>
+    <string name="gamedetail_emulator_picker_other_app_subtitle">Lancer ce jeu avec n\'importe quelle app installée</string>
+    <string name="gamedetail_app_picker_title">Lancer %1$s avec</string>
+    <string name="gamedetail_app_picker_intro">Choisissez n\'importe quelle app installée pour ce jeu. Le reste de la plateforme garde son émulateur.</string>
     <string name="gamedetail_emulator_picker_builtin_core_build">%1$s (build du %2$s)</string>
 
     <string name="gamedetail_variant_picker_title">SÉLECTIONNER UNE VARIANTE</string>

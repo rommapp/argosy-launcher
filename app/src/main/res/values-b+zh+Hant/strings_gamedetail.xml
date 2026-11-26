@@ -289,6 +289,10 @@
 
     <string name="gamedetail_emulator_picker_title">選擇模擬器</string>
     <string name="gamedetail_emulator_picker_platform_default">使用平台預設</string>
+    <string name="gamedetail_emulator_picker_other_app">其他應用程式...</string>
+    <string name="gamedetail_emulator_picker_other_app_subtitle">用任何已安裝的應用程式啟動此遊戲</string>
+    <string name="gamedetail_app_picker_title">用以下應用程式啟動 %1$s</string>
+    <string name="gamedetail_app_picker_intro">為此遊戲選擇任何已安裝的應用程式。該平台的其他遊戲仍使用原模擬器。</string>
     <string name="gamedetail_emulator_picker_builtin_core_build">%1$s（建置於 %2$s）</string>
 
     <string name="gamedetail_variant_picker_title">選擇版本</string>

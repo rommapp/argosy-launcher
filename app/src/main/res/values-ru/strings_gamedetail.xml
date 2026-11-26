@@ -302,6 +302,10 @@
 
     <string name="gamedetail_emulator_picker_title">ВЫБОР ЭМУЛЯТОРА</string>
     <string name="gamedetail_emulator_picker_platform_default">Использовать значение платформы по умолчанию</string>
+    <string name="gamedetail_emulator_picker_other_app">Другое приложение...</string>
+    <string name="gamedetail_emulator_picker_other_app_subtitle">Запускать эту игру любым установленным приложением</string>
+    <string name="gamedetail_app_picker_title">Запускать %1$s через</string>
+    <string name="gamedetail_app_picker_intro">Выберите любое установленное приложение для этой игры. Остальные игры платформы сохранят свой эмулятор.</string>
     <string name="gamedetail_emulator_picker_builtin_core_build">%1$s (сборка от %2$s)</string>
 
     <string name="gamedetail_variant_picker_title">ВЫБОР ВАРИАНТА</string>

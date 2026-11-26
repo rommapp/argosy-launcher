@@ -358,9 +358,7 @@ class PerGameSettingsDelegate @Inject constructor(
         val emulatorName = liveEmulatorName(gameConfig) ?: liveEmulatorName(platformConfig)
             ?: emulatorDetector.getPreferredEmulator(game.platformSlug, prefs.builtinLibretroEnabled)?.def?.displayName
 
-        val configuredPackage = gameConfig?.packageName ?: platformConfig?.packageName
-        val emulatorDef = configuredPackage?.let { emulatorDetector.getByPackage(it) }
-            ?: emulatorDetector.getPreferredEmulator(game.platformSlug, prefs.builtinLibretroEnabled)?.def
+        val emulatorDef = emulatorResolver.resolveEmulatorForGame(gameId, game.platformId, game.platformSlug)
         val isBuiltIn = emulatorDef?.launchConfig is LaunchConfig.BuiltIn
         val isCoreSelectable = emulatorDef?.launchConfig?.isCoreSelectable == true
         val cores = EmulatorRegistry.getSelectableCores(game.platformSlug, isBuiltIn)

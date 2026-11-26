@@ -585,6 +585,13 @@ class GameDetailViewModel @Inject constructor(
                 loadGame(gameId)
                 perGameSettingsDelegate.refresh(gameId)
             }
+            is PickerSelection.OtherApp -> {
+                val gameId = currentGameId
+                val game = gameRepository.getById(gameId) ?: return
+                configureEmulatorUseCase.setAdHocForGame(gameId, game.platformId, selection.app.packageName, selection.app.displayName)
+                loadGame(gameId)
+                perGameSettingsDelegate.refresh(gameId)
+            }
             is PickerSelection.Core -> {
                 configureEmulatorUseCase.setCoreForGame(currentGameId, selection.coreId)
                 loadGame(currentGameId)
@@ -1913,6 +1920,7 @@ class GameDetailViewModel @Inject constructor(
             val picker = pickerModalDelegate.state.value
             when {
                 perGameSettingsDelegate.state.value.showMemcardPicker -> movePerGameMemcardFocus(-1)
+                picker.showAppPicker -> pickerModalDelegate.moveAppPickerFocus(-1)
                 picker.showEmulatorPicker -> moveEmulatorPickerFocus(-1)
                 picker.showCorePicker -> moveCorePickerFocus(-1)
                 else -> movePerGameSettingsFocus(-1)
@@ -1924,6 +1932,7 @@ class GameDetailViewModel @Inject constructor(
             val picker = pickerModalDelegate.state.value
             when {
                 perGameSettingsDelegate.state.value.showMemcardPicker -> movePerGameMemcardFocus(1)
+                picker.showAppPicker -> pickerModalDelegate.moveAppPickerFocus(1)
                 picker.showEmulatorPicker -> moveEmulatorPickerFocus(1)
                 picker.showCorePicker -> moveCorePickerFocus(1)
                 else -> movePerGameSettingsFocus(1)
@@ -1947,6 +1956,7 @@ class GameDetailViewModel @Inject constructor(
             val picker = pickerModalDelegate.state.value
             when {
                 perGameSettingsDelegate.state.value.showMemcardPicker -> confirmPerGameMemcardSelection()
+                picker.showAppPicker -> pickerModalDelegate.confirmAppPickerSelection()
                 picker.showEmulatorPicker -> confirmEmulatorSelection()
                 picker.showCorePicker -> confirmCoreSelection()
                 else -> confirmPerGameSetting(onNavigateToPlatformSettings)
@@ -1958,6 +1968,7 @@ class GameDetailViewModel @Inject constructor(
             val picker = pickerModalDelegate.state.value
             when {
                 perGameSettingsDelegate.state.value.showMemcardPicker -> dismissPerGameMemcardPicker()
+                picker.showAppPicker -> pickerModalDelegate.dismissAppPicker()
                 picker.showEmulatorPicker -> dismissEmulatorPicker()
                 picker.showCorePicker -> dismissCorePicker()
                 else -> dismissPerGameSettings()
@@ -2147,7 +2158,13 @@ class GameDetailViewModel @Inject constructor(
 
     fun dismissEmulatorPicker() = pickerModalDelegate.dismissEmulatorPicker()
     fun moveEmulatorPickerFocus(delta: Int) = pickerModalDelegate.moveEmulatorPickerFocus(delta)
-    fun confirmEmulatorSelection() = pickerModalDelegate.confirmEmulatorSelection()
+    fun confirmEmulatorSelection() {
+        viewModelScope.launch { pickerModalDelegate.confirmEmulatorSelection() }
+    }
+
+    fun showOtherAppPicker() {
+        viewModelScope.launch { pickerModalDelegate.showAppPicker() }
+    }
 
     fun showDiscPicker() { toggleMoreOptions(); playGame() }
     fun showVariantPickerFromMenu() {
@@ -2738,6 +2755,7 @@ class GameDetailViewModel @Inject constructor(
                 pickerState.showDiscPicker -> { navigateDiscPicker(direction); InputResult.HANDLED }
                 pickerState.showArtPicker -> { moveArtPickerFocus(direction * pickerState.artPickerSlot.pickerConfig.columns); InputResult.HANDLED }
                 pickerState.showVariantPicker -> { pickerModalDelegate.moveVariantPickerFocus(direction); InputResult.HANDLED }
+                pickerState.showAppPicker -> { pickerModalDelegate.moveAppPickerFocus(direction); InputResult.HANDLED }
                 pickerState.showEmulatorPicker -> { moveEmulatorPickerFocus(direction); InputResult.HANDLED }
                 pickerState.showSteamLauncherPicker -> { moveSteamLauncherPickerFocus(direction); InputResult.HANDLED }
                 state.showAddToCollectionModal -> {
@@ -2920,6 +2938,7 @@ class GameDetailViewModel @Inject constructor(
                 pickerState.showDiscPicker -> selectFocusedDisc()
                 pickerState.showArtPicker -> confirmArtPickerSelection()
                 pickerState.showVariantPicker -> confirmOrDownloadFocusedVariant()
+                pickerState.showAppPicker -> pickerModalDelegate.confirmAppPickerSelection()
                 pickerState.showEmulatorPicker -> confirmEmulatorSelection()
                 pickerState.showSteamLauncherPicker -> confirmSteamLauncherSelection()
                 state.showAddToCollectionModal -> confirmCollectionSelection()
@@ -2963,6 +2982,7 @@ class GameDetailViewModel @Inject constructor(
                 pickerState.showDiscPicker -> dismissDiscPicker()
                 pickerState.showArtPicker -> dismissArtPicker()
                 pickerState.showVariantPicker -> pickerModalDelegate.dismissVariantPicker()
+                pickerState.showAppPicker -> pickerModalDelegate.dismissAppPicker()
                 pickerState.showEmulatorPicker -> dismissEmulatorPicker()
                 pickerState.showSteamLauncherPicker -> dismissSteamLauncherPicker()
                 state.showPermissionModal -> dismissPermissionModal()
@@ -2997,6 +3017,7 @@ class GameDetailViewModel @Inject constructor(
             if (state.showPlayOptions) { dismissPlayOptions(); return InputResult.UNHANDLED }
             if (state.showMoreOptions) { toggleMoreOptions(); return InputResult.UNHANDLED }
             if (pickerState.showArtPicker) { pickerModalDelegate.dismissArtPicker(); return InputResult.UNHANDLED }
+            if (pickerState.showAppPicker) { pickerModalDelegate.dismissAppPicker(); return InputResult.UNHANDLED }
             if (pickerState.showEmulatorPicker) { dismissEmulatorPicker(); return InputResult.UNHANDLED }
             if (pickerState.showSteamLauncherPicker) { dismissSteamLauncherPicker(); return InputResult.UNHANDLED }
             if (state.showAddToCollectionModal) { dismissAddToCollectionModal(); return InputResult.UNHANDLED }

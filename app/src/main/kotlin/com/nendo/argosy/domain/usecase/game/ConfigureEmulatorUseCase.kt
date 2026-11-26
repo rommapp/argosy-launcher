@@ -87,6 +87,27 @@ class ConfigureEmulatorUseCase @Inject constructor(
         emulatorConfigDao.insert(config)
     }
 
+    suspend fun setAdHocForGame(gameId: Long, platformId: Long, packageName: String, displayName: String) {
+        val existing = emulatorConfigDao.getByGameId(gameId)
+        val hadSaveLocation = existing?.savePath != null || existing?.selectedMemcardPath != null
+        emulatorConfigDao.deleteGameOverride(gameId)
+        emulatorConfigDao.insert(
+            EmulatorConfigEntity(
+                platformId = platformId,
+                gameId = gameId,
+                packageName = packageName,
+                displayName = displayName,
+                coreName = null,
+                isDefault = false,
+                preferredExtension = existing?.preferredExtension,
+                useFileUri = existing?.useFileUri,
+                displayTarget = existing?.displayTarget,
+                controllerTypes = existing?.controllerTypes
+            )
+        )
+        if (hadSaveLocation) saveSyncDao.clearLocalPathsForGame(gameId)
+    }
+
     suspend fun clearForGame(gameId: Long) {
         val existing = emulatorConfigDao.getByGameId(gameId)
         val hadSaveLocation = existing?.savePath != null || existing?.selectedMemcardPath != null

@@ -41,8 +41,9 @@ class EmulatorResolver @Inject constructor(
         resolveEmulatorForGame(gameId, platformId, platformSlug)?.packageName
 
     /**
-     * The emulator a game launches with: a game override, then the platform default, then an
-     * ad-hoc app bound by package, then the platform's preferred installed emulator. GameLauncher
+     * The emulator a game launches with: the game override, then the platform default, each as a
+     * known emulator or an ad-hoc app bound by package, then the platform's preferred installed
+     * emulator. GameLauncher
      * launches with this def and save sync resolves paths from its package, so both read here.
      */
     suspend fun resolveEmulatorForGame(gameId: Long, platformId: Long, platformSlug: String): EmulatorDef? {
@@ -69,21 +70,21 @@ class EmulatorResolver @Inject constructor(
 
         gameOverride.acceptableLaunchPackage(platformSlug, installedPackages, builtinEnabled)
             ?.let { return emulatorDetector.getByPackage(it) }
+        gameOverride.adHocDef(platformSlug)?.let { return it }
         platformDefault.acceptableLaunchPackage(platformSlug, installedPackages, builtinEnabled)
             ?.let { return emulatorDetector.getByPackage(it) }
-
-        val adHocConfig = gameOverride?.takeIf { it.adHocPackageOrNull() != null }
-            ?: platformDefault?.takeIf { it.adHocPackageOrNull() != null }
-        val adHocPackage = adHocConfig?.packageName
-        if (adHocPackage != null) {
-            return EmulatorRegistry.synthesizeAdHocEmulatorDef(
-                packageName = adHocPackage,
-                displayName = adHocConfig.displayName ?: adHocPackage,
-                platformSlug = platformSlug
-            )
-        }
+        platformDefault.adHocDef(platformSlug)?.let { return it }
 
         return emulatorDetector.getPreferredEmulator(platformSlug, builtinEnabled)?.def
+    }
+
+    private fun EmulatorConfigEntity?.adHocDef(platformSlug: String): EmulatorDef? {
+        val pkg = adHocPackageOrNull() ?: return null
+        return EmulatorRegistry.synthesizeAdHocEmulatorDef(
+            packageName = pkg,
+            displayName = this?.displayName ?: pkg,
+            platformSlug = platformSlug
+        )
     }
 
     suspend fun getEmulatorIdForGame(gameId: Long, platformId: Long, platformSlug: String): String? {

@@ -861,6 +861,10 @@
     <!-- First row of the emulator picker. Verb phrase: falls back to whatever emulator the platform
          is set to use. -->
     <string name="gamedetail_emulator_picker_platform_default">Use Platform Default</string>
+    <string name="gamedetail_emulator_picker_other_app">Other app...</string>
+    <string name="gamedetail_emulator_picker_other_app_subtitle">Launch this game with any installed app</string>
+    <string name="gamedetail_app_picker_title">Launch %1$s with</string>
+    <string name="gamedetail_app_picker_intro">Pick any installed app for this game. The rest of the platform keeps its emulator.</string>
     <!-- Value beside the built-in emulator row. %1$s is the libretro core it runs for this game
          (an upstream name, never translated), %2$s the date and time that core build was
          published. "build" is a noun: the compiled release of the core. -->

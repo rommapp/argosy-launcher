@@ -45,28 +45,49 @@ fun AppPickerModal(
     onConfirm: () -> Unit,
     onDismiss: () -> Unit
 ) {
+    AppPickerModal(
+        title = stringResource(R.string.settings_app_picker_title, state.platformName),
+        intro = stringResource(R.string.settings_app_picker_intro),
+        apps = state.apps,
+        focusIndex = state.focusIndex,
+        onItemTap = onItemTap,
+        onConfirm = onConfirm,
+        onDismiss = onDismiss
+    )
+}
+
+@Composable
+fun AppPickerModal(
+    title: String,
+    intro: String,
+    apps: List<LaunchableApp>,
+    focusIndex: Int,
+    onItemTap: (Int) -> Unit,
+    onConfirm: () -> Unit,
+    onDismiss: () -> Unit
+) {
     val listState = rememberLazyListState()
     val reduced = reducedMotion()
 
-    LaunchedEffect(state.focusIndex) {
-        if (state.apps.isNotEmpty()) {
-            listState.animateScrollToItemCentered(state.focusIndex.coerceIn(0, state.apps.size - 1), reduced)
+    LaunchedEffect(focusIndex) {
+        if (apps.isNotEmpty()) {
+            listState.animateScrollToItemCentered(focusIndex.coerceIn(0, apps.size - 1), reduced)
         }
     }
 
     Modal(
-        title = stringResource(R.string.settings_app_picker_title, state.platformName),
+        title = title,
         baseWidth = Dimens.modalWidthXl,
         onDismiss = onDismiss
     ) {
         Text(
-            text = stringResource(R.string.settings_app_picker_intro),
+            text = intro,
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.padding(bottom = Dimens.spacingMd)
         )
 
-        if (state.apps.isEmpty()) {
+        if (apps.isEmpty()) {
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -88,12 +109,12 @@ fun AppPickerModal(
                 verticalArrangement = Arrangement.spacedBy(Dimens.spacingXs)
             ) {
                 items(
-                    count = state.apps.size,
-                    key = { idx -> state.apps[idx].packageName }
+                    count = apps.size,
+                    key = { idx -> apps[idx].packageName }
                 ) { index ->
                     AppRow(
-                        app = state.apps[index],
-                        isFocused = index == state.focusIndex,
+                        app = apps[index],
+                        isFocused = index == focusIndex,
                         onClick = {
                             onItemTap(index)
                             onConfirm()

@@ -96,6 +96,7 @@ import com.nendo.argosy.ui.components.DiscPickerModal
 import com.nendo.argosy.ui.components.MemcardPickerModal
 import com.nendo.argosy.ui.screens.gamedetail.modals.CorePickerModal
 import com.nendo.argosy.ui.screens.gamedetail.modals.EmulatorPickerModal
+import com.nendo.argosy.ui.screens.settings.components.AppPickerModal
 import com.nendo.argosy.ui.screens.gamedetail.modals.ExtractionFailedModal
 import com.nendo.argosy.ui.screens.gamedetail.modals.MissingDiscModal
 import com.nendo.argosy.ui.screens.gamedetail.modals.StatusPickerModal
@@ -1146,7 +1147,24 @@ private fun GameDetailModals(
             currentEmulatorName = game.emulatorName,
             focusIndex = pickerState.emulatorPickerFocusIndex,
             onSelectEmulator = viewModel.pickerModalDelegate::selectEmulator,
+            onSelectOtherApp = viewModel::showOtherAppPicker,
             onDismiss = viewModel.pickerModalDelegate::dismissEmulatorPicker
+        )
+    }
+
+    AnimatedVisibility(
+        visible = pickerState.showAppPicker,
+        enter = fadeIn(),
+        exit = fadeOut()
+    ) {
+        AppPickerModal(
+            title = stringResource(R.string.gamedetail_app_picker_title, game.title),
+            intro = stringResource(R.string.gamedetail_app_picker_intro),
+            apps = pickerState.appPickerApps,
+            focusIndex = pickerState.appPickerFocusIndex,
+            onItemTap = viewModel.pickerModalDelegate::focusAppPickerRow,
+            onConfirm = viewModel.pickerModalDelegate::confirmAppPickerSelection,
+            onDismiss = viewModel.pickerModalDelegate::dismissAppPicker
         )
     }
 

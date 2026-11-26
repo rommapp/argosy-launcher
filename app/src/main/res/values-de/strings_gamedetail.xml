@@ -334,6 +334,10 @@
 
     <string name="gamedetail_emulator_picker_title">EMULATOR AUSWÄHLEN</string>
     <string name="gamedetail_emulator_picker_platform_default">Plattformstandard verwenden</string>
+    <string name="gamedetail_emulator_picker_other_app">Andere App...</string>
+    <string name="gamedetail_emulator_picker_other_app_subtitle">Dieses Spiel mit einer beliebigen installierten App starten</string>
+    <string name="gamedetail_app_picker_title">%1$s starten mit</string>
+    <string name="gamedetail_app_picker_intro">Wähle eine beliebige installierte App für dieses Spiel. Der Rest der Plattform behält seinen Emulator.</string>
     <string name="gamedetail_emulator_picker_builtin_core_build">%1$s (Build vom %2$s)</string>
 
     <string name="gamedetail_variant_picker_title">VARIANTE AUSWÄHLEN</string>

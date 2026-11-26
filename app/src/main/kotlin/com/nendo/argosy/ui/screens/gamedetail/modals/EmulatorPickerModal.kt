@@ -22,8 +22,11 @@ fun EmulatorPickerModal(
     currentEmulatorName: String?,
     focusIndex: Int,
     onSelectEmulator: (InstalledEmulator?) -> Unit,
+    onSelectOtherApp: () -> Unit,
     onDismiss: () -> Unit
 ) {
+    val otherAppSelected = currentEmulatorName != null &&
+        availableEmulators.none { it.def.displayName == currentEmulatorName }
     Modal(
         title = stringResource(R.string.gamedetail_emulator_picker_title),
         onDismiss = onDismiss
@@ -56,6 +59,19 @@ fun EmulatorPickerModal(
                     isFocused = focusIndex == index + 1,
                     isSelected = emulator.def.displayName == currentEmulatorName,
                     onClick = { onSelectEmulator(emulator) }
+                )
+            }
+            item {
+                OptionItem(
+                    label = stringResource(R.string.gamedetail_emulator_picker_other_app),
+                    subtext = if (otherAppSelected) {
+                        currentEmulatorName
+                    } else {
+                        stringResource(R.string.gamedetail_emulator_picker_other_app_subtitle)
+                    },
+                    isFocused = focusIndex == availableEmulators.size + 1,
+                    isSelected = otherAppSelected,
+                    onClick = onSelectOtherApp
                 )
             }
         }

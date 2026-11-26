@@ -333,6 +333,10 @@
 
     <string name="gamedetail_emulator_picker_title">एमुलेटर चुनें</string>
     <string name="gamedetail_emulator_picker_platform_default">प्लेटफ़ॉर्म डिफ़ॉल्ट इस्तेमाल करें</string>
+    <string name="gamedetail_emulator_picker_other_app">कोई और ऐप...</string>
+    <string name="gamedetail_emulator_picker_other_app_subtitle">यह गेम किसी भी इंस्टॉल ऐप से चलाएं</string>
+    <string name="gamedetail_app_picker_title">%1$s इससे चलाएं</string>
+    <string name="gamedetail_app_picker_intro">इस गेम के लिए कोई भी इंस्टॉल ऐप चुनें। प्लेटफ़ॉर्म के बाकी गेम अपना एमुलेटर रखते हैं।</string>
     <string name="gamedetail_emulator_picker_builtin_core_build">%1$s (बिल्ड %2$s)</string>
 
     <string name="gamedetail_variant_picker_title">वैरिएंट चुनें</string>

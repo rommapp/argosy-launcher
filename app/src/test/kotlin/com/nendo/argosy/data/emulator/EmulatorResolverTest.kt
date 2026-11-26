@@ -235,6 +235,43 @@ class EmulatorResolverTest {
     }
 
     @Test
+    fun `a game's ad-hoc app beats an installed known platform default`() = runTest {
+        val adHocPackage = "com.custom.emulator"
+        coEvery { emulatorConfigDao.getByGameId(1L) } returns createConfig(
+            gameId = 1L,
+            packageName = adHocPackage,
+            displayName = "Custom Emu"
+        )
+        coEvery { emulatorConfigDao.getDefaultForPlatform(10L) } returns createConfig(
+            platformId = 10L,
+            packageName = nethersx2.packageName,
+            isDefault = true
+        )
+        stubDetectorWith(installedEmulator(nethersx2))
+        every { installedAppResolver.isAppInstalled(adHocPackage) } returns true
+
+        val def = resolver.resolveEmulatorForGame(1L, 10L, "ps2")
+
+        assertEquals(adHocPackage, def?.packageName)
+        assertEquals("Custom Emu", def?.displayName)
+    }
+
+    @Test
+    fun `a game's uninstalled ad-hoc app falls back to the platform default`() = runTest {
+        val adHocPackage = "com.custom.emulator"
+        coEvery { emulatorConfigDao.getByGameId(1L) } returns createConfig(gameId = 1L, packageName = adHocPackage)
+        coEvery { emulatorConfigDao.getDefaultForPlatform(10L) } returns createConfig(
+            platformId = 10L,
+            packageName = nethersx2.packageName,
+            isDefault = true
+        )
+        stubDetectorWith(installedEmulator(nethersx2))
+        every { installedAppResolver.isAppInstalled(adHocPackage) } returns false
+
+        assertEquals(nethersx2.packageName, resolver.getEmulatorPackageForGame(1L, 10L, "ps2"))
+    }
+
+    @Test
     fun `the preferred def comes back itself when another def shares its package`() = runTest {
         val shared = EmulatorRegistry.getAll()
             .groupBy { it.packageName }

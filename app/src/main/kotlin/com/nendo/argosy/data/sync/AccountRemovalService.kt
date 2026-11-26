@@ -4,8 +4,10 @@ import android.content.Context
 import androidx.room.withTransaction
 import com.nendo.argosy.data.download.DownloadManager
 import com.nendo.argosy.data.local.ALauncherDatabase
+import com.nendo.argosy.data.local.entity.RomMAccountEntity
 import com.nendo.argosy.data.local.entity.SaveOwnershipEntity
 import com.nendo.argosy.data.local.entity.StateOwnershipEntity
+import com.nendo.argosy.data.music.library.MusicDownloadOwnership
 import com.nendo.argosy.data.preferences.AccountPreferenceStoreRegistry
 import com.nendo.argosy.data.preferences.AccountSwitchMarkerStore
 import com.nendo.argosy.data.quaypass.QuayPassKeystore
@@ -159,7 +161,8 @@ class AccountRemovalService @Inject constructor(
         }
 
         downloadManager.get().discardForOwner(ownerUserId)
-        deleteRows(ownerUserId)
+        val remainingAccounts = rommAccountRepository.accounts().filter { it.id != accountId }
+        deleteRows(ownerUserId, remainingAccounts)
         deleteCacheDirectories(ownerUserId)
         preferenceStores.clearFor(ownerUserId)
         quayPassKeystore.clear(QuayPassKeystore.aliasFor(ownerUserId))
@@ -188,8 +191,9 @@ class AccountRemovalService @Inject constructor(
         database.stateOwnershipDao().getByOwner(ownerUserId)
             .filter { it.transitionState != StateOwnershipEntity.STATE_CLEARED }
 
-    private suspend fun deleteRows(ownerUserId: Long) {
+    private suspend fun deleteRows(ownerUserId: Long, remainingAccounts: List<RomMAccountEntity>) {
         database.withTransaction {
+            MusicDownloadOwnership.release(database.musicDownloadDao(), ownerUserId, remainingAccounts)
             database.gameUserOverlayDao().deleteForOwner(ownerUserId)
             database.userRomsHiddenDao().deleteForOwner(ownerUserId)
             database.gameGroupPickDao().deleteForOwner(ownerUserId)

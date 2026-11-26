@@ -8,8 +8,6 @@ import java.util.Locale
 import javax.inject.Inject
 import javax.inject.Singleton
 
-private const val NO_ACCOUNT = 0L
-
 /**
  * The accounts music identity is filed under, read once per operation. [ownerKey] is the active
  * RomM user id (0 when signed out); account keys are `<user>@<server>` with the server as
@@ -41,6 +39,8 @@ class MusicAccountReader @Inject constructor(
     }
 
     companion object {
+        const val NO_ACCOUNT = 0L
+
         fun serverKey(url: String?): String {
             val trimmed = url?.trim().orEmpty()
             if (trimmed.isEmpty()) return ""

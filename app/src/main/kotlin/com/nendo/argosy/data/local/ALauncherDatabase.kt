@@ -201,7 +201,7 @@ import com.nendo.argosy.data.local.entity.SteamLicenseEntity
         com.nendo.argosy.data.local.entity.MusicListenArtistEntity::class,
         com.nendo.argosy.data.local.entity.MusicPlaylistOrderEntity::class
     ],
-    version = 234,
+    version = 235,
     exportSchema = true
 )
 @TypeConverters(Converters::class)

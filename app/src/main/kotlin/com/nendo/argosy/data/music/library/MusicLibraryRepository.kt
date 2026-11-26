@@ -24,6 +24,7 @@ import com.nendo.argosy.domain.model.MusicTrackSource
 import com.nendo.argosy.domain.music.MusicKeys
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
@@ -35,6 +36,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.drop
+import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.merge
@@ -61,7 +63,8 @@ class MusicLibraryRepository @Inject constructor(
     private val preferencesRepository: UserPreferencesRepository,
     private val navidromePreferences: NavidromePreferencesRepository,
     private val accountReader: MusicAccountReader,
-    private val musicPlaylists: MusicPlaylists
+    private val musicPlaylists: MusicPlaylists,
+    private val downloadScopes: MusicDownloadScopeReader
 ) : MusicLibrary {
 
     private val dao: MusicDownloadDao get() = database.musicDownloadDao()
@@ -99,7 +102,7 @@ class MusicLibraryRepository @Inject constructor(
             .flowOn(Dispatchers.IO)
 
     override suspend fun columns(grouping: MusicGrouping, filter: MusicSourceFilter): MusicColumnsPage {
-        val snapshots = snapshotsFor(filter)
+        val snapshots = snapshotsFor(filter, downloadServers())
         return columnBuilder.page(grouping, snapshots, recentAlbums(snapshots, filter))
     }
 
@@ -108,7 +111,8 @@ class MusicLibraryRepository @Inject constructor(
         grouping: MusicGrouping,
         filter: MusicSourceFilter
     ): MusicColumnContents? {
-        val snapshots = snapshotsFor(filter)
+        val servers = downloadServers()
+        val snapshots = snapshotsFor(filter, servers)
         val group = columnBuilder.groups(grouping, snapshots, recentAlbums(snapshots, filter))
             .firstOrNull { it.column.key == columnKey }
             ?: return null
@@ -117,32 +121,34 @@ class MusicLibraryRepository @Inject constructor(
             return MusicColumnContents(group.column, group.albums, emptyList())
         }
         val tracks = musicPlaylists.entries(playlistGroup).map { it.track }
-        return MusicColumnContents(group.column, emptyList(), withDownloads(tracks))
+        return MusicColumnContents(group.column, emptyList(), withDownloads(tracks, servers))
     }
 
     override suspend fun albumTracks(album: MusicAlbum): List<MusicTrack> = withContext(Dispatchers.IO) {
-        withDownloads(tracksOfAlbum(album.source, album.id))
+        val servers = downloadServers()
+        withDownloads(tracksOfAlbum(album.source, album.id, servers), servers)
     }
 
     override suspend fun tracksForKeys(refs: List<MusicStatTrack>): List<MusicTrack> = withContext(Dispatchers.IO) {
         if (refs.isEmpty()) return@withContext emptyList()
+        val servers = downloadServers()
         val fromAlbums = coroutineScope {
             refs.mapNotNull(::albumRefOf)
                 .distinct()
-                .map { (kind, albumId) -> async { tracksOfAlbum(kind, albumId) } }
+                .map { (kind, albumId) -> async { tracksOfAlbum(kind, albumId, servers) } }
                 .awaitAll()
         }.flatten().associateBy { it.key }
-        val downloaded = doneRows(refs.map { it.trackKey })
+        val downloaded = doneRows(refs.map { it.trackKey }, servers)
         val resolved = refs.mapNotNull { ref ->
             fromAlbums[ref.trackKey] ?: downloaded[ref.trackKey]?.let(MusicDownloadAlbums::trackFrom)
         }
-        withDownloads(resolved.distinctBy { it.key })
+        withDownloads(resolved.distinctBy { it.key }, servers)
     }
 
     override suspend fun albumsForKeys(albumKeys: Collection<String>): Map<String, MusicAlbum> {
         if (albumKeys.isEmpty()) return emptyMap()
         val wanted = albumKeys.toSet()
-        return snapshotsFor(MusicSourceFilter.ALL)
+        return snapshotsFor(MusicSourceFilter.ALL, downloadServers())
             .flatMap { it.albums }
             .filter { it.key in wanted }
             .associateBy { it.key }
@@ -156,15 +162,19 @@ class MusicLibraryRepository @Inject constructor(
         return kind to albumId
     }
 
-    private suspend fun tracksOfAlbum(kind: MusicSourceKind, albumId: String): List<MusicTrack> =
+    private suspend fun tracksOfAlbum(
+        kind: MusicSourceKind,
+        albumId: String,
+        servers: MusicDownloadServers
+    ): List<MusicTrack> =
         sources.of(kind).albumTracks(albumId).getOrNull()
-            ?: dao.getBySourceAndStatus(kind.token, MusicDownloadStatus.DONE.name)
+            ?: doneRowsOf(kind, servers)
                 .filter { MusicDownloadAlbums.albumIdOf(it) == albumId }
                 .mapNotNull { MusicDownloadAlbums.trackFrom(it) }
                 .sortedWith(compareBy({ it.trackNumber ?: Int.MAX_VALUE }, { it.title.lowercase() }))
 
     override suspend fun queueFor(tracks: List<MusicTrack>): List<MusicQueueTrack> = withContext(Dispatchers.IO) {
-        val downloaded = doneRows(tracks.map { it.key })
+        val downloaded = doneRows(tracks.map { it.key }, downloadServers())
         val accounts = accountReader.current()
         tracks.mapNotNull { track ->
             val localPath = downloaded[track.key]?.filePath?.takeIf { File(it).isFile }
@@ -197,8 +207,9 @@ class MusicLibraryRepository @Inject constructor(
         listenDao.latestWithAlbum(ownerKey)?.let(MusicRecentAlbums::resumePoint)
     }
 
+    @OptIn(ExperimentalCoroutinesApi::class)
     override fun downloads(): Flow<Map<String, MusicDownloadStatus>> =
-        dao.observeAll().map { rows ->
+        downloadScopes.servers.flatMapLatest { dao.observeForServers(it.keys) }.map { rows ->
             rows.mapNotNull { row ->
                 runCatching { MusicDownloadStatus.valueOf(row.status) }.getOrNull()?.let { row.trackKey to it }
             }.toMap()
@@ -220,25 +231,31 @@ class MusicLibraryRepository @Inject constructor(
             MusicRecentAlbums.resolve(listenDao.latestPerAlbum(ownerKey, RECENT_SCAN), catalog, filter, RECENT_LIMIT)
         }
 
-    private suspend fun snapshotsFor(filter: MusicSourceFilter): List<MusicSourceSnapshot> = coroutineScope {
+    private suspend fun snapshotsFor(
+        filter: MusicSourceFilter,
+        servers: MusicDownloadServers
+    ): List<MusicSourceSnapshot> = coroutineScope {
         sources.all
             .filter { filter.admits(it.kind) }
-            .map { source -> async(Dispatchers.IO) { snapshotOf(source) } }
+            .map { source -> async(Dispatchers.IO) { snapshotOf(source, servers) } }
             .awaitAll()
             .filterNotNull()
     }
 
-    private suspend fun snapshotOf(source: MusicLibrarySource): MusicSourceSnapshot? =
+    private suspend fun snapshotOf(source: MusicLibrarySource, servers: MusicDownloadServers): MusicSourceSnapshot? =
         snapshotLocks.getValue(source.kind).withLock {
             val now = System.currentTimeMillis()
             snapshots[source.kind]?.takeIf { now - it.fetchedAt < SNAPSHOT_TTL_MS }?.let { return@withLock it.snapshot }
             if (!source.isConfigured()) return@withLock null
-            val fetched = fetchSnapshot(source)
+            val fetched = fetchSnapshot(source, servers)
             snapshots[source.kind] = CachedSnapshot(now, fetched)
             fetched
         }
 
-    private suspend fun fetchSnapshot(source: MusicLibrarySource): MusicSourceSnapshot = coroutineScope {
+    private suspend fun fetchSnapshot(
+        source: MusicLibrarySource,
+        servers: MusicDownloadServers
+    ): MusicSourceSnapshot = coroutineScope {
         val albums = async { source.albums() }
         val artists = async { source.artists() }
         val playlists = async { source.playlists() }
@@ -246,9 +263,9 @@ class MusicLibraryRepository @Inject constructor(
         if (albumList == null) {
             artists.cancel()
             playlists.cancel()
-            return@coroutineScope offlineSnapshot(source.kind)
+            return@coroutineScope offlineSnapshot(source.kind, servers)
         }
-        val downloadedCounts = dao.getBySourceAndStatus(source.kind.token, MusicDownloadStatus.DONE.name)
+        val downloadedCounts = doneRowsOf(source.kind, servers)
             .groupingBy { MusicDownloadAlbums.albumIdOf(it) }
             .eachCount()
         val marked = { album: MusicAlbum ->
@@ -264,8 +281,8 @@ class MusicLibraryRepository @Inject constructor(
         )
     }
 
-    private suspend fun offlineSnapshot(kind: MusicSourceKind): MusicSourceSnapshot {
-        val rows = dao.getBySourceAndStatus(kind.token, MusicDownloadStatus.DONE.name)
+    private suspend fun offlineSnapshot(kind: MusicSourceKind, servers: MusicDownloadServers): MusicSourceSnapshot {
+        val rows = doneRowsOf(kind, servers)
             .filter { row -> row.filePath?.let { File(it).isFile } == true }
         return MusicSourceSnapshot(
             kind = kind,
@@ -276,18 +293,25 @@ class MusicLibraryRepository @Inject constructor(
         )
     }
 
-    private suspend fun withDownloads(tracks: List<MusicTrack>): List<MusicTrack> {
+    private suspend fun withDownloads(tracks: List<MusicTrack>, servers: MusicDownloadServers): List<MusicTrack> {
         if (tracks.isEmpty()) return tracks
-        val downloaded = doneRows(tracks.map { it.key })
+        val downloaded = doneRows(tracks.map { it.key }, servers)
         return tracks.map { track ->
             downloaded[track.key]?.filePath?.let { track.copy(downloadedPath = it) } ?: track
         }
     }
 
-    private suspend fun doneRows(keys: List<String>): Map<String, MusicDownloadEntity> =
-        keys.chunked(QUERY_CHUNK).flatMap { dao.getByKeys(it) }
+    private suspend fun downloadServers(): MusicDownloadServers = downloadScopes.current().servers
+
+    private suspend fun doneRowsOf(kind: MusicSourceKind, servers: MusicDownloadServers): List<MusicDownloadEntity> =
+        servers.keyFor(kind)?.let { dao.getByServerAndStatus(it, MusicDownloadStatus.DONE.name) }.orEmpty()
+
+    private suspend fun doneRows(keys: List<String>, servers: MusicDownloadServers): Map<String, MusicDownloadEntity> {
+        if (servers.keys.isEmpty()) return emptyMap()
+        return keys.chunked(QUERY_CHUNK).flatMap { dao.getByKeys(servers.keys, it) }
             .filter { it.status == MusicDownloadStatus.DONE.name }
             .associateBy { it.trackKey }
+    }
 
     private class CachedSnapshot(val fetchedAt: Long, val snapshot: MusicSourceSnapshot)
 

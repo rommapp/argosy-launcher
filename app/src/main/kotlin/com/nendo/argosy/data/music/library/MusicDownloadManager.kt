@@ -23,6 +23,7 @@ import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
@@ -58,14 +59,19 @@ class MusicDownloadManager @Inject constructor(
     @ApplicationContext private val context: Context,
     private val database: ALauncherDatabase,
     private val sources: MusicSourceRegistry,
+    private val scopeReader: MusicDownloadScopeReader,
     private val userCertStore: UserCertStore,
     private val clientCertStore: ClientCertStore
 ) {
+    private data class DownloadSlot(val serverKey: String, val trackKey: String) {
+        val id: String get() = "$serverKey|$trackKey"
+    }
+
     private val dao: MusicDownloadDao get() = database.musicDownloadDao()
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private val permits = Semaphore(MAX_CONCURRENT_DOWNLOADS)
     private val lock = Mutex()
-    private val jobs = mutableMapOf<String, Job>()
+    private val jobs = mutableMapOf<DownloadSlot, Job>()
 
     private val _revision = MutableStateFlow(0)
     val revision: StateFlow<Int> = _revision.asStateFlow()
@@ -83,26 +89,37 @@ class MusicDownloadManager @Inject constructor(
     }
 
     suspend fun enqueue(tracks: List<MusicTrack>) = withContext(Dispatchers.IO) {
+        val downloadScope = scopeReader.current()
         lock.withLock {
-            val existing = dao.getByKeys(tracks.map { it.key }).associateBy { it.trackKey }
-            tracks.distinctBy { it.key }.forEach { track ->
-                val row = existing[track.key]
-                if (row != null && row.status != MusicDownloadStatus.FAILED.name) return@forEach
-                dao.upsert(track.toQueuedRow())
-                start(track)
+            tracks.distinctBy { it.key }.groupBy { it.source }.forEach { (kind, group) ->
+                val serverKey = downloadScope.servers.keyFor(kind)
+                if (serverKey == null) {
+                    Log.w(TAG, "Skipped ${group.size} ${kind.token} tracks: no server signed in")
+                    return@forEach
+                }
+                val existing = dao.getByKeys(listOf(serverKey), group.map { it.key }).associateBy { it.trackKey }
+                group.filter { track ->
+                    existing[track.key].let { it == null || it.status == MusicDownloadStatus.FAILED.name }
+                }.forEach { track ->
+                    dao.upsert(track.toQueuedRow(serverKey, downloadScope.ownerKey))
+                    start(track, DownloadSlot(serverKey, track.key))
+                }
             }
         }
         bump()
     }
 
     suspend fun remove(tracks: List<MusicTrack>) = withContext(Dispatchers.IO) {
+        val servers = scopeReader.current().servers
         lock.withLock {
             tracks.forEach { track ->
-                jobs.remove(track.key)?.cancel()
-                val row = dao.get(track.key) ?: return@forEach
+                val serverKey = servers.keyFor(track.source) ?: return@forEach
+                val slot = DownloadSlot(serverKey, track.key)
+                jobs.remove(slot)?.cancel()
+                val row = dao.get(serverKey, track.key) ?: return@forEach
                 row.filePath?.let { File(it).delete() }
-                File(trackDir(), partName(track.key)).delete()
-                dao.delete(track.key)
+                File(trackDir(), partName(slot)).delete()
+                dao.delete(serverKey, track.key)
                 row.artLocalPath
                     ?.takeIf { isOwnedArt(it) && dao.countWithArt(it) == 0 }
                     ?.let { File(it).delete() }
@@ -111,28 +128,31 @@ class MusicDownloadManager @Inject constructor(
         bump()
     }
 
-    private fun start(track: MusicTrack) {
-        jobs[track.key]?.cancel()
-        jobs[track.key] = scope.launch {
-            permits.withPermit { run(track) }
-            lock.withLock { if (jobs[track.key] === coroutineContext[Job]) jobs.remove(track.key) }
+    private fun start(track: MusicTrack, slot: DownloadSlot) {
+        jobs[slot]?.cancel()
+        jobs[slot] = scope.launch {
+            permits.withPermit { run(track, slot) }
+            lock.withLock { if (jobs[slot] === coroutineContext[Job]) jobs.remove(slot) }
         }
     }
 
-    private suspend fun run(track: MusicTrack) {
-        val part = File(trackDir(), partName(track.key))
+    private suspend fun run(track: MusicTrack, slot: DownloadSlot) {
+        val part = File(trackDir(), partName(slot))
         var produced: File? = null
         try {
-            dao.updateStatus(track.key, MusicDownloadStatus.DOWNLOADING.name)
+            val row = dao.get(slot.serverKey, slot.trackKey) ?: return
+            if (!scopeReader.servers.first().matches(row, track.key)) return
+            dao.updateStatus(slot.serverKey, slot.trackKey, MusicDownloadStatus.DOWNLOADING.name)
             bump()
             val stream = sources.of(track.source).streamSource(track)
                 ?: throw IOException("No stream for track")
-            val (file, size) = fetchTrack(track, stream, part)
+            val (file, size) = fetchTrack(slot, stream, part)
             produced = file
             currentCoroutineContext().ensureActive()
             val artPath = saveArt(track.art, stream)
             dao.markDone(
-                trackKey = track.key,
+                serverKey = slot.serverKey,
+                trackKey = slot.trackKey,
                 status = MusicDownloadStatus.DONE.name,
                 filePath = file.absolutePath,
                 sizeBytes = size,
@@ -147,13 +167,15 @@ class MusicDownloadManager @Inject constructor(
             part.delete()
             produced?.delete()
             Log.w(TAG, "Download failed for ${track.source.token} track: ${e.javaClass.simpleName}")
-            if (dao.get(track.key) != null) dao.updateStatus(track.key, MusicDownloadStatus.FAILED.name)
+            if (dao.get(slot.serverKey, slot.trackKey) != null) {
+                dao.updateStatus(slot.serverKey, slot.trackKey, MusicDownloadStatus.FAILED.name)
+            }
         }
         bump()
     }
 
     private fun fetchTrack(
-        track: MusicTrack,
+        slot: DownloadSlot,
         stream: MusicTrackSource.Remote,
         part: File
     ): Pair<File, Long> {
@@ -166,7 +188,7 @@ class MusicDownloadManager @Inject constructor(
             val body = response.body ?: throw IOException("Empty body")
             val extension = extensionFor(body.contentType()?.let { "${it.type}/${it.subtype}" })
             body.byteStream().use { input -> part.outputStream().use { input.copyTo(it) } }
-            val target = File(trackDir(), "${digest(track.key)}.$extension")
+            val target = File(trackDir(), "${digest(slot.id)}.$extension")
             if (target.exists()) target.delete()
             if (!part.renameTo(target)) throw IOException("Rename failed")
             return target to target.length()
@@ -202,17 +224,22 @@ class MusicDownloadManager @Inject constructor(
 
     private suspend fun resumeInterrupted() {
         val pending = dao.getByStatuses(
+            scopeReader.current().servers.keys,
             listOf(MusicDownloadStatus.QUEUED.name, MusicDownloadStatus.DOWNLOADING.name)
         )
         if (pending.isEmpty()) return
         lock.withLock {
-            pending.mapNotNull { MusicDownloadAlbums.trackFrom(it) }.forEach { start(it) }
+            pending.forEach { row ->
+                MusicDownloadAlbums.trackFrom(row)?.let { start(it, DownloadSlot(row.serverKey, row.trackKey)) }
+            }
         }
         bump()
     }
 
-    private fun MusicTrack.toQueuedRow() = MusicDownloadEntity(
+    private fun MusicTrack.toQueuedRow(serverKey: String, ownerKey: Long) = MusicDownloadEntity(
         trackKey = key,
+        serverKey = serverKey,
+        ownerKey = ownerKey,
         source = source.token,
         trackId = id,
         title = title,
@@ -241,7 +268,7 @@ class MusicDownloadManager @Inject constructor(
 
     private fun isOwnedArt(path: String): Boolean = File(path).parentFile?.absolutePath == artDir().absolutePath
 
-    private fun partName(key: String): String = "${digest(key)}$PART_SUFFIX"
+    private fun partName(slot: DownloadSlot): String = "${digest(slot.id)}$PART_SUFFIX"
 
     private fun digest(value: String): String =
         MessageDigest.getInstance("SHA-1").digest(value.toByteArray()).joinToString("") { "%02x".format(it) }

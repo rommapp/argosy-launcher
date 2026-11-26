@@ -351,6 +351,8 @@ class MusicColumnBuilderTest {
         source: String = MusicSourceKind.NAVIDROME.token
     ) = MusicDownloadEntity(
         trackKey = key,
+        serverKey = "$source:server",
+        ownerKey = 1L,
         source = source,
         trackId = key,
         title = "Title $key",

@@ -2,6 +2,7 @@ package com.nendo.argosy.data.local.migrations
 
 import androidx.room.migration.Migration
 import androidx.sqlite.db.SupportSQLiteDatabase
+import com.nendo.argosy.data.local.entity.MusicDownloadEntity
 import com.nendo.argosy.util.SearchNormalizer
 
 object Migration_1_2 : Migration(1, 2) {
@@ -4506,6 +4507,54 @@ object Migration_233_234 : Migration(233, 234) {
         db.execSQL("ALTER TABLE `games` ADD COLUMN `changeSeq` INTEGER NOT NULL DEFAULT 0")
         db.execSQL("CREATE INDEX IF NOT EXISTS `index_games_changeSeq` ON `games` (`changeSeq`)")
         GameChangeTriggers.create(db)
+    }
+}
+
+/**
+ * Scopes `music_downloads` to the server that issued each track key and records the RomM user who
+ * downloaded it. RomM rows are attributed to the active account and its server; other rows, and
+ * RomM rows on a device with no active account, keep the unscoped server key for
+ * [com.nendo.argosy.data.music.library.MusicDownloadScopeReader] to adopt at runtime.
+ */
+object Migration_234_235 : Migration(234, 235) {
+    private const val ROMM_SOURCE = "romm"
+    private const val CARRIED_COLUMNS = "`trackKey`, `source`, `trackId`, `title`, `artist`, `album`, " +
+        "`albumId`, `trackNumber`, `durationSec`, `year`, `genre`, `artCacheKey`, `artLocalPath`, " +
+        "`filePath`, `status`, `sizeBytes`, `downloadedAt`"
+
+    override fun migrate(db: SupportSQLiteDatabase) {
+        val active = db.query(
+            "SELECT `rommUserId`, `baseUrl` FROM `romm_accounts` WHERE `isActive` = 1 LIMIT 1"
+        ).use { cursor -> if (cursor.moveToFirst()) cursor.getLong(0) to cursor.getString(1) else null }
+        val ownerKey = active?.first ?: 0L
+        val rommServerKey = MusicDownloadEntity.serverKeyOf(ROMM_SOURCE, active?.second)
+            ?: MusicDownloadEntity.UNSCOPED_SERVER_KEY
+
+        db.execSQL(
+            "CREATE TABLE IF NOT EXISTS `music_downloads_new` (" +
+                "`trackKey` TEXT NOT NULL, `serverKey` TEXT NOT NULL, `ownerKey` INTEGER NOT NULL, " +
+                "`source` TEXT NOT NULL, `trackId` TEXT NOT NULL, " +
+                "`title` TEXT NOT NULL, `artist` TEXT, `album` TEXT, `albumId` TEXT, " +
+                "`trackNumber` INTEGER, `durationSec` INTEGER, `year` INTEGER, `genre` TEXT, " +
+                "`artCacheKey` TEXT, `artLocalPath` TEXT, `filePath` TEXT, `status` TEXT NOT NULL, " +
+                "`sizeBytes` INTEGER, `downloadedAt` INTEGER, PRIMARY KEY(`serverKey`, `trackKey`))"
+        )
+        db.execSQL(
+            "INSERT INTO `music_downloads_new` ($CARRIED_COLUMNS, `serverKey`, `ownerKey`) " +
+                "SELECT $CARRIED_COLUMNS, " +
+                "CASE WHEN `source` = '$ROMM_SOURCE' THEN ? ELSE '${MusicDownloadEntity.UNSCOPED_SERVER_KEY}' END, ? " +
+                "FROM `music_downloads`",
+            arrayOf<Any>(rommServerKey, ownerKey)
+        )
+        db.execSQL("DROP TABLE `music_downloads`")
+        db.execSQL("ALTER TABLE `music_downloads_new` RENAME TO `music_downloads`")
+        db.execSQL(
+            "CREATE INDEX IF NOT EXISTS `index_music_downloads_source_albumId` " +
+                "ON `music_downloads` (`source`, `albumId`)"
+        )
+        db.execSQL(
+            "CREATE INDEX IF NOT EXISTS `index_music_downloads_ownerKey` ON `music_downloads` (`ownerKey`)"
+        )
     }
 }
 

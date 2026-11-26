@@ -50,4 +50,5 @@
     <string name="music_stats_recap_top_track">Titre favori</string>
     <string name="music_stats_recap_top_album">Album favori</string>
     <string name="music_stats_recap_top_artist">Artiste favori</string>
+    <string name="music_stats_footer_swap_screens">Inverser les écrans</string>
 </resources>

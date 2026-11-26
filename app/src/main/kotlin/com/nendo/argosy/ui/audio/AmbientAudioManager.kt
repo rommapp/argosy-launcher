@@ -64,7 +64,8 @@ private class PlayerSlot(
     val autoStart: Boolean,
     var prepared: Boolean = false,
     var startWhenPrepared: Boolean = false,
-    val startPositionMs: Long = 0L
+    val startPositionMs: Long = 0L,
+    var pendingSeekMs: Long? = null
 )
 
 private class StandbySlot(val trackId: String, val slot: PlayerSlot)
@@ -88,6 +89,7 @@ class AmbientAudioManager @Inject constructor(
         player.setOnPreparedListener(null)
         player.setOnErrorListener(null)
         player.setOnCompletionListener(null)
+        player.setOnSeekCompleteListener(null)
         teardown.launch { runCatching { player.release() } }
     }
 
@@ -446,7 +448,7 @@ class AmbientAudioManager @Inject constructor(
             PreviousAction.RESTART -> {
                 val current = slot
                 if (current != null && current.prepared) {
-                    runCatching { current.player.seekTo(0) }
+                    seekSlot(current, 0L)
                     queue.current?.let { listenRecorder.onTrackStarted(it, activeSourceId) }
                 } else {
                     restartAtCurrentIndex(resume = true)
@@ -469,12 +471,31 @@ class AmbientAudioManager @Inject constructor(
         restartAtCurrentIndex(resume = true)
     }
 
+    fun seekBy(deltaMs: Long) = seek(SeekRequest.By(deltaMs))
+
+    fun seekTo(positionMs: Long) = seek(SeekRequest.To(positionMs))
+
+    private fun seek(request: SeekRequest) {
+        val current = slot ?: return
+        val position = positionSnapshot()
+        val target = resolveSeek(position, overrideActive, request) ?: return
+        seekSlot(current, target)
+        listenRecorder.onSeeked(target, position?.durationMs)
+        Logger.verbose(TAG) { "seek to ${target}ms" }
+    }
+
+    private fun seekSlot(target: PlayerSlot, positionMs: Long) {
+        target.pendingSeekMs = positionMs
+        runCatching { target.player.seekTo(positionMs.coerceAtMost(Int.MAX_VALUE.toLong()).toInt()) }
+            .onFailure { target.pendingSeekMs = null }
+    }
+
     fun positionSnapshot(): PlaybackPosition? {
         val current = slot ?: return null
         if (!current.prepared) return null
         return runCatching {
             PlaybackPosition(
-                positionMs = current.player.currentPosition.toLong().coerceAtLeast(0L),
+                positionMs = current.pendingSeekMs ?: current.player.currentPosition.toLong().coerceAtLeast(0L),
                 durationMs = current.player.duration.toLong().coerceAtLeast(0L)
             )
         }.getOrNull()
@@ -590,6 +611,7 @@ class AmbientAudioManager @Inject constructor(
                 }
                 true
             }
+            player.setOnSeekCompleteListener { newSlot.pendingSeekMs = null }
             player.setOnCompletionListener {
                 if (slot !== newSlot) return@setOnCompletionListener
                 Log.d(TAG, "Track completed")

@@ -90,4 +90,22 @@
     <!-- Warning notice title when a game left running in the background stopped on its own. The
          game title is shown under it. -->
     <string name="running_notice_game_stopped">Game stopped</string>
+
+    <!-- One line on the music player card beside the Resume heading. %1$s is the track title,
+         %2$s the artist. The dot is a separator. -->
+    <string name="running_player_title_artist" translatable="false">%1$s · %2$s</string>
+    <!-- Accessibility label of the player card button that opens the full Now Playing screen.
+         Now Playing is the name of that screen. -->
+    <string name="running_player_show_queue">Show running order</string>
+    <!-- Footer hint for the button that opens the music queue under the player card. Noun: the
+         list of tracks queued to play. -->
+    <string name="running_player_hint_queue">Queue</string>
+    <!-- Footer hint for the trigger buttons that skip to the previous or next music track. Noun:
+         a music track. -->
+    <string name="running_player_hint_track">Track</string>
+    <!-- Heading over the music queue panel under the player card. %1$d is the position of the
+         playing track, %2$d the number of tracks. Running order is the order the tracks play in. -->
+    <string name="running_player_queue_header">Running order · %1$d of %2$d</string>
+    <!-- Accessibility label of the icon marking the track playing now in the music queue panel. -->
+    <string name="running_player_queue_playing">Playing now</string>
 </resources>

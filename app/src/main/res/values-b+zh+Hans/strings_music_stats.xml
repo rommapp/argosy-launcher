@@ -44,4 +44,5 @@
     <string name="music_stats_recap_top_track">最常听曲目</string>
     <string name="music_stats_recap_top_album">最常听专辑</string>
     <string name="music_stats_recap_top_artist">最常听艺术家</string>
+    <string name="music_stats_footer_swap_screens">交换屏幕</string>
 </resources>

@@ -1,6 +1,7 @@
 package com.nendo.argosy.ui.screens.music
 
 import com.nendo.argosy.core.input.SoundType
+import com.nendo.argosy.ui.dualscreen.selectSwapsRoles
 import com.nendo.argosy.ui.input.InputHandler
 import com.nendo.argosy.ui.input.InputResult
 
@@ -116,10 +117,19 @@ class MusicInputHandler(
     }
 
     override fun onSelect(): InputResult {
+        if (moving) return boundary
+        if (selectSwapsRoles()) return InputResult.UNHANDLED
+        return openOptions()
+    }
+
+    override fun onLongConfirm(): InputResult = if (moving) boundary else openOptions()
+
+    override fun onLongSelect(): InputResult = if (moving) InputResult.HANDLED else InputResult.UNHANDLED
+
+    private fun openOptions(): InputResult {
         val current = state
         val contents = current.contents
         return when {
-            moving -> boundary
             contents != null -> if (contents.focusedTrack != null) {
                 viewModel.openFocusedTrackOptions()
                 InputResult.HANDLED

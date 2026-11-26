@@ -80,6 +80,13 @@ class MusicListenRecorder @Inject constructor(
         override val clockMs: Long
     ) : Event
 
+    private class Seeked(
+        val positionMs: Long,
+        val durationMs: Long?,
+        override val wallMs: Long,
+        override val clockMs: Long
+    ) : Event
+
     private class Tick(override val wallMs: Long, override val clockMs: Long) : Event
 
     private class OpenListen(
@@ -87,18 +94,13 @@ class MusicListenRecorder @Inject constructor(
         val trackGameTitle: String?,
         val selectionId: String?,
         val startPositionMs: Long,
-        var durationMs: Long
+        durationMs: Long
     ) {
         var rowId: Long? = null
         var ownerKey: Long = 0
-        var listenedMs: Long = 0
-        var audibleSince: Long? = null
-        var anchorPositionMs: Long = startPositionMs
-        var anchorListenedMs: Long = 0
         var contextId: Long? = null
         var counted: Boolean = false
-
-        val positionMs: Long get() = anchorPositionMs + (listenedMs - anchorListenedMs)
+        val progress = ListenProgress(startPositionMs, durationMs)
     }
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
@@ -134,6 +136,10 @@ class MusicListenRecorder @Inject constructor(
         send { wall, clock -> Ended(reason, positionMs, durationMs, wall, clock) }
     }
 
+    fun onSeeked(positionMs: Long, durationMs: Long?) {
+        send { wall, clock -> Seeked(positionMs, durationMs, wall, clock) }
+    }
+
     private inline fun send(build: (wallMs: Long, clockMs: Long) -> Event) {
         events.trySend(build(System.currentTimeMillis(), SystemClock.elapsedRealtime()))
     }
@@ -156,8 +162,8 @@ class MusicListenRecorder @Inject constructor(
             is Audible -> {
                 val listen = current
                 if (event.audible == audible) {
-                    listen?.let {
-                        accumulate(it, event.clockMs)
+                    listen?.progress?.let {
+                        it.accumulate(event.clockMs)
                         it.observe(event.positionMs, event.durationMs)
                     }
                     return
@@ -168,8 +174,9 @@ class MusicListenRecorder @Inject constructor(
                 if (event.audible) resume(listen, event) else pause(listen, event)
             }
             is Ended -> current?.let { finish(it, event.reason, event.positionMs, event.durationMs, event) }
-            is Tick -> current?.takeIf { it.audibleSince != null }?.let { listen ->
-                accumulate(listen, event.clockMs)
+            is Seeked -> current?.progress?.seek(event.clockMs, event.positionMs, event.durationMs)
+            is Tick -> current?.takeIf { it.progress.isAudible }?.let { listen ->
+                listen.progress.accumulate(event.clockMs)
                 attachContext(listen)
                 persist(listen, event.wallMs, null)
             }
@@ -177,17 +184,16 @@ class MusicListenRecorder @Inject constructor(
     }
 
     private suspend fun resume(listen: OpenListen, event: Event) {
-        if (event is Audible) listen.observe(event.positionMs, event.durationMs)
+        if (event is Audible) listen.progress.observe(event.positionMs, event.durationMs)
         if (listen.rowId == null) open(listen, event.wallMs)
-        listen.audibleSince = event.clockMs
+        listen.progress.startAudible(event.clockMs)
         attachContext(listen)
         persist(listen, event.wallMs, null)
     }
 
     private suspend fun pause(listen: OpenListen, event: Audible) {
-        accumulate(listen, event.clockMs)
-        listen.observe(event.positionMs, event.durationMs)
-        listen.audibleSince = null
+        listen.progress.stopAudible(event.clockMs)
+        listen.progress.observe(event.positionMs, event.durationMs)
         persist(listen, event.wallMs, null)
     }
 
@@ -199,24 +205,9 @@ class MusicListenRecorder @Inject constructor(
         event: Event
     ) {
         current = null
-        accumulate(listen, event.clockMs)
-        listen.observe(positionMs, durationMs)
-        listen.audibleSince = null
+        listen.progress.stopAudible(event.clockMs)
+        listen.progress.observe(positionMs, durationMs)
         persist(listen, event.wallMs, reason)
-    }
-
-    private fun OpenListen.observe(positionMs: Long?, durationMs: Long?) {
-        positionMs?.takeIf { it >= 0 }?.let {
-            anchorPositionMs = it
-            anchorListenedMs = listenedMs
-        }
-        durationMs?.takeIf { it > this.durationMs }?.let { this.durationMs = it }
-    }
-
-    private fun accumulate(listen: OpenListen, clockMs: Long) {
-        val since = listen.audibleSince ?: return
-        listen.listenedMs += (clockMs - since).coerceAtLeast(0L)
-        listen.audibleSince = clockMs
     }
 
     private suspend fun open(listen: OpenListen, wallMs: Long) {
@@ -231,7 +222,7 @@ class MusicListenRecorder @Inject constructor(
             localDay = MusicListenRules.localDay(wallMs, ZoneId.systemDefault()),
             listenedMs = 0,
             endPositionMs = listen.startPositionMs,
-            durationMs = listen.durationMs,
+            durationMs = listen.progress.durationMs,
             counted = false,
             endReason = null,
             source = identity.source,
@@ -267,16 +258,17 @@ class MusicListenRecorder @Inject constructor(
 
     private suspend fun persist(listen: OpenListen, wallMs: Long, reason: MusicListenEndReason?) {
         val id = listen.rowId ?: return
-        val becameCounted = !listen.counted && MusicListenRules.isCounted(listen.listenedMs, listen.durationMs)
+        val progress = listen.progress
+        val becameCounted = !listen.counted && MusicListenRules.isCounted(progress.listenedMs, progress.durationMs)
         if (becameCounted) listen.counted = true
-        val position = listen.positionMs
+        val position = progress.positionMs
         listenDao.updateProgress(
             ownerKey = listen.ownerKey,
             id = id,
             endedAt = wallMs,
-            listenedMs = listen.listenedMs,
-            endPositionMs = if (listen.durationMs > 0) position.coerceAtMost(listen.durationMs) else position,
-            durationMs = listen.durationMs,
+            listenedMs = progress.listenedMs,
+            endPositionMs = if (progress.durationMs > 0) position.coerceAtMost(progress.durationMs) else position,
+            durationMs = progress.durationMs,
             counted = listen.counted,
             endReason = reason?.token,
             contextId = listen.contextId
@@ -287,7 +279,7 @@ class MusicListenRecorder @Inject constructor(
     }
 
     private suspend fun attachContext(listen: OpenListen) {
-        if (listen.contextId != null || listen.rowId == null || listen.audibleSince == null) return
+        if (listen.contextId != null || listen.rowId == null || !listen.progress.isAudible) return
         val session = sessionTracker.get().activeSession.value ?: return
         listen.contextId = contextFor(listen.ownerKey, session)
     }

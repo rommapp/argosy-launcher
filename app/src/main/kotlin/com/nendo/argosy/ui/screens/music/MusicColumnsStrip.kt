@@ -109,14 +109,23 @@ fun MusicColumnsStrip(
 private val MusicColumn.showsYearNumerals: Boolean
     get() = kind == MusicColumnKind.YEAR && key != MusicColumnBuilder.YEAR_NONE_KEY
 
-internal fun squareFocusGeometry(width: Float, height: Float, slots: Int, gap: Float): HomeColumnsGeometry {
+internal fun squareFocusGeometry(
+    width: Float,
+    height: Float,
+    slots: Int,
+    gap: Float,
+    minNeighbour: Float = ComponentDefaults.MusicColumns.neighbourMinWidthDp.toFloat()
+): HomeColumnsGeometry {
     val base = homeColumnsGeometry(width, slots, gap)
     val others = slots - 1
     val available = width - width * ComponentDefaults.HomeColumns.sliverWidthRatio * 2 - gap * (slots + 1)
     if (others <= 0 || available <= height) return base
-    val focusScale = height * others / (available - height)
+    val focused = minOf(height, available - minNeighbour * others)
+    val neighbour = (available - focused) / others
+    if (neighbour <= 0f) return base
+    val focusScale = focused / neighbour
     if (focusScale <= 1f) return base
-    return base.copy(columnWidth = height / focusScale, focusScale = focusScale)
+    return base.copy(columnWidth = neighbour, focusScale = focusScale)
 }
 
 @Composable

@@ -31,4 +31,9 @@
     <string name="running_friends_three">%1$s, %2$s और %3$s इसे खेल रहे हैं</string>
     <string name="running_friends_many">%1$s, %2$s, %3$s और अन्य इसे खेल रहे हैं</string>
     <string name="running_notice_game_stopped">गेम रुक गया</string>
+    <string name="running_player_show_queue">कतार दिखाएं</string>
+    <string name="running_player_hint_queue">कतार</string>
+    <string name="running_player_hint_track">ट्रैक</string>
+    <string name="running_player_queue_header">ट्रैक क्रम · %2$d में से %1$d</string>
+    <string name="running_player_queue_playing">अभी चल रहा है</string>
 </resources>

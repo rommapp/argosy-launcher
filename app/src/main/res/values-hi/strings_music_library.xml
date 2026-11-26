@@ -110,4 +110,7 @@
     <string name="music_library_contents_play_all">सभी चलाएँ</string>
     <string name="music_library_contents_move_up">ऊपर ले जाएँ</string>
     <string name="music_library_contents_move_down">नीचे ले जाएँ</string>
+    <string name="music_library_footer_swap_screens">स्क्रीन बदलें</string>
+    <string name="music_library_showcase_offline">ऑफ़लाइन। डाउनलोड किया गया संगीत दिखाया जा रहा है।</string>
+    <string name="music_library_showcase_album_position">%2$d में से एल्बम %1$d</string>
 </resources>

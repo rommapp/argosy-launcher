@@ -42,7 +42,14 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
+import com.nendo.argosy.DualScreenManagerHolder
 import com.nendo.argosy.R
+import com.nendo.argosy.data.preferences.SelectSwapMode
+import com.nendo.argosy.ui.dualscreen.SlotOwner
+import com.nendo.argosy.ui.dualscreen.presentationTakesSlotsState
+import com.nendo.argosy.ui.dualscreen.selectSwapModeState
+import com.nendo.argosy.ui.theme.backdrop.BackdropRole
+import com.nendo.argosy.ui.theme.backdrop.surfaceBackdrop
 import com.nendo.argosy.ui.components.FooterHints
 import com.nendo.argosy.ui.components.InputButton
 import com.nendo.argosy.ui.components.animateScrollToItemCentered
@@ -62,6 +69,8 @@ import com.nendo.argosy.ui.theme.LocalArgosyTheme
 import com.nendo.argosy.ui.theme.generated.ComponentDefaults
 import com.nendo.argosy.ui.theme.reducedMotion
 import com.nendo.argosy.ui.util.clickableNoFocus
+
+private const val MUSIC_STATS_SLOT_OWNER = "music_stats"
 
 @Composable
 fun MusicStatsScreen(
@@ -89,7 +98,16 @@ fun MusicStatsScreen(
         viewModel.playbackStarted.collect { onOpenNowPlaying() }
     }
 
-    Column(modifier = Modifier.fillMaxSize()) {
+    val split = presentationTakesSlotsState()
+    val slotOwner = remember(viewModel) { SlotOwner.of(MUSIC_STATS_SLOT_OWNER, viewModel) }
+    if (split) MusicStatsOnPresentation(uiState = uiState, owner = slotOwner)
+    val selectSwaps = selectSwapModeState() == SelectSwapMode.TAP
+
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .then(if (split) Modifier.surfaceBackdrop(BackdropRole.CONTENT) else Modifier)
+    ) {
         StatsHeader(
             selected = uiState.tab,
             onBack = { inputHandler.onBack() },
@@ -101,12 +119,16 @@ fun MusicStatsScreen(
     }
 
     FooterHints(
-        hints = statsFooterHints(uiState),
+        hints = statsFooterHints(uiState, selectSwaps),
         onHintClick = { button ->
             when (button) {
                 InputButton.LT_RT -> inputHandler.onNextTrigger()
                 InputButton.Y -> inputHandler.onSecondaryAction()
-                InputButton.SELECT -> inputHandler.onSelect()
+                InputButton.SELECT -> if (selectSwaps) {
+                    DualScreenManagerHolder.instance?.swapRoles()
+                } else {
+                    inputHandler.onSelect()
+                }
                 else -> Unit
             }
         }
@@ -271,16 +293,18 @@ private fun EmptyTab(tab: MusicStatsTab) {
 }
 
 @Composable
-private fun statsFooterHints(uiState: MusicStatsUiState): List<Pair<InputButton, String>> {
+private fun statsFooterHints(uiState: MusicStatsUiState, selectSwaps: Boolean): List<Pair<InputButton, String>> {
     val views = stringResource(R.string.music_stats_footer_views)
     val play = stringResource(R.string.music_stats_footer_play)
     val options = stringResource(R.string.music_stats_footer_options)
+    val swapScreens = stringResource(R.string.music_stats_footer_swap_screens)
     return buildList {
         add(InputButton.LT_RT to views)
         if (uiState.canPlayFocused && !uiState.page.loadFailed) {
             add(InputButton.Y to play)
-            add(InputButton.SELECT to options)
+            if (!selectSwaps) add(InputButton.SELECT to options)
         }
+        if (selectSwaps) add(InputButton.SELECT to swapScreens)
     }
 }
 

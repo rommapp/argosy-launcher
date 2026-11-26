@@ -1211,6 +1211,19 @@ class DualScreenManager(
         _presentationSlots.update { entries -> entries.filterNot { it.first == owner } }
     }
 
+    /**
+     * Replaces [owner]'s published slot where it stands, leaving any slot presented after it on
+     * top. Does nothing while [owner] has nothing published.
+     */
+    fun refreshSlot(
+        owner: com.nendo.argosy.ui.dualscreen.SlotOwner,
+        slot: com.nendo.argosy.ui.dualscreen.PresentationSlot
+    ) {
+        _presentationSlots.update { entries ->
+            entries.map { entry -> if (entry.first == owner) owner to slot else entry }
+        }
+    }
+
     private val _presentationTap = MutableStateFlow<com.nendo.argosy.ui.dualscreen.PresentationTap?>(null)
 
     /**
@@ -1253,6 +1266,12 @@ class DualScreenManager(
     fun setPrimaryRoute(route: String?) {
         _primaryRoute.value = route
     }
+
+    /**
+     * The Music browser position, handed to the browser the other activity composes after a role
+     * swap so it opens where the previous one was left.
+     */
+    val musicBrowserCarrier = com.nendo.argosy.ui.screens.music.MusicBrowserCarrier()
 
     /**
      * What the player has open, mirrored here so the companion reads playback the same way it reads

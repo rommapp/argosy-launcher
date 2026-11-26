@@ -1361,6 +1361,7 @@
         <item quantity="other">%d descargas terminadas</item>
     </plurals>
     <string name="ui_status_bar_activity_unseen_desc">Actividad nueva</string>
+    <string name="ui_status_bar_now_playing_desc">Reproduciendo</string>
     <string name="ui_folder_default_name">Carpeta</string>
     <string name="ui_folder_overlay_hint_remove">Quitar de la carpeta</string>
     <string name="ui_folder_appearance_title">Apariencia de la carpeta</string>

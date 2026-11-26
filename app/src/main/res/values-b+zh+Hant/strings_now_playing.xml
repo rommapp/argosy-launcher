@@ -21,4 +21,14 @@
     <string name="now_playing_layout_shelf">書架</string>
     <string name="now_playing_layout_simple">簡潔</string>
     <string name="now_playing_quick_open">正在播放</string>
+    <string name="now_playing_hint_skip">跳過 10 秒</string>
+    <string name="now_playing_hint_swap_screens">交換螢幕</string>
+    <string name="now_playing_option_layout_single_screen">僅在使用單一螢幕時生效。</string>
+    <string name="now_playing_stage_position">第 %1$d 首，共 %2$d 首</string>
+    <string name="now_playing_stage_up_next">接下來：%1$s</string>
+    <string name="now_playing_stage_hint_skip">跳過 10 秒</string>
+    <string name="now_playing_stage_hint_track">曲目</string>
+    <string name="now_playing_stage_hint_queue">佇列</string>
+    <string name="now_playing_stage_hint_style">樣式</string>
+    <string name="now_playing_stage_hint_swap">交換螢幕</string>
 </resources>

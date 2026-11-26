@@ -1,5 +1,6 @@
 package com.nendo.argosy.ui.screens.nowplaying
 
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -14,6 +15,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.sizeIn
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.MusicNote
 import androidx.compose.material3.Icon
@@ -25,8 +27,10 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.style.TextOverflow
@@ -35,8 +39,18 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
+import com.nendo.argosy.DualScreenManagerHolder
 import com.nendo.argosy.R
 import com.nendo.argosy.data.preferences.NowPlayingLayout
+import com.nendo.argosy.data.preferences.SelectSwapMode
+import com.nendo.argosy.ui.dualscreen.PresentOnCompanionLive
+import com.nendo.argosy.ui.dualscreen.SlotOwner
+import com.nendo.argosy.ui.dualscreen.presentationTakesSlotsState
+import com.nendo.argosy.ui.dualscreen.selectSwapModeState
+import com.nendo.argosy.ui.primitives.FocusIndicators
+import com.nendo.argosy.ui.primitives.argosyFocusIndicators
+import com.nendo.argosy.ui.theme.backdrop.BackdropRole
+import com.nendo.argosy.ui.theme.backdrop.surfaceBackdrop
 import com.nendo.argosy.domain.model.MusicSelection
 import com.nendo.argosy.ui.components.FooterHints
 import com.nendo.argosy.ui.components.FooterSpacer
@@ -69,6 +83,8 @@ import java.util.Locale
 
 private val Defaults = ComponentDefaults.NowPlaying
 
+private const val NOW_PLAYING_SLOT_OWNER = "now_playing"
+
 @Composable
 fun NowPlayingScreen(
     onBack: () -> Unit,
@@ -99,6 +115,15 @@ fun NowPlayingScreen(
         }
     }
 
+    val split = presentationTakesSlotsState()
+    LaunchedEffect(split) { viewModel.setSplit(split) }
+    val quickNavigation by viewModel.quickNavigationEnabled.collectAsState()
+    val selectSwaps = selectSwapModeState() == SelectSwapMode.TAP
+    val slotOwner = remember(viewModel) { SlotOwner.of(NOW_PLAYING_SLOT_OWNER, viewModel) }
+    state.stageSlot(bumpersSeek = !quickNavigation, selectSwaps = selectSwaps)?.let { slot ->
+        PresentOnCompanionLive(owner = slotOwner, slot = slot)
+    }
+
     ModalInputEffect(active = state.navigation.options != null, handler = optionsHandler)
     val playlistHandler = remember(viewModel) {
         MusicModalInput(
@@ -110,8 +135,12 @@ fun NowPlayingScreen(
     val picker = state.navigation.playlistPicker
     ModalInputEffect(active = picker != null && picker.ownsInput, handler = playlistHandler)
 
-    Box(modifier = Modifier.fillMaxSize()) {
-        if (state.hasQueue) {
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .then(if (state.split) Modifier.surfaceBackdrop(BackdropRole.CONTENT) else Modifier)
+    ) {
+        if (state.hasQueue && !state.split) {
             state.playback.displayArt?.let { BlurredHero(it) }
             NowPlayingVisualizer(
                 analysis = state.analysis,
@@ -124,11 +153,17 @@ fun NowPlayingScreen(
             Box(modifier = Modifier.weight(1f).fillMaxWidth()) {
                 when {
                     !state.hasQueue -> EmptyNowPlaying()
+                    state.split -> ControlLayout(state, viewModel)
                     state.prefs.layout == NowPlayingLayout.SIMPLE -> SimpleLayout(state, viewModel)
                     else -> ShelfLayout(state, viewModel)
                 }
             }
-            NowPlayingFooter(state = state, viewModel = viewModel)
+            NowPlayingFooter(
+                state = state,
+                bumpersSeek = !quickNavigation,
+                selectSwaps = selectSwaps,
+                viewModel = viewModel
+            )
             FooterSpacer()
         }
         state.navigation.options?.let { options ->
@@ -188,31 +223,90 @@ private fun AddToPlaylistModal(
 }
 
 @Composable
-private fun NowPlayingFooter(state: NowPlayingUiState, viewModel: NowPlayingViewModel) {
+private fun NowPlayingFooter(
+    state: NowPlayingUiState,
+    bumpersSeek: Boolean,
+    selectSwaps: Boolean,
+    viewModel: NowPlayingViewModel
+) {
     val previousHint = stringResource(R.string.now_playing_hint_previous)
     val nextHint = stringResource(R.string.now_playing_hint_next)
+    val skipHint = stringResource(R.string.now_playing_hint_skip)
     val queueHint = stringResource(R.string.now_playing_hint_queue)
     val optionsHint = stringResource(R.string.now_playing_hint_options)
+    val swapHint = stringResource(R.string.now_playing_hint_swap_screens)
     val hints = buildList {
         if (state.hasQueue) {
+            if (bumpersSeek) add(InputButton.LB_RB to skipHint)
             add(InputButton.LT to previousHint)
             add(InputButton.RT to nextHint)
         }
         if (state.showsQueue) add(InputButton.X to queueHint)
-        add(InputButton.SELECT to optionsHint)
+        add(InputButton.SELECT to if (selectSwaps) swapHint else optionsHint)
     }
     FooterHints(
         hints = hints,
         onHintClick = { button ->
             when (button) {
+                InputButton.LB_RB -> viewModel.seekBy(1)
                 InputButton.LT -> viewModel.skipPrevious()
                 InputButton.RT -> viewModel.skipNext()
                 InputButton.X -> viewModel.focusQueue()
-                InputButton.SELECT -> viewModel.openOptions()
+                InputButton.SELECT -> if (selectSwaps) {
+                    DualScreenManagerHolder.instance?.swapRoles()
+                } else {
+                    viewModel.openOptions()
+                }
                 else -> Unit
             }
         }
     )
+}
+
+@Composable
+private fun ControlLayout(state: NowPlayingUiState, viewModel: NowPlayingViewModel) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(start = Dimens.spacingLg, end = Dimens.spacingLg, top = Dimens.spacingLg)
+    ) {
+        SeekWave(
+            state = state,
+            focused = state.focus == NowPlayingFocus.WAVE,
+            onSeek = viewModel::seekToFraction
+        )
+        Spacer(modifier = Modifier.height(Dimens.spacingMd))
+        ShelfTransport(state = state, onButton = viewModel::activateTransport)
+        RunningOrder(
+            state = state,
+            onPlay = viewModel::playTrack,
+            modifier = Modifier.weight(1f)
+        )
+    }
+}
+
+@Composable
+private fun SeekWave(state: NowPlayingUiState, focused: Boolean, onSeek: (Float) -> Unit) {
+    val shape = RoundedCornerShape(Dimens.radiusControl)
+    val currentOnSeek by rememberUpdatedState(onSeek)
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .argosyFocusIndicators(focused = focused, indicators = FocusIndicators.Ring, shape = shape)
+            .padding(Dimens.spacingSm)
+            .pointerInput(Unit) {
+                detectTapGestures { offset ->
+                    if (size.width > 0) currentOnSeek(offset.x / size.width)
+                }
+            }
+    ) {
+        NowPlayingProgress(
+            positionMs = state.positionMs,
+            durationMs = state.durationMs,
+            playing = state.isAudible,
+            analysis = state.analysis
+        )
+    }
 }
 
 @Composable
@@ -317,7 +411,6 @@ private fun ShelfTransport(state: NowPlayingUiState, onButton: (MusicTransportBu
         focusedButton = state.navigation.transport.takeIf { state.focus == NowPlayingFocus.TRANSPORT },
         buttonSize = Defaults.transportButtonDp.dp,
         playButtonSize = Defaults.playButtonDp.dp,
-        horizontalArrangement = Arrangement.spacedBy(Dimens.spacingLg, Alignment.CenterHorizontally),
         onButton = onButton,
         withPlaylist = true,
         playIconSize = Dimens.iconLg

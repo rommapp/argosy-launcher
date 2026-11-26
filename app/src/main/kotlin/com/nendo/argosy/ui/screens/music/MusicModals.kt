@@ -88,6 +88,7 @@ internal class MusicModalInput(
     override fun onLeftStickClick(): InputResult = InputResult.HANDLED
     override fun onRightStickClick(): InputResult = InputResult.HANDLED
     override fun onLongConfirm(): InputResult = InputResult.HANDLED
+    override fun onLongSelect(): InputResult = InputResult.HANDLED
 }
 
 @Composable

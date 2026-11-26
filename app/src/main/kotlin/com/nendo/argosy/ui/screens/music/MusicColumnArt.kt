@@ -54,6 +54,7 @@ import com.nendo.argosy.R
 import com.nendo.argosy.domain.model.MusicArt
 import com.nendo.argosy.domain.model.MusicColumn
 import com.nendo.argosy.domain.model.MusicColumnKind
+import com.nendo.argosy.ui.components.nowplaying.artScrimColor
 import com.nendo.argosy.ui.theme.Dimens
 import com.nendo.argosy.ui.theme.LocalArgosyTheme
 import com.nendo.argosy.ui.theme.Motion
@@ -144,7 +145,7 @@ internal fun BoxScope.BlurredHero(art: MusicArt) {
     Box(
         Modifier
             .matchParentSize()
-            .background(Color.Black.copy(alpha = ComponentDefaults.MusicColumns.heroDimAlpha))
+            .background(artScrimColor())
     )
 }
 

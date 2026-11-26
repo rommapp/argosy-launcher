@@ -2,6 +2,7 @@ package com.nendo.argosy.ui.screens.music
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.nendo.argosy.DualScreenManagerHolder
 import com.nendo.argosy.core.notification.NotificationManager
 import com.nendo.argosy.data.music.library.MusicLibrary
 import com.nendo.argosy.data.music.library.MusicPlaylists
@@ -69,6 +70,10 @@ class MusicViewModel @Inject constructor(
     private var stackJob: Job? = null
     private var jumpLabelJob: Job? = null
     private var playingTrackId: String? = null
+    private val carryToken = Any()
+    private val createdSwapped = rolesSwapped()
+    private var carryRetired = false
+    private var pendingRestore: MusicBrowserPosition? = carrier()?.take(createdSwapped)
 
     val playlistActions = MusicPlaylistActionsDelegate(
         playlists = playlists,
@@ -96,9 +101,11 @@ class MusicViewModel @Inject constructor(
     init {
         viewModelScope.launch {
             val stored = preferences.preferences.first()
-            selection.compareAndSet(null, MusicScreenSelection(stored.grouping, stored.sourceFilter))
+            val grouping = pendingRestore?.grouping ?: stored.grouping
+            selection.compareAndSet(null, MusicScreenSelection(grouping, stored.sourceFilter))
         }
         observeLibrary(playlists)
+        carryPosition()
         viewModelScope.launch {
             playlists.changes.collect { playlistActions.onPlaylistsChanged() }
         }
@@ -115,6 +122,33 @@ class MusicViewModel @Inject constructor(
                 .distinctUntilChanged()
                 .collect { (hasQueue, playing) -> onPlaying(hasQueue, playing) }
         }
+    }
+
+    private fun carrier(): MusicBrowserCarrier? = DualScreenManagerHolder.instance?.musicBrowserCarrier
+
+    private fun rolesSwapped(): Boolean = DualScreenManagerHolder.instance?.isRolesSwapped?.value == true
+
+    private fun carryPosition() {
+        val manager = DualScreenManagerHolder.instance ?: return
+        viewModelScope.launch {
+            manager.isRolesSwapped.collect { swapped ->
+                if (swapped != createdSwapped) carryRetired = true
+            }
+        }
+        viewModelScope.launch {
+            _uiState
+                .map { MusicBrowserPosition.of(it) }
+                .distinctUntilChanged()
+                .collect { position ->
+                    if (carryRetired) return@collect
+                    manager.musicBrowserCarrier.record(carryToken, createdSwapped, pendingRestore ?: position)
+                }
+        }
+    }
+
+    override fun onCleared() {
+        carrier()?.release(carryToken)
+        super.onCleared()
     }
 
     private fun onPlaying(hasQueue: Boolean, playing: MusicPlayingUi) {
@@ -159,15 +193,22 @@ class MusicViewModel @Inject constructor(
         val page = musicGuarded(TAG, "columns") {
             withContext(Dispatchers.IO) { library.columns(grouping, filter) }
         }
+        val restore = pendingRestore?.takeIf { it.grouping == grouping }
         _uiState.update { state ->
             if (page == null) {
                 state.copy(isLoading = false, loadFailed = state.page == null)
             } else {
                 val ordered = MusicColumnsPage(columns = recentFirst(page.columns), offline = page.offline)
-                val keptKey = state.focusedColumn?.key
-                val index = ordered.columns.indexOfFirst { it.key == keptKey }.coerceAtLeast(0)
+                val index = restore?.let { restoredColumnIndex(ordered.columns, it.columnKey) }
+                    ?: ordered.columns.indexOfFirst { it.key == state.focusedColumn?.key }.coerceAtLeast(0)
                 state.copy(page = ordered, position = index, isLoading = false, loadFailed = false)
             }
+        }
+        if (page == null) return
+        pendingRestore = null
+        val openKey = restore?.openColumnKey ?: return
+        if (openKey == _uiState.value.focusedColumn?.key) {
+            openContents(restoreAlbumKey = restore.albumKey, restoreTrackIndex = restore.trackIndex)
         }
     }
 
@@ -307,12 +348,16 @@ class MusicViewModel @Inject constructor(
         actions.openColumnOptions(column)
     }
 
-    fun openContents(moveGroup: MusicPlaylistGroup? = null) {
+    fun openContents(
+        moveGroup: MusicPlaylistGroup? = null,
+        restoreAlbumKey: String? = null,
+        restoreTrackIndex: Int = 0
+    ) {
         val state = _uiState.value
         val column = state.focusedColumn ?: return
         val grouping = state.grouping
         val filter = state.filter
-        val frontKey = state.focusedStack?.front?.key
+        val frontKey = restoreAlbumKey ?: state.focusedStack?.front?.key
         _uiState.update { it.copy(contents = MusicContentsUiState(column = column, moveGroup = moveGroup)) }
         contentsJob?.cancel()
         contentsJob = viewModelScope.launch {
@@ -329,15 +374,31 @@ class MusicViewModel @Inject constructor(
                         isLoading = false,
                         loadFailed = false
                     )
-                    s.copy(contents = if (loaded.isFlat) loaded.copy(tracks = contents.tracks) else loaded)
+                    s.copy(
+                        contents = if (loaded.isFlat) {
+                            loaded.copy(
+                                tracks = contents.tracks,
+                                trackIndex = clampedTrack(restoreTrackIndex, contents.tracks.size)
+                            )
+                        } else {
+                            loaded
+                        }
+                    )
                 }
             }
             val opened = _uiState.value.contents ?: return@launch
-            opened.focusedAlbum?.let { loadAlbumTracks(column, it, contents?.tracks.orEmpty()) }
+            opened.focusedAlbum?.let { loadAlbumTracks(column, it, contents?.tracks.orEmpty(), restoreTrackIndex) }
         }
     }
 
-    private fun loadAlbumTracks(column: MusicColumn, album: MusicAlbum, columnTracks: List<MusicTrack>) {
+    private fun clampedTrack(index: Int, count: Int): Int = index.coerceIn(0, (count - 1).coerceAtLeast(0))
+
+    private fun loadAlbumTracks(
+        column: MusicColumn,
+        album: MusicAlbum,
+        columnTracks: List<MusicTrack>,
+        focusTrack: Int = 0
+    ) {
         _uiState.update { s -> s.copy(contents = s.contents?.copy(tracks = emptyList(), trackIndex = 0, tracksLoading = true)) }
         albumTracksJob?.cancel()
         albumTracksJob = viewModelScope.launch {
@@ -345,7 +406,14 @@ class MusicViewModel @Inject constructor(
             _uiState.update { s ->
                 val current = s.contents ?: return@update s
                 if (current.column.key != column.key || current.focusedAlbum?.key != album.key) return@update s
-                s.copy(contents = current.copy(tracks = tracks.orEmpty(), tracksLoading = false))
+                val loaded = tracks.orEmpty()
+                s.copy(
+                    contents = current.copy(
+                        tracks = loaded,
+                        trackIndex = clampedTrack(focusTrack, loaded.size),
+                        tracksLoading = false
+                    )
+                )
             }
         }
     }

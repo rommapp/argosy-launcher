@@ -403,7 +403,6 @@ object ComponentDefaults {
 
     object MusicColumns {
         const val heroBlurDp = 24
-        const val heroDimAlpha = 0.55f
         const val heroSaturation = 0.35f
         const val sleeveSizeRatio = 0.62f
         const val sleeveStackOffsetRatio = 0.09f
@@ -425,6 +424,10 @@ object ComponentDefaults {
         const val contentsSleeveBiasRatio = -0.3f
         const val skeletonColumns = 5
         const val detailsTitleMaxLines = 1
+        const val neighbourMinWidthDp = 48
+        const val contentsReadingWidthRatio = 0.58f
+        const val showcaseStackWeightRatio = 0.45f
+        const val showcaseTitleMaxLines = 2
     }
 
     object MusicStats {
@@ -540,6 +543,16 @@ object ComponentDefaults {
         const val closingStripeDp = 2
     }
 
+    object StatusPill {
+        const val nowPlayingMaxWidthDp = 280
+        const val nowPlayingMarqueeDelayMs = 3000
+        const val nowPlayingMarqueeDpPerSecond = 24
+        const val equaliserBarCount = 3
+        const val equaliserCycleMs = 900
+        const val equaliserMinHeightRatio = 0.3f
+        const val equaliserBarWidthRatio = 0.2f
+    }
+
     object RunningFrame {
         const val panelMaxWidthDp = 320
         const val statsScrimAlpha = 0.7f
@@ -604,6 +617,16 @@ object ComponentDefaults {
         const val backgroundAlpha = 0.8f
     }
 
+    object ResumePlayer {
+        const val cardMaxWidthDp = 520
+        const val cardHeightDp = 72
+        const val cardPaddingDp = 12
+        const val cardGapDp = 12
+        const val waveMinTextDp = 120
+        const val artistMinTextDp = 80
+        const val panelIdleCollapseMs = 5000
+    }
+
     object MusicPlayer {
         const val coverSizeDp = 64
         const val transportButtonDp = 40
@@ -632,6 +655,7 @@ object ComponentDefaults {
         const val restAlpha = 0.45f
         const val discSizeDp = 280
         const val simpleArtDp = 88
+        const val stageDiscDp = 144
         const val recordRpm = 33.3f
         const val cdRpm = 60
         const val spinStopMs = 900

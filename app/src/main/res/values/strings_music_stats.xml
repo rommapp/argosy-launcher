@@ -85,4 +85,7 @@
     <string name="music_stats_recap_top_album">Top album</string>
     <!-- Monthly recap label before the most played artist. -->
     <string name="music_stats_recap_top_artist">Top artist</string>
+    <!-- Footer hint: the button trades the roles of the two screens -->
+    <string name="music_stats_footer_swap_screens">Swap screens</string>
+    <string name="music_stats_showcase_separator" translatable="false">" &#183; "</string>
 </resources>

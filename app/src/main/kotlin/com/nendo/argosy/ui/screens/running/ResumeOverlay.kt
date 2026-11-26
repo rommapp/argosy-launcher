@@ -353,7 +353,11 @@ class ResumeOverlay @Inject constructor(
                             )
                         }
                         Box(modifier = Modifier.fillMaxSize().alpha(presence)) {
-                            RunningAppsContent(controller = controller, showsGameBackdrop = false)
+                            RunningAppsContent(
+                                controller = controller,
+                                showsGameBackdrop = false,
+                                presentsMusicOnCompanion = false
+                            )
                             FooterHost(controller = footerHost, modifier = Modifier.align(Alignment.BottomCenter))
                         }
                     }

@@ -529,6 +529,10 @@ fun ArgosyApp(
             navigateFromDrawer(route)
         }
     }
+    val openNowPlaying: () -> Unit = remember(closeDrawer, openQuickRoute) {
+        { closeDrawer(); openQuickRoute(Screen.NowPlaying.route) }
+    }
+    com.nendo.argosy.ui.components.nowplaying.NowPlayingPillOpenRequests(onOpen = openNowPlaying)
 
     val quickSettingsInputHandler = remember(
         viewModel, musicPlayerViewModel, inputDispatcher, openRommSignIn, openDeviceAccess, quickFriendsInputHandler,
@@ -1143,7 +1147,9 @@ fun ArgosyApp(
         com.nendo.argosy.ui.components.friends.LocalUserAvatarState provides localAvatarInfo,
         com.nendo.argosy.ui.common.LocalRunningGames provides runningGamesUi,
         com.nendo.argosy.ui.common.LocalRunningBreath provides runningBreath,
-        com.nendo.argosy.ui.common.LocalOpenRunningGames provides openRunningGames
+        com.nendo.argosy.ui.common.LocalOpenRunningGames provides openRunningGames,
+        com.nendo.argosy.ui.components.LocalOpenNowPlaying provides
+            openNowPlaying.takeIf { currentRoute != Screen.ROUTE_NOW_PLAYING }
     ) {
         if (uiState.isLoading) {
             AppSplashScreen(statusRes = uiState.startupStatusRes)

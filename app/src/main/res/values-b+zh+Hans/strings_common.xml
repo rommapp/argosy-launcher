@@ -1241,6 +1241,7 @@
         <item quantity="other">已完成 %d 个下载</item>
     </plurals>
     <string name="ui_status_bar_activity_unseen_desc">新活动</string>
+    <string name="ui_status_bar_now_playing_desc">&#x6B63;&#x5728;&#x64AD;&#x653E;</string>
     <string name="ui_folder_default_name">文件夹</string>
     <string name="ui_folder_overlay_hint_remove">移出文件夹</string>
     <string name="ui_folder_appearance_title">文件夹外观</string>

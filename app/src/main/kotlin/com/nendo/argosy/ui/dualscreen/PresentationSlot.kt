@@ -85,6 +85,14 @@ sealed interface PresentationSlot {
         val drawerState: com.nendo.argosy.ui.DrawerState
     ) : PresentationSlot
 
+    data class NowPlayingStage(
+        val state: com.nendo.argosy.ui.screens.nowplaying.NowPlayingStageState
+    ) : PresentationSlot
+
+    data class MusicShowcase(
+        val state: com.nendo.argosy.ui.screens.music.MusicShowcaseState
+    ) : PresentationSlot
+
     data class InGame(
         val state: com.nendo.argosy.hardware.CompanionInGameState,
         val achievements: List<com.nendo.argosy.core.game.AchievementUi>

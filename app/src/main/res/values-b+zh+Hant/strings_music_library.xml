@@ -107,4 +107,7 @@
     <string name="music_library_contents_play_all">全部播放</string>
     <string name="music_library_contents_move_up">上移</string>
     <string name="music_library_contents_move_down">下移</string>
+    <string name="music_library_footer_swap_screens">交換螢幕</string>
+    <string name="music_library_showcase_offline">離線。正在顯示已下載的音樂。</string>
+    <string name="music_library_showcase_album_position">第 %1$d 張專輯，共 %2$d 張</string>
 </resources>

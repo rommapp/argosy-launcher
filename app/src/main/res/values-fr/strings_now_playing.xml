@@ -21,4 +21,14 @@
     <string name="now_playing_layout_shelf">Étagère</string>
     <string name="now_playing_layout_simple">Simple</string>
     <string name="now_playing_quick_open">En cours de lecture</string>
+    <string name="now_playing_hint_skip">Sauter 10 s</string>
+    <string name="now_playing_hint_swap_screens">Inverser les écrans</string>
+    <string name="now_playing_option_layout_single_screen">S\'applique quand un seul écran est utilisé.</string>
+    <string name="now_playing_stage_position">Piste %1$d sur %2$d</string>
+    <string name="now_playing_stage_up_next">À suivre : %1$s</string>
+    <string name="now_playing_stage_hint_skip">Sauter 10 s</string>
+    <string name="now_playing_stage_hint_track">Piste</string>
+    <string name="now_playing_stage_hint_queue">File d\'attente</string>
+    <string name="now_playing_stage_hint_style">Style</string>
+    <string name="now_playing_stage_hint_swap">Inverser les écrans</string>
 </resources>

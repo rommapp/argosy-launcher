@@ -70,4 +70,11 @@ class RouteRestoreTest {
         assertEquals(listOf("social", "social/profile/u1"), RouteRestore.restoreStack("social/profile/u1"))
         assertEquals(listOf("social"), RouteRestore.restoreStack("social"))
     }
+
+    @Test
+    fun `music screens rebuild the music browser beneath them`() {
+        assertEquals(listOf("music", "now_playing"), RouteRestore.restoreStack("now_playing"))
+        assertEquals(listOf("music", "music_stats"), RouteRestore.restoreStack("music_stats"))
+        assertEquals(listOf("music"), RouteRestore.restoreStack("music"))
+    }
 }

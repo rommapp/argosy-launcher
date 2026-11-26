@@ -66,6 +66,10 @@ object ColorTokens {
             val dark = Color(0xFF0E1116)
             val light = Color(0xFFF6F8FB)
         }
+        object ArtScrim {
+            val dark = Color(0xBF050507)
+            val light = Color(0xBFFBFBFD)
+        }
         val ratingStar = Color(0xFFFFD700)
         val difficulty = Color(0xFFE53935)
         val trophyAmber = Color(0xFFFFB300)

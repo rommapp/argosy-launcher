@@ -21,4 +21,14 @@
     <string name="now_playing_layout_shelf">Estante</string>
     <string name="now_playing_layout_simple">Simples</string>
     <string name="now_playing_quick_open">Tocando agora</string>
+    <string name="now_playing_hint_skip">Pular 10 s</string>
+    <string name="now_playing_hint_swap_screens">Trocar telas</string>
+    <string name="now_playing_option_layout_single_screen">Vale quando só uma tela está em uso.</string>
+    <string name="now_playing_stage_position">Faixa %1$d de %2$d</string>
+    <string name="now_playing_stage_up_next">A seguir: %1$s</string>
+    <string name="now_playing_stage_hint_skip">Pular 10 s</string>
+    <string name="now_playing_stage_hint_track">Faixa</string>
+    <string name="now_playing_stage_hint_queue">Fila</string>
+    <string name="now_playing_stage_hint_style">Estilo</string>
+    <string name="now_playing_stage_hint_swap">Trocar telas</string>
 </resources>

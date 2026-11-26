@@ -6,6 +6,7 @@ import com.nendo.argosy.ui.audio.AmbientMusicSwitch
 import com.nendo.argosy.core.notification.NotificationManager
 import com.nendo.argosy.data.music.library.MusicPlaylists
 import com.nendo.argosy.data.preferences.ControlsPreferencesRepository
+import com.nendo.argosy.data.preferences.QuickNavigationSource
 import com.nendo.argosy.domain.model.MusicPlaylistGroup
 import com.nendo.argosy.domain.model.MusicPlaylistResult
 import com.nendo.argosy.domain.model.MusicQueueTrack
@@ -39,6 +40,8 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
+private const val SEEK_STEP_MS = 10_000L
+
 private class QueueTrackAddition(private val track: MusicQueueTrack) : MusicPlaylistAddition {
     override suspend fun addTo(playlists: MusicPlaylists, group: MusicPlaylistGroup): MusicPlaylistResult =
         playlists.addTrack(group, track)
@@ -55,8 +58,11 @@ class NowPlayingViewModel @Inject constructor(
     controlsPreferences: ControlsPreferencesRepository,
     musicPlaylists: MusicPlaylists,
     notifications: NotificationManager,
-    analysisStore: TrackAnalysisStore
+    analysisStore: TrackAnalysisStore,
+    quickNavigation: QuickNavigationSource
 ) : ViewModel() {
+
+    val quickNavigationEnabled: StateFlow<Boolean> = quickNavigation.enabled
 
     private val position = MutableStateFlow<PlaybackPosition?>(null)
     private val navigation = MutableStateFlow(NowPlayingNavigation())
@@ -148,13 +154,22 @@ class NowPlayingViewModel @Inject constructor(
         )
     }
 
+    fun setSplit(split: Boolean) {
+        navigation.update { nav -> if (nav.split == split) nav else nav.copy(split = split) }
+    }
+
     fun moveVertical(delta: Int): Boolean {
         val state = uiState.value
-        if (!state.showsQueue) return false
+        if (!state.showsTransport) return false
         val lastTrack = state.playback.tracks.lastIndex
         when (state.focus) {
-            NowPlayingFocus.TRANSPORT -> {
+            NowPlayingFocus.WAVE -> {
                 if (delta <= 0) return false
+                navigation.update { it.copy(focus = NowPlayingFocus.TRANSPORT) }
+            }
+            NowPlayingFocus.TRANSPORT -> {
+                if (delta < 0) return focusWave()
+                if (!state.showsQueue) return false
                 val entry = queueEntryFocus()
                 navigation.update { it.copy(focus = NowPlayingFocus.QUEUE, queueFocus = entry) }
             }
@@ -172,11 +187,42 @@ class NowPlayingViewModel @Inject constructor(
 
     fun moveTransport(delta: Int): Boolean {
         val state = uiState.value
-        if (!state.hasQueue || state.prefs.layout != NowPlayingLayout.SHELF) return false
-        if (state.focus == NowPlayingFocus.QUEUE) return leaveQueue()
-        val buttons = transportButtons(withPlaylist = true)
-        navigation.update { it.copy(transport = buttons.stepFrom(it.transport, delta)) }
+        if (!state.showsTransport) return false
+        when (state.focus) {
+            NowPlayingFocus.QUEUE -> return leaveQueue()
+            NowPlayingFocus.WAVE -> return seekBy(delta)
+            NowPlayingFocus.TRANSPORT -> {
+                val buttons = transportButtons(withPlaylist = true)
+                navigation.update { it.copy(transport = buttons.stepFrom(it.transport, delta)) }
+            }
+        }
         return true
+    }
+
+    fun focusWave(): Boolean {
+        val state = uiState.value
+        if (!state.split || !state.hasQueue) return false
+        if (state.focus == NowPlayingFocus.QUEUE) {
+            navigation.update { it.copy(focus = NowPlayingFocus.WAVE, queueCursor = leavingCursor(it.queueFocus)) }
+        } else {
+            navigation.update { it.copy(focus = NowPlayingFocus.WAVE) }
+        }
+        return true
+    }
+
+    fun seekBy(direction: Int): Boolean {
+        if (!uiState.value.hasQueue || direction == 0) return false
+        ambientAudioManager.seekBy(direction * SEEK_STEP_MS)
+        samplePosition()
+        return true
+    }
+
+    fun seekToFraction(fraction: Float) {
+        val state = uiState.value
+        if (!state.hasQueue || state.durationMs <= 0L) return
+        focusWave()
+        ambientAudioManager.seekTo((state.durationMs * fraction.coerceIn(0f, 1f)).toLong())
+        samplePosition()
     }
 
     fun focusQueue(): Boolean {
@@ -197,7 +243,8 @@ class NowPlayingViewModel @Inject constructor(
     fun confirm() {
         val state = uiState.value
         when {
-            state.prefs.layout == NowPlayingLayout.SIMPLE -> togglePlayPause()
+            !state.showsTransport -> togglePlayPause()
+            state.focus == NowPlayingFocus.WAVE -> togglePlayPause()
             state.focus == NowPlayingFocus.QUEUE -> playTrack(state.queueFocus)
             else -> activateTransport(state.navigation.transport)
         }

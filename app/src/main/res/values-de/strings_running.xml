@@ -31,4 +31,9 @@
     <string name="running_friends_three">%1$s, %2$s und %3$s spielen das gerade</string>
     <string name="running_friends_many">%1$s, %2$s, %3$s und weitere spielen das gerade</string>
     <string name="running_notice_game_stopped">Spiel beendet</string>
+    <string name="running_player_show_queue">Warteschlange anzeigen</string>
+    <string name="running_player_hint_queue">Warteschlange</string>
+    <string name="running_player_hint_track">Titel</string>
+    <string name="running_player_queue_header">Titelfolge · %1$d von %2$d</string>
+    <string name="running_player_queue_playing">Läuft gerade</string>
 </resources>

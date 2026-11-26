@@ -31,4 +31,9 @@
     <string name="running_friends_three">%1$s、%2$s 和 %3$s 正在玩</string>
     <string name="running_friends_many">%1$s、%2$s、%3$s 等人正在玩</string>
     <string name="running_notice_game_stopped">遊戲已停止</string>
+    <string name="running_player_show_queue">顯示佇列</string>
+    <string name="running_player_hint_queue">佇列</string>
+    <string name="running_player_hint_track">曲目</string>
+    <string name="running_player_queue_header">曲目順序 · 第 %1$d 首，共 %2$d 首</string>
+    <string name="running_player_queue_playing">正在播放</string>
 </resources>

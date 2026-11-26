@@ -34,8 +34,17 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
+import androidx.compose.ui.unit.dp
+import com.nendo.argosy.DualScreenManagerHolder
 import com.nendo.argosy.R
+import com.nendo.argosy.data.preferences.SelectSwapMode
 import com.nendo.argosy.domain.model.MusicColumnKind
+import com.nendo.argosy.ui.dualscreen.PresentOnCompanionLive
+import com.nendo.argosy.ui.dualscreen.SlotOwner
+import com.nendo.argosy.ui.dualscreen.presentationTakesSlotsState
+import com.nendo.argosy.ui.dualscreen.selectSwapModeState
+import com.nendo.argosy.ui.theme.backdrop.BackdropRole
+import com.nendo.argosy.ui.theme.backdrop.surfaceBackdrop
 import com.nendo.argosy.ui.components.FooterHints
 import com.nendo.argosy.ui.components.LetterJumpOverlay
 import com.nendo.argosy.ui.components.InputButton
@@ -50,6 +59,8 @@ import com.nendo.argosy.ui.theme.Dimens
 import com.nendo.argosy.ui.theme.LocalArgosyTheme
 import com.nendo.argosy.ui.theme.generated.ComponentDefaults
 import com.nendo.argosy.ui.util.clickableNoFocus
+
+private const val MUSIC_SLOT_OWNER = "music"
 
 @Composable
 fun MusicScreen(
@@ -87,7 +98,18 @@ fun MusicScreen(
     val slots = homeColumnsSlotCount(configuration.screenWidthDp.toFloat(), configuration.screenHeightDp.toFloat())
     LaunchedEffect(slots) { viewModel.setSlotCount(slots) }
 
-    Box(modifier = Modifier.fillMaxSize()) {
+    val split = presentationTakesSlotsState()
+    val slotOwner = remember(viewModel) { SlotOwner.of(MUSIC_SLOT_OWNER, viewModel) }
+    if (split) {
+        uiState.showcaseSlot()?.let { slot -> PresentOnCompanionLive(owner = slotOwner, slot = slot) }
+    }
+    val selectSwaps = selectSwapModeState() == SelectSwapMode.TAP
+
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .then(if (split) Modifier.surfaceBackdrop(BackdropRole.CONTENT) else Modifier)
+    ) {
         val contents = uiState.contents
         if (contents != null) {
             MusicContentsView(
@@ -100,12 +122,14 @@ fun MusicScreen(
                 onTrackOptions = viewModel::openTrackOptionsAt,
                 onPlayColumn = { viewModel.playContentsColumn() },
                 onMoveTrack = { delta -> viewModel.playlistActions.moveFocused(delta) },
-                onEndMove = { viewModel.playlistActions.endMove() }
+                onEndMove = { viewModel.playlistActions.endMove() },
+                split = split
             )
         } else {
             MusicColumnsPane(
                 uiState = uiState,
                 viewModel = viewModel,
+                split = split,
                 onOpenMusicSettings = onOpenMusicSettings,
                 onOpenListening = onOpenListening
             )
@@ -113,7 +137,11 @@ fun MusicScreen(
     }
 
     FooterHints(
-        hints = musicFooterHints(uiState, jumpButton = if (quickNavigation) InputButton.RIGHT_STICK_VERTICAL else InputButton.LB_RB),
+        hints = musicFooterHints(
+            uiState,
+            jumpButton = if (quickNavigation) InputButton.RIGHT_STICK_VERTICAL else InputButton.LB_RB,
+            selectSwaps = selectSwaps
+        ),
         onHintClick = { button ->
             when (button) {
                 InputButton.DPAD_VERTICAL -> inputHandler.onDown()
@@ -122,7 +150,11 @@ fun MusicScreen(
                 InputButton.LT_RT -> inputHandler.onNextTrigger()
                 InputButton.Y -> inputHandler.onSecondaryAction()
                 InputButton.X -> inputHandler.onContextMenu()
-                InputButton.SELECT -> inputHandler.onSelect()
+                InputButton.SELECT -> if (selectSwaps) {
+                    DualScreenManagerHolder.instance?.swapRoles()
+                } else {
+                    inputHandler.onSelect()
+                }
                 else -> Unit
             }
         }
@@ -181,6 +213,7 @@ fun MusicScreen(
 private fun MusicColumnsPane(
     uiState: MusicUiState,
     viewModel: MusicViewModel,
+    split: Boolean,
     onOpenMusicSettings: () -> Unit,
     onOpenListening: () -> Unit
 ) {
@@ -225,15 +258,20 @@ private fun MusicColumnsPane(
                         onFlip = { delta -> viewModel.moveStack(delta) },
                         modifier = Modifier
                             .fillMaxWidth()
-                            .weight(ComponentDefaults.HomeColumns.stripWeightRatio)
-                            .padding(top = Dimens.spacingSm)
+                            .weight(if (split) 1f else ComponentDefaults.HomeColumns.stripWeightRatio)
+                            .padding(
+                                top = Dimens.spacingSm,
+                                bottom = if (split) withNavBarClearance(Dimens.spacingLg) else 0.dp
+                            )
                     )
-                    MusicDetails(
-                        uiState = uiState,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .weight(ComponentDefaults.HomeColumns.bandWeightRatio)
-                    )
+                    if (!split) {
+                        MusicDetails(
+                            uiState = uiState,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .weight(ComponentDefaults.HomeColumns.bandWeightRatio)
+                        )
+                    }
                 }
             }
         }
@@ -349,7 +387,11 @@ private fun MusicDetails(uiState: MusicUiState, modifier: Modifier = Modifier) {
 }
 
 @Composable
-private fun musicFooterHints(uiState: MusicUiState, jumpButton: InputButton): List<Pair<InputButton, String>> {
+private fun musicFooterHints(
+    uiState: MusicUiState,
+    jumpButton: InputButton,
+    selectSwaps: Boolean
+): List<Pair<InputButton, String>> {
     val groupBy = stringResource(R.string.music_library_footer_group_by)
     val flip = stringResource(R.string.music_library_footer_flip)
     val jump = stringResource(R.string.music_library_footer_jump)
@@ -362,6 +404,7 @@ private fun musicFooterHints(uiState: MusicUiState, jumpButton: InputButton): Li
     val trackOptions = stringResource(R.string.music_library_footer_track_options)
     val move = stringResource(R.string.music_library_footer_move)
     val moveDone = stringResource(R.string.music_library_footer_move_done)
+    val swapScreens = stringResource(R.string.music_library_footer_swap_screens)
     val contents = uiState.contents
     return buildList {
         when {
@@ -373,7 +416,7 @@ private fun musicFooterHints(uiState: MusicUiState, jumpButton: InputButton): Li
                 if (contents.canPlayColumn) add(InputButton.X to playColumn)
                 if (contents.tracks.isNotEmpty()) {
                     add(InputButton.Y to if (contents.isFlat) playAll else playAlbum)
-                    add(InputButton.SELECT to trackOptions)
+                    add(InputButton.SELECT to if (selectSwaps) swapScreens else trackOptions)
                 }
             }
             uiState.hasNoSources || uiState.sources == null -> Unit
@@ -383,7 +426,7 @@ private fun musicFooterHints(uiState: MusicUiState, jumpButton: InputButton): Li
                 add(InputButton.LT_RT to groupBy)
                 if (uiState.showsColumns) add(InputButton.Y to play)
                 add(InputButton.X to filter)
-                if (uiState.showsColumns) add(InputButton.SELECT to options)
+                if (uiState.showsColumns) add(InputButton.SELECT to if (selectSwaps) swapScreens else options)
             }
         }
     }

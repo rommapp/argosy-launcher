@@ -21,4 +21,14 @@
     <string name="now_playing_layout_shelf">Estantería</string>
     <string name="now_playing_layout_simple">Sencillo</string>
     <string name="now_playing_quick_open">Reproduciendo</string>
+    <string name="now_playing_hint_skip">Saltar 10 s</string>
+    <string name="now_playing_hint_swap_screens">Cambiar pantallas</string>
+    <string name="now_playing_option_layout_single_screen">Se aplica cuando se usa una sola pantalla.</string>
+    <string name="now_playing_stage_position">Pista %1$d de %2$d</string>
+    <string name="now_playing_stage_up_next">A continuación: %1$s</string>
+    <string name="now_playing_stage_hint_skip">Saltar 10 s</string>
+    <string name="now_playing_stage_hint_track">Pista</string>
+    <string name="now_playing_stage_hint_queue">Cola</string>
+    <string name="now_playing_stage_hint_style">Estilo</string>
+    <string name="now_playing_stage_hint_swap">Cambiar pantallas</string>
 </resources>

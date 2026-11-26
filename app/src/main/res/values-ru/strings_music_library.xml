@@ -116,4 +116,7 @@
     <string name="music_library_contents_play_all">Играть всё</string>
     <string name="music_library_contents_move_up">Выше</string>
     <string name="music_library_contents_move_down">Ниже</string>
+    <string name="music_library_footer_swap_screens">Поменять экраны</string>
+    <string name="music_library_showcase_offline">Нет подключения. Показана скачанная музыка.</string>
+    <string name="music_library_showcase_album_position">Альбом %1$d из %2$d</string>
 </resources>

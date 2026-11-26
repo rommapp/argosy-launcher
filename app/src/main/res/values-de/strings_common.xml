@@ -1313,6 +1313,7 @@
         <item quantity="other">%d Downloads abgeschlossen</item>
     </plurals>
     <string name="ui_status_bar_activity_unseen_desc">Neue Aktivität</string>
+    <string name="ui_status_bar_now_playing_desc">Wird abgespielt</string>
     <string name="ui_folder_default_name">Ordner</string>
     <string name="ui_folder_overlay_hint_remove">Aus Ordner entfernen</string>
     <string name="ui_folder_appearance_title">Ordner-Darstellung</string>

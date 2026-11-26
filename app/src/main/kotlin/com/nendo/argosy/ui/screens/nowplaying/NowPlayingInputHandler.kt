@@ -1,6 +1,7 @@
 package com.nendo.argosy.ui.screens.nowplaying
 
 import com.nendo.argosy.core.input.SoundType
+import com.nendo.argosy.ui.dualscreen.selectSwapsRoles
 import com.nendo.argosy.ui.input.InputHandler
 import com.nendo.argosy.ui.input.InputResult
 
@@ -42,7 +43,25 @@ class NowPlayingInputHandler(
 
     override fun onContextMenu(): InputResult = result(viewModel.focusQueue())
 
+    override fun onPrevSection(): InputResult = bumperSeek(-1)
+
+    override fun onNextSection(): InputResult = bumperSeek(1)
+
+    private fun bumperSeek(direction: Int): InputResult =
+        if (viewModel.quickNavigationEnabled.value) InputResult.UNHANDLED else result(viewModel.seekBy(direction))
+
+    override fun onRightStickLeft(): InputResult = result(viewModel.seekBy(-1))
+
+    override fun onRightStickRight(): InputResult = result(viewModel.seekBy(1))
+
     override fun onSelect(): InputResult {
+        if (selectSwapsRoles()) return InputResult.UNHANDLED
+        return openOptions()
+    }
+
+    override fun onLongConfirm(): InputResult = openOptions()
+
+    private fun openOptions(): InputResult {
         viewModel.openOptions()
         return InputResult.handled(SoundType.OPEN_MODAL)
     }

@@ -258,7 +258,8 @@ fun NavGraph(
         composable(route = Screen.Running.route) {
             RunningAppsScreen(
                 onBack = navigateToDefault,
-                onOpenGame = { gameId -> navController.navigate(Screen.GameDetail.createRoute(gameId)) }
+                onOpenGame = { gameId -> navController.navigate(Screen.GameDetail.createRoute(gameId)) },
+                onOpenNowPlaying = { navController.navigate(Screen.NowPlaying.route) }
             )
         }
 

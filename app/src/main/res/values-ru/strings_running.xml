@@ -31,4 +31,9 @@
     <string name="running_friends_three">%1$s, %2$s и %3$s играют в это</string>
     <string name="running_friends_many">%1$s, %2$s, %3$s и другие играют в это</string>
     <string name="running_notice_game_stopped">Игра остановлена</string>
+    <string name="running_player_show_queue">Показать очередь</string>
+    <string name="running_player_hint_queue">Очередь</string>
+    <string name="running_player_hint_track">Трек</string>
+    <string name="running_player_queue_header">Порядок треков · %1$d из %2$d</string>
+    <string name="running_player_queue_playing">Играет сейчас</string>
 </resources>

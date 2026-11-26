@@ -35,6 +35,7 @@ import com.nendo.argosy.R
 import com.nendo.argosy.ui.common.LocalOpenRunningGames
 import com.nendo.argosy.ui.common.LocalRunningGames
 import com.nendo.argosy.ui.common.RunningGamesUi
+import com.nendo.argosy.ui.components.nowplaying.NowPlayingPillSegment
 import com.nendo.argosy.ui.theme.LocalArgosyTheme
 import com.nendo.argosy.ui.util.clickableNoFocus
 import androidx.compose.material.icons.Icons
@@ -123,6 +124,12 @@ val LocalArtworkScraping = androidx.compose.runtime.compositionLocalOf { false }
  * Whether the Activity page holds entries the player has not opened it to see.
  */
 val LocalActivityUnseen = androidx.compose.runtime.compositionLocalOf { false }
+
+/**
+ * Opens Now Playing from the status bar's now-playing segment. Each surface's host provides it;
+ * null hides the segment, which a host does while its control screen already shows Now Playing.
+ */
+val LocalOpenNowPlaying = androidx.compose.runtime.staticCompositionLocalOf<(() -> Unit)?> { null }
 
 data class StatusBarItems(
     val clock: Boolean = true,
@@ -254,7 +261,22 @@ fun SystemStatusBar(
             } else ComponentDefaults.OverlayLegibility.scrimPaddingHorizDp.dp,
             vertical = if (scrim) Dimens.spacingSm else ComponentDefaults.OverlayLegibility.scrimPaddingVertDp.dp
         )
-    val content: @Composable (Modifier, Modifier) -> Unit = { clockModifier, itemModifier ->
+    val openNowPlaying = LocalOpenNowPlaying.current
+    val content: @Composable (Modifier, Modifier, Modifier) -> Unit = { clockModifier, itemModifier, segmentModifier ->
+        if (openNowPlaying != null) {
+            NowPlayingPillSegment(
+                onOpen = openNowPlaying,
+                textColor = effectiveColor,
+                textStyle = chromeTextStyle(
+                    MaterialTheme.typography.titleMedium,
+                    TypographyTokens.titleMedium,
+                    ComponentDefaults.FrostedSurface.chromeFontSizeSp.sp *
+                        ComponentDefaults.FrostedSurface.statusBatteryFontSizeRatio
+                ),
+                modifier = segmentModifier
+            )
+        }
+
         if (isScrapingArtwork) {
             ArtworkScrapeIndicator(color = effectiveColor, modifier = itemModifier)
         }
@@ -314,7 +336,7 @@ fun SystemStatusBar(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(Dimens.spacingSm)
                 ) {
-                    content(Modifier.weight(1f, fill = false), Modifier)
+                    content(Modifier.weight(1f, fill = false), Modifier, Modifier.weight(1f, fill = false))
                 }
             }
             indicators(Modifier)
@@ -325,7 +347,7 @@ fun SystemStatusBar(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(Dimens.spacingSm)
         ) {
-            content(Modifier.weight(1f, fill = false), Modifier)
+            content(Modifier.weight(1f, fill = false), Modifier, Modifier.weight(1f, fill = false))
             indicators(Modifier)
         }
     }

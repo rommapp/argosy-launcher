@@ -21,4 +21,14 @@
     <string name="now_playing_layout_shelf">Полка</string>
     <string name="now_playing_layout_simple">Простой</string>
     <string name="now_playing_quick_open">Сейчас играет</string>
+    <string name="now_playing_hint_skip">Перемотка 10 с</string>
+    <string name="now_playing_hint_swap_screens">Поменять экраны</string>
+    <string name="now_playing_option_layout_single_screen">Действует, когда используется один экран.</string>
+    <string name="now_playing_stage_position">Трек %1$d из %2$d</string>
+    <string name="now_playing_stage_up_next">Далее: %1$s</string>
+    <string name="now_playing_stage_hint_skip">Перемотка 10 с</string>
+    <string name="now_playing_stage_hint_track">Трек</string>
+    <string name="now_playing_stage_hint_queue">Очередь</string>
+    <string name="now_playing_stage_hint_style">Стиль</string>
+    <string name="now_playing_stage_hint_swap">Поменять экраны</string>
 </resources>

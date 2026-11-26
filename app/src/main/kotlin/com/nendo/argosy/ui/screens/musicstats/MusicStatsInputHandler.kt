@@ -1,6 +1,7 @@
 package com.nendo.argosy.ui.screens.musicstats
 
 import com.nendo.argosy.core.input.SoundType
+import com.nendo.argosy.ui.dualscreen.selectSwapsRoles
 import com.nendo.argosy.ui.input.InputHandler
 import com.nendo.argosy.ui.input.InputResult
 
@@ -38,7 +39,10 @@ class MusicStatsInputHandler(
 
     override fun onSecondaryAction(): InputResult = result(viewModel.playFocusedShelf())
 
-    override fun onSelect(): InputResult = result(viewModel.openOptions())
+    override fun onSelect(): InputResult =
+        if (selectSwapsRoles()) InputResult.UNHANDLED else result(viewModel.openOptions())
+
+    override fun onLongConfirm(): InputResult = result(viewModel.openOptions())
 
     override fun onPrevTrigger(): InputResult = cycleTab(-1)
 

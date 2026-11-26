@@ -1,6 +1,7 @@
 package com.nendo.argosy.ui.components.nowplaying
 
 import com.nendo.argosy.data.music.analysis.TrackAnalysis
+import kotlin.math.PI
 import kotlin.math.abs
 import kotlin.math.roundToInt
 import kotlin.math.sin
@@ -93,6 +94,19 @@ fun settleLevels(shown: FloatArray, fresh: FloatArray, fallPerSecond: Float, ela
     val fall = fallPerSecond * elapsedSeconds.coerceAtLeast(0f)
     for (i in shown.indices) shown[i] = maxOf(fresh[i], shown[i] - fall).coerceIn(0f, 1f)
 }
+
+/**
+ * The height of equaliser bar [index] of [count] as a fraction of the glyph, between [minFraction]
+ * and 1. Bars share one sine at [phase] in 0..1, offset evenly so no two rise together.
+ */
+fun equaliserBarFraction(index: Int, count: Int, phase: Float, minFraction: Float): Float {
+    if (count <= 0) return minFraction
+    val wave = 0.5f + 0.5f * sin(2f * PI.toFloat() * (phase + index.toFloat() / count))
+    return minFraction + (1f - minFraction) * wave
+}
+
+fun marqueeDurationMs(distancePx: Float, pxPerSecond: Float): Int =
+    if (distancePx <= 0f || pxPerSecond <= 0f) 0 else (distancePx / pxPerSecond * 1000f).roundToInt()
 
 fun interpolatedPositionMs(sampledMs: Long, elapsedNanos: Long, durationMs: Long): Long {
     val advanced = sampledMs + elapsedNanos.coerceAtLeast(0L) / NANOS_PER_MS

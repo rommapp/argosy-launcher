@@ -95,7 +95,12 @@ fun PresentationSlotContent(
     val frostedBackdrop = rememberFrostedBackdrop()
     androidx.compose.runtime.CompositionLocalProvider(
         LocalFrostedBackdrop provides frostedBackdrop,
-        com.nendo.argosy.ui.common.LocalImageCacheManager provides artSource
+        com.nendo.argosy.ui.common.LocalImageCacheManager provides artSource,
+        com.nendo.argosy.ui.components.LocalOpenNowPlaying provides
+            com.nendo.argosy.ui.components.nowplaying.rememberPresentationNowPlayingOpener(
+                primaryRoute = manager?.primaryRoute,
+                inGame = slot is PresentationSlot.InGame
+            )
     ) {
         ScreenDimmerOverlay(
             enabled = dimmerPrefs.enabled && !gameActive && mediaPlayback == null && !wizardActive,
@@ -121,7 +126,7 @@ private fun PresentationSlotBody(
     val gameDisplayId = manager?.emulatorDisplay?.collectAsState()?.value
     val displayId = ContextCompat.getDisplayOrDefault(LocalContext.current).displayId
     var measuredHintsHeight by remember { mutableStateOf(0.dp) }
-    val drawsHints = showControlHints && hints.isNotEmpty()
+    val drawsHints = showControlHints && hints.isNotEmpty() && slot !is PresentationSlot.NowPlayingStage
     val hintsHeight = if (drawsHints) measuredHintsHeight else 0.dp
     val recapBlur = maxOf(
         com.nendo.argosy.ui.components.launchRecapBackdropBlur(),
@@ -262,6 +267,10 @@ private fun PresentationSlotScene(
                         ?.tapPresentation(PresentationTap(slot.owner, 0))
                 }
             )
+            is PresentationSlot.NowPlayingStage ->
+                com.nendo.argosy.ui.screens.nowplaying.NowPlayingStage(state = slot.state)
+            is PresentationSlot.MusicShowcase ->
+                com.nendo.argosy.ui.screens.music.MusicShowcase(state = slot.state, bottomInset = hintsHeight)
             is PresentationSlot.NavigationMenu -> com.nendo.argosy.ui.components.MainDrawerPresentation(
                 slot = slot,
                 onTap = { index ->

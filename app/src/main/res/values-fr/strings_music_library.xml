@@ -113,4 +113,7 @@
     <string name="music_library_contents_play_all">Tout lire</string>
     <string name="music_library_contents_move_up">Monter</string>
     <string name="music_library_contents_move_down">Descendre</string>
+    <string name="music_library_footer_swap_screens">Inverser les écrans</string>
+    <string name="music_library_showcase_offline">Hors ligne. Seule la musique téléchargée est affichée.</string>
+    <string name="music_library_showcase_album_position">Album %1$d sur %2$d</string>
 </resources>

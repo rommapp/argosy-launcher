@@ -12,10 +12,13 @@ import androidx.compose.material.icons.filled.Shuffle
 import androidx.compose.material.icons.filled.SkipNext
 import androidx.compose.material.icons.filled.SkipPrevious
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.LayoutDirection
 import com.nendo.argosy.R
 import com.nendo.argosy.data.preferences.MusicRepeatMode
 import com.nendo.argosy.ui.components.musicplayer.MusicTransportButton
@@ -29,6 +32,41 @@ private val MusicRepeatMode.descriptionRes: Int
         MusicRepeatMode.OFF -> R.string.ui_quick_settings_music_repeat_off
     }
 
+/**
+ * Spreads the buttons edge to edge with gaps between [minGap] and [maxGap], and centres the row
+ * once every gap reaches [maxGap]. Buttons never shrink; below [minGap] the row overflows its end.
+ */
+@Composable
+fun rememberTransportArrangement(
+    minGap: Dp = Dimens.spacingSm,
+    maxGap: Dp = Dimens.spacingLg
+): Arrangement.Horizontal = remember(minGap, maxGap) { BoundedSpaceBetween(minGap, maxGap) }
+
+private class BoundedSpaceBetween(private val minGap: Dp, private val maxGap: Dp) : Arrangement.Horizontal {
+    override val spacing: Dp = minGap
+
+    override fun Density.arrange(
+        totalSize: Int,
+        sizes: IntArray,
+        layoutDirection: LayoutDirection,
+        outPositions: IntArray
+    ) {
+        val content = sizes.sum()
+        val gap = transportGapPx(totalSize, content, sizes.size, minGap.roundToPx(), maxGap.roundToPx())
+        val used = content + gap * (sizes.size - 1).coerceAtLeast(0)
+        var x = ((totalSize - used) / 2).coerceAtLeast(0)
+        sizes.forEachIndexed { index, size ->
+            outPositions[index] = if (layoutDirection == LayoutDirection.Rtl) totalSize - x - size else x
+            x += size + gap
+        }
+    }
+}
+
+internal fun transportGapPx(totalPx: Int, contentPx: Int, count: Int, minGapPx: Int, maxGapPx: Int): Int {
+    if (count < 2) return 0
+    return ((totalPx - contentPx) / (count - 1)).coerceIn(minGapPx, maxGapPx)
+}
+
 @Composable
 fun PlaybackTransportRow(
     isAudible: Boolean,
@@ -38,10 +76,11 @@ fun PlaybackTransportRow(
     focusedButton: MusicTransportButton?,
     buttonSize: Dp,
     playButtonSize: Dp,
-    horizontalArrangement: Arrangement.Horizontal,
     onButton: (MusicTransportButton) -> Unit,
     modifier: Modifier = Modifier,
+    horizontalArrangement: Arrangement.Horizontal = rememberTransportArrangement(),
     withPlaylist: Boolean = false,
+    buttons: List<MusicTransportButton> = transportButtons(withPlaylist),
     playIconSize: Dp = Dimens.iconMd
 ) {
     Row(
@@ -49,7 +88,7 @@ fun PlaybackTransportRow(
         horizontalArrangement = horizontalArrangement,
         verticalAlignment = Alignment.CenterVertically
     ) {
-        transportButtons(withPlaylist).forEach { button ->
+        buttons.forEach { button ->
             val focused = focusedButton == button
             val click = { onButton(button) }
             when (button) {

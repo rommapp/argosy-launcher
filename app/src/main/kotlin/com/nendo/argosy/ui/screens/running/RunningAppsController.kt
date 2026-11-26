@@ -21,6 +21,11 @@ import com.nendo.argosy.data.repository.SaveCacheManager
 import com.nendo.argosy.data.social.SocialRepository
 import com.nendo.argosy.data.streaming.StreamSessionManager
 import com.nendo.argosy.domain.model.MakeRoomStage
+import com.nendo.argosy.ui.common.PresentationFocus
+import com.nendo.argosy.ui.common.PresentationShowcaseSource
+import com.nendo.argosy.ui.common.PresentationTarget
+import com.nendo.argosy.ui.components.resumeplayer.ResumePlayerController
+import com.nendo.argosy.ui.components.resumeplayer.upFromGamesEntersCard
 import com.nendo.argosy.ui.input.InputHandler
 import com.nendo.argosy.ui.input.InputResult
 import com.nendo.argosy.ui.input.SoundFeedbackManager
@@ -41,6 +46,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
@@ -146,7 +152,27 @@ class RunningAppsController private constructor(
     private val _openGame = MutableSharedFlow<Long>(extraBufferCapacity = 1)
     val openGame: SharedFlow<Long> = _openGame.asSharedFlow()
 
+    val player: ResumePlayerController = deps.resumePlayers.create(scope)
+
+    private val presentation: PresentationFocus? = if (dismissOverlay == null) {
+        PresentationFocus("resume.focus", this, deps.showcaseSource, scope)
+    } else {
+        null
+    }
+
     init {
+        presentation?.let { focus ->
+            scope.launch {
+                combine(_uiState, player.uiState) { state, playerState ->
+                    val gameId = state.focusedApp?.gameId
+                    if (playerState.holdsFocus || gameId == null) {
+                        PresentationTarget.Nothing
+                    } else {
+                        PresentationTarget.Game(gameId)
+                    }
+                }.distinctUntilChanged().collect(focus::show)
+            }
+        }
         scope.launch {
             merge(
                 gameLaunchDelegate.discPickerState.map { it?.gameId },
@@ -171,6 +197,8 @@ class RunningAppsController private constructor(
 
     fun onVisible() {
         _uiState.update { it.copy(resumingTaskId = null) }
+        player.onVisible()
+        presentation?.startDescribing()
         if (pollJob?.isActive == true) return
         pollJob = scope.launch {
             while (isActive) {
@@ -183,6 +211,8 @@ class RunningAppsController private constructor(
     fun onHidden() {
         pollJob?.cancel()
         pollJob = null
+        player.onHidden()
+        presentation?.stopDescribing()
     }
 
     private class Refreshed(
@@ -224,6 +254,7 @@ class RunningAppsController private constructor(
                 frontTaskId = refreshed.frontTaskId
             )
         }
+        player.setHasGames(rows.isNotEmpty())
     }
 
     private fun frontTaskOf(apps: List<RunningApp>): Int? {
@@ -314,6 +345,7 @@ class RunningAppsController private constructor(
         val state = _uiState.value
         if (state.resumingTaskId != null) return
         val app = state.apps.getOrNull(index) ?: return
+        player.focusPage()
         if (app.taskId == state.frontTaskId) {
             dismissOverlay?.invoke()
             return
@@ -444,6 +476,7 @@ class RunningAppsController private constructor(
 
     fun openMenu(index: Int) {
         val app = _uiState.value.apps.getOrNull(index) ?: return
+        player.focusPage()
         _uiState.update { state ->
             state.copy(focusedIndex = index, menu = RunningMenu(app.taskId, menuEntries(app, state)))
         }
@@ -513,15 +546,37 @@ class RunningAppsController private constructor(
             return InputResult.HANDLED
         }
 
-        override fun onUp(): InputResult = move(-1, alongCards = false)
+        private val onCard: Boolean get() = player.uiState.value.cardFocused
 
-        override fun onDown(): InputResult = move(1, alongCards = false)
+        private fun boundary(moved: Boolean): InputResult =
+            if (moved) InputResult.HANDLED else InputResult.handled(SoundType.BOUNDARY)
 
-        override fun onLeft(): InputResult = move(-1, alongCards = true)
+        override fun onUp(): InputResult {
+            if (onCard) return InputResult.handled(SoundType.BOUNDARY)
+            val state = _uiState.value
+            val entersCard = state.apps.isNotEmpty() &&
+                upFromGamesEntersCard(alongCards = state.showsSnapshots, focusedIndex = state.focusedIndex)
+            if (entersCard && player.enterCard()) return InputResult.HANDLED
+            return move(-1, alongCards = false)
+        }
 
-        override fun onRight(): InputResult = move(1, alongCards = true)
+        override fun onDown(): InputResult {
+            if (onCard) return boundary(player.leaveCard())
+            return move(1, alongCards = false)
+        }
+
+        override fun onLeft(): InputResult {
+            if (onCard) return boundary(player.moveButton(-1))
+            return move(-1, alongCards = true)
+        }
+
+        override fun onRight(): InputResult {
+            if (onCard) return boundary(player.moveButton(1))
+            return move(1, alongCards = true)
+        }
 
         override fun onConfirm(): InputResult {
+            if (onCard) return boundary(player.confirmButton())
             val state = _uiState.value
             if (state.focusedApp == null) return InputResult.UNHANDLED
             switchTo(state.focusedIndex)
@@ -529,6 +584,7 @@ class RunningAppsController private constructor(
         }
 
         override fun onLongConfirm(): InputResult {
+            if (onCard) return InputResult.HANDLED
             val state = _uiState.value
             if (state.focusedApp == null) return InputResult.UNHANDLED
             openMenu(state.focusedIndex)
@@ -536,6 +592,13 @@ class RunningAppsController private constructor(
         }
 
         override fun onContextMenu(): InputResult {
+            if (onCard) {
+                return if (player.openPanel()) {
+                    InputResult.handled(SoundType.OPEN_MODAL)
+                } else {
+                    InputResult.handled(SoundType.BOUNDARY)
+                }
+            }
             val state = _uiState.value
             if (state.focusedApp == null) return InputResult.UNHANDLED
             requestClose(state.focusedIndex)
@@ -543,12 +606,20 @@ class RunningAppsController private constructor(
         }
 
         override fun onSecondaryAction(): InputResult {
+            if (onCard) return InputResult.handled(SoundType.SILENT)
             if (_uiState.value.apps.isEmpty()) return InputResult.UNHANDLED
             requestCloseAll()
             return InputResult.HANDLED
         }
 
+        override fun onPrevTrigger(): InputResult =
+            if (player.skip(-1)) InputResult.HANDLED else InputResult.UNHANDLED
+
+        override fun onNextTrigger(): InputResult =
+            if (player.skip(1)) InputResult.HANDLED else InputResult.UNHANDLED
+
         override fun onBack(): InputResult {
+            if (onCard && player.dismissPanel()) return InputResult.handled(SoundType.CLOSE_MODAL)
             onBack()
             return InputResult.HANDLED
         }
@@ -605,6 +676,8 @@ class RunningAppsController private constructor(
         internal val playSessionTracker: PlaySessionTracker,
         internal val notificationManager: NotificationManager,
         internal val soundManager: SoundFeedbackManager,
+        internal val resumePlayers: ResumePlayerController.Factory,
+        internal val showcaseSource: PresentationShowcaseSource,
         private val gameLaunchDelegates: Provider<GameLaunchDelegate>
     ) {
         /**

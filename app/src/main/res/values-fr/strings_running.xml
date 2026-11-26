@@ -31,4 +31,9 @@
     <string name="running_friends_three">%1$s, %2$s et %3$s y jouent</string>
     <string name="running_friends_many">%1$s, %2$s, %3$s et d’autres y jouent</string>
     <string name="running_notice_game_stopped">Jeu arrêté</string>
+    <string name="running_player_show_queue">Afficher la file d\'attente</string>
+    <string name="running_player_hint_queue">File d\'attente</string>
+    <string name="running_player_hint_track">Piste</string>
+    <string name="running_player_queue_header">Ordre des pistes · %1$d sur %2$d</string>
+    <string name="running_player_queue_playing">En cours de lecture</string>
 </resources>

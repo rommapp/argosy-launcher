@@ -5,8 +5,15 @@ import androidx.compose.animation.Crossfade
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.layout.widthIn
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.ui.unit.dp
+import com.nendo.argosy.ui.components.resumeplayer.ResumePlayerCard
+import com.nendo.argosy.ui.components.resumeplayer.ResumePlayerPanelLayer
+import com.nendo.argosy.ui.components.resumeplayer.ResumePlayerUiState
+import com.nendo.argosy.ui.components.resumeplayer.dismissesResumePanelOutside
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.geometry.Offset
@@ -113,6 +120,7 @@ import com.nendo.argosy.ui.util.clickableNoFocus
 fun RunningAppsScreen(
     onBack: () -> Unit,
     onOpenGame: (Long) -> Unit,
+    onOpenNowPlaying: (() -> Unit)? = null,
     viewModel: RunningAppsViewModel = hiltViewModel()
 ) {
     val controller = viewModel.controller
@@ -142,39 +150,78 @@ fun RunningAppsScreen(
         }
     }
 
-    RunningAppsContent(controller = controller)
+    RunningAppsContent(controller = controller, onOpenNowPlaying = onOpenNowPlaying)
 }
 
 /**
  * The Resume list without any host wiring: the host subscribes [controller]'s input handler and
- * starts and stops its polling. The menu's own input is taken here.
+ * starts and stops its polling. The menu's and the player panel's own input is taken here.
+ * [onOpenNowPlaying] is null where the host cannot open an Argosy screen.
  */
 @Composable
 fun RunningAppsContent(
     controller: RunningAppsController,
     modifier: Modifier = Modifier,
-    showsGameBackdrop: Boolean = true
+    showsGameBackdrop: Boolean = true,
+    presentsMusicOnCompanion: Boolean = true,
+    onOpenNowPlaying: (() -> Unit)? = null
 ) {
     val uiState by controller.uiState.collectAsState()
+    val player = controller.player
+    val playerState by player.uiState.collectAsState()
     val menuInputHandler = remember(controller) { controller.createMenuInputHandler() }
     ModalInputEffect(active = uiState.menu != null, handler = menuInputHandler)
+    DisposableEffect(player, onOpenNowPlaying) {
+        player.setOpenNowPlaying(onOpenNowPlaying)
+        onDispose { player.setOpenNowPlaying(null) }
+    }
 
     val cardBounds = remember { mutableStateMapOf<Int, Rect>() }
     var screenOrigin by remember { mutableStateOf(Offset.Zero) }
+    var playerCardBounds by remember { mutableStateOf<Rect?>(null) }
+    var pageHeight by remember { mutableFloatStateOf(0f) }
+    var footerHeight by remember { mutableFloatStateOf(0f) }
+    val footerTop = pageHeight - footerHeight
+    val playerCard = playerCardBounds?.translate(-screenOrigin)
+    val gamesFocused = !playerState.holdsFocus
 
     Box(
         modifier = modifier
             .fillMaxSize()
-            .onGloballyPositioned { screenOrigin = it.boundsInRoot().topLeft }
+            .onGloballyPositioned {
+                screenOrigin = it.boundsInRoot().topLeft
+                pageHeight = it.size.height.toFloat()
+            }
+            .dismissesResumePanelOutside(player, playerState, playerCard, footerTop)
     ) {
         if (showsGameBackdrop) FocusedGameBackdrop(gameId = uiState.focusedApp?.gameId)
         Column(modifier = Modifier.fillMaxSize()) {
-            Text(
-                text = stringResource(R.string.running_header_title),
-                style = MaterialTheme.typography.headlineMedium,
-                color = LocalArgosyTheme.current.textPrimary,
-                modifier = Modifier.padding(Dimens.spacingLg)
-            )
+            Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    text = stringResource(R.string.running_header_title),
+                    style = MaterialTheme.typography.headlineMedium,
+                    color = LocalArgosyTheme.current.textPrimary,
+                    modifier = Modifier.padding(Dimens.spacingLg)
+                )
+                if (playerState.showsCard) {
+                    Box(
+                        modifier = Modifier
+                            .weight(1f)
+                            .padding(top = Dimens.spacingMd, bottom = Dimens.spacingMd, end = Dimens.spacingLg),
+                        contentAlignment = Alignment.CenterEnd
+                    ) {
+                        ResumePlayerCard(
+                            controller = player,
+                            state = playerState,
+                            presentsOnCompanion = presentsMusicOnCompanion,
+                            onPlaced = { playerCardBounds = it },
+                            modifier = Modifier
+                                .widthIn(max = ComponentDefaults.ResumePlayer.cardMaxWidthDp.dp)
+                                .fillMaxWidth()
+                        )
+                    }
+                }
+            }
 
             when {
                 uiState.isLoading -> CenteredContent {
@@ -192,6 +239,7 @@ fun RunningAppsContent(
                 }
                 uiState.showsSnapshots -> RunningAppsCarousel(
                     uiState = uiState,
+                    gamesFocused = gamesFocused,
                     onTap = controller::switchTo,
                     onLongPress = controller::openMenu,
                     onSnapshotPlaced = { taskId, bounds -> cardBounds[taskId] = bounds },
@@ -199,6 +247,7 @@ fun RunningAppsContent(
                 )
                 else -> RunningAppsList(
                     uiState = uiState,
+                    gamesFocused = gamesFocused,
                     onTap = controller::switchTo,
                     onLongPress = controller::openMenu,
                     modifier = Modifier.weight(1f)
@@ -217,23 +266,37 @@ fun RunningAppsContent(
                 }
             }
 
-            if (uiState.apps.isNotEmpty() && uiState.resumingTaskId == null) {
+            val hasApps = uiState.apps.isNotEmpty()
+            if ((hasApps || playerState.showsCard) && uiState.resumingTaskId == null) {
                 FooterHints(
-                    leadingContent = { SlotCartridges(uiState.apps, uiState.focusedApp?.taskId) },
-                    hints = listOf(
-                        InputButton.X to stringResource(R.string.running_hint_close),
-                        InputButton.Y to stringResource(R.string.running_hint_close_all)
-                    ),
+                    leadingContent = if (hasApps) {
+                        { SlotCartridges(uiState.apps, uiState.focusedApp?.taskId) }
+                    } else {
+                        null
+                    },
+                    hints = runningFooterHints(hasApps = hasApps, player = playerState),
                     onHintClick = { button ->
-                        when (button) {
-                            InputButton.X -> controller.requestClose(uiState.focusedIndex)
-                            InputButton.Y -> controller.requestCloseAll()
+                        when {
+                            button == InputButton.X && playerState.cardFocused -> player.openPanel()
+                            button == InputButton.X -> controller.requestClose(uiState.focusedIndex)
+                            button == InputButton.Y -> controller.requestCloseAll()
                             else -> Unit
                         }
                     }
                 )
             }
-            FooterSpacer()
+            Box(modifier = Modifier.onGloballyPositioned { footerHeight = it.size.height.toFloat() }) {
+                FooterSpacer()
+            }
+        }
+
+        if (playerState.showsCard) {
+            ResumePlayerPanelLayer(
+                controller = player,
+                state = playerState,
+                cardBounds = playerCard,
+                bottomLimit = footerTop
+            )
         }
 
         uiState.resumingTaskId?.let { taskId ->
@@ -285,6 +348,17 @@ fun RunningAppsContent(
         }
     }
 }
+
+@Composable
+private fun runningFooterHints(hasApps: Boolean, player: ResumePlayerUiState): List<Pair<InputButton, String>> =
+    buildList {
+        if (player.cardFocused) add(InputButton.X to stringResource(R.string.running_player_hint_queue))
+        if (hasApps && !player.holdsFocus) {
+            add(InputButton.X to stringResource(R.string.running_hint_close))
+            add(InputButton.Y to stringResource(R.string.running_hint_close_all))
+        }
+        if (player.showsCard) add(InputButton.LT_RT to stringResource(R.string.running_player_hint_track))
+    }
 
 @Composable
 private fun runningMenuLabel(entry: RunningMenuEntry): String = when (entry) {
@@ -386,6 +460,7 @@ private fun ColumnScope.CenteredContent(content: @Composable () -> Unit) {
 @Composable
 private fun RunningAppsList(
     uiState: RunningAppsUiState,
+    gamesFocused: Boolean,
     onTap: (Int) -> Unit,
     onLongPress: (Int) -> Unit,
     modifier: Modifier = Modifier
@@ -405,6 +480,7 @@ private fun RunningAppsList(
             RunningAppRow(
                 app = app,
                 isFocused = index == uiState.focusedIndex,
+                showsFocus = gamesFocused,
                 onClick = { onTap(index) },
                 onLongClick = { onLongPress(index) }
             )
@@ -415,6 +491,7 @@ private fun RunningAppsList(
 @Composable
 private fun RunningAppsCarousel(
     uiState: RunningAppsUiState,
+    gamesFocused: Boolean,
     onTap: (Int) -> Unit,
     onLongPress: (Int) -> Unit,
     onSnapshotPlaced: (taskId: Int, boundsInRoot: Rect) -> Unit,
@@ -437,6 +514,7 @@ private fun RunningAppsCarousel(
                 RunningAppCard(
                     app = app,
                     isFocused = index == uiState.focusedIndex,
+                    showsFocus = gamesFocused,
                     onClick = { onTap(index) },
                     onLongClick = { onLongPress(index) },
                     closeStage = uiState.closing[app.taskId],
@@ -459,6 +537,7 @@ private fun RunningAppsCarousel(
 private fun RunningAppCard(
     app: RunningAppUi,
     isFocused: Boolean,
+    showsFocus: Boolean,
     onClick: () -> Unit,
     onLongClick: () -> Unit,
     closeStage: MakeRoomStage?,
@@ -502,7 +581,11 @@ private fun RunningAppCard(
                 .fillMaxWidth()
                 .aspectRatio(CARD_ASPECT)
                 .onGloballyPositioned { onSnapshotPlaced(it.boundsInRoot()) }
-                .argosyFocusIndicators(focused = isFocused && closeStage == null, indicators = CARD_FOCUS, shape = shape)
+                .argosyFocusIndicators(
+                    focused = isFocused && showsFocus && closeStage == null,
+                    indicators = CARD_FOCUS,
+                    shape = shape
+                )
                 .clip(shape)
                 .background(theme.surfaceRaised),
             contentAlignment = Alignment.Center
@@ -822,6 +905,7 @@ private fun FriendsPlayingRow(friends: List<RunningFriendUi>, modifier: Modifier
 private fun RunningAppRow(
     app: RunningAppUi,
     isFocused: Boolean,
+    showsFocus: Boolean,
     onClick: () -> Unit,
     onLongClick: () -> Unit
 ) {
@@ -831,7 +915,11 @@ private fun RunningAppRow(
             .fillMaxWidth()
             .heightIn(min = Dimens.menuRowHeightLg)
             .clip(shape)
-            .argosyFocusIndicators(focused = isFocused, indicators = FocusIndicators.ListRow, shape = shape)
+            .argosyFocusIndicators(
+                focused = isFocused && showsFocus,
+                indicators = FocusIndicators.ListRow,
+                shape = shape
+            )
             .clickableNoFocus(onClick = onClick, onLongClick = onLongClick)
             .padding(horizontal = Dimens.spacingMd, vertical = Dimens.spacingSm),
         verticalAlignment = Alignment.CenterVertically

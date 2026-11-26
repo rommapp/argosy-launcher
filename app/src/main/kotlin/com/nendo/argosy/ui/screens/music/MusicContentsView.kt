@@ -3,6 +3,7 @@ package com.nendo.argosy.ui.screens.music
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -40,6 +41,7 @@ import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.nendo.argosy.R
 import com.nendo.argosy.domain.model.MusicArt
@@ -69,7 +71,8 @@ fun MusicContentsView(
     onPlayColumn: () -> Unit,
     onMoveTrack: (Int) -> Unit,
     onEndMove: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    split: Boolean = false
 ) {
     val backdrop = if (contents.isFlat) {
         contents.column.heroArt ?: contents.column.sleeves.firstOrNull()
@@ -77,13 +80,18 @@ fun MusicContentsView(
         contents.focusedAlbum?.art
     }
     Box(modifier = modifier.fillMaxSize()) {
-        backdrop?.let { BlurredHero(it) }
+        if (!split) backdrop?.let { BlurredHero(it) }
         Column(Modifier.fillMaxSize()) {
             ContentsHeader(
                 column = contents.column,
                 showsPlayColumn = contents.canPlayColumn,
                 onBack = onBack,
-                onPlayColumn = onPlayColumn
+                onPlayColumn = onPlayColumn,
+                albumStepper = if (split && contents.steppable) {
+                    { AlbumStepper(contents = contents, onSelectAlbum = onSelectAlbum) }
+                } else {
+                    null
+                }
             )
             when {
                 contents.isLoading -> MusicLoadingState()
@@ -93,6 +101,14 @@ fun MusicContentsView(
                     message = null,
                     actionLabel = stringResource(R.string.music_library_error_retry),
                     onAction = onRetry
+                )
+                split -> SplitContentsList(
+                    contents = contents,
+                    playingTrackId = playingTrackId,
+                    onPlayTrack = onPlayTrack,
+                    onTrackOptions = onTrackOptions,
+                    onMoveTrack = onMoveTrack,
+                    onEndMove = onEndMove
                 )
                 else -> Row(
                     modifier = Modifier
@@ -129,12 +145,78 @@ fun MusicContentsView(
     }
 }
 
+private val MusicContentsUiState.steppable: Boolean get() = !isFlat && albums.size > 1
+
+@Composable
+private fun SplitContentsList(
+    contents: MusicContentsUiState,
+    playingTrackId: String?,
+    onPlayTrack: (Int) -> Unit,
+    onTrackOptions: (Int) -> Unit,
+    onMoveTrack: (Int) -> Unit,
+    onEndMove: () -> Unit
+) {
+    BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
+        val wide = maxWidth / maxHeight >= ComponentDefaults.HomeColumns.wideAspectMin
+        val widthFraction = if (wide) ComponentDefaults.MusicColumns.contentsReadingWidthRatio else 1f
+        Column(
+            Modifier
+                .fillMaxHeight()
+                .fillMaxWidth(widthFraction)
+                .padding(start = Dimens.spacingLg)
+        ) {
+            ContentsHeading(contents)
+            TrackList(
+                contents = contents,
+                playingTrackId = playingTrackId,
+                onPlayTrack = onPlayTrack,
+                onTrackOptions = onTrackOptions,
+                onMoveTrack = onMoveTrack,
+                onEndMove = onEndMove,
+                bottomClearance = Dimens.spacingLg
+            )
+        }
+    }
+}
+
+@Composable
+private fun AlbumStepper(
+    contents: MusicContentsUiState,
+    onSelectAlbum: (Int) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val albums = contents.albums
+    val index = contents.albumIndex
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(Dimens.spacingMd),
+        modifier = modifier
+    ) {
+        AlbumStepArrow(
+            icon = Icons.AutoMirrored.Filled.KeyboardArrowLeft,
+            description = stringResource(R.string.music_library_contents_previous_album),
+            onClick = { onSelectAlbum((index - 1).mod(albums.size)) }
+        )
+        Text(
+            text = stringResource(R.string.music_library_contents_position, index + 1, albums.size),
+            style = MaterialTheme.typography.labelLarge,
+            color = LocalArgosyTheme.current.textDim
+        )
+        AlbumStepArrow(
+            icon = Icons.AutoMirrored.Filled.KeyboardArrowRight,
+            description = stringResource(R.string.music_library_contents_next_album),
+            onClick = { onSelectAlbum((index + 1).mod(albums.size)) }
+        )
+    }
+}
+
 @Composable
 private fun ContentsHeader(
     column: MusicColumn,
     showsPlayColumn: Boolean,
     onBack: () -> Unit,
-    onPlayColumn: () -> Unit
+    onPlayColumn: () -> Unit,
+    albumStepper: (@Composable () -> Unit)? = null
 ) {
     val theme = LocalArgosyTheme.current
     Row(
@@ -166,6 +248,9 @@ private fun ContentsHeader(
                 .weight(1f)
                 .padding(start = Dimens.spacingSm)
         )
+        albumStepper?.let { stepper ->
+            Box(modifier = Modifier.padding(end = Dimens.spacingMd)) { stepper() }
+        }
         if (showsPlayColumn) {
             Row(
                 verticalAlignment = Alignment.CenterVertically,
@@ -199,7 +284,6 @@ private fun CoverPane(
     onSelectAlbum: (Int) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val theme = LocalArgosyTheme.current
     val albums = contents.albums
     val index = contents.albumIndex
     val sleeves: List<MusicArt>
@@ -228,28 +312,12 @@ private fun CoverPane(
                 )
             }
         }
-        if (!contents.isFlat && albums.size > 1) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(Dimens.spacingMd),
+        if (contents.steppable) {
+            AlbumStepper(
+                contents = contents,
+                onSelectAlbum = onSelectAlbum,
                 modifier = Modifier.padding(bottom = withNavBarClearance(Dimens.footerHeight + Dimens.spacingMd))
-            ) {
-                AlbumStepArrow(
-                    icon = Icons.AutoMirrored.Filled.KeyboardArrowLeft,
-                    description = stringResource(R.string.music_library_contents_previous_album),
-                    onClick = { onSelectAlbum((index - 1).mod(albums.size)) }
-                )
-                Text(
-                    text = stringResource(R.string.music_library_contents_position, index + 1, albums.size),
-                    style = MaterialTheme.typography.labelLarge,
-                    color = theme.textDim
-                )
-                AlbumStepArrow(
-                    icon = Icons.AutoMirrored.Filled.KeyboardArrowRight,
-                    description = stringResource(R.string.music_library_contents_next_album),
-                    onClick = { onSelectAlbum((index + 1).mod(albums.size)) }
-                )
-            }
+            )
         }
     }
 }
@@ -317,7 +385,8 @@ private fun TrackList(
     onPlayTrack: (Int) -> Unit,
     onTrackOptions: (Int) -> Unit,
     onMoveTrack: (Int) -> Unit,
-    onEndMove: () -> Unit
+    onEndMove: () -> Unit,
+    bottomClearance: Dp = Dimens.footerHeight + Dimens.spacingLg
 ) {
     when {
         contents.tracksLoading -> MusicLoadingState()
@@ -337,7 +406,7 @@ private fun TrackList(
                 contentPadding = PaddingValues(
                     end = Dimens.spacingLg,
                     top = Dimens.spacingSm,
-                    bottom = withNavBarClearance(Dimens.footerHeight + Dimens.spacingLg)
+                    bottom = withNavBarClearance(bottomClearance)
                 ),
                 verticalArrangement = Arrangement.spacedBy(Dimens.spacingXs),
                 modifier = Modifier.fillMaxSize()
@@ -402,6 +471,13 @@ private fun TrackRow(
                 tint = if (isLifted) theme.focusAccent else theme.textPrimary,
                 shape = shape
             )
+            .argosyFocusIndicators(
+                focused = false,
+                selected = isPlaying,
+                indicators = PlayingTrackStripe,
+                stripeColor = theme.focusAccent,
+                stripeWidth = Dimens.borderMedium
+            )
             .clickableNoFocus(onClick = onClick, onLongClick = onLongClick)
             .padding(horizontal = Dimens.spacingSm, vertical = Dimens.spacingXs),
         verticalAlignment = Alignment.CenterVertically
@@ -411,7 +487,7 @@ private fun TrackRow(
             Icon(
                 imageVector = Icons.Filled.GraphicEq,
                 contentDescription = stringResource(R.string.music_library_badge_playing),
-                tint = theme.textPrimary,
+                tint = theme.focusAccent,
                 modifier = Modifier
                     .width(numberWidth)
                     .size(Dimens.iconSm)
@@ -470,6 +546,8 @@ private fun TrackRow(
 }
 
 private val LiftedTrackIndicators = FocusIndicators(fill = true, ring = true)
+
+private val PlayingTrackStripe = FocusIndicators(stripe = true)
 
 @Composable
 private fun MoveArrow(icon: ImageVector, description: String, enabled: Boolean, onClick: () -> Unit) {

@@ -62,4 +62,9 @@
     <string name="running_friends_three">%1$s, %2$s e %3$s estão jogando isto</string>
     <string name="running_friends_many">%1$s, %2$s, %3$s e outros estão jogando isto</string>
     <string name="running_notice_game_stopped">Jogo encerrado</string>
+    <string name="running_player_show_queue">Mostrar a fila</string>
+    <string name="running_player_hint_queue">Fila</string>
+    <string name="running_player_hint_track">Faixa</string>
+    <string name="running_player_queue_header">Ordem das faixas · %1$d de %2$d</string>
+    <string name="running_player_queue_playing">Tocando agora</string>
 </resources>

@@ -52,7 +52,8 @@ class NowPlayingQueueFocusTest {
             controlsPreferences = controls,
             musicPlaylists = playlists,
             notifications = mockk(relaxed = true),
-            analysisStore = analysis
+            analysisStore = analysis,
+            quickNavigation = mockk { every { enabled } returns MutableStateFlow(true) }
         )
     }
 

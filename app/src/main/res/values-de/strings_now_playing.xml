@@ -21,4 +21,14 @@
     <string name="now_playing_layout_shelf">Regal</string>
     <string name="now_playing_layout_simple">Einfach</string>
     <string name="now_playing_quick_open">Aktuelle Wiedergabe</string>
+    <string name="now_playing_hint_skip">10 s springen</string>
+    <string name="now_playing_hint_swap_screens">Bildschirme tauschen</string>
+    <string name="now_playing_option_layout_single_screen">Gilt, wenn ein Bildschirm verwendet wird.</string>
+    <string name="now_playing_stage_position">Titel %1$d von %2$d</string>
+    <string name="now_playing_stage_up_next">Als Nächstes: %1$s</string>
+    <string name="now_playing_stage_hint_skip">10 s springen</string>
+    <string name="now_playing_stage_hint_track">Titel</string>
+    <string name="now_playing_stage_hint_queue">Warteschlange</string>
+    <string name="now_playing_stage_hint_style">Stil</string>
+    <string name="now_playing_stage_hint_swap">Bildschirme tauschen</string>
 </resources>

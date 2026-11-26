@@ -29,4 +29,25 @@
     <string name="now_playing_layout_shelf">Shelf</string>
     <string name="now_playing_layout_simple">Simple</string>
     <string name="now_playing_quick_open">Now Playing</string>
+    <!-- Footer hint: the shoulder buttons jump ten seconds back or forward in the track -->
+    <string name="now_playing_hint_skip">Skip 10s</string>
+    <!-- Footer hint: the button trades the roles of the two screens -->
+    <string name="now_playing_hint_swap_screens">Swap screens</string>
+    <!-- Note under the Layout option on a two-screen device: the layout choice only affects single-screen use -->
+    <string name="now_playing_option_layout_single_screen">Applies when one screen is in use.</string>
+    <string name="now_playing_stage_separator" translatable="false">" &#183; "</string>
+    <!-- Position of the playing track in the queue, e.g. "Track 3 of 11" -->
+    <string name="now_playing_stage_position">Track %1$d of %2$d</string>
+    <!-- The title of the track that plays after the current one -->
+    <string name="now_playing_stage_up_next">Up next: %1$s</string>
+    <!-- Hint on the second screen: the shoulder buttons jump ten seconds back or forward -->
+    <string name="now_playing_stage_hint_skip">Skip 10s</string>
+    <!-- Hint on the second screen: the triggers change to the previous or next track -->
+    <string name="now_playing_stage_hint_track">Track</string>
+    <!-- Hint on the second screen. Noun: the list of tracks waiting to play -->
+    <string name="now_playing_stage_hint_queue">Queue</string>
+    <!-- Hint on the second screen: opens the visual style options for the album art -->
+    <string name="now_playing_stage_hint_style">Style</string>
+    <!-- Hint on the second screen: the button trades the roles of the two screens -->
+    <string name="now_playing_stage_hint_swap">Swap screens</string>
 </resources>

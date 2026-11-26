@@ -2668,6 +2668,8 @@
     </plurals>
     <!-- Accessibility description of the dot in the status bar that marks new activity. -->
     <string name="ui_status_bar_activity_unseen_desc">New activity</string>
+    <string name="ui_status_bar_now_playing_desc">Now playing</string>
+    <string name="ui_status_bar_now_playing_label" translatable="false">%1$s &#183; %2$s</string>
     <string name="ui_folder_default_name">Folder</string>
     <string name="ui_folder_overlay_hint_remove">Remove from folder</string>
     <string name="ui_folder_overlay_loading">Finding games</string>

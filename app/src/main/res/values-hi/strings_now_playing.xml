@@ -21,4 +21,14 @@
     <string name="now_playing_layout_shelf">शेल्फ़</string>
     <string name="now_playing_layout_simple">सरल</string>
     <string name="now_playing_quick_open">अभी चल रहा है</string>
+    <string name="now_playing_hint_skip">10 सेकंड छोड़ें</string>
+    <string name="now_playing_hint_swap_screens">स्क्रीन बदलें</string>
+    <string name="now_playing_option_layout_single_screen">एक स्क्रीन के उपयोग पर लागू होता है।</string>
+    <string name="now_playing_stage_position">%2$d में से ट्रैक %1$d</string>
+    <string name="now_playing_stage_up_next">आगे: %1$s</string>
+    <string name="now_playing_stage_hint_skip">10 सेकंड छोड़ें</string>
+    <string name="now_playing_stage_hint_track">ट्रैक</string>
+    <string name="now_playing_stage_hint_queue">कतार</string>
+    <string name="now_playing_stage_hint_style">शैली</string>
+    <string name="now_playing_stage_hint_swap">स्क्रीन बदलें</string>
 </resources>

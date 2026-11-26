@@ -376,4 +376,8 @@ object DatabaseModule {
     @Provides
     fun provideMusicStatsDao(database: ALauncherDatabase): com.nendo.argosy.data.local.dao.MusicStatsDao =
         database.musicStatsDao()
+
+    @Provides
+    fun provideMusicPlaylistOrderDao(database: ALauncherDatabase): com.nendo.argosy.data.local.dao.MusicPlaylistOrderDao =
+        database.musicPlaylistOrderDao()
 }

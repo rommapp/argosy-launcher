@@ -1,5 +1,6 @@
 package com.nendo.argosy.data.remote.romm
 
+import kotlinx.coroutines.CancellationException
 import java.net.URI
 import java.net.URLEncoder
 import javax.inject.Inject
@@ -29,6 +30,56 @@ class RomMMusicLibraryService @Inject constructor(
             }
         } catch (e: Exception) {
             RomMResult.Error(e.message ?: "Failed to fetch music playlists")
+        }
+    }
+
+    suspend fun createPlaylist(name: String): RomMResult<RomMMusicPlaylist> {
+        val api = connectionManager.getApi() ?: return RomMResult.Error("Not connected")
+        return try {
+            val response = api.createMusicPlaylist(RomMMusicPlaylistCreate(name))
+            val body = response.body()
+            if (response.isSuccessful && body != null) {
+                RomMResult.Success(body)
+            } else {
+                RomMResult.Error("Failed to create music playlist", response.code())
+            }
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            RomMResult.Error(e.message ?: "Failed to create music playlist")
+        }
+    }
+
+    suspend fun renamePlaylist(playlistId: Long, name: String): RomMResult<Unit> =
+        playlistWrite("Failed to rename music playlist") {
+            it.renameMusicPlaylist(playlistId, RomMMusicPlaylistRename(name))
+        }
+
+    suspend fun deletePlaylist(playlistId: Long): RomMResult<Unit> =
+        playlistWrite("Failed to delete music playlist") { it.deleteMusicPlaylist(playlistId) }
+
+    suspend fun addPlaylistTracks(playlistId: Long, romFileIds: List<Long>): RomMResult<Unit> =
+        playlistWrite("Failed to add music playlist tracks") {
+            it.addMusicPlaylistTracks(playlistId, RomMMusicPlaylistTracks(romFileIds))
+        }
+
+    suspend fun removePlaylistTracks(playlistId: Long, romFileIds: List<Long>): RomMResult<Unit> =
+        playlistWrite("Failed to remove music playlist tracks") {
+            it.removeMusicPlaylistTracks(playlistId, RomMMusicPlaylistTracks(romFileIds))
+        }
+
+    private suspend fun playlistWrite(
+        failure: String,
+        call: suspend (RomMApi) -> retrofit2.Response<*>
+    ): RomMResult<Unit> {
+        val api = connectionManager.getApi() ?: return RomMResult.Error("Not connected")
+        return try {
+            val response = call(api)
+            if (response.isSuccessful) RomMResult.Success(Unit) else RomMResult.Error(failure, response.code())
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            RomMResult.Error(e.message ?: failure)
         }
     }
 

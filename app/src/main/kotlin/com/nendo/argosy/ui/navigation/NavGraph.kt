@@ -36,6 +36,7 @@ import com.nendo.argosy.ui.screens.savetimeline.SaveTimelineScreen
 import com.nendo.argosy.ui.screens.search.SearchScreen
 import com.nendo.argosy.ui.screens.settings.ManagePinsScreen
 import com.nendo.argosy.ui.screens.settings.SettingsScreen
+import com.nendo.argosy.ui.screens.settings.SettingsSection
 import com.nendo.argosy.ui.screens.setup.SetupScreen
 import com.nendo.argosy.ui.screens.social.FeedEventDetailScreen
 import com.nendo.argosy.ui.screens.social.PostEditorScreen
@@ -377,7 +378,10 @@ fun NavGraph(
                 onOpenMusicSettings = {
                     navController.navigate(Screen.Settings.createRoute(section = MUSIC_SETTINGS_SECTION))
                 },
-                onOpenListening = { navController.navigate(Screen.MusicStats.route) }
+                onOpenListening = { navController.navigate(Screen.MusicStats.route) },
+                onOpenRommSettings = {
+                    navController.navigate(Screen.Settings.createRoute(section = SettingsSection.ROMM.name))
+                }
             )
         }
 
@@ -541,7 +545,10 @@ fun NavGraph(
 
         composable(Screen.NowPlaying.route) {
             NowPlayingScreen(
-                onBack = { if (!navController.popBackStack()) navigateToDefault() }
+                onBack = { if (!navController.popBackStack()) navigateToDefault() },
+                onOpenRommSettings = {
+                    navController.navigate(Screen.Settings.createRoute(section = SettingsSection.ROMM.name))
+                }
             )
         }
     }

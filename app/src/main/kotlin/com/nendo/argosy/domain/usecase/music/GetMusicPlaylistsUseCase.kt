@@ -4,7 +4,7 @@ import com.nendo.argosy.data.music.BgmPlaylistRepository
 import com.nendo.argosy.data.remote.romm.RomMMusicLibraryService
 import com.nendo.argosy.data.remote.romm.RomMResult
 import com.nendo.argosy.domain.model.MusicPlaylistCatalog
-import com.nendo.argosy.domain.model.MusicPlaylistEntry
+import com.nendo.argosy.domain.model.MusicPlaylistCatalogEntry
 import com.nendo.argosy.domain.model.MusicSelection
 import com.nendo.argosy.domain.model.MusicServerStatus
 import kotlinx.coroutines.Dispatchers
@@ -16,7 +16,7 @@ class GetMusicPlaylistsUseCase @Inject constructor(
     private val musicLibrary: RomMMusicLibraryService
 ) {
     suspend operator fun invoke(): MusicPlaylistCatalog = withContext(Dispatchers.IO) {
-        val launcher = MusicPlaylistEntry(
+        val launcher = MusicPlaylistCatalogEntry(
             selection = MusicSelection.Launcher,
             trackCount = bgmPlaylistRepository.playableTracks().size
         )
@@ -24,22 +24,22 @@ class GetMusicPlaylistsUseCase @Inject constructor(
         MusicPlaylistCatalog(listOf(launcher) + serverEntries, status)
     }
 
-    private suspend fun serverPlaylists(): Pair<List<MusicPlaylistEntry>, MusicServerStatus> {
-        if (!musicLibrary.isConnected()) return emptyList<MusicPlaylistEntry>() to MusicServerStatus.OFFLINE
+    private suspend fun serverPlaylists(): Pair<List<MusicPlaylistCatalogEntry>, MusicServerStatus> {
+        if (!musicLibrary.isConnected()) return emptyList<MusicPlaylistCatalogEntry>() to MusicServerStatus.OFFLINE
         if (!musicLibrary.capabilities().supportsMusicPlaylists) {
-            return emptyList<MusicPlaylistEntry>() to MusicServerStatus.UNSUPPORTED
+            return emptyList<MusicPlaylistCatalogEntry>() to MusicServerStatus.UNSUPPORTED
         }
         return when (val result = musicLibrary.getPlaylists()) {
             is RomMResult.Success -> result.data
                 .sortedBy { it.name.lowercase() }
                 .map { playlist ->
-                    MusicPlaylistEntry(
+                    MusicPlaylistCatalogEntry(
                         selection = MusicSelection.ServerPlaylist(playlist.id, playlist.name),
                         trackCount = playlist.trackCount,
                         ownerName = playlist.ownerUsername
                     )
                 } to MusicServerStatus.AVAILABLE
-            is RomMResult.Error -> emptyList<MusicPlaylistEntry>() to musicServerStatusFor(result.code)
+            is RomMResult.Error -> emptyList<MusicPlaylistCatalogEntry>() to musicServerStatusFor(result.code)
         }
     }
 }

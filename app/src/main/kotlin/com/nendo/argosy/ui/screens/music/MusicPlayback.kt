@@ -27,18 +27,31 @@ class MusicPlayback @Inject constructor(
     private val musicSwitch: AmbientMusicSwitch,
     private val notifications: NotificationManager
 ) {
-    suspend fun play(sourceId: String, label: String?, tracks: List<MusicTrack>, startIndex: Int): Boolean {
+    suspend fun play(sourceId: String, label: String?, tracks: List<MusicTrack>, startIndex: Int): Boolean =
+        start(sourceId, label, tracks, startIndex) != null
+
+    /**
+     * Starts [tracks] like [play] and returns a token that [append] takes to grow this queue
+     * later, or null when nothing could play.
+     */
+    suspend fun start(sourceId: String, label: String?, tracks: List<MusicTrack>, startIndex: Int): Int? {
         if (tracks.isEmpty()) {
             notifications.showError(NotificationText.Res(R.string.music_library_notice_nothing_to_play))
-            return false
+            return null
         }
         val queue = musicGuarded(TAG, "queue") { withContext(Dispatchers.IO) { library.queueFor(tracks) } }
         if (queue.isNullOrEmpty()) {
             notifications.showError(NotificationText.Res(R.string.music_library_notice_play_failed))
-            return false
+            return null
         }
-        playQueue(sourceId, label, queue, startIndex.coerceIn(0, queue.lastIndex), 0L)
-        return true
+        musicSwitch.ensureEnabled()
+        return audio.playTracks(sourceId, label, queue, startIndex.coerceIn(0, queue.lastIndex), 0L)
+    }
+
+    suspend fun append(token: Int, tracks: List<MusicTrack>) {
+        if (tracks.isEmpty()) return
+        val queue = musicGuarded(TAG, "queue") { withContext(Dispatchers.IO) { library.queueFor(tracks) } }
+        if (!queue.isNullOrEmpty()) audio.appendTracks(token, queue)
     }
 
     suspend fun playStats(

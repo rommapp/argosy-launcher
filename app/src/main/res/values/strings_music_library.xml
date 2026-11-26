@@ -131,4 +131,84 @@
     <string name="music_library_notice_play_failed">Could not start playback</string>
     <!-- Notice when a column or album has no playable tracks. -->
     <string name="music_library_notice_nothing_to_play">Nothing to play here</string>
+    <!-- First row of the add-to-playlist list: create a playlist and add the tracks to it. -->
+    <string name="music_library_playlists_new">New playlist...</string>
+    <!-- Title of the field where a new playlist is named. Noun phrase. -->
+    <string name="music_library_playlists_new_title">New playlist</string>
+    <!-- Button that creates the named playlist. Verb. -->
+    <string name="music_library_playlists_new_confirm">Create</string>
+    <!-- Label of the text field holding a playlist name. Noun phrase. -->
+    <string name="music_library_playlists_name_label">Playlist name</string>
+    <!-- Button that closes playlist name entry without saving. Verb. -->
+    <string name="music_library_playlists_name_cancel">Cancel</string>
+    <!-- Title of the prompt shown when a new playlist name is already used. -->
+    <string name="music_library_playlists_exists_title">Playlist already exists</string>
+    <!-- Body of that prompt. %1$s is the playlist name. -->
+    <string name="music_library_playlists_exists_message">A playlist named %1$s already exists. Add to it?</string>
+    <!-- Button that adds the tracks to the existing playlist. Verb. -->
+    <string name="music_library_playlists_exists_confirm">Add</string>
+    <!-- Shown while tracks are being added to a playlist. -->
+    <string name="music_library_playlists_working">Adding</string>
+    <!-- Option: give the playlist a new name. Verb phrase. -->
+    <string name="music_library_options_rename_playlist">Rename playlist</string>
+    <!-- Option: change the order of the tracks in the playlist. Verb. -->
+    <string name="music_library_options_reorder_playlist">Reorder</string>
+    <!-- Option: return the playlist to the order its servers give it. Verb phrase. -->
+    <string name="music_library_options_reset_order">Reset order</string>
+    <!-- Option: delete the playlist. Verb phrase. -->
+    <string name="music_library_options_delete_playlist">Delete playlist</string>
+    <!-- Option: take this track out of the playlist. Verb phrase. -->
+    <string name="music_library_options_remove_from_playlist">Remove from playlist</string>
+    <!-- Title of the field where a playlist gets a new name. Verb phrase. -->
+    <string name="music_library_playlist_rename_title">Rename playlist</string>
+    <!-- Button that saves the new playlist name. Verb. -->
+    <string name="music_library_playlist_rename_confirm">Rename</string>
+    <!-- Title of the prompt confirming a playlist deletion. -->
+    <string name="music_library_playlist_delete_title">Delete playlist?</string>
+    <!-- Body of that prompt. %1$s is the playlist name. -->
+    <string name="music_library_playlist_delete_message">%1$s will be deleted from every server it is on. Its tracks stay in your library.</string>
+    <!-- Button that deletes the playlist. Verb. -->
+    <string name="music_library_playlist_delete_confirm">Delete</string>
+    <!-- Shown while the playlist is being deleted. -->
+    <string name="music_library_playlist_delete_working">Deleting</string>
+    <!-- Notice after a playlist was renamed. %1$s is the new name. -->
+    <string name="music_library_notice_renamed">Renamed to %1$s</string>
+    <!-- Notice when the chosen playlist name is already used. %1$s is the name. -->
+    <string name="music_library_notice_name_taken">A playlist named %1$s already exists</string>
+    <!-- Notice when a playlist could not be renamed. -->
+    <string name="music_library_notice_rename_failed">Could not rename the playlist</string>
+    <!-- Notice after a playlist was deleted. %1$s is the playlist name. -->
+    <string name="music_library_notice_deleted">Deleted %1$s</string>
+    <!-- Notice when a playlist could not be deleted. -->
+    <string name="music_library_notice_delete_failed">Could not delete the playlist</string>
+    <!-- Notice after a playlist returned to its original track order. %1$s is the playlist name. -->
+    <string name="music_library_notice_order_reset">%1$s is back in its original order</string>
+    <!-- Notice when a playlist order could not be reset. -->
+    <string name="music_library_notice_order_reset_failed">Could not reset the order</string>
+    <!-- Notice when a track could not be moved inside a playlist. -->
+    <string name="music_library_notice_move_failed">Could not move the track</string>
+    <!-- Notice after a track was taken out of a playlist. %1$s is the playlist name. -->
+    <string name="music_library_notice_removed">Removed from %1$s</string>
+    <!-- Notice when a track could not be taken out of a playlist. -->
+    <string name="music_library_notice_remove_failed">Could not remove the track</string>
+    <!-- Title of the prompt shown when editing a RomM playlist needs a new sign-in. RomM is a product name. -->
+    <string name="music_library_permission_title">Playlist editing needs RomM permission</string>
+    <!-- Body of that prompt. "Settings > RomM" names the settings screen. RomM is a product name. -->
+    <string name="music_library_permission_message">Argosy needs updated RomM permissions to edit your RomM playlists. Sign in again in Settings &gt; RomM as the same user. This only updates permissions and does not clear anything.</string>
+    <!-- Button that opens the RomM settings. Verb phrase. -->
+    <string name="music_library_permission_open_settings">Open RomM settings</string>
+    <!-- Button that closes the prompt. -->
+    <string name="music_library_permission_not_now">Not now</string>
+    <!-- Footer hint inside an artist, album, year or genre column: play every track of the column. Verb phrase. -->
+    <string name="music_library_footer_play_column">Play all</string>
+    <!-- Footer hint while reordering a playlist: up/down moves the lifted track. Verb. -->
+    <string name="music_library_footer_move">Move</string>
+    <!-- Footer hint while reordering a playlist: finish reordering. Adjective/verb, "finished". -->
+    <string name="music_library_footer_move_done">Done</string>
+    <!-- Button at the top of an artist, album, year or genre column that plays every track. Verb phrase. -->
+    <string name="music_library_contents_play_all">Play all</string>
+    <!-- Content description of the arrow that moves the lifted track one place up. -->
+    <string name="music_library_contents_move_up">Move up</string>
+    <!-- Content description of the arrow that moves the lifted track one place down. -->
+    <string name="music_library_contents_move_down">Move down</string>
 </resources>

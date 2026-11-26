@@ -4,7 +4,6 @@ import com.nendo.argosy.domain.model.MusicAlbum
 import com.nendo.argosy.domain.model.MusicColumnContents
 import com.nendo.argosy.domain.model.MusicColumnsPage
 import com.nendo.argosy.domain.model.MusicGrouping
-import com.nendo.argosy.domain.model.MusicPlaylist
 import com.nendo.argosy.domain.model.MusicQueueTrack
 import com.nendo.argosy.domain.model.MusicResumePoint
 import com.nendo.argosy.domain.model.MusicSourceFilter
@@ -20,7 +19,7 @@ enum class MusicDownloadStatus { QUEUED, DOWNLOADING, DONE, FAILED }
  * The Music screen's single entry point. Columns merge every configured source; when a source
  * is unreachable its downloaded tracks stand in and [MusicColumnsPage.offline] is set. The
  * RECENT column comes from the local listen history.
- * [changes] bumps whenever downloads or playlists change, so callers know to reload.
+ * [changes] bumps whenever downloads or [MusicPlaylists] change, so callers know to reload.
  */
 interface MusicLibrary {
     val changes: StateFlow<Int>
@@ -56,16 +55,6 @@ interface MusicLibrary {
      * Where the active account's most recent listen on any album stopped, or null with no history.
      */
     suspend fun resumePoint(): MusicResumePoint?
-
-    suspend fun playlists(filter: MusicSourceFilter): List<MusicPlaylist>
-
-    suspend fun addToPlaylist(playlist: MusicPlaylist, tracks: List<MusicTrack>): Result<Unit>
-
-    /**
-     * Adds a queued [track] to [playlist] by its source track id. Fails when the track has no
-     * source identity or comes from a different source than the playlist.
-     */
-    suspend fun addToPlaylist(playlist: MusicPlaylist, track: MusicQueueTrack): Result<Unit>
 
     fun downloads(): Flow<Map<String, MusicDownloadStatus>>
 

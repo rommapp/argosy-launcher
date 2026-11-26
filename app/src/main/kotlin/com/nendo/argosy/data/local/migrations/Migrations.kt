@@ -4488,6 +4488,16 @@ object Migration_231_232 : Migration(231, 232) {
     }
 }
 
+object Migration_232_233 : Migration(232, 233) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL(
+            "CREATE TABLE IF NOT EXISTS `music_playlist_orders` (" +
+                "`ownerKey` INTEGER NOT NULL, `playlistName` TEXT NOT NULL, `entries` TEXT NOT NULL, " +
+                "`updatedAt` INTEGER NOT NULL, PRIMARY KEY(`ownerKey`, `playlistName`))"
+        )
+    }
+}
+
 object Migration_203_204 : Migration(203, 204) {
     override fun migrate(db: SupportSQLiteDatabase) {
         db.execSQL(

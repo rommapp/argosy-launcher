@@ -7,6 +7,7 @@ import com.nendo.argosy.data.preferences.NowPlayingStyle
 import com.nendo.argosy.ui.audio.AmbientPlaybackState
 import com.nendo.argosy.ui.components.music.MusicPlaylistPickerState
 import com.nendo.argosy.ui.components.musicplayer.MusicTransportButton
+import com.nendo.argosy.ui.components.musicplayer.TrackListCursor
 import com.nendo.argosy.ui.components.nowplaying.hasQueue
 import com.nendo.argosy.ui.components.nowplaying.isAudible
 
@@ -27,9 +28,10 @@ data class NowPlayingNavigation(
     val focus: NowPlayingFocus = NowPlayingFocus.TRANSPORT,
     val transport: MusicTransportButton = MusicTransportButton.PLAY_PAUSE,
     val queueFocus: Int = 0,
+    val queueCursor: TrackListCursor? = null,
     val options: NowPlayingOptionsUi? = null,
     val playlistPicker: MusicPlaylistPickerState? = null,
-    val addingToPlaylist: Boolean = false
+    val showsPlaylistPermission: Boolean = false
 )
 
 data class NowPlayingUiState(

@@ -85,6 +85,21 @@ class NavidromeMusicSource @Inject constructor(
             if (trackIds.isNotEmpty()) api.addToPlaylist(credentials, playlistId, trackIds).getOrThrow()
         }
 
+    override suspend fun createPlaylist(name: String, trackIds: List<String>): Result<MusicPlaylist> =
+        withCredentials { credentials ->
+            val created = api.createPlaylist(credentials, name, trackIds).getOrThrow()
+            created.toMusicPlaylist(coverArt(credentials, created.coverArt), credentials.username)
+        }
+
+    override suspend fun renamePlaylist(playlistId: String, name: String): Result<Unit> =
+        withCredentials { credentials -> api.renamePlaylist(credentials, playlistId, name).getOrThrow() }
+
+    override suspend fun deletePlaylist(playlistId: String): Result<Unit> =
+        withCredentials { credentials -> api.deletePlaylist(credentials, playlistId).getOrThrow() }
+
+    override suspend fun removeFromPlaylist(playlistId: String, entryIndex: Int, trackId: String): Result<Unit> =
+        withCredentials { credentials -> api.removeFromPlaylist(credentials, playlistId, entryIndex).getOrThrow() }
+
     override suspend fun streamSource(track: MusicTrack): MusicTrackSource.Remote? {
         if (track.source != MusicSourceKind.NAVIDROME) return null
         val credentials = credentials() ?: return null

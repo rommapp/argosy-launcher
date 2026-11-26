@@ -39,6 +39,8 @@ import com.nendo.argosy.domain.model.MusicColumnKind
 import com.nendo.argosy.ui.components.FooterHints
 import com.nendo.argosy.ui.components.LetterJumpOverlay
 import com.nendo.argosy.ui.components.InputButton
+import com.nendo.argosy.ui.components.music.MusicPlaylistPermissionModal
+import com.nendo.argosy.ui.components.music.MusicPlaylistPickerDialogs
 import com.nendo.argosy.ui.components.withNavBarClearance
 import com.nendo.argosy.ui.input.LocalInputDispatcher
 import com.nendo.argosy.ui.navigation.Screen
@@ -55,6 +57,7 @@ fun MusicScreen(
     onOpenNowPlaying: () -> Unit,
     onOpenMusicSettings: () -> Unit,
     onOpenListening: () -> Unit,
+    onOpenRommSettings: () -> Unit,
     viewModel: MusicViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
@@ -94,7 +97,10 @@ fun MusicScreen(
                 onRetry = viewModel::retryContents,
                 onSelectAlbum = viewModel::selectAlbum,
                 onPlayTrack = viewModel::playTrackAt,
-                onTrackOptions = viewModel::openTrackOptionsAt
+                onTrackOptions = viewModel::openTrackOptionsAt,
+                onPlayColumn = { viewModel.playContentsColumn() },
+                onMoveTrack = { delta -> viewModel.playlistActions.moveFocused(delta) },
+                onEndMove = { viewModel.playlistActions.endMove() }
             )
         } else {
             MusicColumnsPane(
@@ -111,6 +117,7 @@ fun MusicScreen(
         onHintClick = { button ->
             when (button) {
                 InputButton.DPAD_VERTICAL -> inputHandler.onDown()
+                InputButton.A -> inputHandler.onConfirm()
                 InputButton.RIGHT_STICK_VERTICAL, InputButton.LB_RB -> inputHandler.onRightStickDown()
                 InputButton.LT_RT -> inputHandler.onNextTrigger()
                 InputButton.Y -> inputHandler.onSecondaryAction()
@@ -133,6 +140,31 @@ fun MusicScreen(
         onConfirm = { viewModel.actions.confirmOption(onOpenNowPlaying, onOpenListening) },
         onBack = viewModel.actions::backOptions,
         onDismiss = viewModel.actions::dismissOptions
+    )
+
+    val picker = viewModel.playlistActions.picker
+    MusicPlaylistPickerDialogs(
+        picker = uiState.options?.picker,
+        onSubmitName = picker::submitName,
+        onCancelName = picker::cancelNaming,
+        onConfirmConflict = picker::confirmConflict,
+        onDismissConflict = picker::dismissConflict
+    )
+
+    MusicPlaylistDialogHost(
+        dialog = uiState.playlistDialog,
+        onSubmitRename = viewModel.playlistActions::submitRename,
+        onConfirmDelete = viewModel.playlistActions::confirmDelete,
+        onDismiss = viewModel.playlistActions::dismissDialog
+    )
+
+    MusicPlaylistPermissionModal(
+        visible = uiState.showsPlaylistPermission,
+        onOpenSettings = {
+            viewModel.playlistActions.dismissPermission()
+            onOpenRommSettings()
+        },
+        onDismiss = viewModel.playlistActions::dismissPermission
     )
 
     MusicFilterModalHost(
@@ -326,11 +358,19 @@ private fun musicFooterHints(uiState: MusicUiState, jumpButton: InputButton): Li
     val options = stringResource(R.string.music_library_footer_options)
     val playAlbum = stringResource(R.string.music_library_footer_play_album)
     val playAll = stringResource(R.string.music_library_footer_play_all)
+    val playColumn = stringResource(R.string.music_library_footer_play_column)
     val trackOptions = stringResource(R.string.music_library_footer_track_options)
+    val move = stringResource(R.string.music_library_footer_move)
+    val moveDone = stringResource(R.string.music_library_footer_move_done)
     val contents = uiState.contents
     return buildList {
         when {
+            contents != null && contents.isMoving -> {
+                add(InputButton.DPAD_VERTICAL to move)
+                add(InputButton.A to moveDone)
+            }
             contents != null -> {
+                if (contents.canPlayColumn) add(InputButton.X to playColumn)
                 if (contents.tracks.isNotEmpty()) {
                     add(InputButton.Y to if (contents.isFlat) playAll else playAlbum)
                     add(InputButton.SELECT to trackOptions)

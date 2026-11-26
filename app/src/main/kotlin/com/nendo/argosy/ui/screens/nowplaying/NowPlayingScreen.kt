@@ -40,6 +40,8 @@ import com.nendo.argosy.data.preferences.NowPlayingLayout
 import com.nendo.argosy.domain.model.MusicSelection
 import com.nendo.argosy.ui.components.FooterHints
 import com.nendo.argosy.ui.components.FooterSpacer
+import com.nendo.argosy.ui.components.music.MusicPlaylistPermissionModal
+import com.nendo.argosy.ui.components.music.MusicPlaylistPickerDialogs
 import com.nendo.argosy.ui.components.music.MusicPlaylistPickerState
 import com.nendo.argosy.ui.components.music.PlaylistPickerList
 import com.nendo.argosy.ui.primitives.ModalScaffold
@@ -70,6 +72,7 @@ private val Defaults = ComponentDefaults.NowPlaying
 @Composable
 fun NowPlayingScreen(
     onBack: () -> Unit,
+    onOpenRommSettings: () -> Unit,
     viewModel: NowPlayingViewModel = hiltViewModel()
 ) {
     val state by viewModel.uiState.collectAsState()
@@ -99,12 +102,13 @@ fun NowPlayingScreen(
     ModalInputEffect(active = state.navigation.options != null, handler = optionsHandler)
     val playlistHandler = remember(viewModel) {
         MusicModalInput(
-            move = viewModel::movePlaylistFocus,
-            confirm = viewModel::confirmPlaylist,
+            move = viewModel.playlistPicker::move,
+            confirm = viewModel.playlistPicker::confirm,
             back = viewModel::closePlaylistPicker
         )
     }
-    ModalInputEffect(active = state.navigation.playlistPicker != null, handler = playlistHandler)
+    val picker = state.navigation.playlistPicker
+    ModalInputEffect(active = picker != null && picker.ownsInput, handler = playlistHandler)
 
     Box(modifier = Modifier.fillMaxSize()) {
         if (state.hasQueue) {
@@ -130,9 +134,24 @@ fun NowPlayingScreen(
         state.navigation.options?.let { options ->
             NowPlayingOptionsModal(state = state, options = options, viewModel = viewModel)
         }
-        state.navigation.playlistPicker?.let { picker ->
+        if (picker != null && picker.ownsInput) {
             AddToPlaylistModal(state = state, picker = picker, viewModel = viewModel)
         }
+        MusicPlaylistPickerDialogs(
+            picker = picker,
+            onSubmitName = viewModel.playlistPicker::submitName,
+            onCancelName = viewModel.playlistPicker::cancelNaming,
+            onConfirmConflict = viewModel.playlistPicker::confirmConflict,
+            onDismissConflict = viewModel.playlistPicker::dismissConflict
+        )
+        MusicPlaylistPermissionModal(
+            visible = state.navigation.showsPlaylistPermission,
+            onOpenSettings = {
+                viewModel.dismissPlaylistPermission()
+                onOpenRommSettings()
+            },
+            onDismiss = viewModel::dismissPlaylistPermission
+        )
     }
 }
 
@@ -160,9 +179,9 @@ private fun AddToPlaylistModal(
                 )
             }
             Spacer(Modifier.height(Dimens.spacingLg))
-            PlaylistPickerList(picker = picker, enabled = !state.navigation.addingToPlaylist) { index ->
-                viewModel.focusPlaylist(index)
-                viewModel.confirmPlaylist()
+            PlaylistPickerList(picker = picker, enabled = !picker.isBusy) { index ->
+                viewModel.playlistPicker.focus(index)
+                viewModel.playlistPicker.confirm()
             }
         }
     }

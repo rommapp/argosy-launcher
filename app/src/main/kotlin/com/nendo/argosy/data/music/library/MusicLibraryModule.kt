@@ -13,4 +13,8 @@ abstract class MusicLibraryModule {
     @Binds
     @Singleton
     abstract fun bindMusicLibrary(impl: MusicLibraryRepository): MusicLibrary
+
+    @Binds
+    @Singleton
+    abstract fun bindMusicPlaylists(impl: MusicPlaylistsRepository): MusicPlaylists
 }

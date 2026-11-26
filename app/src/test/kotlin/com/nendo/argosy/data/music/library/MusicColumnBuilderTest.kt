@@ -323,6 +323,26 @@ class MusicColumnBuilderTest {
         assertTrue(columns.all { it.kind == MusicColumnKind.PLAYLIST })
     }
 
+    @Test
+    fun `owned playlists with the same name on both sources share one column`() {
+        val nd = MusicPlaylist("navidrome:playlist:1", MusicSourceKind.NAVIDROME, "1", "Night", 4, 900, null, true)
+        val romm = MusicPlaylist("romm:playlist:2", MusicSourceKind.ROMM, "2", " night", 7, 0, null, true)
+        val groups = builder.groups(
+            MusicGrouping.PLAYLISTS,
+            listOf(
+                snapshot(MusicSourceKind.NAVIDROME, playlists = listOf(nd)),
+                snapshot(MusicSourceKind.ROMM, playlists = listOf(romm))
+            )
+        )
+
+        val column = groups.single().column
+        assertEquals("playlist:owned:night", column.key)
+        assertEquals("Night", column.title)
+        assertEquals(setOf(MusicSourceKind.NAVIDROME, MusicSourceKind.ROMM), column.sources)
+        assertEquals(11, column.trackCount)
+        assertEquals(listOf(nd, romm), groups.single().playlistGroup?.halves)
+    }
+
     private fun row(
         key: String,
         albumId: String?,

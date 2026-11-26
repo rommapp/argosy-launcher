@@ -37,6 +37,21 @@ data class RomMMusicPlaylist(
 )
 
 @JsonClass(generateAdapter = true)
+data class RomMMusicPlaylistCreate(
+    @Json(name = "name") val name: String
+)
+
+@JsonClass(generateAdapter = true)
+data class RomMMusicPlaylistRename(
+    @Json(name = "name") val name: String
+)
+
+@JsonClass(generateAdapter = true)
+data class RomMMusicPlaylistTracks(
+    @Json(name = "rom_file_ids") val romFileIds: List<Long>
+)
+
+@JsonClass(generateAdapter = true)
 data class RomMMusicGame(
     @Json(name = "rom_id") val romId: Long,
     @Json(name = "name") val name: String,

@@ -11,11 +11,16 @@ import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.PlaylistAdd
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Download
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.GraphicEq
 import androidx.compose.material.icons.filled.Insights
 import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.RemoveCircleOutline
+import androidx.compose.material.icons.filled.RestartAlt
 import androidx.compose.material.icons.filled.Shuffle
+import androidx.compose.material.icons.filled.SwapVert
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -30,7 +35,9 @@ import com.nendo.argosy.R
 import com.nendo.argosy.core.input.SoundType
 import com.nendo.argosy.domain.model.MusicSourceFilter
 import com.nendo.argosy.ui.components.FocusedScroll
+import com.nendo.argosy.ui.components.music.PlaylistNameModal
 import com.nendo.argosy.ui.components.music.PlaylistPickerList
+import com.nendo.argosy.ui.primitives.ArgosyConfirmModalHost
 import com.nendo.argosy.ui.input.InputHandler
 import com.nendo.argosy.ui.input.InputResult
 import com.nendo.argosy.ui.input.ModalInputEffect
@@ -98,9 +105,9 @@ fun MusicOptionsModalHost(
     val handler = remember {
         MusicModalInput(move = { currentMove(it) }, confirm = { currentConfirm() }, back = { currentBack() })
     }
-    ModalInputEffect(active = options != null, handler = handler)
+    ModalInputEffect(active = options?.ownsInput == true, handler = handler)
 
-    val content = options ?: return
+    val content = options?.takeIf { it.ownsInput } ?: return
     val theme = LocalArgosyTheme.current
     val picker = content.picker
     ModalScaffold(visible = true, onDismiss = onDismiss) {
@@ -129,6 +136,7 @@ fun MusicOptionsModalHost(
                     key = { content.actions[it].name },
                     label = { optionLabel(content.actions[it]) },
                     icon = { optionIcon(content.actions[it]) },
+                    dangerous = { content.actions[it] == MusicOptionAction.DELETE_PLAYLIST },
                     enabled = !content.isBusy,
                     onClick = { index ->
                         onFocus(index)
@@ -136,7 +144,7 @@ fun MusicOptionsModalHost(
                     }
                 )
             } else {
-                PlaylistPickerList(picker = picker, enabled = !content.isBusy) { index ->
+                PlaylistPickerList(picker = picker, enabled = !content.isBusy && !picker.isBusy) { index ->
                     onFocus(index)
                     onConfirm()
                 }
@@ -202,6 +210,7 @@ private fun ColumnScope.OptionList(
     key: (Int) -> Any,
     label: @Composable (Int) -> String,
     icon: (Int) -> ImageVector,
+    dangerous: (Int) -> Boolean,
     enabled: Boolean,
     onClick: (Int) -> Unit
 ) {
@@ -217,11 +226,42 @@ private fun ColumnScope.OptionList(
                 icon = icon(index),
                 label = label(index),
                 isFocused = index == focusedIndex,
+                isDangerous = dangerous(index),
                 isEnabled = enabled,
                 onClick = { onClick(index) }
             )
         }
     }
+}
+
+@Composable
+fun MusicPlaylistDialogHost(
+    dialog: MusicPlaylistDialog?,
+    onSubmitRename: (String) -> Unit,
+    onConfirmDelete: () -> Unit,
+    onDismiss: () -> Unit
+) {
+    if (dialog is MusicPlaylistDialog.Rename) {
+        PlaylistNameModal(
+            title = stringResource(R.string.music_library_playlist_rename_title),
+            confirmLabel = stringResource(R.string.music_library_playlist_rename_confirm),
+            initialName = dialog.group.name,
+            busy = dialog.isBusy,
+            onSubmit = onSubmitRename,
+            onDismiss = onDismiss
+        )
+    }
+    val deleting = dialog as? MusicPlaylistDialog.Delete
+    ArgosyConfirmModalHost(
+        visible = deleting != null,
+        title = stringResource(R.string.music_library_playlist_delete_title),
+        message = stringResource(R.string.music_library_playlist_delete_message, deleting?.group?.name.orEmpty()),
+        confirmLabel = stringResource(R.string.music_library_playlist_delete_confirm),
+        onConfirm = onConfirmDelete,
+        onDismiss = onDismiss,
+        destructive = true,
+        working = if (deleting?.isBusy == true) stringResource(R.string.music_library_playlist_delete_working) else null
+    )
 }
 
 
@@ -234,6 +274,11 @@ private fun optionLabel(action: MusicOptionAction): String = stringResource(
         MusicOptionAction.ADD_TO_PLAYLIST -> R.string.music_library_options_add_to_playlist
         MusicOptionAction.NOW_PLAYING -> R.string.music_library_options_now_playing
         MusicOptionAction.LISTENING -> R.string.music_stats_entry_option
+        MusicOptionAction.RENAME_PLAYLIST -> R.string.music_library_options_rename_playlist
+        MusicOptionAction.REORDER_PLAYLIST -> R.string.music_library_options_reorder_playlist
+        MusicOptionAction.RESET_PLAYLIST_ORDER -> R.string.music_library_options_reset_order
+        MusicOptionAction.DELETE_PLAYLIST -> R.string.music_library_options_delete_playlist
+        MusicOptionAction.REMOVE_FROM_PLAYLIST -> R.string.music_library_options_remove_from_playlist
     }
 )
 
@@ -244,4 +289,9 @@ private fun optionIcon(action: MusicOptionAction): ImageVector = when (action) {
     MusicOptionAction.ADD_TO_PLAYLIST -> Icons.AutoMirrored.Filled.PlaylistAdd
     MusicOptionAction.NOW_PLAYING -> Icons.Default.GraphicEq
     MusicOptionAction.LISTENING -> Icons.Default.Insights
+    MusicOptionAction.RENAME_PLAYLIST -> Icons.Default.Edit
+    MusicOptionAction.REORDER_PLAYLIST -> Icons.Default.SwapVert
+    MusicOptionAction.RESET_PLAYLIST_ORDER -> Icons.Default.RestartAlt
+    MusicOptionAction.DELETE_PLAYLIST -> Icons.Default.Delete
+    MusicOptionAction.REMOVE_FROM_PLAYLIST -> Icons.Default.RemoveCircleOutline
 }

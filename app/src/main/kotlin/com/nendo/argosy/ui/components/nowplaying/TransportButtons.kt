@@ -36,6 +36,7 @@ fun PlayPauseButton(
     iconSize: Dp = Dimens.iconMd
 ) {
     val theme = LocalArgosyTheme.current
+    val ringInset = Dimens.borderMedium + Dimens.spacingXs
     Box(
         modifier = Modifier
             .size(size)
@@ -43,19 +44,27 @@ fun PlayPauseButton(
                 focused = isFocused,
                 indicators = PlayFocus,
                 shape = CircleShape,
-                ringThickness = Dimens.borderThin
+                ringColor = theme.focusAccent,
+                ringThickness = Dimens.borderMedium
             )
             .clip(CircleShape)
-            .background(theme.focusAccent)
             .clickableNoFocus(onClick = onClick),
         contentAlignment = Alignment.Center
     ) {
-        Icon(
-            imageVector = if (isPlaying) Icons.Default.Pause else Icons.Default.PlayArrow,
-            contentDescription = if (isPlaying) pauseDescription else playDescription,
-            tint = MaterialTheme.colorScheme.onPrimary,
-            modifier = Modifier.size(iconSize)
-        )
+        Box(
+            modifier = Modifier
+                .size(size - ringInset * 2)
+                .clip(CircleShape)
+                .background(theme.focusAccent),
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(
+                imageVector = if (isPlaying) Icons.Default.Pause else Icons.Default.PlayArrow,
+                contentDescription = if (isPlaying) pauseDescription else playDescription,
+                tint = MaterialTheme.colorScheme.onPrimary,
+                modifier = Modifier.size(iconSize)
+            )
+        }
     }
 }
 

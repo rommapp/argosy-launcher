@@ -30,6 +30,36 @@ class PlaybackQueueTest {
     }
 
     @Test
+    fun `append adds tracks after the existing ones and keeps the current track`() {
+        val q = queue()
+        q.advance()
+        q.append(listOf(track(9), track(10)))
+        assertEquals(source.map { it.id } + listOf("t9", "t10"), q.ids())
+        assertEquals("t2", q.current?.id)
+        assertEquals(10, q.sourceTracks.size)
+    }
+
+    @Test
+    fun `append under shuffle mixes only into the unplayed part`() {
+        val q = queue()
+        q.setShuffle(true)
+        q.advance()
+        q.advance()
+        val played = q.ids().take(3)
+        q.append(listOf(track(9), track(10)))
+        assertEquals(played, q.ids().take(3))
+        assertEquals(q.ids()[2], q.current?.id)
+        assertEquals((source.map { it.id } + listOf("t9", "t10")).sorted(), q.ids().sorted())
+    }
+
+    @Test
+    fun `append of nothing leaves the queue alone`() {
+        val q = queue()
+        q.append(emptyList())
+        assertEquals(source.map { it.id }, q.ids())
+    }
+
+    @Test
     fun `enabling shuffle keeps the current track playing and permutes the rest`() {
         val q = queue()
         q.advance()

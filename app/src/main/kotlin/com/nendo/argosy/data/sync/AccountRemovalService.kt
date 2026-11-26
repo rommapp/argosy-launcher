@@ -205,6 +205,7 @@ class AccountRemovalService @Inject constructor(
             database.rommMusicIndexDao().deleteByOwner(ownerUserId)
             database.musicListenDao().deleteByOwner(ownerUserId)
             database.musicGameContextDao().deleteByOwner(ownerUserId)
+            database.musicPlaylistOrderDao().deleteByOwner(ownerUserId)
             database.saveOwnershipDao().deleteByOwner(ownerUserId)
             database.saveSyncDao().deleteByOwner(ownerUserId)
             database.stateCacheDao().deleteByOwner(ownerUserId)

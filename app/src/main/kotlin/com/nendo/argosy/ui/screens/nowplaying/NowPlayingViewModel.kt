@@ -3,22 +3,21 @@ package com.nendo.argosy.ui.screens.nowplaying
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.nendo.argosy.ui.audio.AmbientMusicSwitch
-import com.nendo.argosy.R
 import com.nendo.argosy.core.notification.NotificationManager
-import com.nendo.argosy.core.notification.NotificationText
-import com.nendo.argosy.core.notification.showError
-import com.nendo.argosy.core.notification.showSuccess
-import com.nendo.argosy.data.music.library.MusicLibrary
+import com.nendo.argosy.data.music.library.MusicPlaylists
 import com.nendo.argosy.data.preferences.ControlsPreferencesRepository
-import com.nendo.argosy.domain.model.MusicSourceFilter
+import com.nendo.argosy.domain.model.MusicPlaylistGroup
+import com.nendo.argosy.domain.model.MusicPlaylistResult
+import com.nendo.argosy.domain.model.MusicQueueTrack
 import com.nendo.argosy.domain.model.MusicSourceKind
-import com.nendo.argosy.ui.components.music.MusicPlaylistPickerState
-import com.nendo.argosy.ui.screens.music.musicGuarded
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
+import com.nendo.argosy.ui.components.music.MusicPlaylistAddition
+import com.nendo.argosy.ui.components.music.MusicPlaylistPickerFlow
 import com.nendo.argosy.data.preferences.NowPlayingLayout
 import com.nendo.argosy.ui.components.musicplayer.MusicTransportButton
+import com.nendo.argosy.ui.components.musicplayer.TrackListCursor
+import com.nendo.argosy.ui.components.musicplayer.followPlayingFocus
 import com.nendo.argosy.ui.components.musicplayer.stepFrom
+import com.nendo.argosy.ui.components.musicplayer.trackListEntryFocus
 import com.nendo.argosy.ui.components.musicplayer.transportButtons
 import com.nendo.argosy.data.preferences.NowPlayingPreferences
 import com.nendo.argosy.data.preferences.NowPlayingPreferencesRepository
@@ -40,7 +39,13 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
-private const val TAG = "NowPlayingVM"
+private class QueueTrackAddition(private val track: MusicQueueTrack) : MusicPlaylistAddition {
+    override suspend fun addTo(playlists: MusicPlaylists, group: MusicPlaylistGroup): MusicPlaylistResult =
+        playlists.addTrack(group, track)
+
+    override suspend fun createNamed(playlists: MusicPlaylists, name: String): MusicPlaylistResult =
+        playlists.create(name, track)
+}
 
 @HiltViewModel
 class NowPlayingViewModel @Inject constructor(
@@ -48,13 +53,14 @@ class NowPlayingViewModel @Inject constructor(
     private val ambientMusicSwitch: AmbientMusicSwitch,
     private val nowPlayingPreferences: NowPlayingPreferencesRepository,
     controlsPreferences: ControlsPreferencesRepository,
-    private val musicLibrary: MusicLibrary,
-    private val notifications: NotificationManager,
+    musicPlaylists: MusicPlaylists,
+    notifications: NotificationManager,
     analysisStore: TrackAnalysisStore
 ) : ViewModel() {
 
     private val position = MutableStateFlow<PlaybackPosition?>(null)
     private val navigation = MutableStateFlow(NowPlayingNavigation())
+    private var playingIndex: Int? = null
 
     val uiState: StateFlow<NowPlayingUiState> = combine(
         ambientAudioManager.playback,
@@ -75,37 +81,99 @@ class NowPlayingViewModel @Inject constructor(
         state, playInBackground -> state.copy(playInBackground = playInBackground)
     }.stateIn(viewModelScope, SharingStarted.Eagerly, NowPlayingUiState(playback = ambientAudioManager.playback.value))
 
+    val playlistPicker = MusicPlaylistPickerFlow(
+        playlists = musicPlaylists,
+        notifications = notifications,
+        scope = viewModelScope,
+        picker = { navigation.value.playlistPicker },
+        updatePicker = { transform -> navigation.update { it.copy(playlistPicker = transform(it.playlistPicker)) } },
+        addition = ::currentAddition,
+        onFinished = {},
+        onNeedsPermission = { navigation.update { it.copy(showsPlaylistPermission = true) } }
+    )
+
+    init {
+        viewModelScope.launch {
+            ambientAudioManager.playback
+                .map { it.index }
+                .distinctUntilChanged()
+                .collect(::onPlayingIndex)
+        }
+        viewModelScope.launch {
+            musicPlaylists.changes.collect { playlistPicker.refresh() }
+        }
+    }
+
+    private fun onPlayingIndex(index: Int) {
+        val previous = playingIndex
+        playingIndex = index
+        navigation.update { nav ->
+            nav.copy(
+                queueFocus = followPlayingFocus(
+                    focus = nav.queueFocus,
+                    previousPlaying = previous,
+                    playing = index,
+                    listFocused = nav.focus == NowPlayingFocus.QUEUE
+                )
+            )
+        }
+    }
+
+    private fun currentAddition(): MusicPlaylistAddition? {
+        val track = ambientAudioManager.playback.value.let { it.tracks.getOrNull(it.index) } ?: return null
+        if (track.identity?.source?.let(MusicSourceKind::fromToken) == null) return null
+        return QueueTrackAddition(track)
+    }
+
     fun samplePosition() {
         position.value = ambientAudioManager.positionSnapshot()
+    }
+
+    private fun queueEntryFocus(): Int {
+        val playback = ambientAudioManager.playback.value
+        return trackListEntryFocus(
+            cursor = navigation.value.queueCursor,
+            playingIndex = playback.index,
+            sourceId = playback.sourceId,
+            trackCount = playback.tracks.size
+        )
+    }
+
+    private fun leavingCursor(queueFocus: Int): TrackListCursor {
+        val playback = ambientAudioManager.playback.value
+        return TrackListCursor(
+            position = queueFocus.coerceIn(0, (playback.tracks.size - 1).coerceAtLeast(0)),
+            playingIndex = playback.index,
+            sourceId = playback.sourceId
+        )
     }
 
     fun moveVertical(delta: Int): Boolean {
         val state = uiState.value
         if (!state.showsQueue) return false
         val lastTrack = state.playback.tracks.lastIndex
-        val next = when (state.focus) {
-            NowPlayingFocus.TRANSPORT -> if (delta > 0) {
-                state.navigation.copy(focus = NowPlayingFocus.QUEUE, queueFocus = state.playback.index.coerceIn(0, lastTrack))
-            } else {
-                null
+        when (state.focus) {
+            NowPlayingFocus.TRANSPORT -> {
+                if (delta <= 0) return false
+                val entry = queueEntryFocus()
+                navigation.update { it.copy(focus = NowPlayingFocus.QUEUE, queueFocus = entry) }
             }
             NowPlayingFocus.QUEUE -> {
                 val target = state.queueFocus + delta
                 when {
-                    target < 0 -> state.navigation.copy(focus = NowPlayingFocus.TRANSPORT)
-                    target > lastTrack -> null
-                    else -> state.navigation.copy(queueFocus = target)
+                    target < 0 -> return leaveQueue()
+                    target > lastTrack -> return false
+                    else -> navigation.update { it.copy(queueFocus = target) }
                 }
             }
-        } ?: return false
-        navigation.update { it.copy(focus = next.focus, queueFocus = next.queueFocus) }
+        }
         return true
     }
 
     fun moveTransport(delta: Int): Boolean {
         val state = uiState.value
         if (!state.hasQueue || state.prefs.layout != NowPlayingLayout.SHELF) return false
-        if (state.focus != NowPlayingFocus.TRANSPORT) return false
+        if (state.focus == NowPlayingFocus.QUEUE) return leaveQueue()
         val buttons = transportButtons(withPlaylist = true)
         navigation.update { it.copy(transport = buttons.stepFrom(it.transport, delta)) }
         return true
@@ -114,18 +182,15 @@ class NowPlayingViewModel @Inject constructor(
     fun focusQueue(): Boolean {
         val state = uiState.value
         if (!state.showsQueue) return false
-        navigation.update {
-            it.copy(
-                focus = NowPlayingFocus.QUEUE,
-                queueFocus = state.playback.index.coerceIn(0, state.playback.tracks.lastIndex)
-            )
-        }
+        if (state.focus == NowPlayingFocus.QUEUE) return true
+        val entry = queueEntryFocus()
+        navigation.update { it.copy(focus = NowPlayingFocus.QUEUE, queueFocus = entry) }
         return true
     }
 
     fun leaveQueue(): Boolean {
         if (uiState.value.focus != NowPlayingFocus.QUEUE) return false
-        navigation.update { it.copy(focus = NowPlayingFocus.TRANSPORT) }
+        navigation.update { it.copy(focus = NowPlayingFocus.TRANSPORT, queueCursor = leavingCursor(it.queueFocus)) }
         return true
     }
 
@@ -160,55 +225,16 @@ class NowPlayingViewModel @Inject constructor(
         }
     }
 
-    fun openPlaylistPicker() {
-        val track = uiState.value.playback.let { it.tracks.getOrNull(it.index) }
-        val source = track?.identity?.source?.let(MusicSourceKind::fromToken)
-        navigation.update { it.copy(playlistPicker = MusicPlaylistPickerState(), addingToPlaylist = false) }
-        viewModelScope.launch {
-            val playlists = source?.let { kind ->
-                musicGuarded(TAG, "playlists") {
-                    withContext(Dispatchers.IO) { musicLibrary.playlists(MusicSourceFilter.ALL) }
-                }.orEmpty().filter { it.writable && it.source == kind }
-            }.orEmpty()
-            navigation.update { nav ->
-                if (nav.playlistPicker == null) {
-                    nav
-                } else {
-                    nav.copy(playlistPicker = MusicPlaylistPickerState(playlists = playlists, isLoading = false))
-                }
-            }
-        }
-    }
-
-    fun movePlaylistFocus(delta: Int) {
-        navigation.update { nav -> nav.copy(playlistPicker = nav.playlistPicker?.moved(delta)) }
-    }
-
-    fun focusPlaylist(index: Int) {
-        navigation.update { nav -> nav.copy(playlistPicker = nav.playlistPicker?.copy(focusIndex = index)) }
-    }
+    fun openPlaylistPicker() = playlistPicker.open()
 
     fun closePlaylistPicker() {
-        navigation.update { it.copy(playlistPicker = null, addingToPlaylist = false) }
+        navigation.update { nav ->
+            if (nav.playlistPicker?.isBusy == true) nav else nav.copy(playlistPicker = null)
+        }
     }
 
-    fun confirmPlaylist() {
-        val nav = navigation.value
-        if (nav.addingToPlaylist) return
-        val playlist = nav.playlistPicker?.focused ?: return
-        val track = uiState.value.playback.let { it.tracks.getOrNull(it.index) } ?: return
-        navigation.update { it.copy(addingToPlaylist = true) }
-        viewModelScope.launch {
-            val result = musicGuarded(TAG, "add to playlist") {
-                withContext(Dispatchers.IO) { musicLibrary.addToPlaylist(playlist, track) }
-            }
-            closePlaylistPicker()
-            if (result?.isSuccess == true) {
-                notifications.showSuccess(NotificationText.Res(R.string.music_library_notice_added, listOf(playlist.name)))
-            } else {
-                notifications.showError(NotificationText.Res(R.string.music_library_notice_add_failed))
-            }
-        }
+    fun dismissPlaylistPermission() {
+        navigation.update { it.copy(showsPlaylistPermission = false) }
     }
 
     fun playTrack(queueIndex: Int) {

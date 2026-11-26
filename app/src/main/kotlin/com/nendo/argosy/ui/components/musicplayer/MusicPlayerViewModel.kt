@@ -6,7 +6,7 @@ import androidx.lifecycle.viewModelScope
 import com.nendo.argosy.data.preferences.ControlsPreferencesRepository
 import com.nendo.argosy.ui.audio.AmbientMusicSwitch
 import com.nendo.argosy.data.preferences.NowPlayingPreferencesRepository
-import com.nendo.argosy.domain.model.MusicPlaylistEntry
+import com.nendo.argosy.domain.model.MusicPlaylistCatalogEntry
 import com.nendo.argosy.domain.model.MusicSelection
 import com.nendo.argosy.domain.model.MusicServerStatus
 import com.nendo.argosy.domain.usecase.music.GetMusicPlaylistsUseCase
@@ -57,7 +57,7 @@ class MusicPlayerViewModel @Inject constructor(
     val uiState: StateFlow<MusicPlayerUiState> = _uiState.asStateFlow()
 
     private val searchInput = MutableStateFlow("")
-    private var playlistCatalog: List<MusicPlaylistEntry> = emptyList()
+    private var playlistCatalog: List<MusicPlaylistCatalogEntry> = emptyList()
     private var loadJob: Job? = null
     private var selectJob: Job? = null
 
@@ -67,9 +67,16 @@ class MusicPlayerViewModel @Inject constructor(
                 _uiState.update { state ->
                     val lastTrack = (playback.tracks.size - 1).coerceAtLeast(0)
                     val sourceChanged = playback.sourceId != state.playback.sourceId
+                    val followed = followPlayingFocus(
+                        focus = state.trackFocus,
+                        previousPlaying = state.playback.index,
+                        playing = playback.index,
+                        listFocused = state.focusedRow == MusicPlayerRow.TRACKS
+                    )
                     val next = state.copy(
                         playback = playback,
-                        trackFocus = if (sourceChanged) playback.index else state.trackFocus.coerceIn(0, lastTrack)
+                        trackFocus = if (sourceChanged) playback.index else followed.coerceIn(0, lastTrack),
+                        trackCursor = if (sourceChanged) null else state.trackCursor
                     )
                     val rowGone = when (state.focusedRow) {
                         MusicPlayerRow.TRANSPORT, MusicPlayerRow.NOW_PLAYING, MusicPlayerRow.VOLUME -> !next.hasQueue
@@ -139,29 +146,42 @@ class MusicPlayerViewModel @Inject constructor(
                 delta < 0 -> if (state.hasQueue) state.copy(focusedRow = MusicPlayerRow.VOLUME) else state
                 trackCount > 0 -> state.copy(
                     focusedRow = MusicPlayerRow.TRACKS,
-                    trackFocus = state.playback.index.coerceIn(0, trackCount - 1)
+                    trackFocus = trackListEntryFocus(
+                        cursor = state.trackCursor,
+                        playingIndex = state.playback.index,
+                        sourceId = state.playback.sourceId,
+                        trackCount = trackCount
+                    )
                 )
                 else -> state
             }
             MusicPlayerRow.TRACKS -> {
                 val target = state.trackFocus + delta
                 when {
-                    target < 0 -> state.copy(focusedRow = MusicPlayerRow.SOURCES)
+                    target < 0 -> state.copy(focusedRow = MusicPlayerRow.SOURCES, trackCursor = state.leavingCursor())
                     target >= trackCount -> state
                     else -> state.copy(trackFocus = target)
                 }
             }
         }
         if (next == state) return false
-        _uiState.update { current -> current.copy(focusedRow = next.focusedRow, trackFocus = next.trackFocus) }
+        _uiState.update { current ->
+            current.copy(focusedRow = next.focusedRow, trackFocus = next.trackFocus, trackCursor = next.trackCursor)
+        }
         return true
     }
+
+    private fun MusicPlayerUiState.leavingCursor(): TrackListCursor =
+        TrackListCursor(position = trackFocus, playingIndex = playback.index, sourceId = playback.sourceId)
 
     fun leaveTrackList(): Boolean {
         val state = _uiState.value
         if (state.focusedRow != MusicPlayerRow.TRACKS) return false
         _uiState.update {
-            it.copy(focusedRow = if (it.hasQueue) MusicPlayerRow.TRANSPORT else MusicPlayerRow.SOURCES)
+            it.copy(
+                focusedRow = if (it.hasQueue) MusicPlayerRow.TRANSPORT else MusicPlayerRow.SOURCES,
+                trackCursor = it.leavingCursor()
+            )
         }
         return true
     }
@@ -549,7 +569,7 @@ class MusicPlayerViewModel @Inject constructor(
         MusicServerStatus.AVAILABLE -> null
     }
 
-    private fun MusicPlaylistEntry.toRow(): MusicBrowseRowUi = MusicBrowseRowUi(
+    private fun MusicPlaylistCatalogEntry.toRow(): MusicBrowseRowUi = MusicBrowseRowUi(
         selection = selection,
         title = (selection as? MusicSelection.ServerPlaylist)?.name,
         ownerName = ownerName,

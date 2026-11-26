@@ -106,6 +106,42 @@ class NavidromeApiClient @Inject constructor(
         listOf("playlistId" to playlistId) + songIds.map { "songIdToAdd" to it }
     ).map { }
 
+    suspend fun createPlaylist(
+        credentials: NavidromeCredentials,
+        name: String,
+        songIds: List<String>
+    ): Result<NavidromePlaylistDto> = call(
+        credentials,
+        "createPlaylist",
+        listOf("name" to name) + songIds.map { "songId" to it }
+    ).mapCatching { it.playlist ?: throw IOException("createPlaylist returned no playlist") }
+
+    suspend fun renamePlaylist(
+        credentials: NavidromeCredentials,
+        playlistId: String,
+        name: String
+    ): Result<Unit> = call(
+        credentials,
+        "updatePlaylist",
+        listOf("playlistId" to playlistId, "name" to name)
+    ).map { }
+
+    /**
+     * Removes the entry at [index], 0-based in the playlist's current song list.
+     */
+    suspend fun removeFromPlaylist(
+        credentials: NavidromeCredentials,
+        playlistId: String,
+        index: Int
+    ): Result<Unit> = call(
+        credentials,
+        "updatePlaylist",
+        listOf("playlistId" to playlistId, "songIndexToRemove" to index.toString())
+    ).map { }
+
+    suspend fun deletePlaylist(credentials: NavidromeCredentials, playlistId: String): Result<Unit> =
+        call(credentials, "deletePlaylist", listOf("id" to playlistId)).map { }
+
     /**
      * Reports a play of [songId]. `submission=false` is a now-playing notice; `submission=true`
      * records the play at [timeMs], the epoch millis the listen started.

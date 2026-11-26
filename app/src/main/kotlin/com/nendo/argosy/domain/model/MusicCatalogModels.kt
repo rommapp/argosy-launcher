@@ -100,14 +100,14 @@ enum class MusicServerStatus {
     FAILED
 }
 
-data class MusicPlaylistEntry(
+data class MusicPlaylistCatalogEntry(
     val selection: MusicSelection,
     val trackCount: Int?,
     val ownerName: String? = null
 )
 
 data class MusicPlaylistCatalog(
-    val entries: List<MusicPlaylistEntry>,
+    val entries: List<MusicPlaylistCatalogEntry>,
     val serverStatus: MusicServerStatus
 )
 

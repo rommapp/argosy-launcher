@@ -198,9 +198,10 @@ import com.nendo.argosy.data.local.entity.SteamLicenseEntity
         com.nendo.argosy.data.local.entity.MusicGameContextEntity::class,
         com.nendo.argosy.data.local.entity.MusicGameContextTagEntity::class,
         com.nendo.argosy.data.local.entity.MusicListenEntity::class,
-        com.nendo.argosy.data.local.entity.MusicListenArtistEntity::class
+        com.nendo.argosy.data.local.entity.MusicListenArtistEntity::class,
+        com.nendo.argosy.data.local.entity.MusicPlaylistOrderEntity::class
     ],
-    version = 232,
+    version = 233,
     exportSchema = true
 )
 @TypeConverters(Converters::class)
@@ -279,5 +280,6 @@ abstract class ALauncherDatabase : RoomDatabase() {
     abstract fun musicListenDao(): com.nendo.argosy.data.local.dao.MusicListenDao
     abstract fun musicGameContextDao(): com.nendo.argosy.data.local.dao.MusicGameContextDao
     abstract fun musicStatsDao(): com.nendo.argosy.data.local.dao.MusicStatsDao
+    abstract fun musicPlaylistOrderDao(): com.nendo.argosy.data.local.dao.MusicPlaylistOrderDao
 
 }

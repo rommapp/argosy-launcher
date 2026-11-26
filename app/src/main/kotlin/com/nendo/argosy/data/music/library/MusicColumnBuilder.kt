@@ -8,6 +8,7 @@ import com.nendo.argosy.domain.model.MusicColumnKind
 import com.nendo.argosy.domain.model.MusicColumnsPage
 import com.nendo.argosy.domain.model.MusicGrouping
 import com.nendo.argosy.domain.model.MusicPlaylist
+import com.nendo.argosy.domain.model.MusicPlaylistGroup
 import com.nendo.argosy.domain.model.MusicSourceKind
 import java.util.Locale
 import javax.inject.Inject
@@ -25,7 +26,7 @@ data class MusicSourceSnapshot(
 data class MusicColumnGroup(
     val column: MusicColumn,
     val albums: List<MusicAlbum>,
-    val playlist: MusicPlaylist?
+    val playlistGroup: MusicPlaylistGroup?
 )
 
 /**
@@ -68,33 +69,32 @@ class MusicColumnBuilder @Inject constructor() {
         return MusicColumnGroup(
             column = column(RECENT_KEY, MusicColumnKind.RECENT, "", recent, recent, photo = null),
             albums = recent,
-            playlist = null
+            playlistGroup = null
         )
     }
 
     private fun playlistGroups(playlists: List<MusicPlaylist>): List<MusicColumnGroup> =
-        playlists
-            .sortedWith(compareBy({ it.name.lowercase(Locale.ROOT) }, { it.key }))
-            .map { playlist ->
-                MusicColumnGroup(
-                    column = MusicColumn(
-                        key = "$PLAYLIST_PREFIX${playlist.key}",
-                        kind = MusicColumnKind.PLAYLIST,
-                        title = playlist.name,
-                        sources = setOf(playlist.source),
-                        albumCount = 0,
-                        trackCount = playlist.trackCount,
-                        durationSec = playlist.durationSec,
-                        heroArt = playlist.art,
-                        photo = null,
-                        sleeves = listOfNotNull(playlist.art),
-                        hiddenAlbumCount = 0,
-                        sleeveTitles = if (playlist.art != null) listOf(playlist.name) else emptyList()
-                    ),
-                    albums = emptyList(),
-                    playlist = playlist
-                )
-            }
+        mergePlaylistGroups(playlists).map { group ->
+            val art = group.art
+            MusicColumnGroup(
+                column = MusicColumn(
+                    key = "$PLAYLIST_PREFIX${group.key}",
+                    kind = MusicColumnKind.PLAYLIST,
+                    title = group.name,
+                    sources = group.sources,
+                    albumCount = 0,
+                    trackCount = group.trackCount,
+                    durationSec = group.durationSec,
+                    heroArt = art,
+                    photo = null,
+                    sleeves = listOfNotNull(art),
+                    hiddenAlbumCount = 0,
+                    sleeveTitles = if (art != null) listOf(group.name) else emptyList()
+                ),
+                albums = emptyList(),
+                playlistGroup = group
+            )
+        }
 
     private fun albumGroups(albums: List<MusicAlbum>): List<MusicColumnGroup> =
         albums
@@ -104,7 +104,7 @@ class MusicColumnBuilder @Inject constructor() {
                 MusicColumnGroup(
                     column = column("$ALBUM_PREFIX${album.key}", MusicColumnKind.ALBUM, album.title, single, rank(single), null),
                     albums = single,
-                    playlist = null
+                    playlistGroup = null
                 )
             }
 
@@ -176,7 +176,7 @@ class MusicColumnBuilder @Inject constructor() {
                 shown to MusicColumnGroup(
                     column = column("$prefix$folded", kind, shown, members, rank(members), photo(folded)),
                     albums = orderedContents(kind, members),
-                    playlist = null
+                    playlistGroup = null
                 )
             }
             .sortedWith(compareBy(order) { it.first })
@@ -185,7 +185,7 @@ class MusicColumnBuilder @Inject constructor() {
             MusicColumnGroup(
                 column = column("$prefix$NONE_SUFFIX", kind, "", members, rank(members), null),
                 albums = orderedContents(kind, members),
-                playlist = null
+                playlistGroup = null
             )
         }
         return named + listOfNotNull(none)

@@ -4,6 +4,8 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.nendo.argosy.core.notification.NotificationManager
 import com.nendo.argosy.data.music.library.MusicLibrary
+import com.nendo.argosy.data.music.library.MusicPlaylists
+import com.nendo.argosy.domain.model.MusicPlaylistGroup
 import com.nendo.argosy.data.preferences.MusicScreenPreferencesRepository
 import com.nendo.argosy.data.preferences.QuickNavigationSource
 import com.nendo.argosy.domain.model.MusicAlbum
@@ -43,6 +45,7 @@ private data class MusicScreenSelection(val grouping: MusicGrouping, val filter:
 @HiltViewModel
 class MusicViewModel @Inject constructor(
     private val library: MusicLibrary,
+    playlists: MusicPlaylists,
     private val preferences: MusicScreenPreferencesRepository,
     audio: AmbientAudioManager,
     playback: MusicPlayback,
@@ -65,6 +68,19 @@ class MusicViewModel @Inject constructor(
     private var albumTracksJob: Job? = null
     private var stackJob: Job? = null
     private var jumpLabelJob: Job? = null
+    private var playingTrackId: String? = null
+
+    val playlistActions = MusicPlaylistActionsDelegate(
+        playlists = playlists,
+        notifications = notificationManager,
+        resolver = resolver,
+        scope = viewModelScope,
+        state = _uiState,
+        onOpenForReorder = { column, group ->
+            if (_uiState.value.focusedColumn?.key == column.key) openContents(moveGroup = group)
+        },
+        onReloadContents = ::reloadContents
+    )
 
     val actions = MusicActionsDelegate(
         library = library,
@@ -73,6 +89,7 @@ class MusicViewModel @Inject constructor(
         resolver = resolver,
         scope = viewModelScope,
         state = _uiState,
+        playlistActions = playlistActions,
         onPlaybackStarted = { _playbackStarted.trySend(Unit) }
     )
 
@@ -81,7 +98,10 @@ class MusicViewModel @Inject constructor(
             val stored = preferences.preferences.first()
             selection.compareAndSet(null, MusicScreenSelection(stored.grouping, stored.sourceFilter))
         }
-        observeLibrary()
+        observeLibrary(playlists)
+        viewModelScope.launch {
+            playlists.changes.collect { playlistActions.onPlaylistsChanged() }
+        }
         viewModelScope.launch {
             audio.playback
                 .map { playback ->
@@ -93,20 +113,35 @@ class MusicViewModel @Inject constructor(
                     )
                 }
                 .distinctUntilChanged()
-                .collect { (hasQueue, playing) ->
-                    _uiState.update { it.copy(hasQueue = hasQueue, playing = playing) }
-                }
+                .collect { (hasQueue, playing) -> onPlaying(hasQueue, playing) }
         }
     }
 
-    private fun observeLibrary() {
+    private fun onPlaying(hasQueue: Boolean, playing: MusicPlayingUi) {
+        val previous = playingTrackId
+        playingTrackId = playing.trackId
+        _uiState.update { state ->
+            state.copy(
+                hasQueue = hasQueue,
+                playing = playing,
+                contents = state.contents?.followingPlaying(
+                    previousId = previous,
+                    playingId = playing.trackId,
+                    listFocused = state.options == null && state.playlistDialog == null
+                )
+            )
+        }
+    }
+
+    private fun observeLibrary(playlists: MusicPlaylists) {
         viewModelScope.launch {
             combine(
                 selection.filterNotNull(),
                 library.configuredSources(),
                 library.changes,
+                playlists.changes,
                 reloads
-            ) { chosen, sources, _, _ -> Triple(chosen.grouping, chosen.filter, sources) }
+            ) { chosen, sources, _, _, _ -> Triple(chosen.grouping, chosen.filter, sources) }
                 .collectLatest { (grouping, filter, sources) ->
                     resolver.clear()
                     _uiState.update { it.copy(sources = sources, grouping = grouping, filter = filter) }
@@ -272,13 +307,13 @@ class MusicViewModel @Inject constructor(
         actions.openColumnOptions(column)
     }
 
-    fun openContents() {
+    fun openContents(moveGroup: MusicPlaylistGroup? = null) {
         val state = _uiState.value
         val column = state.focusedColumn ?: return
         val grouping = state.grouping
         val filter = state.filter
         val frontKey = state.focusedStack?.front?.key
-        _uiState.update { it.copy(contents = MusicContentsUiState(column = column)) }
+        _uiState.update { it.copy(contents = MusicContentsUiState(column = column, moveGroup = moveGroup)) }
         contentsJob?.cancel()
         contentsJob = viewModelScope.launch {
             val contents = musicGuarded(TAG, "contents") { resolver.contents(column, grouping, filter) }
@@ -374,10 +409,18 @@ class MusicViewModel @Inject constructor(
         }
     }
 
+    fun playContentsColumn(): Boolean {
+        val contents = _uiState.value.contents ?: return false
+        if (!contents.canPlayColumn) return false
+        actions.playColumn(contents.column, shuffle = false)
+        return true
+    }
+
     fun openFocusedTrackOptions() {
         val contents = _uiState.value.contents ?: return
+        if (contents.isMoving) return
         val track = contents.focusedTrack ?: return
-        actions.openTrackOptions(track, contents.column)
+        actions.openTrackOptions(track, contents.column, contents.trackIndex)
     }
 
     fun openTrackOptionsAt(index: Int) {
@@ -394,5 +437,12 @@ class MusicViewModel @Inject constructor(
     fun retryContents() {
         if (_uiState.value.contents == null) return
         openContents()
+    }
+
+    private fun reloadContents() {
+        viewModelScope.launch {
+            resolver.clear()
+            retryContents()
+        }
     }
 }

@@ -67,6 +67,8 @@ private class PlayerSlot(
     val startPositionMs: Long = 0L
 )
 
+private class StandbySlot(val trackId: String, val slot: PlayerSlot)
+
 @Singleton
 class AmbientAudioManager @Inject constructor(
     @ApplicationContext private val context: Context,
@@ -112,6 +114,7 @@ class AmbientAudioManager @Inject constructor(
     private var overrideToken = 0
     private var overrideTitle: String? = null
     private var stashedSlot: PlayerSlot? = null
+    private var standby: StandbySlot? = null
 
     private var loudnessEnhancer: LoudnessEnhancer? = null
     private var trackGainDb = 0f
@@ -360,11 +363,24 @@ class AmbientAudioManager @Inject constructor(
         tracks: List<MusicQueueTrack>,
         startIndex: Int,
         startPositionMs: Long = 0L
-    ) {
+    ): Int {
         startQueue(sourceId, label) { queue.loadAt(tracks, startIndex) }
         Log.d(TAG, "playTracks: $sourceId, ${tracks.size} tracks from $startIndex")
         queue.current?.let { preparePlayer(it, autoStart = true, startPositionMs = startPositionMs) }
         publish()
+        return generation
+    }
+
+    /**
+     * Adds [tracks] to the queue started by the [playTracks] call that returned [token]. Ignored
+     * once any other queue has replaced it.
+     */
+    fun appendTracks(token: Int, tracks: List<MusicQueueTrack>) {
+        if (token != generation || tracks.isEmpty()) return
+        queue.append(tracks)
+        Log.d(TAG, "appendTracks: ${tracks.size} more, ${queue.size} queued")
+        publish()
+        if (standby == null && slot?.prepared == true) prepareStandby()
     }
 
     private inline fun startQueue(sourceId: String, sourceLabel: String?, load: () -> Unit) {
@@ -493,6 +509,53 @@ class AmbientAudioManager @Inject constructor(
             return
         }
 
+        val promoted = takeStandby(track, startPositionMs)
+        val newSlot = promoted ?: buildSlot(track, autoStart, startPositionMs) ?: run {
+            onTrackFailed(resume = autoStart)
+            return
+        }
+        slot = newSlot
+        listenRecorder.onTrackStarted(track, activeSourceId, startPositionMs)
+        if (promoted == null) {
+            newSlot.player.prepareAsync()
+        } else {
+            Log.d(TAG, "Playing standby: ${track.title}")
+        }
+        attachLeveling(newSlot.player, localPath)
+        if (promoted != null) {
+            if (autoStart) fadeIn()
+            if (promoted.prepared) prepareStandby()
+        }
+    }
+
+    private fun takeStandby(track: MusicQueueTrack, startPositionMs: Long): PlayerSlot? {
+        val waiting = standby ?: return null
+        standby = null
+        if (waiting.trackId == track.id && startPositionMs == 0L) return waiting.slot
+        disposePlayer(waiting.slot.player)
+        return null
+    }
+
+    private fun dropStandby() {
+        standby?.let { disposePlayer(it.slot.player) }
+        standby = null
+    }
+
+    private fun prepareStandby() {
+        if (overrideActive || repeat == MusicRepeatMode.ONE) return
+        val next = queue.order.getOrNull(queue.index + 1)
+        if (next == null || next.localPath != null) {
+            dropStandby()
+            return
+        }
+        if (standby?.trackId == next.id) return
+        dropStandby()
+        val built = buildSlot(next, autoStart = false) ?: return
+        standby = StandbySlot(next.id, built)
+        built.player.prepareAsync()
+    }
+
+    private fun buildSlot(track: MusicQueueTrack, autoStart: Boolean, startPositionMs: Long = 0L): PlayerSlot? {
         val player = MediaPlayer()
         val newSlot = PlayerSlot(player, autoStart, startPositionMs = startPositionMs)
         try {
@@ -516,11 +579,14 @@ class AmbientAudioManager @Inject constructor(
                     runCatching { player.seekTo(newSlot.startPositionMs.coerceAtMost(Int.MAX_VALUE.toLong()).toInt()) }
                 }
                 if (newSlot.autoStart || newSlot.startWhenPrepared) fadeIn()
+                prepareStandby()
             }
             player.setOnErrorListener { _, what, extra ->
                 Log.e(TAG, "MediaPlayer error: what=$what extra=$extra")
-                if (slot === newSlot) {
-                    onTrackFailed(resume = playing || newSlot.autoStart || newSlot.startWhenPrepared)
+                when {
+                    slot === newSlot ->
+                        onTrackFailed(resume = playing || newSlot.autoStart || newSlot.startWhenPrepared)
+                    standby?.slot === newSlot -> dropStandby()
                 }
                 true
             }
@@ -539,15 +605,11 @@ class AmbientAudioManager @Inject constructor(
                     TrackEndAction.STOP -> stopAtQueueEnd()
                 }
             }
-            slot = newSlot
-            listenRecorder.onTrackStarted(track, activeSourceId, startPositionMs)
-            player.prepareAsync()
-            attachLeveling(player, localPath)
+            return newSlot
         } catch (e: Exception) {
             Log.e(TAG, "Failed to prepare MediaPlayer", e)
             disposePlayer(player)
-            if (slot === newSlot) slot = null
-            onTrackFailed(resume = autoStart)
+            return null
         }
     }
 
@@ -943,6 +1005,7 @@ class AmbientAudioManager @Inject constructor(
         overrideTitle = null
         releaseStash()
         releaseEnhancer()
+        dropStandby()
 
         val outgoing = slot
         slot = null

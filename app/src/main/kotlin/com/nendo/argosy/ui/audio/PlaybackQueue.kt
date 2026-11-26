@@ -54,6 +54,21 @@ class PlaybackQueue(private val random: Random = Random.Default) {
         }
     }
 
+    /**
+     * Adds [tracks] after the existing ones. Under shuffle they mix into the part of the order
+     * that has not played yet; the playing track and everything before it keep their places.
+     */
+    fun append(tracks: List<MusicQueueTrack>) {
+        if (tracks.isEmpty()) return
+        sourceTracks = sourceTracks + tracks
+        order = if (shuffle && order.isNotEmpty()) {
+            val played = order.take(index + 1)
+            played + (order.drop(index + 1) + tracks).shuffled(random)
+        } else {
+            order + tracks
+        }
+    }
+
     fun replaceKeepingCurrent(tracks: List<MusicQueueTrack>): Boolean {
         val playingId = current?.id
         val incoming = tracks.associateBy { it.id }

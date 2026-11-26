@@ -102,6 +102,7 @@ data class MusicPlayerUiState(
     val transportButton: MusicTransportButton = MusicTransportButton.PLAY_PAUSE,
     val sourceButton: MusicBrowseKind = MusicBrowseKind.PLAYLISTS,
     val trackFocus: Int = 0,
+    val trackCursor: TrackListCursor? = null,
     val browse: MusicBrowseUi? = null,
     val analysis: TrackAnalysis? = null
 ) {

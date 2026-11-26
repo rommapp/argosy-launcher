@@ -8,6 +8,7 @@ import retrofit2.Call
 import retrofit2.http.Body
 import retrofit2.http.DELETE
 import retrofit2.http.GET
+import retrofit2.http.HTTP
 import retrofit2.http.Header
 import retrofit2.http.Headers
 import retrofit2.http.Multipart
@@ -144,6 +145,32 @@ interface RomMApi {
         @Path("id") playlistId: Long,
         @QueryMap params: Map<String, String>
     ): Response<RomMMusicTrackPage>
+
+    @POST("api/music/playlists")
+    suspend fun createMusicPlaylist(
+        @Body body: RomMMusicPlaylistCreate
+    ): Response<RomMMusicPlaylist>
+
+    @PUT("api/music/playlists/{id}")
+    suspend fun renameMusicPlaylist(
+        @Path("id") playlistId: Long,
+        @Body body: RomMMusicPlaylistRename
+    ): Response<RomMMusicPlaylist>
+
+    @DELETE("api/music/playlists/{id}")
+    suspend fun deleteMusicPlaylist(@Path("id") playlistId: Long): Response<Unit>
+
+    @POST("api/music/playlists/{id}/tracks")
+    suspend fun addMusicPlaylistTracks(
+        @Path("id") playlistId: Long,
+        @Body body: RomMMusicPlaylistTracks
+    ): Response<Unit>
+
+    @HTTP(method = "DELETE", path = "api/music/playlists/{id}/tracks", hasBody = true)
+    suspend fun removeMusicPlaylistTracks(
+        @Path("id") playlistId: Long,
+        @Body body: RomMMusicPlaylistTracks
+    ): Response<Unit>
 
     @PUT("api/roms/{id}/props")
     suspend fun updateRomUserProps(

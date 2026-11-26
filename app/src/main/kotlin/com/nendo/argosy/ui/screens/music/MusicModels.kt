@@ -5,6 +5,7 @@ import com.nendo.argosy.domain.model.MusicColumn
 import com.nendo.argosy.domain.model.MusicColumnKind
 import com.nendo.argosy.domain.model.MusicColumnsPage
 import com.nendo.argosy.domain.model.MusicGrouping
+import com.nendo.argosy.domain.model.MusicPlaylistGroup
 import com.nendo.argosy.ui.components.music.MusicPlaylistPickerState
 import com.nendo.argosy.domain.model.MusicSourceFilter
 import com.nendo.argosy.domain.model.MusicSourceKind
@@ -42,6 +43,8 @@ data class MusicUiState(
     val contents: MusicContentsUiState? = null,
     val options: MusicOptionsState? = null,
     val filterPicker: MusicFilterState? = null,
+    val playlistDialog: MusicPlaylistDialog? = null,
+    val showsPlaylistPermission: Boolean = false,
     val hasQueue: Boolean = false,
     val playing: MusicPlayingUi = MusicPlayingUi(),
     val stack: MusicStackUi? = null,
@@ -66,7 +69,8 @@ data class MusicUiState(
 
 /**
  * The second level opened on a column. Album columns browse [albums] as a crate and list the
- * focused album's [tracks]; a [isFlat] column lists its tracks directly.
+ * focused album's [tracks]; a [isFlat] column lists its tracks directly. A non-null [moveGroup]
+ * is move mode: the focused track is lifted and up/down reorders it within that playlist.
  */
 data class MusicContentsUiState(
     val column: MusicColumn,
@@ -76,18 +80,41 @@ data class MusicContentsUiState(
     val trackIndex: Int = 0,
     val isLoading: Boolean = true,
     val tracksLoading: Boolean = false,
-    val loadFailed: Boolean = false
+    val loadFailed: Boolean = false,
+    val moveGroup: MusicPlaylistGroup? = null
 ) {
     val isFlat: Boolean get() = column.kind == MusicColumnKind.PLAYLIST || albums.isEmpty()
     val focusedAlbum: MusicAlbum? get() = if (isFlat) null else albums.getOrNull(albumIndex)
     val focusedTrack: MusicTrack? get() = tracks.getOrNull(trackIndex)
+    val isMoving: Boolean get() = moveGroup != null
+    val canPlayColumn: Boolean get() = !isFlat && !isLoading && !loadFailed
+
+    fun followingPlaying(previousId: String?, playingId: String?, listFocused: Boolean): MusicContentsUiState {
+        if (!listFocused || isMoving || previousId == null || playingId == null || previousId == playingId) return this
+        if (focusedTrack?.key != previousId) return this
+        val after = tracks.indices.firstOrNull { it > trackIndex && tracks[it].key == playingId }
+        val target = after ?: tracks.indexOfFirst { it.key == playingId }.takeIf { it >= 0 } ?: return this
+        return copy(trackIndex = target)
+    }
 }
 
-enum class MusicOptionAction { PLAY, SHUFFLE, DOWNLOAD, ADD_TO_PLAYLIST, NOW_PLAYING, LISTENING }
+enum class MusicOptionAction {
+    PLAY,
+    SHUFFLE,
+    DOWNLOAD,
+    ADD_TO_PLAYLIST,
+    NOW_PLAYING,
+    LISTENING,
+    RENAME_PLAYLIST,
+    REORDER_PLAYLIST,
+    RESET_PLAYLIST_ORDER,
+    DELETE_PLAYLIST,
+    REMOVE_FROM_PLAYLIST
+}
 
 sealed interface MusicOptionsTarget {
     data class Column(val column: MusicColumn) : MusicOptionsTarget
-    data class Track(val track: MusicTrack, val column: MusicColumn) : MusicOptionsTarget
+    data class Track(val track: MusicTrack, val column: MusicColumn, val index: Int) : MusicOptionsTarget
 }
 
 data class MusicOptionsState(
@@ -96,8 +123,19 @@ data class MusicOptionsState(
     val actions: List<MusicOptionAction>,
     val focusIndex: Int = 0,
     val picker: MusicPlaylistPickerState? = null,
-    val isBusy: Boolean = false
-)
+    val isBusy: Boolean = false,
+    val group: MusicPlaylistGroup? = null
+) {
+    val ownsInput: Boolean get() = picker?.ownsInput != false
+}
+
+sealed interface MusicPlaylistDialog {
+    val group: MusicPlaylistGroup
+    val isBusy: Boolean
+
+    data class Rename(override val group: MusicPlaylistGroup, override val isBusy: Boolean = false) : MusicPlaylistDialog
+    data class Delete(override val group: MusicPlaylistGroup, override val isBusy: Boolean = false) : MusicPlaylistDialog
+}
 
 data class MusicFilterState(
     val options: List<MusicSourceFilter>,

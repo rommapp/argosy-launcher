@@ -7,6 +7,8 @@ import com.nendo.argosy.data.local.dao.resolvedFor
 import com.nendo.argosy.data.local.entity.RommMusicTrackEntity
 import com.nendo.argosy.data.music.library.MusicDownloadAlbums
 import com.nendo.argosy.data.music.library.MusicLibrarySource
+import com.nendo.argosy.data.music.library.MusicPermissionException
+import com.nendo.argosy.data.music.library.MusicPlaylistNameTakenException
 import com.nendo.argosy.data.preferences.UserPreferencesRepository
 import com.nendo.argosy.data.remote.romm.RomMMusicLibraryService
 import com.nendo.argosy.data.remote.romm.RomMMusicTrack
@@ -45,12 +47,15 @@ private const val ALBUM_PAGE_SIZE = 200
 private const val MAX_ALBUMS = 5_000
 private const val ALBUM_MEMO_MS = 30_000L
 private const val LOCAL_TRACK_PREFIX = "path:"
+private const val HTTP_BAD_REQUEST = 400
+private const val HTTP_FORBIDDEN = 403
 private val MULTI_SPACE = Regex("\\s+")
 
 /**
  * RomM as a Music source. Each rom with a soundtrack is one album, titled and tagged from its
- * tracks in [RommMusicIndex]; server playlists are read-only playlists. A track id is the RomM
- * stream path, or a `path:` id for a soundtrack file that exists only on this device.
+ * tracks in [RommMusicIndex]; server playlists owned by the signed-in user are writable, others
+ * read-only. A track id is the RomM stream path, or a `path:` id for a soundtrack file that exists
+ * only on this device; playlist writes take rom file ids instead.
  */
 @Singleton
 class RommMusicSource @Inject constructor(
@@ -159,6 +164,7 @@ class RommMusicSource @Inject constructor(
         if (!catalog.serverStatus.isUsable()) {
             return@withContext Result.failure(IOException("RomM playlists unavailable: ${catalog.serverStatus}"))
         }
+        val username = preferencesRepository.userPreferences.first().rommUsername?.takeIf { it.isNotBlank() }
         Result.success(
             catalog.entries.mapNotNull { entry ->
                 val selection = entry.selection as? MusicSelection.ServerPlaylist ?: return@mapNotNull null
@@ -170,7 +176,7 @@ class RommMusicSource @Inject constructor(
                     trackCount = entry.trackCount ?: 0,
                     durationSec = 0,
                     art = null,
-                    writable = false
+                    writable = username != null && entry.ownerName.equals(username, ignoreCase = true)
                 )
             }
         )
@@ -216,7 +222,79 @@ class RommMusicSource @Inject constructor(
         }
 
     override suspend fun addToPlaylist(playlistId: String, trackIds: List<String>): Result<Unit> =
-        Result.failure(UnsupportedOperationException("RomM playlists are read-only"))
+        playlistWrite(playlistId, trackIds) { id, romFileIds ->
+            if (romFileIds.isEmpty()) RomMResult.Success(Unit) else musicLibrary.addPlaylistTracks(id, romFileIds)
+        }
+
+    override suspend fun createPlaylist(name: String, trackIds: List<String>): Result<MusicPlaylist> =
+        withContext(Dispatchers.IO) {
+            val romFileIds = romFileIdsOf(trackIds)
+                ?: return@withContext Result.failure(IllegalArgumentException("Unknown RomM track id"))
+            if (!musicLibrary.isConnected()) return@withContext Result.failure(IOException("RomM not connected"))
+            val created = when (val result = musicLibrary.createPlaylist(name)) {
+                is RomMResult.Success -> result.data
+                is RomMResult.Error -> return@withContext Result.failure(result.toWriteFailure(namesUnique = true))
+            }
+            if (romFileIds.isNotEmpty()) {
+                val added = musicLibrary.addPlaylistTracks(created.id, romFileIds)
+                if (added is RomMResult.Error) {
+                    return@withContext Result.failure(added.toWriteFailure(namesUnique = false))
+                }
+            }
+            Result.success(
+                MusicPlaylist(
+                    key = playlistKey(created.id.toString()),
+                    source = kind,
+                    id = created.id.toString(),
+                    name = created.name,
+                    trackCount = romFileIds.size,
+                    durationSec = 0,
+                    art = null,
+                    writable = true
+                )
+            )
+        }
+
+    override suspend fun renamePlaylist(playlistId: String, name: String): Result<Unit> =
+        playlistWrite(playlistId, emptyList(), namesUnique = true) { id, _ ->
+            musicLibrary.renamePlaylist(id, name)
+        }
+
+    override suspend fun deletePlaylist(playlistId: String): Result<Unit> =
+        playlistWrite(playlistId, emptyList()) { id, _ -> musicLibrary.deletePlaylist(id) }
+
+    override suspend fun removeFromPlaylist(playlistId: String, entryIndex: Int, trackId: String): Result<Unit> =
+        playlistWrite(playlistId, listOf(trackId)) { id, romFileIds ->
+            musicLibrary.removePlaylistTracks(id, romFileIds)
+        }
+
+    private suspend fun playlistWrite(
+        playlistId: String,
+        trackIds: List<String>,
+        namesUnique: Boolean = false,
+        call: suspend (playlistId: Long, romFileIds: List<Long>) -> RomMResult<Unit>
+    ): Result<Unit> = withContext(Dispatchers.IO) {
+        val id = playlistId.toLongOrNull()
+            ?: return@withContext Result.failure(IllegalArgumentException("Unknown RomM playlist id"))
+        val romFileIds = romFileIdsOf(trackIds)
+            ?: return@withContext Result.failure(IllegalArgumentException("Unknown RomM track id"))
+        if (!musicLibrary.isConnected()) return@withContext Result.failure(IOException("RomM not connected"))
+        when (val result = call(id, romFileIds)) {
+            is RomMResult.Success -> Result.success(Unit)
+            is RomMResult.Error -> Result.failure(result.toWriteFailure(namesUnique))
+        }
+    }
+
+    private fun romFileIdsOf(trackIds: List<String>): List<Long>? {
+        val parsed = trackIds.mapNotNull { it.toLongOrNull() }
+        return parsed.takeIf { it.size == trackIds.size }
+    }
+
+    private fun RomMResult.Error.toWriteFailure(namesUnique: Boolean): Exception = when {
+        code == HTTP_FORBIDDEN -> MusicPermissionException()
+        namesUnique && code == HTTP_BAD_REQUEST -> MusicPlaylistNameTakenException()
+        else -> IOException(message)
+    }
 
     override suspend fun streamSource(track: MusicTrack): MusicTrackSource.Remote? {
         if (track.source != kind || track.id.startsWith(LOCAL_TRACK_PREFIX)) return null

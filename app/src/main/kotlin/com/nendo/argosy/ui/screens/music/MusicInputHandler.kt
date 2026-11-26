@@ -26,15 +26,28 @@ class MusicInputHandler(
         else -> result(viewModel.moveColumnFocus(1))
     }
 
-    override fun onUp(): InputResult =
-        if (state.contents != null) result(viewModel.moveTrack(-1)) else result(viewModel.moveStack(-1))
+    override fun onUp(): InputResult = vertical(-1)
 
-    override fun onDown(): InputResult =
-        if (state.contents != null) result(viewModel.moveTrack(1)) else result(viewModel.moveStack(1))
+    override fun onDown(): InputResult = vertical(1)
+
+    private fun vertical(delta: Int): InputResult {
+        val contents = state.contents
+        return when {
+            contents == null -> result(viewModel.moveStack(delta))
+            contents.isMoving -> result(viewModel.playlistActions.moveFocused(delta))
+            else -> result(viewModel.moveTrack(delta))
+        }
+    }
+
+    private val moving: Boolean get() = state.contents?.isMoving == true
 
     override fun onConfirm(): InputResult {
         val current = state
         val contents = current.contents
+        if (moving) {
+            viewModel.playlistActions.endMove()
+            return InputResult.HANDLED
+        }
         return when {
             contents != null && contents.loadFailed -> {
                 viewModel.retryContents()
@@ -63,10 +76,10 @@ class MusicInputHandler(
     }
 
     override fun onBack(): InputResult {
-        if (state.contents != null) {
-            viewModel.closeContents()
-        } else {
-            onExit()
+        when {
+            moving -> viewModel.playlistActions.endMove()
+            state.contents != null -> viewModel.closeContents()
+            else -> onExit()
         }
         return InputResult.HANDLED
     }
@@ -75,6 +88,7 @@ class MusicInputHandler(
         val current = state
         val contents = current.contents
         return when {
+            moving -> boundary
             contents != null -> if (contents.tracks.isNotEmpty()) {
                 viewModel.playContentsAlbum()
                 InputResult.HANDLED
@@ -91,7 +105,12 @@ class MusicInputHandler(
 
     override fun onContextMenu(): InputResult {
         val current = state
-        if (current.contents != null || current.hasNoSources || current.sources == null) return boundary
+        val contents = current.contents
+        if (contents != null) {
+            val plays = !contents.isMoving && contents.canPlayColumn && viewModel.playContentsColumn()
+            return if (plays) InputResult.HANDLED else boundary
+        }
+        if (current.hasNoSources || current.sources == null) return boundary
         viewModel.actions.openFilter()
         return InputResult.HANDLED
     }
@@ -100,6 +119,7 @@ class MusicInputHandler(
         val current = state
         val contents = current.contents
         return when {
+            moving -> boundary
             contents != null -> if (contents.focusedTrack != null) {
                 viewModel.openFocusedTrackOptions()
                 InputResult.HANDLED

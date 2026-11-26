@@ -14,7 +14,6 @@ import com.nendo.argosy.domain.model.MusicColumnContents
 import com.nendo.argosy.domain.model.MusicColumnKind
 import com.nendo.argosy.domain.model.MusicColumnsPage
 import com.nendo.argosy.domain.model.MusicGrouping
-import com.nendo.argosy.domain.model.MusicPlaylist
 import com.nendo.argosy.domain.model.MusicQueueTrack
 import com.nendo.argosy.domain.model.MusicResumePoint
 import com.nendo.argosy.domain.model.MusicSourceFilter
@@ -61,7 +60,8 @@ class MusicLibraryRepository @Inject constructor(
     private val columnBuilder: MusicColumnBuilder,
     private val preferencesRepository: UserPreferencesRepository,
     private val navidromePreferences: NavidromePreferencesRepository,
-    private val accountReader: MusicAccountReader
+    private val accountReader: MusicAccountReader,
+    private val musicPlaylists: MusicPlaylists
 ) : MusicLibrary {
 
     private val dao: MusicDownloadDao get() = database.musicDownloadDao()
@@ -79,6 +79,9 @@ class MusicLibraryRepository @Inject constructor(
         }
         scope.launch {
             sources.all.map { it.catalogChanges }.merge().collect { bumpChanges() }
+        }
+        scope.launch {
+            musicPlaylists.changes.drop(1).collect { bumpChanges() }
         }
     }
 
@@ -109,11 +112,11 @@ class MusicLibraryRepository @Inject constructor(
         val group = columnBuilder.groups(grouping, snapshots, recentAlbums(snapshots, filter))
             .firstOrNull { it.column.key == columnKey }
             ?: return null
-        val playlist = group.playlist
-        if (group.column.kind != MusicColumnKind.PLAYLIST || playlist == null) {
+        val playlistGroup = group.playlistGroup
+        if (group.column.kind != MusicColumnKind.PLAYLIST || playlistGroup == null) {
             return MusicColumnContents(group.column, group.albums, emptyList())
         }
-        val tracks = sources.of(playlist.source).playlistTracks(playlist.id).getOrDefault(emptyList())
+        val tracks = musicPlaylists.entries(playlistGroup).map { it.track }
         return MusicColumnContents(group.column, emptyList(), withDownloads(tracks))
     }
 
@@ -192,29 +195,6 @@ class MusicLibraryRepository @Inject constructor(
     override suspend fun resumePoint(): MusicResumePoint? = withContext(Dispatchers.IO) {
         val ownerKey = accountReader.current().ownerKey
         listenDao.latestWithAlbum(ownerKey)?.let(MusicRecentAlbums::resumePoint)
-    }
-
-    override suspend fun playlists(filter: MusicSourceFilter): List<MusicPlaylist> =
-        snapshotsFor(filter).flatMap { it.playlists }
-
-    override suspend fun addToPlaylist(playlist: MusicPlaylist, tracks: List<MusicTrack>): Result<Unit> {
-        val ids = tracks.filter { it.source == playlist.source }.map { it.id }
-        if (ids.isEmpty()) return Result.success(Unit)
-        return addIdsToPlaylist(playlist, ids)
-    }
-
-    override suspend fun addToPlaylist(playlist: MusicPlaylist, track: MusicQueueTrack): Result<Unit> {
-        val identity = track.identity
-        if (identity == null || MusicSourceKind.fromToken(identity.source) != playlist.source) {
-            return Result.failure(IllegalArgumentException("Track is not from the playlist's source"))
-        }
-        return addIdsToPlaylist(playlist, listOf(identity.sourceTrackId))
-    }
-
-    private suspend fun addIdsToPlaylist(playlist: MusicPlaylist, ids: List<String>): Result<Unit> {
-        val result = sources.of(playlist.source).addToPlaylist(playlist.id, ids)
-        if (result.isSuccess) bumpChanges()
-        return result
     }
 
     override fun downloads(): Flow<Map<String, MusicDownloadStatus>> =

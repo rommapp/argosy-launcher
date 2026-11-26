@@ -1,5 +1,6 @@
 package com.nendo.argosy.ui.screens.music
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -21,6 +22,9 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowLeft
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.GraphicEq
+import androidx.compose.material.icons.filled.KeyboardArrowDown
+import androidx.compose.material.icons.filled.KeyboardArrowUp
+import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.outlined.CloudOff
 import androidx.compose.material.icons.outlined.MusicOff
 import androidx.compose.material3.Icon
@@ -30,6 +34,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
@@ -39,6 +44,7 @@ import androidx.compose.ui.unit.dp
 import com.nendo.argosy.R
 import com.nendo.argosy.domain.model.MusicArt
 import com.nendo.argosy.domain.model.MusicColumn
+import com.nendo.argosy.domain.model.MusicColumnKind
 import com.nendo.argosy.domain.model.MusicTrack
 import com.nendo.argosy.ui.components.animateScrollToItemCentered
 import com.nendo.argosy.ui.components.withNavBarClearance
@@ -60,6 +66,9 @@ fun MusicContentsView(
     onSelectAlbum: (Int) -> Unit,
     onPlayTrack: (Int) -> Unit,
     onTrackOptions: (Int) -> Unit,
+    onPlayColumn: () -> Unit,
+    onMoveTrack: (Int) -> Unit,
+    onEndMove: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     val backdrop = if (contents.isFlat) {
@@ -70,7 +79,12 @@ fun MusicContentsView(
     Box(modifier = modifier.fillMaxSize()) {
         backdrop?.let { BlurredHero(it) }
         Column(Modifier.fillMaxSize()) {
-            ContentsHeader(column = contents.column, onBack = onBack)
+            ContentsHeader(
+                column = contents.column,
+                showsPlayColumn = contents.canPlayColumn,
+                onBack = onBack,
+                onPlayColumn = onPlayColumn
+            )
             when {
                 contents.isLoading -> MusicLoadingState()
                 contents.loadFailed -> MusicMessageState(
@@ -104,7 +118,9 @@ fun MusicContentsView(
                             contents = contents,
                             playingTrackId = playingTrackId,
                             onPlayTrack = onPlayTrack,
-                            onTrackOptions = onTrackOptions
+                            onTrackOptions = onTrackOptions,
+                            onMoveTrack = onMoveTrack,
+                            onEndMove = onEndMove
                         )
                     }
                 }
@@ -114,7 +130,12 @@ fun MusicContentsView(
 }
 
 @Composable
-private fun ContentsHeader(column: MusicColumn, onBack: () -> Unit) {
+private fun ContentsHeader(
+    column: MusicColumn,
+    showsPlayColumn: Boolean,
+    onBack: () -> Unit,
+    onPlayColumn: () -> Unit
+) {
     val theme = LocalArgosyTheme.current
     Row(
         modifier = Modifier
@@ -141,8 +162,34 @@ private fun ContentsHeader(column: MusicColumn, onBack: () -> Unit) {
             color = theme.textDim,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
-            modifier = Modifier.padding(start = Dimens.spacingSm)
+            modifier = Modifier
+                .weight(1f)
+                .padding(start = Dimens.spacingSm)
         )
+        if (showsPlayColumn) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(Dimens.spacingXs),
+                modifier = Modifier
+                    .heightIn(min = ComponentDefaults.FrostedSurface.minimumTouchTargetDp.dp)
+                    .clip(RoundedCornerShape(Dimens.radiusPill))
+                    .background(theme.surfaceRaised)
+                    .clickableNoFocus(onClick = onPlayColumn)
+                    .padding(horizontal = Dimens.spacingMd, vertical = Dimens.spacingXs)
+            ) {
+                Icon(
+                    imageVector = Icons.Filled.PlayArrow,
+                    contentDescription = null,
+                    tint = theme.textDim,
+                    modifier = Modifier.size(Dimens.iconSm)
+                )
+                Text(
+                    text = stringResource(R.string.music_library_contents_play_all),
+                    style = MaterialTheme.typography.labelLarge,
+                    color = theme.textPrimary
+                )
+            }
+        }
     }
 }
 
@@ -268,7 +315,9 @@ private fun TrackList(
     contents: MusicContentsUiState,
     playingTrackId: String?,
     onPlayTrack: (Int) -> Unit,
-    onTrackOptions: (Int) -> Unit
+    onTrackOptions: (Int) -> Unit,
+    onMoveTrack: (Int) -> Unit,
+    onEndMove: () -> Unit
 ) {
     when {
         contents.tracksLoading -> MusicLoadingState()
@@ -293,15 +342,32 @@ private fun TrackList(
                 verticalArrangement = Arrangement.spacedBy(Dimens.spacingXs),
                 modifier = Modifier.fillMaxSize()
             ) {
-                itemsIndexed(contents.tracks, key = { _, track -> track.key }) { index, track ->
+                val repeatsAllowed = contents.column.kind == MusicColumnKind.PLAYLIST
+                itemsIndexed(
+                    contents.tracks,
+                    key = { index, track -> if (repeatsAllowed) "$index:${track.key}" else track.key }
+                ) { index, track ->
+                    val focused = index == contents.trackIndex
+                    val lifted = focused && contents.isMoving
                     TrackRow(
                         track = track,
                         number = track.trackNumber ?: (index + 1),
                         showArtist = contents.isFlat || track.artist != contents.focusedAlbum?.artist,
-                        isFocused = index == contents.trackIndex,
+                        isFocused = focused,
+                        isLifted = lifted,
                         isPlaying = track.key == playingTrackId,
-                        onClick = { onPlayTrack(index) },
-                        onLongClick = { onTrackOptions(index) }
+                        canMoveUp = index > 0,
+                        canMoveDown = index < contents.tracks.lastIndex,
+                        onClick = {
+                            when {
+                                lifted -> onEndMove()
+                                contents.isMoving -> Unit
+                                else -> onPlayTrack(index)
+                            }
+                        },
+                        onLongClick = { if (!contents.isMoving) onTrackOptions(index) },
+                        onMoveUp = { onMoveTrack(-1) },
+                        onMoveDown = { onMoveTrack(1) }
                     )
                 }
             }
@@ -315,9 +381,14 @@ private fun TrackRow(
     number: Int,
     showArtist: Boolean,
     isFocused: Boolean,
+    isLifted: Boolean,
     isPlaying: Boolean,
+    canMoveUp: Boolean,
+    canMoveDown: Boolean,
     onClick: () -> Unit,
-    onLongClick: () -> Unit
+    onLongClick: () -> Unit,
+    onMoveUp: () -> Unit,
+    onMoveDown: () -> Unit
 ) {
     val theme = LocalArgosyTheme.current
     val shape = RoundedCornerShape(Dimens.radiusControl)
@@ -327,8 +398,8 @@ private fun TrackRow(
             .heightIn(min = Dimens.menuRowHeight)
             .argosyFocusIndicators(
                 focused = isFocused,
-                indicators = FocusIndicators.ListRow,
-                tint = theme.textPrimary,
+                indicators = if (isLifted) LiftedTrackIndicators else FocusIndicators.ListRow,
+                tint = if (isLifted) theme.focusAccent else theme.textPrimary,
                 shape = shape
             )
             .clickableNoFocus(onClick = onClick, onLongClick = onLongClick)
@@ -381,5 +452,39 @@ private fun TrackRow(
                 modifier = Modifier.padding(start = Dimens.spacingSm)
             )
         }
+        if (isLifted) {
+            MoveArrow(
+                icon = Icons.Filled.KeyboardArrowUp,
+                description = stringResource(R.string.music_library_contents_move_up),
+                enabled = canMoveUp,
+                onClick = onMoveUp
+            )
+            MoveArrow(
+                icon = Icons.Filled.KeyboardArrowDown,
+                description = stringResource(R.string.music_library_contents_move_down),
+                enabled = canMoveDown,
+                onClick = onMoveDown
+            )
+        }
+    }
+}
+
+private val LiftedTrackIndicators = FocusIndicators(fill = true, ring = true)
+
+@Composable
+private fun MoveArrow(icon: ImageVector, description: String, enabled: Boolean, onClick: () -> Unit) {
+    val theme = LocalArgosyTheme.current
+    Box(
+        modifier = Modifier
+            .size(ComponentDefaults.FrostedSurface.minimumTouchTargetDp.dp)
+            .clickableNoFocus(enabled = enabled, onClick = onClick),
+        contentAlignment = Alignment.Center
+    ) {
+        Icon(
+            imageVector = icon,
+            contentDescription = description,
+            tint = if (enabled) theme.textPrimary else theme.textMute,
+            modifier = Modifier.size(Dimens.iconMd)
+        )
     }
 }

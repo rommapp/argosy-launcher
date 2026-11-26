@@ -36,7 +36,24 @@ interface MusicLibrarySource {
 
     suspend fun playlistTracks(playlistId: String): Result<List<MusicTrack>>
 
+    /**
+     * Playlist writes. A track id here is the id the source's playlist API takes: the song id on
+     * Navidrome, the rom file id on RomM. A write the server refuses for missing permission fails
+     * with [MusicPermissionException]; a name the server already holds for this user fails with
+     * [MusicPlaylistNameTakenException].
+     */
     suspend fun addToPlaylist(playlistId: String, trackIds: List<String>): Result<Unit>
+
+    suspend fun createPlaylist(name: String, trackIds: List<String>): Result<MusicPlaylist>
+
+    suspend fun renamePlaylist(playlistId: String, name: String): Result<Unit>
+
+    suspend fun deletePlaylist(playlistId: String): Result<Unit>
+
+    /**
+     * Removes one entry: Navidrome by [entryIndex] (0-based, songs may repeat), RomM by [trackId].
+     */
+    suspend fun removeFromPlaylist(playlistId: String, entryIndex: Int, trackId: String): Result<Unit>
 
     suspend fun streamSource(track: MusicTrack): MusicTrackSource.Remote?
 }

@@ -69,10 +69,10 @@ private val DEVICE_AUTH_SCOPES = listOf(
     "devices.read", "devices.write",
 )
 
-private const val PLAYLISTS_READ_SCOPE = "playlists.read"
+private val PLAYLISTS_SCOPES = listOf("playlists.read", "playlists.write")
 
 private fun deviceAuthScopesFor(capabilities: RomMCapabilities): List<String> =
-    if (capabilities.supportsMusicPlaylists) DEVICE_AUTH_SCOPES + PLAYLISTS_READ_SCOPE else DEVICE_AUTH_SCOPES
+    if (capabilities.supportsMusicPlaylists) DEVICE_AUTH_SCOPES + PLAYLISTS_SCOPES else DEVICE_AUTH_SCOPES
 
 sealed class ConnectionState {
     data object Disconnected : ConnectionState()

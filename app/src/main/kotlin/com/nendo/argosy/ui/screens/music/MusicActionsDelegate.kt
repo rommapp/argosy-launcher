@@ -6,23 +6,28 @@ import com.nendo.argosy.core.notification.NotificationText
 import com.nendo.argosy.core.notification.showError
 import com.nendo.argosy.core.notification.showSuccess
 import com.nendo.argosy.data.music.library.MusicLibrary
+import com.nendo.argosy.domain.model.MusicAlbum
 import com.nendo.argosy.domain.model.MusicColumn
+import com.nendo.argosy.domain.model.MusicColumnContents
 import com.nendo.argosy.domain.model.MusicColumnKind
 import com.nendo.argosy.domain.model.MusicGrouping
-import com.nendo.argosy.domain.model.MusicPlaylist
 import com.nendo.argosy.domain.model.MusicSourceFilter
 import com.nendo.argosy.domain.model.MusicTrack
-import com.nendo.argosy.ui.components.music.MusicPlaylistPickerState
 import com.nendo.argosy.util.Logger
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
 private const val TAG = "MusicActions"
+private const val ALBUM_BATCH = 8
 
 internal suspend fun <T> musicGuarded(tag: String, what: String, block: suspend () -> T): T? = try {
     block()
@@ -40,24 +45,56 @@ class MusicActionsDelegate(
     private val resolver: MusicTrackResolver,
     private val scope: CoroutineScope,
     private val state: MutableStateFlow<MusicUiState>,
+    private val playlistActions: MusicPlaylistActionsDelegate,
     private val onPlaybackStarted: () -> Unit
 ) {
+    private var columnPlay: Job? = null
+    private var columnPlayKey: String? = null
+
     fun playColumn(column: MusicColumn, shuffle: Boolean) {
+        if (columnPlay?.isActive == true && columnPlayKey == column.key) return
+        columnPlay?.cancel()
+        columnPlayKey = column.key
         val snapshot = state.value
         val grouping = snapshot.grouping
         val filter = snapshot.filter
-        scope.launch {
+        columnPlay = scope.launch {
             if (column.kind == MusicColumnKind.RECENT && !shuffle && resumeRecent(column, grouping, filter)) {
                 return@launch
             }
-            val tracks = musicGuarded(TAG, "column tracks") { resolver.columnTracks(column, grouping, filter) }
-            if (tracks == null) {
+            val contents = musicGuarded(TAG, "contents") { resolver.contents(column, grouping, filter) }
+            if (contents == null) {
                 notifications.showError(NotificationText.Res(R.string.music_library_notice_play_failed))
                 return@launch
             }
-            play(column.key, column.title, if (shuffle) tracks.shuffled() else tracks, 0)
+            if (column.kind == MusicColumnKind.PLAYLIST || contents.albums.isEmpty()) {
+                play(column.key, column.title, contents.tracks.shuffledIf(shuffle), 0)
+                return@launch
+            }
+            playAlbumsInTurn(column, contents, shuffle)
         }
     }
+
+    private suspend fun playAlbumsInTurn(column: MusicColumn, contents: MusicColumnContents, shuffle: Boolean) {
+        val albums = contents.albums.shuffledIf(shuffle)
+        var next = 0
+        var first: List<MusicTrack> = emptyList()
+        while (first.isEmpty() && next < albums.size) {
+            first = albumTracks(albums[next], contents)
+            next++
+        }
+        val token = playback.start(column.key, column.title, first.shuffledIf(shuffle), 0) ?: return
+        onPlaybackStarted()
+        albums.drop(next).chunked(ALBUM_BATCH).forEach { batch ->
+            val tracks = coroutineScope { batch.map { async { albumTracks(it, contents) } }.awaitAll() }.flatten()
+            playback.append(token, tracks.shuffledIf(shuffle))
+        }
+    }
+
+    private suspend fun albumTracks(album: MusicAlbum, contents: MusicColumnContents): List<MusicTrack> =
+        musicGuarded(TAG, "album tracks") { resolver.albumTracks(album, contents.tracks) }.orEmpty()
+
+    private fun <T> List<T>.shuffledIf(shuffle: Boolean): List<T> = if (shuffle) shuffled() else this
 
     private suspend fun resumeRecent(column: MusicColumn, grouping: MusicGrouping, filter: MusicSourceFilter): Boolean {
         val point = musicGuarded(TAG, "resume point") { withContext(Dispatchers.IO) { library.resumePoint() } }
@@ -86,70 +123,70 @@ class MusicActionsDelegate(
     }
 
     fun openColumnOptions(column: MusicColumn) {
+        val target = MusicOptionsTarget.Column(column)
         state.update {
             it.copy(
                 options = MusicOptionsState(
-                    target = MusicOptionsTarget.Column(column),
+                    target = target,
                     title = column.title,
                     actions = withNowPlaying(COLUMN_ACTIONS, it.hasQueue)
                 )
             )
         }
+        playlistActions.attachManagement(target)
     }
 
-    fun openTrackOptions(track: MusicTrack, column: MusicColumn) {
+    fun openTrackOptions(track: MusicTrack, column: MusicColumn, index: Int) {
+        val target = MusicOptionsTarget.Track(track, column, index)
         state.update {
             it.copy(
                 options = MusicOptionsState(
-                    target = MusicOptionsTarget.Track(track, column),
+                    target = target,
                     title = track.title,
                     actions = withNowPlaying(TRACK_ACTIONS, it.hasQueue)
                 )
             )
         }
+        playlistActions.attachManagement(target)
     }
 
     private fun withNowPlaying(actions: List<MusicOptionAction>, hasQueue: Boolean) =
         if (hasQueue) actions + MusicOptionAction.NOW_PLAYING else actions
 
     fun moveOptionsFocus(delta: Int) {
+        if (state.value.options?.picker != null) {
+            playlistActions.picker.move(delta)
+            return
+        }
         state.update { s ->
             val options = s.options ?: return@update s
-            val picker = options.picker
-            when {
-                picker != null -> s.copy(options = options.copy(picker = picker.moved(delta)))
-                else -> s.copy(
-                    options = options.copy(focusIndex = (options.focusIndex + delta).mod(options.actions.size))
-                )
-            }
+            s.copy(options = options.copy(focusIndex = (options.focusIndex + delta).mod(options.actions.size)))
         }
     }
 
     fun focusOption(index: Int) {
+        if (state.value.options?.picker != null) {
+            playlistActions.picker.focus(index)
+            return
+        }
         state.update { s ->
             val options = s.options ?: return@update s
-            val picker = options.picker
-            if (picker != null) {
-                s.copy(options = options.copy(picker = picker.copy(focusIndex = index)))
-            } else {
-                s.copy(options = options.copy(focusIndex = index))
-            }
+            s.copy(options = options.copy(focusIndex = index.coerceIn(0, options.actions.lastIndex)))
         }
     }
 
     fun confirmOption(onOpenNowPlaying: () -> Unit, onOpenListening: () -> Unit) {
         val options = state.value.options ?: return
         if (options.isBusy) return
-        val picker = options.picker
-        if (picker != null) {
-            picker.focused?.let { addToPlaylist(options.target, it) }
+        if (options.picker != null) {
+            playlistActions.picker.confirm()
             return
         }
-        when (options.actions.getOrNull(options.focusIndex)) {
+        when (val action = options.actions.getOrNull(options.focusIndex)) {
             MusicOptionAction.PLAY -> playTarget(options.target, shuffle = false)
             MusicOptionAction.SHUFFLE -> playTarget(options.target, shuffle = true)
             MusicOptionAction.DOWNLOAD -> download(options.target)
-            MusicOptionAction.ADD_TO_PLAYLIST -> openPlaylistPicker(options.target)
+            MusicOptionAction.ADD_TO_PLAYLIST -> playlistActions.picker.open()
             MusicOptionAction.NOW_PLAYING -> {
                 dismissOptions()
                 onOpenNowPlaying()
@@ -158,6 +195,11 @@ class MusicActionsDelegate(
                 dismissOptions()
                 onOpenListening()
             }
+            MusicOptionAction.RENAME_PLAYLIST,
+            MusicOptionAction.REORDER_PLAYLIST,
+            MusicOptionAction.RESET_PLAYLIST_ORDER,
+            MusicOptionAction.DELETE_PLAYLIST,
+            MusicOptionAction.REMOVE_FROM_PLAYLIST -> playlistActions.confirm(action, options)
             null -> Unit
         }
     }
@@ -165,10 +207,11 @@ class MusicActionsDelegate(
     fun backOptions() {
         state.update { s ->
             val options = s.options ?: return@update s
-            if (options.picker != null && !options.isBusy) {
-                s.copy(options = options.copy(picker = null))
-            } else {
-                s.copy(options = null)
+            val picker = options.picker
+            when {
+                picker == null -> s.copy(options = null)
+                picker.isBusy -> s
+                else -> s.copy(options = options.copy(picker = null))
             }
         }
     }
@@ -210,45 +253,6 @@ class MusicActionsDelegate(
                 )
             } else {
                 notifications.showError(NotificationText.Res(R.string.music_library_notice_download_failed))
-            }
-        }
-    }
-
-    private fun openPlaylistPicker(target: MusicOptionsTarget) {
-        val filter = state.value.filter
-        state.update { s -> s.copy(options = s.options?.copy(picker = MusicPlaylistPickerState())) }
-        scope.launch {
-            val sources = when (target) {
-                is MusicOptionsTarget.Column -> target.column.sources
-                is MusicOptionsTarget.Track -> setOf(target.track.source)
-            }
-            val playlists = musicGuarded(TAG, "playlists") { withContext(Dispatchers.IO) { library.playlists(filter) } }
-                .orEmpty()
-                .filter { it.writable && it.source in sources }
-            state.update { s ->
-                val options = s.options ?: return@update s
-                if (options.picker == null) return@update s
-                s.copy(options = options.copy(picker = MusicPlaylistPickerState(playlists = playlists, isLoading = false)))
-            }
-        }
-    }
-
-    private fun addToPlaylist(target: MusicOptionsTarget, playlist: MusicPlaylist) {
-        setBusy(true)
-        scope.launch {
-            val tracks = tracksOf(target).orEmpty().filter { it.source == playlist.source }
-            val result = if (tracks.isEmpty()) {
-                null
-            } else {
-                musicGuarded(TAG, "add to playlist") {
-                    withContext(Dispatchers.IO) { library.addToPlaylist(playlist, tracks) }
-                }
-            }
-            dismissOptions()
-            if (result?.isSuccess == true) {
-                notifications.showSuccess(NotificationText.Res(R.string.music_library_notice_added, listOf(playlist.name)))
-            } else {
-                notifications.showError(NotificationText.Res(R.string.music_library_notice_add_failed))
             }
         }
     }

@@ -327,6 +327,11 @@
     <string name="gamedetail_file_picker_footer_confirm">確認</string>
     <string name="gamedetail_file_picker_expand_description">展開</string>
     <string name="gamedetail_file_picker_collapse_description">收合</string>
+    <string name="gamedetail_file_picker_footer_fold">展開 / 收合</string>
+    <string name="gamedetail_file_picker_folder_select_description">全選資料夾內容</string>
+    <plurals name="gamedetail_file_picker_folder_file_count">
+        <item quantity="other">%1$d 個檔案</item>
+    </plurals>
     <string name="gamedetail_file_picker_pending_remove">將被移除</string>
     <string name="gamedetail_file_picker_pending_add">將下載</string>
     <string name="gamedetail_file_picker_on_device">已在裝置上</string>

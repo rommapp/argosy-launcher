@@ -380,6 +380,13 @@
     <string name="gamedetail_file_picker_footer_confirm">Confirmar</string>
     <string name="gamedetail_file_picker_expand_description">Expandir</string>
     <string name="gamedetail_file_picker_collapse_description">Contraer</string>
+    <string name="gamedetail_file_picker_footer_fold">Expandir / Contraer</string>
+    <string name="gamedetail_file_picker_folder_select_description">Seleccionar todo en la carpeta</string>
+    <plurals name="gamedetail_file_picker_folder_file_count">
+        <item quantity="one">%1$d archivo</item>
+        <item quantity="many">%1$d archivos</item>
+        <item quantity="other">%1$d archivos</item>
+    </plurals>
     <string name="gamedetail_file_picker_pending_remove">Se eliminará</string>
     <string name="gamedetail_file_picker_pending_add">Se descargará</string>
     <string name="gamedetail_file_picker_on_device">En el dispositivo</string>

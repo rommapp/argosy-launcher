@@ -340,6 +340,14 @@
     <string name="gamedetail_file_picker_footer_confirm">Подтвердить</string>
     <string name="gamedetail_file_picker_expand_description">Развернуть</string>
     <string name="gamedetail_file_picker_collapse_description">Свернуть</string>
+    <string name="gamedetail_file_picker_footer_fold">Развернуть / Свернуть</string>
+    <string name="gamedetail_file_picker_folder_select_description">Выбрать всё в папке</string>
+    <plurals name="gamedetail_file_picker_folder_file_count">
+        <item quantity="one">%1$d файл</item>
+        <item quantity="few">%1$d файла</item>
+        <item quantity="many">%1$d файлов</item>
+        <item quantity="other">%1$d файла</item>
+    </plurals>
     <string name="gamedetail_file_picker_pending_remove">Будет удалён</string>
     <string name="gamedetail_file_picker_pending_add">Будет загружен</string>
     <string name="gamedetail_file_picker_on_device">На устройстве</string>

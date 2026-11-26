@@ -90,7 +90,7 @@ class FilePickerFlowUseCase @Inject constructor(
         val gameFolder = gameFolderOf(game)
         val defaults = preferencesRepository.getEffectiveDownloadDefaults(game.platformSlug)
 
-        val rows = mutableListOf<FilePickerRow>()
+        val includesUncategorised = DownloadDefaults.includesUncategorised(defaults, game.platformSlug)
         val preselectedFiles = mutableSetOf<Long>()
 
         val allFiles = when (val result = romMRepository.getRom(rommId)) {
@@ -99,54 +99,24 @@ class FilePickerFlowUseCase @Inject constructor(
             is RomMResult.Error -> emptyList()
         }
         val (documents, romFiles) = allFiles.partition { it.category in DownloadDefaults.DOCUMENT_KEYS }
-        documents.forEach { preselectedFiles += it.id }
-        if (romFiles.size > 1) {
-            val rootLen = romFiles.minOf { it.filePath.length }
-            val grouped = romFiles.groupBy { f ->
-                val cat = f.category
-                when {
-                    cat == VariantCategory.GAME.key || (cat == null && f.filePath.length == rootLen) -> "game"
-                    cat != null -> cat
-                    else -> "folder:${f.filePath.substringAfterLast('/')}"
-                }
-            }
-            grouped.entries
-                .sortedBy { (key, _) ->
-                    if (key == "game") -1 else VariantCategory.fromKey(key).sortOrder
-                }
-                .forEach { (key, files) ->
-                    val isGame = key == "game"
-                    if (!isGame) {
-                        val label = when {
-                            key.startsWith("folder:") -> key.removePrefix("folder:")
-                            else -> VariantCategory.fromKey(key).displayLabel
-                        }
-                        rows += FilePickerRow(isHeader = true, groupKey = key, label = label)
-                    }
-                    val includeDefault = when {
-                        isGame -> true
-                        key.startsWith("folder:") -> DownloadDefaults.includesUncategorised(defaults, game.platformSlug)
-                        else -> defaults[key] ?: false
-                    }
-                    files.sortedBy { it.fileName }.forEach { f ->
-                        val downloaded = dbRows.firstOrNull { it.rommFileId == f.id }
-                            ?.let { resolveOnDisk(it, gameFolder) } != null
-                        rows += FilePickerRow(
-                            isHeader = false,
-                            groupKey = key,
-                            label = f.fileName,
-                            rommFileId = f.id,
-                            sizeBytes = f.fileSizeBytes,
-                            isDownloaded = downloaded,
-                            isLocked = isGame && files.size == 1
-                        )
-                        if (includeDefault) preselectedFiles += f.id
-                    }
-                }
-        }
-
-        if (rows.none { !it.isHeader }) return null
         if (romFiles.size <= 1) return null
+        documents.forEach { preselectedFiles += it.id }
+
+        val dbByRommId = dbRows.distinctBy { it.rommFileId }.associateBy { it.rommFileId }
+        val entries = romFiles.map { f ->
+            val downloaded = dbByRommId[f.id]?.let { resolveOnDisk(it, gameFolder) } != null
+            f.toPickerEntry(isDownloaded = downloaded)
+        }
+        val rows = FilePickerTree.build(entries, lockSoleBaseFile = true)
+        for (row in rows) {
+            val fileId = row.rommFileId ?: continue
+            val includeDefault = when {
+                row.groupKey == VariantCategory.GAME.key -> true
+                row.isUncategorised -> includesUncategorised
+                else -> defaults[row.groupKey] ?: false
+            }
+            if (includeDefault) preselectedFiles += fileId
+        }
         return FilePickerSetup(rows, preselectedFiles)
     }
 
@@ -162,14 +132,13 @@ class FilePickerFlowUseCase @Inject constructor(
         val gameFolder = gameFolderOf(game)
         val rows = mutableListOf<FilePickerRow>()
         val preselected = mutableSetOf<Long>()
-        val rootDepth = dbRows.minOf { it.filePath.count { c -> c == '/' } }
 
         val basePath = game.localPath
         val baseInDb = basePath != null && dbRows.any { it.localPath == basePath }
         if (basePath != null && !baseInDb && !game.isMultiDisc && File(basePath).exists()) {
             rows += FilePickerRow(
-                isHeader = false,
-                groupKey = "game",
+                isFolder = false,
+                groupKey = VariantCategory.GAME.key,
                 label = basePath.substringAfterLast('/'),
                 sizeBytes = game.fileSizeBytes ?: 0,
                 isDownloaded = true,
@@ -177,43 +146,18 @@ class FilePickerFlowUseCase @Inject constructor(
             )
         }
 
-        val grouped = dbRows.groupBy { f ->
-            val cat = VariantCategory.fromKey(f.category)
-            when {
-                cat == VariantCategory.GAME -> "game"
-                cat != VariantCategory.UNKNOWN -> cat.key
-                f.filePath.count { c -> c == '/' } > rootDepth -> "folder:${f.filePath.substringAfterLast('/')}"
-                else -> "game"
-            }
+        val entries = dbRows.mapNotNull { f ->
+            val rommFileId = f.rommFileId ?: return@mapNotNull null
+            val resolved = resolveOnDisk(f, gameFolder)
+            if (resolved != null) preselected += rommFileId
+            f.toPickerEntry(
+                rommFileId = rommFileId,
+                isDownloaded = resolved != null,
+                isLocked = resolved?.absolutePath == game.localPath
+            )
         }
-        grouped.entries
-            .sortedBy { (key, _) -> if (key == "game") -1 else VariantCategory.fromKey(key).sortOrder }
-            .forEach { (key, files) ->
-                if (key != "game") {
-                    val label = when {
-                        key.startsWith("folder:") -> key.removePrefix("folder:")
-                        else -> VariantCategory.fromKey(key).displayLabel
-                    }
-                    rows += FilePickerRow(isHeader = true, groupKey = key, label = label)
-                }
-                files.sortedBy { it.fileName }.forEach { f ->
-                    val rommFileId = f.rommFileId ?: return@forEach
-                    val resolved = resolveOnDisk(f, gameFolder)
-                    val onDisk = resolved != null
-                    val isBase = resolved?.absolutePath == game.localPath
-                    rows += FilePickerRow(
-                        isHeader = false,
-                        groupKey = key,
-                        label = f.fileName,
-                        rommFileId = rommFileId,
-                        sizeBytes = f.fileSize,
-                        isDownloaded = onDisk,
-                        isLocked = isBase
-                    )
-                    if (onDisk) preselected += rommFileId
-                }
-            }
-        if (rows.none { !it.isHeader && !it.isLocked }) return null
+        rows += FilePickerTree.build(entries, lockSoleBaseFile = false)
+        if (rows.none { !it.isFolder && !it.isLocked }) return null
         return FilePickerSetup(rows, preselected)
     }
 
@@ -229,7 +173,7 @@ class FilePickerFlowUseCase @Inject constructor(
         var removed = 0
         for (row in rows) {
             val rommFileId = row.rommFileId ?: continue
-            if (row.isHeader || row.isLocked) continue
+            if (row.isFolder || row.isLocked) continue
             val db = byRommId[rommFileId] ?: continue
             val wantIt = rommFileId in selected
             val onDisk = resolveOnDisk(db, gameFolder)

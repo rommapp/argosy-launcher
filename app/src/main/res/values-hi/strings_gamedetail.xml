@@ -375,6 +375,12 @@
     <string name="gamedetail_file_picker_footer_confirm">पुष्टि करें</string>
     <string name="gamedetail_file_picker_expand_description">विस्तार करें</string>
     <string name="gamedetail_file_picker_collapse_description">समेटें</string>
+    <string name="gamedetail_file_picker_footer_fold">विस्तार / समेटें</string>
+    <string name="gamedetail_file_picker_folder_select_description">फ़ोल्डर में सब चुनें</string>
+    <plurals name="gamedetail_file_picker_folder_file_count">
+        <item quantity="one">%1$d फ़ाइल</item>
+        <item quantity="other">%1$d फ़ाइलें</item>
+    </plurals>
     <string name="gamedetail_file_picker_pending_remove">हटा दी जाएगी</string>
     <string name="gamedetail_file_picker_pending_add">डाउनलोड होगी</string>
     <string name="gamedetail_file_picker_on_device">डिवाइस पर मौजूद</string>

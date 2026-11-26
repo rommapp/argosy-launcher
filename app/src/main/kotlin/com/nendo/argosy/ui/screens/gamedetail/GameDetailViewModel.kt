@@ -2807,7 +2807,7 @@ class GameDetailViewModel @Inject constructor(
                 state.showExtractionFailedPrompt -> { moveExtractionPromptFocus(-1); return InputResult.HANDLED }
                 pickerState.showFilePicker -> {
                     if (!pickerModalDelegate.moveFilePickerButtonFocus(-1)) {
-                        pickerModalDelegate.setFocusedFilePickerGroupCollapsed(collapse = true)
+                        pickerModalDelegate.collapseFocusedFilePickerFolder()
                     }
                     return InputResult.HANDLED
                 }
@@ -2848,7 +2848,7 @@ class GameDetailViewModel @Inject constructor(
                 state.showExtractionFailedPrompt -> { moveExtractionPromptFocus(1); return InputResult.HANDLED }
                 pickerState.showFilePicker -> {
                     if (!pickerModalDelegate.moveFilePickerButtonFocus(1)) {
-                        pickerModalDelegate.setFocusedFilePickerGroupCollapsed(collapse = false)
+                        pickerModalDelegate.expandFocusedFilePickerFolder()
                     }
                     return InputResult.HANDLED
                 }

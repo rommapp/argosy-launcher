@@ -10,7 +10,9 @@ import com.nendo.argosy.data.launcher.SteamLauncher
 import com.nendo.argosy.data.launcher.SteamLaunchers
 import com.nendo.argosy.data.model.ArtSlot
 import com.nendo.argosy.data.model.allSelectableSelected
+import com.nendo.argosy.data.model.initiallyCollapsedFolders
 import com.nendo.argosy.data.model.selectableFileIds
+import com.nendo.argosy.data.model.selectableFileIdsWithin
 import com.nendo.argosy.data.model.visibleWithCollapsed
 import com.nendo.argosy.data.preferences.MenuWrapMode
 import com.nendo.argosy.ui.common.BuiltinCoreSummary
@@ -540,7 +542,7 @@ class PickerModalDelegate @Inject constructor(
                 filePickerSelected = preselectedFileIds,
                 filePickerFocusIndex = 0,
                 filePickerManageMode = manageMode,
-                filePickerCollapsed = emptySet()
+                filePickerCollapsed = rows.initiallyCollapsedFolders()
             )
         }
         soundManager.play(SoundType.OPEN_MODAL)
@@ -582,7 +584,9 @@ class PickerModalDelegate @Inject constructor(
 
     fun jumpFilePickerGroup(direction: Int) {
         _state.update { st ->
-            val headers = st.visibleFilePickerRows.withIndex().filter { it.value.isHeader }.map { it.index }
+            val headers = st.visibleFilePickerRows.withIndex()
+                .filter { it.value.isFolder && it.value.depth == 0 }
+                .map { it.index }
             if (headers.isEmpty()) return@update st
             val target = if (direction > 0) {
                 headers.firstOrNull { it > st.filePickerFocusIndex }
@@ -593,14 +597,14 @@ class PickerModalDelegate @Inject constructor(
         }
     }
 
-    fun toggleFilePickerGroupCollapse(groupKey: String) {
+    fun toggleFilePickerFolderCollapse(folderPath: String) {
         _state.update { st ->
             val oldVisible = st.visibleFilePickerRows
             val focusedRow = oldVisible.getOrNull(st.filePickerFocusIndex)
-            val newCollapsed = if (groupKey in st.filePickerCollapsed) {
-                st.filePickerCollapsed - groupKey
+            val newCollapsed = if (folderPath in st.filePickerCollapsed) {
+                st.filePickerCollapsed - folderPath
             } else {
-                st.filePickerCollapsed + groupKey
+                st.filePickerCollapsed + folderPath
             }
             val newVisible = st.filePickerRows.visibleWithCollapsed(newCollapsed)
             val newIndex = when {
@@ -608,31 +612,43 @@ class PickerModalDelegate @Inject constructor(
                     newVisible.size + (st.filePickerFocusIndex - oldVisible.size)
                 focusedRow != null ->
                     newVisible.indexOf(focusedRow).takeIf { it >= 0 }
-                        ?: newVisible.indexOfFirst { it.isHeader && it.groupKey == focusedRow.groupKey }.coerceAtLeast(0)
+                        ?: newVisible.indexOfFirst { it.folderPath == folderPath }
                 else -> 0
             }
             st.copy(filePickerCollapsed = newCollapsed, filePickerFocusIndex = newIndex.coerceAtLeast(0))
         }
     }
 
-    fun setFocusedFilePickerGroupCollapsed(collapse: Boolean): Boolean {
+    /**
+     * Collapses the focused open folder. On a file or a closed folder, focus moves to its parent.
+     */
+    fun collapseFocusedFilePickerFolder() {
         val st = _state.value
-        val row = st.visibleFilePickerRows.getOrNull(st.filePickerFocusIndex) ?: return false
-        if (!row.isHeader) return false
-        val isCollapsed = row.groupKey in st.filePickerCollapsed
-        if (collapse == isCollapsed) return false
-        toggleFilePickerGroupCollapse(row.groupKey)
-        return true
+        val visible = st.visibleFilePickerRows
+        val row = visible.getOrNull(st.filePickerFocusIndex) ?: return
+        val path = row.folderPath
+        if (path != null && path !in st.filePickerCollapsed) {
+            toggleFilePickerFolderCollapse(path)
+            return
+        }
+        val parent = row.parentPath ?: return
+        val parentIndex = visible.indexOfFirst { it.folderPath == parent }
+        if (parentIndex >= 0) _state.update { it.copy(filePickerFocusIndex = parentIndex) }
+    }
+
+    fun expandFocusedFilePickerFolder() {
+        val st = _state.value
+        val path = st.visibleFilePickerRows.getOrNull(st.filePickerFocusIndex)?.folderPath ?: return
+        if (path in st.filePickerCollapsed) toggleFilePickerFolderCollapse(path)
     }
 
     fun toggleFilePickerRow(row: com.nendo.argosy.data.model.FilePickerRow) {
         _state.update { st ->
             var selected = st.filePickerSelected
-            if (row.isHeader) {
-                val fileIds = st.filePickerRows
-                    .filter { !it.isHeader && it.groupKey == row.groupKey && !it.isLocked }
-                    .mapNotNull { it.rommFileId }
-                selected = if (fileIds.all { it in selected }) selected - fileIds.toSet() else selected + fileIds
+            val folderPath = row.folderPath
+            if (row.isFolder && folderPath != null) {
+                val fileIds = st.filePickerRows.selectableFileIdsWithin(folderPath)
+                selected = if (selected.containsAll(fileIds)) selected - fileIds else selected + fileIds
             } else if (row.rommFileId != null && !row.isLocked) {
                 selected = if (row.rommFileId in selected) {
                     selected - row.rommFileId

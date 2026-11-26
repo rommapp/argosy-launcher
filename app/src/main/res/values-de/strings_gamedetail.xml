@@ -376,6 +376,12 @@
     <string name="gamedetail_file_picker_footer_confirm">Bestätigen</string>
     <string name="gamedetail_file_picker_expand_description">Ausklappen</string>
     <string name="gamedetail_file_picker_collapse_description">Einklappen</string>
+    <string name="gamedetail_file_picker_footer_fold">Aus- / Einklappen</string>
+    <string name="gamedetail_file_picker_folder_select_description">Alles im Ordner auswählen</string>
+    <plurals name="gamedetail_file_picker_folder_file_count">
+        <item quantity="one">%1$d Datei</item>
+        <item quantity="other">%1$d Dateien</item>
+    </plurals>
     <string name="gamedetail_file_picker_pending_remove">Wird entfernt</string>
     <string name="gamedetail_file_picker_pending_add">Wird heruntergeladen</string>
     <string name="gamedetail_file_picker_on_device">Auf dem Gerät</string>

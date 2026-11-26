@@ -425,6 +425,13 @@
     <string name="gamedetail_file_picker_expand_description">Expandir</string>
     <!-- Spoken description of the arrow on an open group heading. Verb: folds the group away. -->
     <string name="gamedetail_file_picker_collapse_description">Recolher</string>
+    <string name="gamedetail_file_picker_footer_fold">Expandir / Recolher</string>
+    <string name="gamedetail_file_picker_folder_select_description">Selecionar tudo na pasta</string>
+    <plurals name="gamedetail_file_picker_folder_file_count">
+        <item quantity="one">%1$d arquivo</item>
+        <item quantity="many">%1$d arquivos</item>
+        <item quantity="other">%1$d arquivos</item>
+    </plurals>
     <!-- Second line on a file row that is on the device and has been unticked. Verb phrase in the
          future: it will be erased when the changes are applied. -->
     <string name="gamedetail_file_picker_pending_remove">Será removido</string>

@@ -27,19 +27,25 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.nendo.argosy.R
 import com.nendo.argosy.data.model.FilePickerRow
+import com.nendo.argosy.data.model.FolderCheckState
 import com.nendo.argosy.data.model.VariantCategory
 import com.nendo.argosy.data.model.allSelectableSelected
-import androidx.compose.runtime.remember
+import com.nendo.argosy.data.model.countsAsSelected
+import com.nendo.argosy.data.model.folderCheckStates
 import com.nendo.argosy.ui.common.labelRes
 import com.nendo.argosy.ui.common.RomFileNameParts
 import com.nendo.argosy.ui.common.parseRomFileName
@@ -56,9 +62,6 @@ import com.nendo.argosy.ui.theme.LocalArgosyTheme
 import com.nendo.argosy.ui.util.clickableNoFocus
 import com.nendo.argosy.util.formatBytes
 
-enum class GroupCheckState { ALL, NONE, PARTIAL }
-
-private const val FOLDER_GROUP_KEY_PREFIX = "folder:"
 private const val TAG_SEPARATOR = " • "
 
 /**
@@ -78,21 +81,18 @@ fun FilePickerModal(
     onConfirm: () -> Unit,
     onDismiss: () -> Unit,
     allRows: List<FilePickerRow> = rows,
-    collapsedGroups: Set<String> = emptySet(),
+    collapsedFolders: Set<String> = emptySet(),
     onToggleCollapse: ((String) -> Unit)? = null,
     manageMode: Boolean = false
 ) {
     val theme = LocalArgosyTheme.current
     val listState = rememberLazyListState()
 
-    val isRowSelected = { row: FilePickerRow ->
-        (row.isLocked && row.isDownloaded) || row.rommFileId in selectedIds
-    }
     val pendingAdds = if (manageMode) {
-        allRows.count { !it.isHeader && !it.isLocked && !it.isDownloaded && isRowSelected(it) }
+        allRows.count { !it.isFolder && !it.isLocked && !it.isDownloaded && it.countsAsSelected(selectedIds) }
     } else 0
     val pendingRemoves = if (manageMode) {
-        allRows.count { !it.isHeader && !it.isLocked && it.isDownloaded && !isRowSelected(it) }
+        allRows.count { !it.isFolder && !it.isLocked && it.isDownloaded && !it.countsAsSelected(selectedIds) }
     } else 0
     val confirmLabel = when {
         !manageMode -> stringResource(R.string.gamedetail_file_picker_confirm_download)
@@ -107,6 +107,8 @@ fun FilePickerModal(
     val confirmEnabled = !manageMode || pendingAdds + pendingRemoves > 0
     val confirmTint = if (manageMode && pendingRemoves > 0) theme.destructive else theme.focusAccent
     val everythingSelected = allRows.allSelectableSelected(selectedIds)
+    val checkStates = remember(allRows, selectedIds) { allRows.folderCheckStates(selectedIds) }
+    val hasFolders = allRows.any { it.isFolder }
     val screenHeight = LocalConfiguration.current.screenHeightDp.dp
 
     Box(
@@ -154,20 +156,21 @@ fun FilePickerModal(
                     modifier = Modifier.fillMaxWidth().weight(1f, fill = false),
                     verticalArrangement = Arrangement.spacedBy(Dimens.spacingXs)
                 ) {
-                    itemsIndexed(rows, key = { _, row -> "${row.groupKey}:${row.rommFileId ?: "h"}" }) { index, row ->
-                        if (row.isHeader) {
-                            FilePickerGroupHeader(
+                    itemsIndexed(rows, key = { _, row -> rowKey(row) }) { index, row ->
+                        val folderPath = row.folderPath
+                        if (row.isFolder && folderPath != null) {
+                            FilePickerFolderRow(
                                 row = row,
-                                checkState = groupCheckState(row.groupKey, allRows, selectedIds),
+                                checkState = checkStates[folderPath] ?: FolderCheckState.NONE,
                                 isFocused = focusIndex == index,
-                                isCollapsed = row.groupKey in collapsedGroups,
+                                isCollapsed = folderPath in collapsedFolders,
                                 onClick = { onToggleRow(row) },
-                                onToggleCollapse = onToggleCollapse?.let { toggle -> { toggle(row.groupKey) } }
+                                onToggleCollapse = onToggleCollapse?.let { toggle -> { toggle(folderPath) } }
                             )
                         } else {
                             FilePickerFileRow(
                                 row = row,
-                                isSelected = isRowSelected(row),
+                                isSelected = row.countsAsSelected(selectedIds),
                                 isFocused = focusIndex == index,
                                 manageMode = manageMode,
                                 onClick = { onToggleRow(row) }
@@ -212,7 +215,11 @@ fun FilePickerModal(
                 FooterHints(
                     hints = listOfNotNull(
                         InputButton.A to stringResource(R.string.gamedetail_file_picker_footer_toggle),
-                        if (allRows.any { it.isHeader }) {
+                        if (hasFolders) {
+                            InputButton.DPAD_HORIZONTAL to
+                                stringResource(R.string.gamedetail_file_picker_footer_fold)
+                        } else null,
+                        if (hasFolders) {
                             InputButton.LB_RB to
                                 stringResource(R.string.gamedetail_file_picker_footer_jump_group)
                         } else null,
@@ -224,33 +231,20 @@ fun FilePickerModal(
     }
 }
 
-private fun groupCheckState(
-    groupKey: String,
-    rows: List<FilePickerRow>,
-    selectedIds: Set<Long>
-): GroupCheckState {
-    val members = rows.filter { !it.isHeader && it.groupKey == groupKey }
-    if (members.isEmpty()) return GroupCheckState.NONE
-    val selectedCount = members.count { row ->
-        (row.isLocked && row.isDownloaded) || row.rommFileId in selectedIds
-    }
-    return when (selectedCount) {
-        0 -> GroupCheckState.NONE
-        members.size -> GroupCheckState.ALL
-        else -> GroupCheckState.PARTIAL
-    }
-}
+private fun rowKey(row: FilePickerRow): String =
+    row.folderPath?.let { "d:$it" } ?: "f:${row.rommFileId ?: row.label}"
 
 @Composable
-private fun FilePickerGroupHeader(
+private fun FilePickerFolderRow(
     row: FilePickerRow,
-    checkState: GroupCheckState,
+    checkState: FolderCheckState,
     isFocused: Boolean,
     isCollapsed: Boolean,
     onClick: () -> Unit,
     onToggleCollapse: (() -> Unit)?
 ) {
     val theme = LocalArgosyTheme.current
+    val selectAllDescription = stringResource(R.string.gamedetail_file_picker_folder_select_description)
     Row(
         verticalAlignment = Alignment.CenterVertically,
         modifier = Modifier
@@ -261,29 +255,55 @@ private fun FilePickerGroupHeader(
                 else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
             )
             .clickableNoFocus { onClick() }
-            .padding(horizontal = Dimens.spacingMd, vertical = Dimens.spacingSm)
+            .padding(
+                start = Dimens.spacingMd + Dimens.spacingMd * row.depth,
+                end = Dimens.spacingMd,
+                top = Dimens.spacingSm,
+                bottom = Dimens.spacingSm
+            )
     ) {
         ArgosyCheckbox(
             state = when (checkState) {
-                GroupCheckState.ALL -> ArgosyCheckState.CHECKED
-                GroupCheckState.PARTIAL -> ArgosyCheckState.PARTIAL
-                GroupCheckState.NONE -> ArgosyCheckState.UNCHECKED
-            }
+                FolderCheckState.ALL -> ArgosyCheckState.CHECKED
+                FolderCheckState.SOME -> ArgosyCheckState.PARTIAL
+                FolderCheckState.NONE -> ArgosyCheckState.UNCHECKED
+            },
+            modifier = Modifier.semantics { contentDescription = selectAllDescription }
         )
         Spacer(modifier = Modifier.width(Dimens.spacingSm))
-        val headerText = if (row.groupKey.startsWith(FOLDER_GROUP_KEY_PREFIX)) {
-            row.label
+        val isCategoryRoot = row.depth == 0 && !row.isUncategorised
+        val folderText = if (isCategoryRoot) {
+            stringResource(VariantCategory.fromKey(row.groupKey).labelRes).uppercase()
         } else {
-            stringResource(VariantCategory.fromKey(row.groupKey).labelRes)
+            row.label
         }
         Text(
-            text = headerText.uppercase(),
+            text = folderText,
             style = MaterialTheme.typography.labelLarge,
             fontWeight = FontWeight.Bold,
             color = MaterialTheme.colorScheme.onSurface,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
             modifier = Modifier.weight(1f)
         )
+        Spacer(modifier = Modifier.width(Dimens.spacingSm))
+        Text(
+            text = pluralStringResource(
+                R.plurals.gamedetail_file_picker_folder_file_count,
+                row.fileCount,
+                row.fileCount
+            ),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+        Spacer(modifier = Modifier.width(Dimens.spacingSm))
+        Text(
+            text = formatBytes(row.sizeBytes),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
         if (onToggleCollapse != null) {
+            Spacer(modifier = Modifier.width(Dimens.spacingSm))
             Icon(
                 imageVector = if (isCollapsed) Icons.Default.ExpandMore else Icons.Default.ExpandLess,
                 contentDescription = if (isCollapsed) {
@@ -319,7 +339,12 @@ private fun FilePickerFileRow(
                 else MaterialTheme.colorScheme.surface
             )
             .clickableNoFocus(enabled = !row.isLocked) { onClick() }
-            .padding(horizontal = Dimens.spacingLg, vertical = Dimens.spacingSm)
+            .padding(
+                start = Dimens.spacingLg + Dimens.spacingMd * row.depth,
+                end = Dimens.spacingLg,
+                top = Dimens.spacingSm,
+                bottom = Dimens.spacingSm
+            )
     ) {
         ArgosyCheckbox(
             state = if (isSelected) ArgosyCheckState.CHECKED else ArgosyCheckState.UNCHECKED,
@@ -327,8 +352,7 @@ private fun FilePickerFileRow(
         )
         Spacer(modifier = Modifier.width(Dimens.spacingSm))
         Column(modifier = Modifier.weight(1f)) {
-            val isGameVariant = !row.groupKey.startsWith(FOLDER_GROUP_KEY_PREFIX) &&
-                VariantCategory.fromKey(row.groupKey).isLaunchTarget
+            val isGameVariant = !row.isUncategorised && VariantCategory.fromKey(row.groupKey).isLaunchTarget
             val parts = remember(row.label, isGameVariant) {
                 if (isGameVariant) parseRomFileName(row.label) else RomFileNameParts(row.label, emptyList())
             }

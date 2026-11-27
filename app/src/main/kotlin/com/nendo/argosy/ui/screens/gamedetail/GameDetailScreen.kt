@@ -110,6 +110,7 @@ import com.nendo.argosy.ui.screens.gamedetail.modals.fileBrowserTitleRes
 import com.nendo.argosy.ui.screens.gamedetail.modals.PermissionRequiredModal
 import com.nendo.argosy.ui.screens.gamedetail.modals.RatingPickerModal
 import com.nendo.argosy.ui.screens.gamedetail.modals.FilePickerModal
+import com.nendo.argosy.ui.screens.gamedetail.modals.SwitchModsModal
 import com.nendo.argosy.ui.common.savechannel.SaveChannelModal
 import com.nendo.argosy.ui.components.AddToCollectionModal
 import com.nendo.argosy.ui.components.CollectionItem
@@ -450,9 +451,10 @@ private fun GameDetailContent(
 ) {
     val coroutineScope = rememberCoroutineScope()
     val pickerState by viewModel.pickerModalDelegate.state.collectAsState()
+    val modInstallState by viewModel.modInstallDelegate.state.collectAsState()
     val downloadProgressState = viewModel.downloadProgress.collectAsState()
     val isAnySyncing = uiState.isSyncing || uiState.syncOverlayState != null
-    val showAnyOverlay = uiState.showMoreOptions || uiState.showPlayOptions ||
+    val showAnyOverlay = modInstallState.visible || uiState.showMoreOptions || uiState.showPlayOptions ||
         uiState.showRatingsStatusMenu || pickerState.hasAnyPickerOpen ||
         uiState.showRatingPicker || uiState.showMissingDiscPrompt || isAnySyncing ||
         uiState.showSaveCacheDialog || uiState.showRenameDialog || uiState.showScreenshotViewer ||
@@ -1093,6 +1095,14 @@ private fun GameDetailModals(
             onDismiss = viewModel::dismissRatingsStatusMenu
         )
     }
+
+    val modsState by viewModel.modInstallDelegate.state.collectAsState()
+    SwitchModsModal(
+        state = modsState,
+        handler = viewModel.modInstallInputHandler,
+        onActivate = viewModel::activateModInstallRow,
+        onDismiss = viewModel.modInstallDelegate::dismiss
+    )
 
     AnimatedVisibility(
         visible = pickerState.showFilePicker,

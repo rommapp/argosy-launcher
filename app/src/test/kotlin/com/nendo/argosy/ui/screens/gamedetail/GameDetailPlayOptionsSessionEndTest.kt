@@ -275,6 +275,7 @@ class GameDetailPlayOptionsSessionEndTest {
         gameDocumentLoader = mockk(relaxed = true),
         documentHighlightStore = mockk(relaxed = true),
         pickerModalDelegate = pickerModalDelegate,
+        modInstallDelegate = mockk(relaxed = true),
         achievementDelegate = achievementDelegate,
         downloadDelegate = downloadDelegate,
         saveManagement = saveManagement,

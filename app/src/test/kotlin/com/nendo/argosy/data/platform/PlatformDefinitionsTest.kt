@@ -55,6 +55,12 @@ class PlatformDefinitionsTest {
     }
 
     @Test
+    fun `RomM switch-2 folder is the Switch 2, not a Switch sub-platform`() {
+        assertEquals("switch2", PlatformDefinitions.getCanonicalSlug("switch-2"))
+        assertEquals("switch", PlatformDefinitions.getCanonicalSlug("switch"))
+    }
+
+    @Test
     fun `suffixed slug resolves to the longest known parent containing separators`() {
         assertEquals("neogeocd", PlatformDefinitions.getCanonicalSlug("neo-geo-cd-hacks"))
         assertEquals("wsc", PlatformDefinitions.getCanonicalSlug("wonderswan-color-hacks"))

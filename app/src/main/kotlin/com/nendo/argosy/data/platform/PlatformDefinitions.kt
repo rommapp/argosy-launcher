@@ -77,6 +77,8 @@ object PlatformDefinitions {
         "nintendo-switch" to "switch",
         "nintendoswitch2" to "switch2",
         "nintendo-switch-2" to "switch2",
+        "switch-2" to "switch2",
+        "switch_2" to "switch2",
         "new_nintendo3ds" to "3ds",
         "new-nintendo-3ds" to "3ds",
         "n3ds" to "3ds",

@@ -657,6 +657,14 @@ object EmulatorRegistry {
             releaseSource = ReleaseSource.GitHub("JaviiDeveloper/eden-nx2-android")
         ),
         EmulatorDef(
+            id = "banana_native",
+            packageName = "dev.bananative.android",
+            displayName = "Banana Native",
+            supportedPlatforms = setOf("switch2"),
+            downloadUrl = "https://git.eden-emu.dev/moceure/BananaNative/releases",
+            releaseSource = ReleaseSource.Gitea("https://git.eden-emu.dev", "moceure/BananaNative")
+        ),
+        EmulatorDef(
             id = "eden_duo",
             packageName = "dev.igawa6.edenduo",
             displayName = "Eden Duo",
@@ -1317,7 +1325,7 @@ object EmulatorRegistry {
         "wii" to listOf(BUILTIN_ID, "dolphin", "dolphin_handheld", "dolphin_cs", "retroarch", "retroarch_64", "retroarch_32"),
         "wiiu" to listOf("cemu", "cemu_dualscreen"),
         "switch" to listOf("eden", "eden_duo", "lemon", "citron", "sudachi", "ryujinx", "yuzu", "strato", "skyline"),
-        "switch2" to listOf("eden_nx2"),
+        "switch2" to listOf("eden_nx2", "banana_native"),
         "gba" to listOf(BUILTIN_ID, "pizza_boy_gba_pro", "pizza_boy_gba", "linkboy", "retroarch", "retroarch_64", "retroarch_32", "pokedaisy"),
         "gb" to listOf(BUILTIN_ID, "pizza_boy_gb_pro", "pizza_boy_gb", "linkboy", "retroarch", "retroarch_64", "retroarch_32", "pokedaisy"),
         "gbc" to listOf(BUILTIN_ID, "pizza_boy_gb_pro", "pizza_boy_gb", "linkboy", "retroarch", "retroarch_64", "retroarch_32", "pokedaisy"),

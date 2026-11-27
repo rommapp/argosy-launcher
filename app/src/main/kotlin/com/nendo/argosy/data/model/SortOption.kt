@@ -113,12 +113,15 @@ private fun <T> flatOrdered(
 
 private val HOME_TITLE_ORDER = ActiveSort(SortOption.TITLE, descending = false)
 
-fun <T> ownershipTier(item: T, props: SortableProps<T>): Int = when {
-    props.isInstalled(item) && props.isFavorite(item) -> 0
-    props.isInstalled(item) -> 1
-    props.isFavorite(item) -> 2
+fun ownershipTier(isInstalled: Boolean, isFavorite: Boolean): Int = when {
+    isInstalled && isFavorite -> 0
+    isInstalled -> 1
+    isFavorite -> 2
     else -> 3
 }
+
+fun <T> ownershipTier(item: T, props: SortableProps<T>): Int =
+    ownershipTier(props.isInstalled(item), props.isFavorite(item))
 
 fun <T> tieredByOwnership(items: List<T>, props: SortableProps<T>): List<T> =
     items.sortedBy { ownershipTier(it, props) }

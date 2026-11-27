@@ -21,6 +21,9 @@ const val SHOWCASE_COVER_LIMIT = 250
 internal const val INSTALLED_SQL =
     "(localPath IS NOT NULL OR (steamLauncher IS NOT NULL AND steamLauncher != '${GameEntity.LAUNCHER_UNSPECIFIED}'))"
 
+internal const val OWNERSHIP_TIER_SQL =
+    "CASE WHEN $INSTALLED_SQL AND isFavorite = 1 THEN 0 WHEN $INSTALLED_SQL THEN 1 WHEN isFavorite = 1 THEN 2 ELSE 3 END"
+
 internal const val ENABLED_PLATFORM_SQL =
     "EXISTS (SELECT 1 FROM platforms WHERE platforms.id = games.platformId AND $PLATFORM_ENABLED_SQL)"
 
@@ -429,6 +432,7 @@ interface GameDao {
         AND isGroupVisible = 1
         AND NOT EXISTS (SELECT 1 FROM user_roms_hidden h WHERE h.gameId = games.id AND (h.ownerUserId IS NULL OR h.ownerUserId IS :ownerUserId))
         ORDER BY
+            $OWNERSHIP_TIER_SQL,
             CASE WHEN lastPlayed IS NULL THEN 1 ELSE 0 END,
             lastPlayed DESC,
             CASE WHEN rating IS NULL THEN 1 ELSE 0 END,

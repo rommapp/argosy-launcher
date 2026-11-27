@@ -1,0 +1,3 @@
+- Columns Home puts downloaded and favorite games first in each platform column
+- Improved column layouts for narrow ratios
+- Fix Columns Home showing "Last played" for games with no recent play

@@ -3,6 +3,7 @@ package com.nendo.argosy.data.repository
 import com.nendo.argosy.data.local.entity.PlaySessionEntity
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
 import org.junit.Test
 import java.time.Duration
 import java.time.Instant
@@ -120,6 +121,52 @@ class GamePlayActivityCalculatorTest {
         )
         assertEquals(0L, weeks[13])
         assertEquals(minutes(5), weeks[12])
+    }
+
+    @Test
+    fun `a session in a week that reads as zero is not the last played`() {
+        val counted = session(weeksBefore(5).plus(Duration.ofDays(1)), activeMinutes = 20)
+        val brief = session(weeksBefore(2).plus(Duration.ofDays(1)), activeMinutes = 0).copy(activePlayMs = 30_000L)
+        val window = listOf(counted, brief)
+        val weeks = GamePlayActivityCalculator.weekActiveMs(window, now, zone, minWeekMs = minutes(1))
+
+        val latest = GamePlayActivityCalculator.latestCountedSession(window, weeks, beforeWindow = null, now, zone)
+
+        assertEquals(counted, latest)
+    }
+
+    @Test
+    fun `the last played session always falls in a week the bars show`() {
+        val brief = session(weeksBefore(2).plus(Duration.ofDays(1)), activeMinutes = 0).copy(activePlayMs = 0L)
+        val weeks = GamePlayActivityCalculator.weekActiveMs(listOf(brief), now, zone, minWeekMs = minutes(1))
+
+        val latest = GamePlayActivityCalculator.latestCountedSession(listOf(brief), weeks, beforeWindow = null, now, zone)
+
+        assertTrue(weeks.all { it == 0L })
+        assertNull(latest)
+    }
+
+    @Test
+    fun `with no counted play in the window the last played comes from before it`() {
+        val earlier = session(GamePlayActivityCalculator.windowStart(now, zone).minus(Duration.ofDays(3)))
+        val brief = session(weeksBefore(2).plus(Duration.ofDays(1)), activeMinutes = 0).copy(activePlayMs = 10_000L)
+        val weeks = GamePlayActivityCalculator.weekActiveMs(listOf(brief), now, zone, minWeekMs = minutes(1))
+
+        val latest = GamePlayActivityCalculator.latestCountedSession(listOf(brief), weeks, earlier, now, zone)
+
+        assertEquals(earlier, latest)
+    }
+
+    @Test
+    fun `short sessions that add up to a counted week are last played`() {
+        val first = session(weeksBefore(2).plus(Duration.ofDays(1)), activeMinutes = 0).copy(activePlayMs = 40_000L)
+        val second = session(weeksBefore(2).plus(Duration.ofDays(2)), activeMinutes = 0).copy(activePlayMs = 40_000L)
+        val window = listOf(first, second)
+        val weeks = GamePlayActivityCalculator.weekActiveMs(window, now, zone, minWeekMs = minutes(1))
+
+        val latest = GamePlayActivityCalculator.latestCountedSession(window, weeks, beforeWindow = null, now, zone)
+
+        assertEquals(second, latest)
     }
 
     @Test

@@ -12,6 +12,7 @@ class HomeRefreshFocusTest {
         platformId = 7,
         platformSlug = "snes",
         platformDisplayName = "SNES",
+        platformShortName = "SNES",
         coverPath = null,
         backgroundPath = null,
         developer = null,

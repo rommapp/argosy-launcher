@@ -65,6 +65,7 @@ class FocusedTileGameTest {
         platformId = 1L,
         platformSlug = "snes",
         platformDisplayName = "Super Nintendo",
+        platformShortName = "SNES",
         coverPath = null,
         backgroundPath = null,
         developer = null,

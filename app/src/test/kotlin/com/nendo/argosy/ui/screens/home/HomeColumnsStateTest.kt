@@ -20,6 +20,7 @@ class HomeColumnsStateTest {
         platformId = 1L,
         platformSlug = "snes",
         platformDisplayName = "Super Nintendo",
+        platformShortName = "SNES",
         coverPath = null,
         backgroundPath = null,
         developer = null,
@@ -39,7 +40,7 @@ class HomeColumnsStateTest {
 
     private fun platform(id: String, vararg gameIds: Long) = HomeColumnUi(
         id = id,
-        label = HomeColumnLabel.Platform(id),
+        label = HomeColumnLabel.Platform(id, id),
         items = gameIds.map { HomeRowItem.Game(game(it)) }
     )
 

@@ -314,7 +314,8 @@ class HomeColumnsDelegate @Inject constructor(
                 HomePlatformGames(
                     platformId = platform.id,
                     name = platform.getDisplayName(),
-                    games = reader.platform(platform.id, PLATFORM_CANDIDATE_LIMIT)
+                    games = reader.platform(platform.id, PLATFORM_CANDIDATE_LIMIT),
+                    shortName = platform.shortName
                 )
             }
         }

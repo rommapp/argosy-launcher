@@ -92,7 +92,7 @@ class PlayStatsRepository @Inject constructor(
 
     /**
      * The signed-in account's play of [gameId] over the [GamePlayActivityCalculator.WEEKS] weeks
-     * ending at [now], with its latest session's end and device.
+     * ending at [now], with the end and device of its latest session that counts toward those weeks.
      */
     suspend fun gamePlayActivity(
         gameId: Long,
@@ -102,9 +102,16 @@ class PlayStatsRepository @Inject constructor(
         val ownerUserId = syncPreferencesRepository.getRommUserId()
         val start = GamePlayActivityCalculator.windowStart(now, zone)
         val sessions = playSessionDao.getSessionsForGameAndOwnerInRange(gameId, ownerUserId, start, now)
-        val latest = playSessionDao.getLatestForGameAndOwner(gameId, ownerUserId)
+        val weekMs = GamePlayActivityCalculator.weekActiveMs(sessions, now, zone, minWeekMs = MIN_DISPLAY_MS)
+        val latest = GamePlayActivityCalculator.latestCountedSession(
+            windowSessions = sessions,
+            weekMs = weekMs,
+            beforeWindow = playSessionDao.getLatestForGameAndOwnerBefore(gameId, ownerUserId, start),
+            now = now,
+            zone = zone
+        )
         GamePlayActivity(
-            weekActiveMs = GamePlayActivityCalculator.weekActiveMs(sessions, now, zone, minWeekMs = MIN_DISPLAY_MS),
+            weekActiveMs = weekMs,
             lastPlayedAt = latest?.endTime,
             lastPlayedDevice = latest?.let(GamePlayActivityCalculator::deviceName)
         )

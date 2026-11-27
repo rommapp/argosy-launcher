@@ -31,7 +31,7 @@ class CarouselTouchTest {
         assertEnlargedCardAcceptsTouch(
             CarouselItem.Game("game", HomeGameUi(
                 id = 1, title = "Game", platformId = 1, platformSlug = "nes",
-                platformDisplayName = "NES", coverPath = null, backgroundPath = null,
+                platformDisplayName = "NES", platformShortName = "NES", coverPath = null, backgroundPath = null,
                 developer = null, releaseYear = null, genre = null,
                 isFavorite = false, isDownloaded = false
             ))

@@ -23,6 +23,7 @@ class SearchPresentationFocusTest {
             platformId = 1,
             platformSlug = "snes",
             platformDisplayName = "SNES",
+            platformShortName = "SNES",
             coverPath = null,
             backgroundPath = null,
             developer = null,

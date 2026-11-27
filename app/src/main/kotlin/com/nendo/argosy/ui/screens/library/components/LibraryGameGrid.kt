@@ -130,6 +130,7 @@ internal fun LibraryGameCard(
             platformId = game.platformId,
             platformSlug = game.platformSlug,
             platformDisplayName = game.platformDisplayName,
+            platformShortName = game.platformDisplayName,
             coverPath = game.coverPath,
             boxSpinePath = game.boxSpinePath,
             box3dPath = game.box3dPath,

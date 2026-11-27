@@ -104,6 +104,14 @@ interface PlaySessionDao {
 
     @Query("""
         SELECT * FROM play_sessions
+        WHERE gameId = :gameId AND ownerUserId IS :ownerUserId AND startTime < :before
+        ORDER BY endTime DESC
+        LIMIT 1
+    """)
+    suspend fun getLatestForGameAndOwnerBefore(gameId: Long, ownerUserId: Long?, before: Instant): PlaySessionEntity?
+
+    @Query("""
+        SELECT * FROM play_sessions
         WHERE ownerUserId IS :ownerUserId AND startTime >= :start AND startTime < :end
           AND (igdbId IS NULL OR igdbId NOT IN (:hiddenIgdbIds))
         ORDER BY startTime ASC

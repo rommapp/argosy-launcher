@@ -208,7 +208,7 @@ class HomeVideoPreviewSchedulingTest {
     private companion object {
         fun game(youtubeVideoId: String?, videoNormalizedPath: String? = null) = HomeGameUi(
             id = 1, title = "Game", platformId = 1, platformSlug = "snes",
-            platformDisplayName = "SNES", coverPath = null, backgroundPath = null,
+            platformDisplayName = "SNES", platformShortName = "SNES", coverPath = null, backgroundPath = null,
             developer = null, releaseYear = null, genre = null,
             isFavorite = false, isDownloaded = true, youtubeVideoId = youtubeVideoId,
             videoNormalizedPath = videoNormalizedPath

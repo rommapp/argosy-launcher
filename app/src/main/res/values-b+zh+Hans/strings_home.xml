@@ -266,6 +266,7 @@
     </plurals>
     <string name="home_columns_last_played_on">上次游玩：%1$s（%2$s）</string>
     <string name="home_columns_last_played">上次游玩：%1$s</string>
+    <string name="home_columns_last_played_short">游玩：%1$s</string>
     <string name="home_columns_previous_game">上一个游戏</string>
     <string name="home_columns_next_game">下一个游戏</string>
     <string name="home_footer_columns_sections">分区</string>

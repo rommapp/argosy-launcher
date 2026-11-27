@@ -249,6 +249,7 @@ class FeatureTileContentBuilderTest {
         platformId = 1L,
         platformSlug = "snes",
         platformDisplayName = "Super Nintendo",
+        platformShortName = "SNES",
         coverPath = "/covers/$id.png",
         backgroundPath = null,
         developer = null,

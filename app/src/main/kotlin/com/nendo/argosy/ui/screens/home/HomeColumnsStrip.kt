@@ -46,17 +46,19 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.LayoutDirection
+import androidx.compose.ui.unit.coerceAtLeast
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.em
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import com.nendo.argosy.R
 import com.nendo.argosy.data.social.FriendActivity
-import com.nendo.argosy.domain.model.HomeColumnKind
+import com.nendo.argosy.domain.model.HomeColumnLabel
 import com.nendo.argosy.ui.common.LocalRunningGames
 import com.nendo.argosy.ui.common.alwaysCrossfade
 import androidx.compose.foundation.border
@@ -169,6 +171,7 @@ private fun ColumnGlassBorder(item: HomeRowItem, accent: Color) {
 internal fun HomeColumnsStrip(
     state: ColumnsState,
     slots: Int,
+    tier: HomeColumnsBandTier,
     showFocus: Boolean,
     showStepControls: Boolean,
     showInfoBand: Boolean,
@@ -221,11 +224,13 @@ internal fun HomeColumnsStrip(
                     column = column,
                     itemIndex = state.itemIndexOf(column),
                     isFocused = isFocused,
+                    compactSide = tier == HomeColumnsBandTier.COMPACT && !isFocused,
                     showFocus = showFocus,
                     showStepControls = showStepControls,
                     showInfoBand = showInfoBand,
                     sliver = slot.sliver,
                     width = geometry.widthAt(slot.offset).dp,
+                    settledWidth = geometry.widthAt(if (isFocused) 0f else 1f).dp,
                     height = columnHeight,
                     heroFrame = HomeHeroFrame(heroSpec, geometry.widthProgressAt(slot.offset)),
                     friendsFor = friendsFor,
@@ -260,11 +265,13 @@ private fun HomeColumnCard(
     column: HomeColumnUi,
     itemIndex: Int,
     isFocused: Boolean,
+    compactSide: Boolean,
     showFocus: Boolean,
     showStepControls: Boolean,
     showInfoBand: Boolean,
     sliver: Boolean,
     width: Dp,
+    settledWidth: Dp,
     height: Dp,
     heroFrame: HomeHeroFrame,
     friendsFor: (HomeGameUi?) -> List<FriendActivity>,
@@ -374,16 +381,20 @@ private fun HomeColumnCard(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = Dimens.spacingMd, vertical = Dimens.spacingSm),
+                .padding(
+                    horizontal = if (compactSide) Dimens.spacingSm else Dimens.spacingMd,
+                    vertical = Dimens.spacingSm
+                ),
             horizontalArrangement = Arrangement.spacedBy(Dimens.spacingSm)
         ) {
             ColumnLabel(
                 column = column,
                 accent = if (isFocused && showFocus) theme.focusAccent else Color.White,
                 secondary = secondary,
+                widthSlack = settledWidth - width,
                 modifier = Modifier.weight(1f)
             )
-            (item as? HomeRowItem.Game)?.game?.let { game ->
+            (item as? HomeRowItem.Game)?.game?.takeIf { !compactSide }?.let { game ->
                 GameStatusBadges(
                     game = game,
                     downloadIndicator = download,
@@ -398,6 +409,7 @@ private fun HomeColumnCard(
                 item = item,
                 shown = footerShown,
                 coverWidth = width * ComponentDefaults.HomeColumns.coverWidthRatio,
+                showCover = !compactSide,
                 secondary = secondary,
                 friends = friendsFor((item as? HomeRowItem.Game)?.game),
                 onCoverLoadFailed = onCoverLoadFailed,
@@ -422,16 +434,17 @@ private fun HomeColumnCard(
 }
 
 @Composable
-private fun ColumnLabel(column: HomeColumnUi, accent: Color, secondary: Color, modifier: Modifier = Modifier) {
+private fun ColumnLabel(
+    column: HomeColumnUi,
+    accent: Color,
+    secondary: Color,
+    widthSlack: Dp,
+    modifier: Modifier = Modifier
+) {
     Column(modifier) {
-        if (column.kind == HomeColumnKind.PLATFORM) {
-            Text(
-                text = homeColumnTitle(column),
-                style = MaterialTheme.typography.titleSmall,
-                color = Color.White,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis
-            )
+        val platform = column.label as? HomeColumnLabel.Platform
+        if (platform != null) {
+            PlatformColumnTitle(label = platform, widthSlack = widthSlack)
         } else {
             Text(
                 text = homeColumnTitle(column),
@@ -454,11 +467,35 @@ private fun ColumnLabel(column: HomeColumnUi, accent: Color, secondary: Color, m
 }
 
 @Composable
+private fun PlatformColumnTitle(label: HomeColumnLabel.Platform, widthSlack: Dp) {
+    val style = MaterialTheme.typography.titleSmall
+    val measurer = rememberTextMeasurer()
+    val density = LocalDensity.current
+    BoxWithConstraints {
+        val settledPx = with(density) { (maxWidth + widthSlack).coerceAtLeast(0.dp).roundToPx() }
+        val bounded = constraints.hasBoundedWidth
+        val name = remember(measurer, style, settledPx, label) {
+            platformLabel(label.name, label.shortName) {
+                !bounded || measurer.measure(it, style, maxLines = 1, softWrap = false).size.width <= settledPx
+            }
+        }
+        Text(
+            text = name,
+            style = style,
+            color = Color.White,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis
+        )
+    }
+}
+
+@Composable
 private fun ColumnFooter(
     column: HomeColumnUi,
     item: HomeRowItem,
     shown: Float,
     coverWidth: Dp,
+    showCover: Boolean,
     secondary: Color,
     friends: List<FriendActivity>,
     onCoverLoadFailed: (Long, String) -> Unit,
@@ -466,18 +503,20 @@ private fun ColumnFooter(
     modifier: Modifier = Modifier
 ) {
     Row(modifier = modifier, verticalAlignment = Alignment.Bottom) {
-        ColumnCover(
-            item = item,
-            onCoverLoadFailed = onCoverLoadFailed,
-            onCoverLoaded = onCoverLoaded,
-            modifier = Modifier
-                .width(coverWidth)
-                .graphicsLayer {
-                    alpha = shown
-                    translationY = (1f - shown) * size.height / 2f
-                }
-        )
-        Spacer(Modifier.width(Dimens.spacingSm))
+        if (showCover) {
+            ColumnCover(
+                item = item,
+                onCoverLoadFailed = onCoverLoadFailed,
+                onCoverLoaded = onCoverLoaded,
+                modifier = Modifier
+                    .width(coverWidth)
+                    .graphicsLayer {
+                        alpha = shown
+                        translationY = (1f - shown) * size.height / 2f
+                    }
+            )
+            Spacer(Modifier.width(Dimens.spacingSm))
+        }
         Column(Modifier.weight(1f).graphicsLayer { alpha = shown }) {
             Text(
                 text = when (item) {

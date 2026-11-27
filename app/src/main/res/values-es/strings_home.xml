@@ -298,6 +298,7 @@
     </plurals>
     <string name="home_columns_last_played_on">Jugado por última vez %1$s en %2$s</string>
     <string name="home_columns_last_played">Jugado por última vez %1$s</string>
+    <string name="home_columns_last_played_short">Jugado %1$s</string>
     <string name="home_columns_previous_game">Juego anterior</string>
     <string name="home_columns_next_game">Juego siguiente</string>
     <string name="home_footer_columns_sections">Secciones</string>

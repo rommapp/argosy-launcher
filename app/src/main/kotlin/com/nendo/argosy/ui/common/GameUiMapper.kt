@@ -35,16 +35,19 @@ suspend fun GameEntity.toHomeGameUi(
     firstScreenshotUrl: String?,
     platformDisplayName: String? = null,
     gradientColors: Pair<Color, Color>? = null,
-    newThreshold: Instant = Instant.now().minus(NEW_GAME_THRESHOLD_HOURS, ChronoUnit.HOURS)
+    newThreshold: Instant = Instant.now().minus(NEW_GAME_THRESHOLD_HOURS, ChronoUnit.HOURS),
+    platformShortName: String? = null
 ): HomeGameUi {
     val effectiveBackground = art?.backgroundPath ?: firstScreenshotUrl ?: art?.coverPath
     val downloaded = resolveDownloaded(downloadStatus)
+    val displayName = platformDisplayName ?: platformSlug
     return HomeGameUi(
         id = id,
         title = title,
         platformId = platformId,
         platformSlug = platformSlug,
-        platformDisplayName = platformDisplayName ?: platformSlug,
+        platformDisplayName = displayName,
+        platformShortName = platformShortName ?: displayName,
         coverPath = art?.coverPath,
         coverAspectRatio = art?.coverAspectRatio,
         gradientColors = gradientColors,
@@ -132,12 +135,14 @@ suspend fun GameListItem.toHomeGameUi(
     newThreshold: Instant = Instant.now().minus(NEW_GAME_THRESHOLD_HOURS, ChronoUnit.HOURS)
 ): HomeGameUi {
     val downloaded = resolveDownloaded(downloadStatus)
+    val displayName = platformDisplayName ?: platformSlug
     return HomeGameUi(
         id = id,
         title = title,
         platformId = platformId,
         platformSlug = platformSlug,
-        platformDisplayName = platformDisplayName ?: platformSlug,
+        platformDisplayName = displayName,
+        platformShortName = displayName,
         coverPath = art?.coverPath,
         backgroundPath = art?.coverPath,
         developer = developer,

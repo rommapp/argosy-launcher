@@ -22,15 +22,41 @@ object GamePlayActivityCalculator {
         weeks: Int = WEEKS,
         minWeekMs: Long = 0L
     ): List<Long> {
-        val end = now.atZone(zone)
-        val bounds = (weeks downTo 0).map { end.minusWeeks(it.toLong()).toInstant() }
+        val bounds = weekBounds(now, zone, weeks)
         val totals = LongArray(weeks)
         sessions.forEach { session ->
-            val index = bounds.indexOfLast { !session.startTime.isBefore(it) }
+            val index = weekIndex(bounds, session.startTime)
             if (index in 0 until weeks) totals[index] += session.activePlayMs
         }
         return totals.map { if (it >= minWeekMs) it else 0L }
     }
+
+    /**
+     * The latest session that counts as play, by end time: one of [windowSessions] in a week that
+     * [weekMs] keeps, else [beforeWindow]. A session in a week [weekActiveMs] reads as zero is left
+     * out, so the last-played time never names a session the weekly bars do not show.
+     */
+    fun latestCountedSession(
+        windowSessions: List<PlaySessionEntity>,
+        weekMs: List<Long>,
+        beforeWindow: PlaySessionEntity?,
+        now: Instant,
+        zone: ZoneId
+    ): PlaySessionEntity? {
+        val bounds = weekBounds(now, zone, weekMs.size)
+        return windowSessions
+            .filter { session -> (weekMs.getOrNull(weekIndex(bounds, session.startTime)) ?: 0L) > 0L }
+            .maxByOrNull { it.endTime }
+            ?: beforeWindow
+    }
+
+    private fun weekBounds(now: Instant, zone: ZoneId, weeks: Int): List<Instant> {
+        val end = now.atZone(zone)
+        return (weeks downTo 0).map { end.minusWeeks(it.toLong()).toInstant() }
+    }
+
+    private fun weekIndex(bounds: List<Instant>, start: Instant): Int =
+        bounds.indexOfLast { !start.isBefore(it) }
 
     /**
      * Each week as a share of the busiest one; all zeros when nothing was played.

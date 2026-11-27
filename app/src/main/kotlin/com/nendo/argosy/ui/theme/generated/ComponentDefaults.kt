@@ -394,6 +394,15 @@ object ComponentDefaults {
         const val takeoverCoverWidthRatio = 0.12f
         const val takeoverScrimHeightRatio = 0.5f
         const val waterAmplitudeRatio = 0.025f
+        const val compactWidthDp = 600
+        const val stripWeightRatioCompact = 0.7f
+        const val bandWeightRatioCompact = 0.3f
+        const val stripWeightRatioStacked = 0.6f
+        const val bandWeightRatioStacked = 0.4f
+        const val bandCoverOverlapRatioCompact = 0f
+        const val bandTitleWeightRatioCompact = 0.55f
+        const val bandTitleMaxLinesCompact = 2
+        const val progressLabelMinPanelWidthDp = 240
     }
 
     object LetterJumpOverlay {

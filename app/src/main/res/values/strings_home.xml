@@ -578,6 +578,8 @@
     <string name="home_columns_last_played_on">Last played %1$s on %2$s</string>
     <!-- Progress panel. %1$s is when the game was last played, like "2 days ago". -->
     <string name="home_columns_last_played">Last played %1$s</string>
+    <!-- Progress panel, short form used when the longer last-played line does not fit. %1$s is a compact time, like "14d ago". -->
+    <string name="home_columns_last_played_short">Played %1$s</string>
     <!-- Description of the arrow that moves to the previous game in the focused column. -->
     <string name="home_columns_previous_game">Previous game</string>
     <!-- Description of the arrow that moves to the next game in the focused column. -->

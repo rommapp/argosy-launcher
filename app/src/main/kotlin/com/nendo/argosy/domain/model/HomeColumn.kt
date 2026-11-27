@@ -34,7 +34,7 @@ sealed interface HomeColumnLabel {
         override val kind: HomeColumnKind get() = HomeColumnKind.THEME
     }
 
-    data class Platform(val name: String) : HomeColumnLabel {
+    data class Platform(val name: String, val shortName: String) : HomeColumnLabel {
         override val kind: HomeColumnKind get() = HomeColumnKind.PLATFORM
     }
 
@@ -65,7 +65,8 @@ data class HomePinnedCollection(
 data class HomePlatformGames(
     val platformId: Long,
     val name: String,
-    val games: List<GameEntity>
+    val games: List<GameEntity>,
+    val shortName: String
 )
 
 data class HomeFriendsPlayingGame(

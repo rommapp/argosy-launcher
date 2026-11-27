@@ -1,6 +1,7 @@
 package com.nendo.argosy.domain.usecase.home
 
 import com.nendo.argosy.data.local.entity.GameEntity
+import com.nendo.argosy.data.model.ownershipTier
 import com.nendo.argosy.domain.model.ColumnsConfig
 import com.nendo.argosy.domain.model.HomeColumn
 import com.nendo.argosy.domain.model.HomeColumnLabel
@@ -114,7 +115,7 @@ class BuildHomeColumnsUseCase @Inject constructor() {
         val games = (listOf(lead) + ranked.filter { it.id != lead.id }).take(limit(id))
         return HomeColumn(
             id = id,
-            label = HomeColumnLabel.Platform(platform.name),
+            label = HomeColumnLabel.Platform(platform.name, platform.shortName),
             games = games
         )
     }
@@ -169,7 +170,8 @@ class BuildHomeColumnsUseCase @Inject constructor() {
             columnId.removePrefix(ID_PLATFORM).takeIf { it != columnId }?.toLongOrNull()
 
         private val LEAD_ORDER: Comparator<GameEntity> =
-            compareBy<GameEntity> { it.lastPlayed == null }
+            compareBy<GameEntity> { ownershipTier(it.isDownloaded, it.isFavorite) }
+                .thenBy { it.lastPlayed == null }
                 .thenByDescending { it.lastPlayed }
                 .thenBy { it.rating == null }
                 .thenByDescending { it.rating }

@@ -314,6 +314,7 @@
     </plurals>
     <string name="home_columns_last_played_on">Последний запуск %1$s на %2$s</string>
     <string name="home_columns_last_played">Последний запуск %1$s</string>
+    <string name="home_columns_last_played_short">Запуск %1$s</string>
     <string name="home_columns_previous_game">Предыдущая игра</string>
     <string name="home_columns_next_game">Следующая игра</string>
     <string name="home_footer_columns_sections">Разделы</string>

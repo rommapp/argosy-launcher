@@ -3,6 +3,7 @@ package com.nendo.argosy.ui.screens.home.delegates
 import android.content.Context
 import com.nendo.argosy.R
 import com.nendo.argosy.data.local.entity.GameEntity
+import com.nendo.argosy.data.local.entity.PlatformEntity
 import com.nendo.argosy.data.local.entity.getDisplayName
 import com.nendo.argosy.data.model.GameSource
 import com.nendo.argosy.data.model.ResolvedGameArt
@@ -131,6 +132,7 @@ class HomeLibraryDelegate @Inject constructor(
     private val deferredRecentsRefreshes = MutableStateFlow(0L)
     private val recentsObservers = AtomicInteger()
     private var cachedPlatformDisplayNames: Map<Long, String> = emptyMap()
+    private var cachedPlatformShortNames: Map<Long, String> = emptyMap()
     private val pendingCoverRepairs = mutableSetOf<Long>()
     private val platformGameLoader = PlatformGameLoader(gameRepository, downloadFileStatusRepository)
     private val platformLoadGeneration = AtomicLong()
@@ -174,7 +176,7 @@ class HomeLibraryDelegate @Inject constructor(
 
         val allPlatforms = platformRepository.getPlatformsWithGames()
         val platforms = allPlatforms.withoutOwnRowPlatforms()
-        cachedPlatformDisplayNames = allPlatforms.associate { it.id to it.getDisplayName() }
+        cachePlatformNames(allPlatforms)
         var favorites = gameRepository.getFavorites()
         val androidGames = gameRepository.getByPlatformSorted(LocalPlatformIds.ANDROID, limit = PLATFORM_ROW_LIMIT)
             .let { if (installedOnly) filterPlayable(it) else it }
@@ -241,7 +243,7 @@ class HomeLibraryDelegate @Inject constructor(
     fun observePlatformChanges(scope: CoroutineScope, onPlatformsChanged: (List<HomePlatformUi>, List<HomePlatformUi>) -> Unit) {
         scope.launch {
             platformRepository.observePlatformsWithGames().collect { platforms ->
-                cachedPlatformDisplayNames = platforms.associate { it.id to it.getDisplayName() }
+                cachePlatformNames(platforms)
                 val currentPlatforms = _state.value.platforms
                 val newPlatformUis = platforms.withoutOwnRowPlatforms().map { it.toHomePlatformUi(emulatorDetector) }
                 onPlatformsChanged(currentPlatforms, newPlatformUis)
@@ -413,7 +415,7 @@ class HomeLibraryDelegate @Inject constructor(
         val installedOnly = preferencesRepository.userPreferences.first().installedOnlyHome
         val allPlatforms = platformRepository.getPlatformsWithGames()
         val platforms = allPlatforms.withoutOwnRowPlatforms()
-        cachedPlatformDisplayNames = allPlatforms.associate { it.id to it.getDisplayName() }
+        cachePlatformNames(allPlatforms)
         val platformUis = platforms.map { it.toHomePlatformUi(emulatorDetector) }
         val androidGames = gameRepository.getByPlatformSorted(LocalPlatformIds.ANDROID, limit = PLATFORM_ROW_LIMIT)
             .let { if (installedOnly) filterPlayable(it) else it }
@@ -890,8 +892,14 @@ class HomeLibraryDelegate @Inject constructor(
         art = art,
         firstScreenshotUrl = null,
         platformDisplayName = cachedPlatformDisplayNames[platformId],
-        gradientColors = gradientExtractionDelegate.getGradient(id)
+        gradientColors = gradientExtractionDelegate.getGradient(id),
+        platformShortName = cachedPlatformShortNames[platformId]
     )
+
+    private fun cachePlatformNames(platforms: List<PlatformEntity>) {
+        cachedPlatformDisplayNames = platforms.associate { it.id to it.getDisplayName() }
+        cachedPlatformShortNames = platforms.associate { it.id to it.shortName }
+    }
 
     private suspend fun List<GameEntity>.toUis(): List<HomeGameUi> {
         val art = gameRepository.getArt(map { it.id })

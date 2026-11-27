@@ -282,6 +282,7 @@
     </plurals>
     <string name="home_columns_last_played_on">आख़िरी बार %1$s %2$s पर खेला</string>
     <string name="home_columns_last_played">आख़िरी बार %1$s खेला</string>
+    <string name="home_columns_last_played_short">%1$s खेला</string>
     <string name="home_columns_previous_game">पिछला गेम</string>
     <string name="home_columns_next_game">अगला गेम</string>
     <string name="home_footer_columns_sections">सेक्शन</string>

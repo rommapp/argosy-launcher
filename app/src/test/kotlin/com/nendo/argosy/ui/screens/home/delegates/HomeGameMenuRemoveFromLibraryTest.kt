@@ -22,6 +22,7 @@ class HomeGameMenuRemoveFromLibraryTest {
         platformId = 7,
         platformSlug = "saturn",
         platformDisplayName = "Saturn",
+        platformShortName = "Saturn",
         coverPath = null,
         backgroundPath = null,
         developer = null,

@@ -22,6 +22,7 @@ class HomeGameMenuStreamTest {
         platformId = 7,
         platformSlug = "psx",
         platformDisplayName = "PlayStation",
+        platformShortName = "PS",
         coverPath = null,
         backgroundPath = null,
         developer = null,

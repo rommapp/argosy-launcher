@@ -420,6 +420,7 @@ internal fun QuickMenuGameUi.toCard(hideFavoriteMark: Boolean = false): HomeGame
     platformId = platformId,
     platformSlug = platformSlug,
     platformDisplayName = platformName.orEmpty(),
+    platformShortName = platformName.orEmpty(),
     coverPath = coverPath,
     backgroundPath = backdropPath,
     developer = developer,

@@ -62,12 +62,23 @@ class BuildHomeColumnsUseCaseTest {
             favorites = listOf(game(7)),
             pinnedCollections = listOf(HomePinnedCollection(collectionId = 9, name = "Couch", games = listOf(game(8)))),
             genrePlay = listOf(HomePlayedGame(game(9, genres = "RPG"), activeMs = 60_000)),
-            platforms = listOf(HomePlatformGames(platformId = 2, name = "SNES", games = listOf(game(10, platformId = 2)))),
+            platforms = listOf(
+                HomePlatformGames(
+                    platformId = 2,
+                    name = "Super Nintendo Entertainment System",
+                    games = listOf(game(10, platformId = 2)),
+                    shortName = "SNES"
+                )
+            ),
             media = listOf(HomeMediaRow(id = "next", mediaKind = HomeMediaColumnKind.NEXT_UP, itemIds = listOf("a")))
         )
 
         val columns = build(sources)
 
+        assertEquals(
+            HomeColumnLabel.Platform(name = "Super Nintendo Entertainment System", shortName = "SNES"),
+            columns[9].label
+        )
         assertEquals(
             listOf(
                 HomeColumnTheme.CONTINUE,
@@ -97,7 +108,7 @@ class BuildHomeColumnsUseCaseTest {
             recent = listOf(game(1)),
             favorites = listOf(game(2)),
             pinnedCollections = listOf(HomePinnedCollection(collectionId = 3, name = "Empty", games = emptyList())),
-            platforms = listOf(HomePlatformGames(platformId = 4, name = "Empty", games = emptyList())),
+            platforms = listOf(HomePlatformGames(platformId = 4, name = "Empty", games = emptyList(), shortName = "Empty")),
             media = listOf(HomeMediaRow(id = "cw", mediaKind = HomeMediaColumnKind.CONTINUE_WATCHING, itemIds = emptyList()))
         )
 
@@ -119,7 +130,7 @@ class BuildHomeColumnsUseCaseTest {
         val many = (1L..15L).map { game(it, platformId = 2) }
         val sources = HomeColumnSources(
             recent = many,
-            platforms = listOf(HomePlatformGames(platformId = 2, name = "SNES", games = many)),
+            platforms = listOf(HomePlatformGames(platformId = 2, name = "SNES", games = many, shortName = "SNES")),
             media = listOf(HomeMediaRow(id = "next", mediaKind = HomeMediaColumnKind.NEXT_UP, itemIds = (1..15).map { "m$it" }))
         )
 
@@ -135,7 +146,7 @@ class BuildHomeColumnsUseCaseTest {
         val sources = HomeColumnSources(
             recent = many,
             pinnedCollections = listOf(HomePinnedCollection(collectionId = 3, name = "Couch", games = many)),
-            platforms = listOf(HomePlatformGames(platformId = 2, name = "SNES", games = many)),
+            platforms = listOf(HomePlatformGames(platformId = 2, name = "SNES", games = many, shortName = "SNES")),
             media = listOf(HomeMediaRow(id = "next", mediaKind = HomeMediaColumnKind.NEXT_UP, itemIds = (1..15).map { "m$it" }))
         )
         val full = setOf(
@@ -191,7 +202,7 @@ class BuildHomeColumnsUseCaseTest {
         val older = game(2, platformId = 2, lastPlayed = at(200))
         val sources = HomeColumnSources(
             recent = listOf(newest),
-            platforms = listOf(HomePlatformGames(platformId = 2, name = "SNES", games = listOf(newest, older)))
+            platforms = listOf(HomePlatformGames(platformId = 2, name = "SNES", games = listOf(newest, older), shortName = "SNES"))
         )
 
         val platform = build(sources, ColumnsConfig(hiddenThemes = setOf(HomeColumnTheme.CONTINUE))).single()
@@ -200,10 +211,47 @@ class BuildHomeColumnsUseCaseTest {
     }
 
     @Test
+    fun `a platform column puts downloaded favorites first, then downloaded, then favorites`() {
+        val playedOnline = game(1, platformId = 2, lastPlayed = at(900), rating = 99f)
+        val favorite = game(2, platformId = 2).copy(isFavorite = true)
+        val downloaded = game(3, platformId = 2).copy(localPath = "/roms/c.sfc")
+        val downloadedFavorite = game(4, platformId = 2).copy(localPath = "/roms/d.sfc", isFavorite = true)
+        val sources = HomeColumnSources(
+            platforms = listOf(
+                HomePlatformGames(2, "SNES", listOf(playedOnline, favorite, downloaded, downloadedFavorite), "SNES")
+            )
+        )
+
+        val column = build(sources).single()
+
+        assertEquals(listOf(4L, 3L, 2L, 1L), column.games.map { it.id })
+    }
+
+    @Test
+    fun `a Steam game with a launcher counts as downloaded in its platform column`() {
+        val rated = game(1, platformId = 9, rating = 95f)
+        val installed = game(2, platformId = 9).copy(steamLauncher = "gamenative")
+        val sources = HomeColumnSources(platforms = listOf(HomePlatformGames(9, "Steam", listOf(rated, installed), "Steam")))
+
+        val column = build(sources).single()
+
+        assertEquals(listOf(2L, 1L), column.games.map { it.id })
+    }
+
+    @Test
+    fun `within a tier the most recently played still leads`() {
+        val older = game(1, platformId = 2, lastPlayed = at(100)).copy(localPath = "/roms/a.sfc")
+        val newer = game(2, platformId = 2, lastPlayed = at(200)).copy(localPath = "/roms/b.sfc")
+        val sources = HomeColumnSources(platforms = listOf(HomePlatformGames(2, "SNES", listOf(older, newer), "SNES")))
+
+        assertEquals(listOf(2L, 1L), build(sources).single().games.map { it.id })
+    }
+
+    @Test
     fun `platform columns off drops every platform and keeps themes and media`() {
         val sources = HomeColumnSources(
             recent = listOf(game(1)),
-            platforms = listOf(HomePlatformGames(platformId = 2, name = "SNES", games = listOf(game(2, platformId = 2)))),
+            platforms = listOf(HomePlatformGames(platformId = 2, name = "SNES", games = listOf(game(2, platformId = 2)), shortName = "SNES")),
             media = listOf(HomeMediaRow(id = "next", mediaKind = HomeMediaColumnKind.NEXT_UP, itemIds = listOf("a")))
         )
 
@@ -225,7 +273,7 @@ class BuildHomeColumnsUseCaseTest {
         val older = game(2, platformId = 2, lastPlayed = at(200))
         val sources = HomeColumnSources(
             recent = listOf(newest),
-            platforms = listOf(HomePlatformGames(platformId = 2, name = "SNES", games = listOf(newest, older)))
+            platforms = listOf(HomePlatformGames(platformId = 2, name = "SNES", games = listOf(newest, older), shortName = "SNES"))
         )
 
         val platform = build(sources).last()
@@ -240,7 +288,7 @@ class BuildHomeColumnsUseCaseTest {
         val older = game(2, platformId = 2, lastPlayed = at(200))
         val sources = HomeColumnSources(
             recent = listOf(other, newest),
-            platforms = listOf(HomePlatformGames(platformId = 2, name = "SNES", games = listOf(older, newest)))
+            platforms = listOf(HomePlatformGames(platformId = 2, name = "SNES", games = listOf(older, newest), shortName = "SNES"))
         )
 
         val platform = build(sources).last()
@@ -254,8 +302,8 @@ class BuildHomeColumnsUseCaseTest {
         val second = game(2, platformId = 2, lastPlayed = at(200))
         val sources = HomeColumnSources(
             platforms = listOf(
-                HomePlatformGames(platformId = 2, name = "SNES", games = listOf(shared, second)),
-                HomePlatformGames(platformId = 3, name = "SNES Hacks", games = listOf(shared, second))
+                HomePlatformGames(platformId = 2, name = "SNES", games = listOf(shared, second), shortName = "SNES"),
+                HomePlatformGames(platformId = 3, name = "SNES Hacks", games = listOf(shared, second), shortName = "SNES Hacks")
             )
         )
 
@@ -270,7 +318,7 @@ class BuildHomeColumnsUseCaseTest {
         val only = game(1, platformId = 2, lastPlayed = at(300))
         val sources = HomeColumnSources(
             recent = listOf(only),
-            platforms = listOf(HomePlatformGames(platformId = 2, name = "SNES", games = listOf(only)))
+            platforms = listOf(HomePlatformGames(platformId = 2, name = "SNES", games = listOf(only), shortName = "SNES"))
         )
 
         assertEquals(listOf(1L), build(sources).last().games.map { it.id })
@@ -282,7 +330,7 @@ class BuildHomeColumnsUseCaseTest {
         val high = game(2, platformId = 2, rating = 90f)
         val unrated = game(3, platformId = 2)
         val sources = HomeColumnSources(
-            platforms = listOf(HomePlatformGames(platformId = 2, name = "SNES", games = listOf(unrated, low, high)))
+            platforms = listOf(HomePlatformGames(platformId = 2, name = "SNES", games = listOf(unrated, low, high), shortName = "SNES"))
         )
 
         assertEquals(listOf(2L, 1L, 3L), build(sources).single().games.map { it.id })
@@ -293,7 +341,7 @@ class BuildHomeColumnsUseCaseTest {
         val rated = game(1, platformId = 2, rating = 99f)
         val played = game(2, platformId = 2, lastPlayed = at(100), rating = 10f)
         val sources = HomeColumnSources(
-            platforms = listOf(HomePlatformGames(platformId = 2, name = "SNES", games = listOf(rated, played)))
+            platforms = listOf(HomePlatformGames(platformId = 2, name = "SNES", games = listOf(rated, played), shortName = "SNES"))
         )
 
         assertEquals(2L, build(sources).single().games.first().id)
